@@ -1,0 +1,23 @@
+<form class="dynamic-form" [formGroup]="form" (ngSubmit)="submit()" *ngIf="form">
+  <div class="form-fields">
+    <div *ngFor="let field of fields"
+         [ngClass]="getFieldCssClass(field)">
+      <app-dynamic-form-field
+        [field]="field"
+        [group]="form">
+      </app-dynamic-form-field>
+    </div>
+  </div>
+
+  <div class="form-actions" *ngIf="!hideButtons">
+    <button mat-button type="button" (click)="formCancel.emit()">
+      {{ cancelButtonText }}
+    </button>
+    <button mat-raised-button color="primary"
+            type="submit"
+            [disabled]="saving || !form.valid">
+      <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
+      <span *ngIf="!saving">{{ submitButtonText }}</span>
+    </button>
+  </div>
+</form>

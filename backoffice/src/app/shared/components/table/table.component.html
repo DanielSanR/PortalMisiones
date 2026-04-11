@@ -1,0 +1,75 @@
+<!-- ====================================================================== -->
+<!-- SharedTableComponent — Template                                        -->
+<!-- Tabla reutilizable basada en MatTable con soporte para:                -->
+<!-- - Columnas configurables (texto simple o template personalizado)        -->
+<!-- - Ordenamiento (MatSort) opcional por columna                          -->
+<!-- - Paginacion server-side (MatPaginator) opcional                       -->
+<!-- - Estado vacio con imagen/icono                                        -->
+<!-- - Indicador de carga (progress bar)                                    -->
+<!-- ====================================================================== -->
+
+<div class="shared-table" [class.shared-table--striped]="striped">
+
+  <!-- Loading-->
+  <mat-progress-bar *ngIf="loading" mode="indeterminate" class="shared-table__loader" aria-label="Cargando datos">
+  </mat-progress-bar>
+
+  <!-- Table -->
+  <div class="shared-table__wrapper" [class.shared-table__wrapper--loading]="loading">
+    <table mat-table [dataSource]="data" matSort (matSortChange)="onSortChange($event)"
+      *ngIf="!isEmpty; else emptyState" class="shared-table__mat-table" role="grid">
+
+      <!-- Dynamic columns -->
+      <ng-container *ngFor="let column of columns" [matColumnDef]="column.key">
+
+        <!-- Header cell -->
+        <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="!column.sortable || !sortable"
+          [ngClass]="column.headerClass" [class.shared-table__cell--hide-mobile]="column.hideOnMobile"
+          [style.width]="column.width">
+
+          <!-- Custom header template o texto simple -->
+          <ng-container *ngIf="getHeaderTemplate(column) as headerTpl; else defaultHeader">
+            <ng-container *ngTemplateOutlet="headerTpl; context: { $implicit: column }"></ng-container>
+          </ng-container>
+          <ng-template #defaultHeader>{{ column.label }}</ng-template>
+        </th>
+
+        <!-- Data cell -->
+        <td mat-cell *matCellDef="let row" [ngClass]="column.cellClass"
+          [class.shared-table__cell--hide-mobile]="column.hideOnMobile" [style.width]="column.width">
+
+          <!-- Custom cell template o valor de texto simple -->
+          <ng-container *ngIf="getCellTemplate(column) as cellTpl; else defaultCell">
+            <ng-container *ngTemplateOutlet="cellTpl; context: { $implicit: row, column: column }"></ng-container>
+          </ng-container>
+          <ng-template #defaultCell>{{ getCellValue(row, column.key) }}</ng-template>
+        </td>
+      </ng-container>
+
+      <!-- Rows -->
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns" (click)="onRowClick(row)"
+        [class.shared-table__row--clickable]="rowClick.observed" tabindex="0" (keydown.enter)="onRowClick(row)">
+      </tr>
+    </table>
+  </div>
+
+  <!-- Empty state -->
+  <ng-template #emptyState>
+    <div class="shared-table__empty" role="status">
+      <img *ngIf="!emptyIcon && emptyImage" [src]="emptyImage" alt="" class="shared-table__empty-image"
+        aria-hidden="true" />
+      <mat-icon *ngIf="emptyIcon" class="shared-table__empty-icon" aria-hidden="true">
+        {{ emptyIcon }}
+      </mat-icon>
+      <p class="shared-table__empty-message">{{ emptyMessage }}</p>
+    </div>
+  </ng-template>
+
+  <!-- Paginador -->
+  <mat-paginator *ngIf="paginated && !isEmpty" [length]="totalItems" [pageSize]="pageSize" [pageIndex]="pageIndex"
+    [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" showFirstLastButtons
+    aria-label="Paginacion de la tabla">
+  </mat-paginator>
+
+</div>

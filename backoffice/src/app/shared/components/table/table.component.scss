@@ -1,0 +1,181 @@
+// ==========================================================================
+// SharedTableComponent — Styles
+// ==========================================================================
+// Estilos para la tabla reutilizable. Usa CSS variables de _themes.scss
+// y mixins de _mixins.scss para mantener coherencia con el design system.
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
+.shared-table {
+  @include theme-card;
+  overflow: hidden;
+  position: relative;
+
+  // ---------------------------------------------------------------------------
+  // Loading indicator — progress bar fija en la parte superior
+  // ---------------------------------------------------------------------------
+  &__loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Table wrapper — permite scroll horizontal en mobile
+  // ---------------------------------------------------------------------------
+  &__wrapper {
+    overflow-x: auto;
+    @include custom-scrollbar;
+    transition: opacity var(--theme-transition-fast);
+
+    &--loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // MatTable overrides dentro del componente
+  // ---------------------------------------------------------------------------
+  &__mat-table {
+    width: 100%;
+
+    // Header row
+    .mat-mdc-header-row {
+      background-color: var(--theme-bg-table-header);
+      height: 52px;
+
+      .mat-mdc-header-cell {
+        font-weight: var(--theme-font-weight-semibold);
+        font-size: var(--theme-font-size-xs);
+        color: var(--theme-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid var(--theme-border-primary);
+        padding: 0 var(--theme-space-md);
+        white-space: nowrap;
+
+        // Sort header arrow — hereda color del texto
+        .mat-sort-header-arrow {
+          color: var(--theme-text-secondary);
+        }
+      }
+    }
+
+    // Data rows
+    .mat-mdc-row {
+      height: 56px;
+      transition: background-color var(--theme-transition-fast);
+
+      &:hover {
+        background-color: var(--theme-bg-table-hover);
+      }
+
+      &:last-child .mat-mdc-cell {
+        border-bottom: none;
+      }
+
+      .mat-mdc-cell {
+        font-size: var(--theme-font-size-base);
+        color: var(--theme-text-primary);
+        padding: 0 var(--theme-space-md);
+        border-bottom-color: var(--theme-border-secondary);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Clickable rows
+  // ---------------------------------------------------------------------------
+  &__row--clickable {
+    cursor: pointer;
+
+    &:focus-visible {
+      @include focus-ring-inset;
+      background-color: var(--theme-bg-table-hover);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Striped rows
+  // ---------------------------------------------------------------------------
+  &--striped {
+    .mat-mdc-row:nth-child(even) {
+      background-color: var(--theme-bg-table-stripe);
+
+      &:hover {
+        background-color: var(--theme-bg-table-hover);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hide columns on mobile
+  // ---------------------------------------------------------------------------
+  &__cell--hide-mobile {
+    @include responsive(mobile) {
+      display: none !important;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Empty state
+  // ---------------------------------------------------------------------------
+  &__empty {
+    @include flex-center;
+    flex-direction: column;
+    padding: var(--theme-space-3xl) var(--theme-space-lg);
+    text-align: center;
+  }
+
+  &__empty-image {
+    width: 160px;
+    height: auto;
+    margin-bottom: var(--theme-space-lg);
+    opacity: 0.7;
+
+    @include responsive(mobile) {
+      width: 120px;
+    }
+  }
+
+  &__empty-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--theme-neutral-400);
+    margin-bottom: var(--theme-space-md);
+  }
+
+  &__empty-message {
+    @include text-body;
+    color: var(--theme-text-secondary);
+    margin: 0;
+    font-size: var(--theme-font-size-base);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Paginator — hereda estilos globales de _material.scss,
+  // pero ajustamos bordes dentro del card
+  // ---------------------------------------------------------------------------
+  .mat-mdc-paginator {
+    border-top: 1px solid var(--theme-border-secondary);
+    background-color: var(--theme-bg-card);
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Responsive — tabla scroll horizontal en pantallas chicas
+  // ---------------------------------------------------------------------------
+  @include responsive(mobile) {
+    border-radius: var(--theme-radius-md);
+
+    &__mat-table {
+      min-width: 600px;
+    }
+  }
+}

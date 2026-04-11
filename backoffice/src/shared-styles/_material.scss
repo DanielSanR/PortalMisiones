@@ -1,0 +1,418 @@
+// ==========================================================================
+// Angular Material Overrides — Portal Provincial de Tramites Misiones
+// ==========================================================================
+// Overrides globales para que Material se integre con el design system.
+// Todos los colores usan CSS variables para mantener coherencia con _themes.
+// ==========================================================================
+
+// ---------------------------------------------------------------------------
+// Buttons
+// ---------------------------------------------------------------------------
+.mat-mdc-raised-button,
+.mat-mdc-flat-button,
+.mat-mdc-unelevated-button {
+  font-weight: var(--theme-font-weight-semibold) !important;
+  letter-spacing: 0.02em;
+  border-radius: var(--theme-radius-md) !important;
+  transition: all var(--theme-transition-fast);
+
+  &.mat-primary {
+    --mdc-filled-button-container-color: var(--theme-primary);
+    --mdc-filled-button-label-text-color: var(--theme-text-on-primary);
+    --mdc-protected-button-container-color: var(--theme-primary);
+    --mdc-protected-button-label-text-color: var(--theme-text-on-primary);
+
+    &:hover:not([disabled]) {
+      --mdc-filled-button-container-color: var(--theme-primary-light);
+      --mdc-protected-button-container-color: var(--theme-primary-light);
+      box-shadow: var(--theme-shadow-md);
+    }
+  }
+
+  &.mat-accent {
+    --mdc-filled-button-container-color: var(--theme-accent);
+    --mdc-filled-button-label-text-color: var(--theme-accent-contrast);
+    --mdc-protected-button-container-color: var(--theme-accent);
+    --mdc-protected-button-label-text-color: var(--theme-accent-contrast);
+  }
+
+  &.mat-warn {
+    --mdc-filled-button-container-color: var(--theme-warn);
+    --mdc-filled-button-label-text-color: var(--theme-warn-contrast);
+    --mdc-protected-button-container-color: var(--theme-warn);
+    --mdc-protected-button-label-text-color: var(--theme-warn-contrast);
+  }
+
+  .mat-icon {
+    margin-right: 4px;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+//mat-menu-item
+
+.mat-mdc-menu-item.delete-action {
+   color: var(--theme-error) !important;
+
+   .mat-icon {
+     color: var(--theme-error) !important;
+  }
+}
+
+.mat-mdc-outlined-button {
+  border-radius: var(--theme-radius-md) !important;
+  font-weight: var(--theme-font-weight-medium) !important;
+  transition: all var(--theme-transition-fast);
+
+  &.mat-primary {
+    --mdc-outlined-button-label-text-color: var(--theme-primary);
+    --mdc-outlined-button-outline-color: var(--theme-primary-200);
+
+    &:hover:not([disabled]) {
+      background-color: var(--theme-primary-50);
+      --mdc-outlined-button-outline-color: var(--theme-primary);
+    }
+  }
+}
+
+.mat-mdc-button {
+  font-weight: var(--theme-font-weight-medium) !important;
+  border-radius: var(--theme-radius-md) !important;
+}
+
+.mat-mdc-icon-button {
+  transition: background-color var(--theme-transition-fast);
+
+  &:hover:not([disabled]) {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+  }
+}
+
+.mat-mdc-fab,
+.mat-mdc-mini-fab {
+  &.mat-primary {
+    --mdc-fab-container-color: var(--theme-primary);
+    --mdc-fab-icon-color: var(--theme-text-on-primary);
+  }
+
+  &.mat-accent {
+    --mdc-fab-container-color: var(--theme-accent);
+    --mdc-fab-icon-color: var(--theme-accent-contrast);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Form Fields
+// ---------------------------------------------------------------------------
+.mat-mdc-form-field {
+  width: 100%;
+  font-size: var(--theme-font-size-base);
+
+  // Outline appearance overrides
+  &.mat-form-field-appearance-outline {
+
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-color: var(--theme-border-input) !important;
+    }
+
+    &:hover:not(.mat-focused):not(.mat-form-field-disabled) {
+
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: var(--theme-neutral-600) !important;
+      }
+    }
+
+   /*  &.mat-focused {
+
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: var(--theme-primary) !important;
+        border-width: 2px !important;
+      }
+    } */
+  }
+
+  .mat-mdc-form-field-hint {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+  }
+
+  .mat-mdc-form-field-error {
+    font-size: var(--theme-font-size-xs);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tables
+// ---------------------------------------------------------------------------
+.mat-mdc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  .mat-mdc-header-row {
+    background-color: var(--theme-bg-table-header);
+    height: 52px;
+
+    .mat-mdc-header-cell {
+      font-weight: var(--theme-font-weight-semibold);
+      font-size: var(--theme-font-size-xs);
+      color: var(--theme-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--theme-border-primary);
+      padding: 0 16px;
+    }
+  }
+
+  .mat-mdc-row {
+    height: 56px;
+    transition: background-color var(--theme-transition-fast);
+
+    &:hover {
+      background-color: var(--theme-bg-table-hover);
+    }
+
+    &:last-child .mat-mdc-cell {
+      border-bottom: none;
+    }
+
+    .mat-mdc-cell {
+      font-size: var(--theme-font-size-base);
+      color: var(--theme-text-primary);
+      padding: 0 16px;
+      border-bottom-color: var(--theme-border-secondary);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Paginator
+// ---------------------------------------------------------------------------
+.mat-mdc-paginator {
+  border-top: 1px solid var(--theme-border-secondary);
+  background-color: var(--theme-bg-card);
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+// ---------------------------------------------------------------------------
+// Cards
+// ---------------------------------------------------------------------------
+.mat-mdc-card {
+  border-radius: var(--theme-radius-lg) !important;
+  box-shadow: var(--theme-shadow-card) !important;
+  border: 1px solid var(--theme-border-secondary);
+  transition: box-shadow var(--theme-transition-normal);
+
+  .mat-mdc-card-header {
+    padding: var(--theme-space-md) var(--theme-space-lg) 0;
+  }
+
+  .mat-mdc-card-title {
+    font-size: var(--theme-font-size-md) !important;
+    font-weight: var(--theme-font-weight-semibold) !important;
+    color: var(--theme-text-primary);
+  }
+
+  .mat-mdc-card-subtitle {
+    font-size: var(--theme-font-size-sm) !important;
+    color: var(--theme-text-secondary);
+  }
+
+  .mat-mdc-card-content {
+    padding: var(--theme-space-md) var(--theme-space-lg);
+
+    &:last-child {
+      padding-bottom: var(--theme-space-lg);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Toolbar
+// ---------------------------------------------------------------------------
+.mat-toolbar {
+  &.mat-primary {
+    background-color: var(--theme-bg-header) !important;
+    color: var(--theme-text-on-primary) !important;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sidenav
+// ---------------------------------------------------------------------------
+.mat-sidenav {
+  border-right: none !important;
+}
+
+.mat-sidenav-container {
+  background-color: var(--theme-bg-secondary);
+}
+
+.mat-drawer-inner-container {
+  overflow: hidden !important
+}
+
+// ---------------------------------------------------------------------------
+// Dialogs
+// ---------------------------------------------------------------------------
+.custom-modal-panel {
+  .mat-mdc-dialog-container {
+    border-radius: var(--theme-radius-xl) !important;
+    box-shadow: var(--theme-shadow-dialog);
+    overflow: hidden;
+
+    .mdc-dialog__surface {
+      border-radius: var(--theme-radius-xl) !important;
+    }
+  }
+}
+
+.mat-mdc-dialog-actions {
+  padding: var(--theme-space-md) var(--theme-space-lg) var(--theme-space-lg) !important;
+  gap: var(--theme-space-sm);
+}
+
+@media (max-width: 768px) {
+  .custom-modal-panel {
+    max-width: 95vw !important;
+  }
+
+  .mat-mdc-dialog-container {
+    margin: var(--theme-space-sm);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Snackbar
+// ---------------------------------------------------------------------------
+.mat-mdc-snack-bar-container {
+  border-radius: var(--theme-radius-md) !important;
+
+  .mdc-snackbar__surface {
+    border-radius: var(--theme-radius-md) !important;
+  }
+
+  &.snackbar-success {
+    --mdc-snackbar-container-color: var(--theme-success);
+    --mdc-snackbar-supporting-text-color: #FFFFFF;
+  }
+
+  &.snackbar-error {
+    --mdc-snackbar-container-color: var(--theme-error);
+    --mdc-snackbar-supporting-text-color: #FFFFFF;
+  }
+
+  &.snackbar-warning {
+    --mdc-snackbar-container-color: var(--theme-warning);
+    --mdc-snackbar-supporting-text-color: #FFFFFF;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chips
+// ---------------------------------------------------------------------------
+.mat-mdc-chip {
+  font-size: var(--theme-font-size-xs) !important;
+  font-weight: var(--theme-font-weight-medium) !important;
+  border-radius: var(--theme-radius-full) !important;
+}
+
+// ---------------------------------------------------------------------------
+// Menu
+// ---------------------------------------------------------------------------
+.mat-mdc-menu-panel {
+  border-radius: var(--theme-radius-md) !important;
+  box-shadow: var(--theme-shadow-lg) !important;
+  border: 1px solid var(--theme-border-secondary);
+
+  .mat-mdc-menu-item {
+    font-size: var(--theme-font-size-base);
+    min-height: 44px; // touch target minimum
+
+    .mat-icon {
+      margin-right: 12px;
+      color: var(--theme-text-secondary);
+    }
+
+    &:hover .mat-icon {
+      color: var(--theme-text-primary);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Checkbox & Slide Toggle
+// ---------------------------------------------------------------------------
+.mat-mdc-checkbox {
+  &.mat-primary {
+    --mdc-checkbox-selected-checkmark-color: #FFFFFF;
+    --mdc-checkbox-selected-focus-icon-color: var(--theme-primary);
+    --mdc-checkbox-selected-hover-icon-color: var(--theme-primary-light);
+    --mdc-checkbox-selected-icon-color: var(--theme-primary);
+    --mdc-checkbox-selected-pressed-icon-color: var(--theme-primary);
+  }
+}
+
+.mat-mdc-slide-toggle {
+  &.mat-primary {
+    --mdc-switch-selected-track-color: var(--theme-primary);
+    --mdc-switch-selected-handle-color: var(--theme-primary-dark);
+    --mdc-switch-selected-hover-track-color: var(--theme-primary-light);
+    --mdc-switch-selected-focus-track-color: var(--theme-primary);
+    --mdc-switch-selected-pressed-track-color: var(--theme-primary);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tooltip
+// ---------------------------------------------------------------------------
+.mat-mdc-tooltip {
+  font-size: var(--theme-font-size-xs) !important;
+}
+
+// ---------------------------------------------------------------------------
+// Select
+// ---------------------------------------------------------------------------
+.mat-mdc-select-panel {
+  border-radius: var(--theme-radius-md) !important;
+  box-shadow: var(--theme-shadow-lg) !important;
+  border: 1px solid var(--theme-border-secondary);
+}
+
+// ---------------------------------------------------------------------------
+// Tab Group
+// ---------------------------------------------------------------------------
+.mat-mdc-tab-group {
+  .mat-mdc-tab {
+    font-weight: var(--theme-font-weight-medium);
+    letter-spacing: 0.01em;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Divider
+// ---------------------------------------------------------------------------
+.mat-divider {
+  border-top-color: var(--theme-border-secondary) !important;
+}
+
+// ---------------------------------------------------------------------------
+// Progress Spinner
+// ---------------------------------------------------------------------------
+.mat-mdc-progress-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--theme-primary);
+}

@@ -1,0 +1,36 @@
+//formularios de creacion y edicion
+.form-card {
+    @include form-card();
+}
+
+//tablas
+
+.table-container {
+    @include table-container();
+}
+
+
+//titulos
+.section-title {
+    @include section-title();
+}
+
+//inputs de formularios / searchbars
+
+/* .FormInput {
+    @include FormInput(100%, 1.75rem, 1px solid var(--theme-border-primary), 8px, 0.875rem, 0 1px 2px rgba(0, 0, 0, 0.05), #969696);
+
+} */
+
+//presset de estilos para componentes comunes
+/* .FormInput,
+.FormTextarea,
+mat-select,
+.mat-mdc-input-element,
+.mat-mdc-floating-label,
+.mat-mdc-option,
+.mat-mdc-radio-button,
+.radio-group {
+    box-sizing: border-box;
+    height: 45px;
+} */

@@ -1,0 +1,28 @@
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Dependencies
+/node_modules
+
+# Angular cache
+/.angular/cache
+
+# Testing
+/coverage
+testem.log
+
+# SCSS
+.sass-cache/
+
+# Misc
+/connect.lock
+/libpeerconnection.log
+/typings
+
+# Environment
+.env
+.env.*
+!.env.example

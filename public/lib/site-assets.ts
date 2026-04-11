@@ -1,0 +1,26 @@
+export const siteAssets = {
+  heroCataratas: "/assets/ui/cataratas.png",
+  logos: {
+    misionesMain: "/assets/ui/misiones_logo_blanco.svg",
+    ciudadanoMisiones: "/assets/brands/ciudadano-misiones.svg",
+    siliconMisionesMain: "/assets/brands/silicon-misiones-main.svg",
+    siliconMisionesSub: "/assets/brands/silicon-misiones-sub.svg",
+  },
+  ui: {
+    accessibility: "/assets/ui/accessibility-icon.svg",
+    featuredBirth: "/assets/ui/fecha_nacimiento.svg",
+    featuredMarket: "/assets/ui/mercado.svg",
+    featuredVehicle: "/assets/ui/vehiculo.svg",
+    featuredRetirement: "/assets/ui/sillon.svg",
+    featuredHome: "/assets/ui/casa.svg",
+    topicMoney: "/assets/ui/dinero.svg",
+    topicBuilding: "/assets/ui/edificio.svg",
+    topicTree: "/assets/ui/arbol.svg",
+    topicPaper: "/assets/ui/papel.svg",
+    socialInstagram: "/assets/ui/Instagram.svg",
+    socialFacebook: "/assets/ui/Facebook.svg",
+    socialWhatsapp: "/assets/ui/Whatsapp.svg",
+    socialLinkedin: "/assets/ui/Linkedin.svg",
+    socialYoutube: "/assets/ui/Youtube.svg",
+  },
+} as const

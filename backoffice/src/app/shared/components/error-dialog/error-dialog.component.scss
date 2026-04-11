@@ -1,0 +1,48 @@
+.error-dialog {
+      padding: var(--theme-space-lg);
+      min-width: 360px;
+
+      @media (max-width: 480px) {
+        min-width: auto;
+        padding: var(--theme-space-md);
+      }
+
+      &__header {
+        display: flex;
+        align-items: center;
+        gap: var(--theme-space-md);
+        margin-bottom: var(--theme-space-md);
+      }
+
+      &__icon-wrapper {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--theme-radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--theme-error-bg);
+        flex-shrink: 0;
+
+        .mat-icon {
+          color: var(--theme-error);
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
+
+      h2 {
+        margin: 0;
+        font-size: var(--theme-font-size-lg);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-text-primary);
+      }
+
+      p {
+        color: var(--theme-text-secondary);
+        margin: 0;
+        font-size: var(--theme-font-size-base);
+        line-height: var(--theme-line-height-normal);
+      }
+    }

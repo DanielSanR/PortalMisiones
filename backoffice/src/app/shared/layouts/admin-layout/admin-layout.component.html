@@ -1,0 +1,98 @@
+<div class="admin-layout">
+    <mat-toolbar class="admin-layout__header" color="primary">
+        <button mat-icon-button
+            class="admin-layout__menu-btn"
+            [class.admin-layout__menu-btn--open]="sidenav.opened"
+            (click)="sidenav.toggle()"
+            [attr.aria-expanded]="sidenav.opened"
+            aria-label="Menú de navegación"
+            matTooltip="Menú">
+            <mat-icon>{{ sidenav.opened && !isMobile ? 'menu_open' : 'menu' }}</mat-icon>
+        </button>
+
+        <a class="admin-layout__title" routerLink="/dashboard/home">
+            Portal Misiones
+            <span class="admin-layout__title-separator"></span>
+            <span class="admin-layout__title-sub">Backoffice</span>
+        </a>
+
+        <span class="spacer"></span>
+
+        <!-- User trigger with avatar -->
+        <button class="admin-layout__user-trigger"
+            [matMenuTriggerFor]="userMenu"
+            [attr.aria-label]="'Menú de usuario: ' + userName">
+            <span class="admin-layout__avatar">{{ userInitials }}</span>
+            <span class="admin-layout__user-info">
+                <span class="admin-layout__user-display-name">{{ userName }}</span>
+                <span class="admin-layout__user-role-badge">{{ userRoleSpanish }}</span>
+            </span>
+            <mat-icon class="admin-layout__user-arrow">arrow_drop_down</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu" class="user-menu" xPosition="before">
+            <div class="user-menu-header" (click)="$event.stopPropagation()">
+                <span class="user-menu-avatar">{{ userInitials }}</span>
+                <div class="user-menu-info">
+                    <strong>{{ userName }}</strong>
+                    <span class="user-menu-role">{{ userRoleSpanish }}</span>
+                </div>
+            </div>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="logout()">
+                <mat-icon>exit_to_app</mat-icon>
+                <span>Cerrar sesión</span>
+            </button>
+        </mat-menu>
+    </mat-toolbar>
+
+    <mat-sidenav-container class="admin-layout__container" autosize>
+        <mat-sidenav #sidenav
+            [mode]="isMobile ? 'over' : 'side'"
+            [opened]="!isMobile"
+            class="admin-layout__sidenav"
+            [class.admin-layout__sidenav--mini]="isCollapsed && !isMobile"
+            [style.width]="isMobile ? null : (isCollapsed ? '64px' : '264px')"
+            role="navigation"
+            aria-label="Navegación principal">
+
+            <div class="sidenav-logo">
+                <img [src]="logoSrc"
+                    alt="Escudo de la Provincia de Misiones"
+                    class="sidenav-logo__img" />
+            </div>
+
+            <span class="sidenav-section-label">Navegación</span>
+
+            <mat-nav-list aria-label="Menú principal">
+                <a mat-list-item
+                    *ngFor="let item of filteredNavItems"
+                    [routerLink]="item.route"
+                    routerLinkActive="active"
+                    #rla="routerLinkActive"
+                    [attr.aria-current]="rla.isActive ? 'page' : null"
+                    [matTooltip]="isCollapsed ? item.label : ''"
+                    matTooltipPosition="right"
+                    (click)="isMobile && sidenav.close()">
+                    <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+                    <span matListItemTitle>{{ item.label }}</span>
+                </a>
+            </mat-nav-list>
+
+            <!-- Collapse toggle (desktop only) -->
+            <button class="sidenav-collapse-btn"
+                [class.sidenav-collapse-btn--collapsed]="isCollapsed"
+                (click)="toggleCollapse()"
+                [matTooltip]="isCollapsed ? 'Expandir menú' : 'Colapsar menú'"
+                aria-label="Colapsar menú lateral">
+                <mat-icon>chevron_left</mat-icon>
+            </button>
+        </mat-sidenav>
+
+        <mat-sidenav-content class="admin-layout__content">
+            <div class="admin-layout__page">
+                <router-outlet></router-outlet>
+            </div>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</div>

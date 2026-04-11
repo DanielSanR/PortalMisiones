@@ -1,0 +1,10 @@
+<app-page-header [title]="isEdit ? 'Editar trámite' : 'Nuevo trámite'"
+    [subtitle]="isEdit ? tramite?.titulo || '' : 'Completar la ficha del trámite'" [showBack]="true"
+    (back)="goBack()"></app-page-header>
+
+<div class="form-card">
+    <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear trámite'"
+        cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
+        (formCancel)="goBack()">
+    </app-dynamic-form>
+</div>

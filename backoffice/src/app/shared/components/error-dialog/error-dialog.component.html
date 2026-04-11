@@ -1,0 +1,14 @@
+<div class="error-dialog">
+    <div class="error-dialog__header">
+        <div class="error-dialog__icon-wrapper">
+            <mat-icon>error_outline</mat-icon>
+        </div>
+        <h2>{{ data.title }}</h2>
+    </div>
+    <mat-dialog-content>
+        <p>{{ data.message }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button mat-flat-button color="primary" (click)="dialogRef.close()">Aceptar</button>
+    </mat-dialog-actions>
+</div>

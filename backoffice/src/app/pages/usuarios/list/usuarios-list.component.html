@@ -1,0 +1,44 @@
+<app-page-header title="Usuarios" subtitle="Gestion de usuarios del backoffice">
+    <button mat-raised-button color="primary" (click)="onCreate()">
+        <mat-icon>person_add</mat-icon> Nuevo usuario
+    </button>
+</app-page-header>
+
+<app-shared-table
+    [data]="usuarios"
+    [columns]="columns"
+    [loading]="loading"
+    emptyMessage="No se encontraron usuarios">
+
+    <!-- Columna: Nombre completo -->
+    <ng-template appTableCell="nombre" let-row>
+        {{ row.nombre }} {{ row.apellido }}
+    </ng-template>
+
+    <!-- Columna: Rol (con pipe de etiqueta) -->
+    <ng-template appTableCell="rol" let-row>
+        {{ row.rol | rolLabel }}
+    </ng-template>
+
+    <!-- Columna: Organismo -->
+    <ng-template appTableCell="organismo" let-row>
+        {{ row.organismoNombre || '-' }}
+    </ng-template>
+
+    <!-- Columna: Activo (toggle) -->
+    <ng-template appTableCell="activo" let-row>
+        <mat-slide-toggle
+            [checked]="row.activo"
+            (change)="onToggleActive(row)"
+            aria-label="Activar o desactivar usuario">
+        </mat-slide-toggle>
+    </ng-template>
+
+    <!-- Columna: Acciones -->
+    <ng-template appTableCell="acciones" let-row>
+        <button mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
+            <mat-icon>edit</mat-icon>
+        </button>
+    </ng-template>
+
+</app-shared-table>

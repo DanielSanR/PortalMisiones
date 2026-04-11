@@ -1,0 +1,73 @@
+<app-page-header [title]="tramite?.titulo || 'Detalle de trámite'" [showBack]="true" (back)="goBack()">
+    <button mat-raised-button color="primary" (click)="onEdit()">
+        <mat-icon>edit</mat-icon> Editar
+    </button>
+</app-page-header>
+
+<app-loading [loading]="loading" message="Cargando trámite..."></app-loading>
+
+<div *ngIf="!loading && tramite" class="detail-grid">
+    <mat-card class="detail-card">
+        <mat-card-content>
+            <div class="detail-row">
+                <span class="detail-label">Estado</span>
+                <span class="estado-badge" [attr.data-estado]="tramite.estado">
+                    {{ tramite.estado | estadoBadge }}
+                </span>
+            </div>
+            <mat-divider></mat-divider>
+
+            <div class="detail-row">
+                <span class="detail-label">Organismo</span>
+                <span>{{ tramite.organismo?.nombre }}</span>
+            </div>
+            <mat-divider></mat-divider>
+
+            <div class="detail-row">
+                <span class="detail-label">Modalidad</span>
+                <span>{{ tramite.modalidad?.nombre }}</span>
+            </div>
+            <mat-divider></mat-divider>
+
+            <div class="detail-row">
+                <span class="detail-label">URL Oficial</span>
+                <a [href]="tramite.urlOficial" target="_blank" rel="noopener">
+                    {{ tramite.urlOficial }}
+                    <mat-icon class="link-icon">open_in_new</mat-icon>
+                </a>
+            </div>
+            <mat-divider></mat-divider>
+
+            <div class="detail-row">
+                <span class="detail-label">Destacado</span>
+                <mat-icon [class.active]="tramite.destacado">{{ tramite.destacado ? 'star' : 'star_border' }}</mat-icon>
+            </div>
+            <mat-divider></mat-divider>
+
+            <div class="detail-row" *ngIf="tramite.etiquetas.length">
+                <span class="detail-label">Etiquetas</span>
+                <mat-chip-set>
+                    <mat-chip *ngFor="let etq of tramite.etiquetas">{{ etq.nombre }}</mat-chip>
+                </mat-chip-set>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card class="detail-card">
+        <mat-card-header>
+            <mat-card-title>Resumen</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>{{ tramite.resumen }}</p>
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card class="detail-card" *ngIf="tramite.descripcionLarga">
+        <mat-card-header>
+            <mat-card-title>Descripción completa</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p class="description-text">{{ tramite.descripcionLarga }}</p>
+        </mat-card-content>
+    </mat-card>
+</div>

@@ -1,0 +1,501 @@
+// ==========================================================================
+// Admin Layout — Portal Misiones Backoffice
+// Premium government admin panel with institutional green identity
+// ==========================================================================
+
+.admin-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+
+    // ======================================================================
+    // HEADER — Elevated bar with subtle gradient and glass effect
+    // ======================================================================
+    &__header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0; 
+        z-index: var(--theme-z-header);
+        background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%);
+        color: var(--theme-text-on-primary);
+        box-shadow:
+            0 1px 3px rgba(0, 0, 0, 0.12),
+            0 4px 12px rgba(0, 0, 0, 0.08);
+        backdrop-filter: blur(8px);
+
+        .mat-icon {
+            color: var(--theme-text-on-primary);
+        }
+
+        button:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: -2px;
+            border-radius: var(--theme-radius-sm);
+        }
+    }
+
+    &__menu-btn {
+        position: relative;
+
+        .mat-icon {
+            transition: transform var(--theme-transition-normal);
+        }
+
+        &--open .mat-icon {
+            transform: rotate(0deg);
+        }
+    }
+
+    &__title {
+        margin-left: 12px;
+        font-size: var(--theme-font-size-md);
+        font-weight: var(--theme-font-weight-semibold);
+        letter-spacing: 0.02em;
+        color: inherit;
+        text-decoration: none;
+        transition: opacity var(--theme-transition-fast);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        &:hover {
+            opacity: 0.85;
+        }
+
+        &:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+            border-radius: var(--theme-radius-sm);
+        }
+    }
+
+    &__title-separator {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.25);
+        display: inline-block;
+    }
+
+    &__title-sub {
+        font-weight: var(--theme-font-weight-normal);
+        opacity: 0.8;
+        font-size: var(--theme-font-size-sm);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .spacer {
+        flex: 1;
+    }
+
+    // ======================================================================
+    // USER TRIGGER — Avatar button in header
+    // ======================================================================
+    &__user-trigger {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--theme-text-on-primary);
+        border-radius: var(--theme-radius-full);
+        padding: 4px 8px 4px 4px;
+        transition: background-color var(--theme-transition-fast);
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    }
+
+    &__avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--theme-primary-300) 0%, var(--theme-primary-100) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--theme-font-size-xs);
+        font-weight: var(--theme-font-weight-bold);
+        color: var(--theme-primary-dark);
+        letter-spacing: 0.5px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        flex-shrink: 0;
+    }
+
+    &__user-info {
+        display: none;
+        flex-direction: column;
+        text-align: left;
+        line-height: 1.2;
+
+        @media (min-width: 768px) {
+            display: flex;
+        }
+    }
+
+    &__user-display-name {
+        font-size: var(--theme-font-size-sm);
+        font-weight: var(--theme-font-weight-medium);
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__user-role-badge {
+        font-size: 10px;
+        font-weight: var(--theme-font-weight-medium);
+        opacity: 0.75;
+        letter-spacing: 0.03em;
+    }
+
+    &__user-arrow {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+        opacity: 0.7;
+        transition: transform var(--theme-transition-fast);
+        display: none;
+
+        @media (min-width: 768px) {
+            display: block;
+        }
+    }
+
+    // ======================================================================
+    // SIDENAV CONTAINER
+    // ======================================================================
+    &__container {
+        flex: 1;
+        margin-top: var(--theme-header-height);
+    }
+
+    // ======================================================================
+    // SIDENAV — Dark gradient with refined nav items
+    // ======================================================================
+    &__sidenav {
+        width: var(--theme-sidebar-width);
+        background: var(--theme-primary);
+        overflow-x: hidden;
+        transition: width var(--theme-transition-normal);
+
+        &.mat-drawer {
+            border-right: none;
+        }
+
+        .mat-mdc-list-item {
+            width: 90%;
+            color: var(--theme-text-on-dark-secondary);
+            margin: 2px 12px;
+            border-radius: var(--theme-radius-md);
+            height: 46px;
+            transition: background-color var(--theme-transition-fast),
+                        color var(--theme-transition-fast),
+                        transform var(--theme-transition-fast);
+            position: relative;
+
+            &:focus-visible {
+                outline: 2px solid rgba(255, 255, 255, 0.8);
+                outline-offset: -2px;
+            }
+
+            // --- Hover: subtle lift + glow ---
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: var(--theme-text-on-dark);
+                transform: translateX(2px);
+
+                mat-icon {
+                    color: var(--theme-text-on-dark);
+                }
+            }
+
+            // --- Active: bold left accent bar + highlighted bg ---
+            &.active {
+                background: linear-gradient(
+                    90deg,
+                    rgba(255, 255, 255, 0.18) 0%,
+                    rgba(255, 255, 255, 0.08) 100%
+                );
+                color: #FFFFFF;
+                font-weight: var(--theme-font-weight-semibold);
+
+                // Left accent bar
+                &::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 8px;
+                    bottom: 8px;
+                    width: 3px;
+                    background: var(--theme-primary-200);
+                    border-radius: 0 3px 3px 0;
+                    box-shadow: 0 0 8px rgba(165, 214, 167, 0.4);
+                }
+
+                .mat-icon {
+                    color: var(--theme-primary-200);
+                }
+
+                .mdc-list-item__primary-text,
+                span[matListItemTitle] {
+                    color: #FFFFFF;
+                }
+            }
+
+            mat-icon {
+                color: var(--theme-text-on-dark-secondary);
+                transition: color var(--theme-transition-fast);
+                font-size: 22px;
+                width: 22px;
+                height: 22px;
+            }
+
+            .mdc-list-item__primary-text,
+            span[matListItemTitle] {
+                color: var(--theme-text-on-primary);
+            }
+
+            span[matListItemTitle] {
+                font-size: var(--theme-font-size-base);
+                font-weight: var(--theme-font-weight-normal);
+            }
+        }
+    }
+
+    // ======================================================================
+    // SIDENAV — Mini / Collapsed mode (icons only)
+    // ======================================================================
+    &__sidenav--mini {
+        width: var(--theme-sidebar-collapsed-width);
+
+        .sidenav-logo__img {
+            max-width: 32px;
+        }
+
+        .sidenav-section-label {
+            display: none;
+        }
+
+        .mat-mdc-list-item {
+            width: 80%;
+            margin: 2px 6px;
+            justify-content: center;
+            padding: 0 !important;
+
+            span[matListItemTitle] {
+                display: none;
+            }
+
+            mat-icon {
+                margin: 0 auto;
+            }
+
+            &.active::before {
+                top: 10px;
+                bottom: 10px;
+            }
+        }
+    }
+
+    // ======================================================================
+    // CONTENT AREA
+    // ======================================================================
+    &__content {
+        background-color: var(--theme-bg-secondary);
+        scroll-padding-top: calc(var(--theme-header-height) + 16px);
+    }
+
+    &__page {
+        padding: var(--theme-space-lg);
+        max-width: var(--theme-content-max-width);
+        margin: 0 auto;
+        width: 100%;
+
+        @media (max-width: 767px) {
+            padding: var(--theme-space-md);
+        }
+    }
+}
+
+// ==========================================================================
+// SIDENAV LOGO
+// ==========================================================================
+.sidenav-logo {
+    padding: 20px 16px 12px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 4px;
+
+    &__img {
+        max-width: 140px;
+        height: auto;
+        opacity: 0.95;
+        filter: brightness(1.05);
+        transition: max-width var(--theme-transition-normal),
+                    opacity var(--theme-transition-fast);
+    }
+
+    &:hover &__img {
+        opacity: 1;
+    }
+}
+
+// ==========================================================================
+// SIDENAV SECTION LABELS (Navegación, etc.)
+// ==========================================================================
+.sidenav-section-label {
+    padding: 16px 24px 6px;
+    font-size: 10px;
+    font-weight: var(--theme-font-weight-semibold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    user-select: none;
+}
+
+// ==========================================================================
+// USER MENU DROPDOWN — Redesigned with avatar + role badge
+// ==========================================================================
+.user-menu {
+    min-width: 240px;
+    border-radius: var(--theme-radius-lg) !important;
+    overflow: hidden;
+}
+
+.user-menu-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--theme-primary-50) 0%, #f0f9f0 100%);
+    border-bottom: 1px solid var(--theme-border-secondary);
+}
+
+.user-menu-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--theme-font-size-base);
+    font-weight: var(--theme-font-weight-bold);
+    color: #FFFFFF;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.user-menu-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+        font-size: var(--theme-font-size-base);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.user-menu-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: var(--theme-font-weight-medium);
+    color: var(--theme-primary);
+    background: var(--theme-primary-100);
+    padding: 2px 8px;
+    border-radius: var(--theme-radius-full);
+    width: fit-content;
+}
+
+mat-divider {
+    margin: 4px 0;
+}
+
+// ==========================================================================
+// COLLAPSE TOGGLE BUTTON (at bottom of sidenav)
+// ==========================================================================
+.sidenav-collapse-btn {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    width: 100%;
+    transition: color var(--theme-transition-fast),
+                background-color var(--theme-transition-fast);
+    font-family: inherit;
+
+    &:hover {
+        color: rgba(255, 255, 255, 0.85);
+        background: rgba(0, 0, 0, 0.25);
+    }
+
+    .mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        transition: transform var(--theme-transition-normal);
+    }
+
+    &--collapsed .mat-icon {
+        transform: rotate(180deg);
+    }
+
+    // Hide on mobile (no need for collapse)
+    @media (max-width: 767px) {
+        display: none;
+    }
+}
+
+// ==========================================================================
+// REDUCED MOTION
+// ==========================================================================
+@media (prefers-reduced-motion: reduce) {
+    .admin-layout {
+        &__sidenav {
+            transition: none;
+        }
+
+        &__title {
+            transition: none;
+        }
+
+        &__sidenav .mat-mdc-list-item {
+            transition: none;
+
+            mat-icon {
+                transition: none;
+            }
+        }
+
+        .sidenav-collapse-btn .mat-icon {
+            transition: none;
+        }
+
+        .sidenav-logo__img {
+            transition: none;
+        }
+    }
+}

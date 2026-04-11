@@ -1,0 +1,246 @@
+<ng-container [formGroup]="group" *ngIf="field">
+  <!-- Section Header (no form control) -->
+  <div *ngIf="field.type === 'section-header'" class="section-header-field">
+    <h3 class="section-header-title">{{ field.label }}</h3>
+    <p *ngIf="field.placeholder" class="section-header-description">{{ field.placeholder }}</p>
+  </div>
+
+  <!-- Tip (no form control) -->
+  <div *ngIf="field.type === 'tip'" class="tip-field">
+    <div class="tip-content">
+      <mat-icon class="tip-icon">info_outline</mat-icon>
+      <div class="tip-body">
+        <h6 *ngIf="field.label" class="tip-title">{{ field.label }}</h6>
+        <p class="tip-text">{{ field.placeholder || '' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- All form controls -->
+  <ng-container *ngIf="field.type !== 'tip' && field.type !== 'section-header' && group.contains(field.name)">
+    <ng-container [ngSwitch]="field.type">
+
+      <!-- Text -->
+      <mat-form-field *ngSwitchCase="'text'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <input matInput
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || ''"
+               [attr.maxlength]="field.validations?.maxLength"
+               [required]="field.validations?.required || false">
+        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
+        <mat-hint *ngIf="field.validations?.maxLength" align="end">
+          {{ group.get(field.name)?.value?.length || 0 }} / {{ field.validations!.maxLength }}
+        </mat-hint>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Email -->
+      <mat-form-field *ngSwitchCase="'email'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <input matInput type="email"
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || ''"
+               [required]="field.validations?.required || false">
+        <mat-icon matSuffix>email</mat-icon>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- URL -->
+      <mat-form-field *ngSwitchCase="'url'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <input matInput type="url"
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || 'https://...'"
+               [required]="field.validations?.required || false">
+        <mat-icon matSuffix>link</mat-icon>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Password -->
+      <mat-form-field *ngSwitchCase="'password'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <input matInput
+               [type]="showPassword ? 'text' : 'password'"
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || ''"
+               [required]="field.validations?.required || false">
+        <button mat-icon-button matSuffix type="button" (click)="togglePassword()">
+          <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Number -->
+      <mat-form-field *ngSwitchCase="'number'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <input matInput type="number"
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || ''"
+               [attr.min]="field.validations?.min"
+               [attr.max]="field.validations?.max"
+               [required]="field.validations?.required || false"
+               (keydown)="preventE($event)">
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Textarea -->
+      <mat-form-field *ngSwitchCase="'textarea'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <textarea matInput
+                  cdkTextareaAutosize
+                  [cdkAutosizeMinRows]="3"
+                  [cdkAutosizeMaxRows]="16"
+                  [formControlName]="field.name"
+                  [placeholder]="field.placeholder || ''"
+                  [attr.maxlength]="field.validations?.maxLength"
+                  [required]="field.validations?.required || false"></textarea>
+        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
+        <mat-hint *ngIf="field.validations?.maxLength" align="end">
+          {{ group.get(field.name)?.value?.length || 0 }} / {{ field.validations!.maxLength }}
+        </mat-hint>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Select -->
+      <mat-form-field *ngSwitchCase="'select'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <mat-select [formControlName]="field.name"
+                    [placeholder]="field.placeholder || ''"
+                    [required]="field.validations?.required || false">
+          <mat-option *ngIf="!field.options?.length" disabled>
+            Cargando opciones...
+          </mat-option>
+          <mat-option *ngFor="let option of field.options" [value]="option.id">
+            {{ option.name }}
+          </mat-option>
+        </mat-select>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Select Multiple -->
+      <mat-form-field *ngSwitchCase="'select-multiple'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <mat-select [formControlName]="field.name"
+                    [placeholder]="field.placeholder || ''"
+                    [required]="field.validations?.required || false"
+                    multiple>
+          <mat-option *ngIf="!field.options?.length" disabled>
+            Cargando opciones...
+          </mat-option>
+          <mat-option *ngFor="let option of field.options" [value]="option.id">
+            {{ option.name }}
+          </mat-option>
+        </mat-select>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Datepicker -->
+      <mat-form-field *ngSwitchCase="'datepicker'" appearance="outline">
+        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+        <input matInput
+               [matDatepicker]="picker"
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || 'DD/MM/AAAA'"
+               [required]="field.validations?.required || false">
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+      </mat-form-field>
+
+      <!-- Checkbox -->
+      <div *ngSwitchCase="'checkbox'" class="checkbox-field">
+        <mat-checkbox [formControlName]="field.name">
+          {{ field.label }}
+        </mat-checkbox>
+      </div>
+
+      <!-- Slide Toggle -->
+      <div *ngSwitchCase="'slide-toggle'" class="slide-toggle-field">
+        <mat-slide-toggle [formControlName]="field.name">
+          {{ field.label }}
+        </mat-slide-toggle>
+      </div>
+
+      <!-- Radio -->
+      <div *ngSwitchCase="'radio'" class="radio-field">
+        <label class="radio-label">{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</label>
+        <mat-radio-group [formControlName]="field.name" class="radio-group">
+          <mat-radio-button *ngFor="let option of field.options"
+                            [value]="option.id"
+                            class="radio-option">
+            {{ option.name }}
+          </mat-radio-button>
+        </mat-radio-group>
+        <mat-error *ngIf="group.get(field.name)?.touched && group.get(field.name)?.invalid"
+                   appFormErrorMessage [control]="group.get(field.name)" [field]="field">
+        </mat-error>
+      </div>
+
+      <!-- Icon Picker -->
+      <div *ngSwitchCase="'icon-picker'" class="icon-picker-field">
+        <label class="icon-picker-label">
+          {{ field.label }}
+          <span *ngIf="!field.validations?.required" class="icon-picker-optional"> (opcional)</span>
+        </label>
+        <p *ngIf="field.placeholder" class="icon-picker-hint">{{ field.placeholder }}</p>
+
+        <!-- Selected icon preview -->
+        <div *ngIf="group.get(field.name)?.value" class="icon-picker-selected">
+          <mat-icon class="icon-picker-selected__icon">{{ group.get(field.name)?.value }}</mat-icon>
+          <span class="icon-picker-selected__name">{{ group.get(field.name)?.value }}</span>
+          <button mat-icon-button type="button" (click)="clearIcon()" aria-label="Quitar ícono">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <mat-form-field appearance="outline" class="icon-picker-search">
+          <mat-label>Buscar ícono...</mat-label>
+          <input matInput
+                 [(ngModel)]="iconSearch"
+                 [ngModelOptions]="{ standalone: true }"
+                 (ngModelChange)="filterIcons()"
+                 placeholder="Ej: health, school, work...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Category filter -->
+        <div class="icon-picker-categories">
+          <button mat-stroked-button type="button"
+                  *ngFor="let cat of iconCategories"
+                  [class.icon-picker-categories__active]="selectedIconCategory === cat"
+                  (click)="selectIconCategory(cat)">
+            {{ cat }}
+          </button>
+        </div>
+
+        <!-- Icons grid -->
+        <div class="icon-picker-grid">
+          <button type="button"
+                  *ngFor="let icon of filteredIcons"
+                  class="icon-picker-grid__item"
+                  [class.icon-picker-grid__item--selected]="group.get(field.name)?.value === icon"
+                  (click)="selectIcon(icon)"
+                  [attr.aria-label]="icon"
+                  [matTooltip]="icon">
+            <mat-icon>{{ icon }}</mat-icon>
+          </button>
+          <p *ngIf="filteredIcons.length === 0" class="icon-picker-empty">
+            No se encontraron íconos para "{{ iconSearch }}"
+          </p>
+        </div>
+
+        <mat-error *ngIf="group.get(field.name)?.touched && group.get(field.name)?.hasError('required')">
+          Debe seleccionar un ícono
+        </mat-error>
+      </div>
+
+      <!-- Unsupported -->
+      <div *ngSwitchDefault class="unsupported-field">
+        <p>Tipo de campo no soportado: {{ field.type }}</p>
+      </div>
+
+    </ng-container>
+  </ng-container>
+</ng-container>

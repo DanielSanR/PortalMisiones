@@ -1,0 +1,240 @@
+// ==========================================================================
+// Portal Provincial de Tramites - Misiones
+// Design Tokens / CSS Custom Properties
+// ==========================================================================
+// Paleta institucional azul — Subsecretaría de Gobierno Inteligente.
+// Primary: #2F6EB1 | Buttons/Icons: #3B82C4
+// Tipografía: Oak Sans
+// Contraste verificado WCAG 2.1 AA en todas las combinaciones texto/fondo.
+// ==========================================================================
+
+:root {
+  // ---------------------------------------------------------------------------
+  // Primary — Azul Institucional Misiones
+  // ---------------------------------------------------------------------------
+  --theme-primary-50: #E8F1FA;
+  --theme-primary-100: #C5DCF2;
+  --theme-primary-200: #9EC4E8;
+  --theme-primary-300: #77ABDE;
+  --theme-primary-400: #5A98D6;
+  --theme-primary-500: #3B82C4;
+  --theme-primary-600: #2F6EB1;
+  --theme-primary-700: #245A95;
+  --theme-primary-800: #1A4779;
+  --theme-primary-900: #0F335D;
+
+  --theme-primary: #2F6EB1;
+  --theme-primary-dark: #245A95;
+  --theme-primary-darker: #1A4779;
+  --theme-primary-light: #3B82C4;
+  --theme-primary-lighter: #5A98D6;
+  --theme-primary-contrast: #FFFFFF;
+
+  // ---------------------------------------------------------------------------
+  // Accent — Azul claro (botones, iconos)
+  // ---------------------------------------------------------------------------
+  --theme-accent-50: #EAF2FB;
+  --theme-accent-100: #C9DEF4;
+  --theme-accent-200: #A5C9EC;
+  --theme-accent-300: #81B4E4;
+  --theme-accent-400: #66A4DE;
+  --theme-accent-500: #3B82C4;
+  --theme-accent-600: #3375B3;
+  --theme-accent-700: #2A6399;
+  --theme-accent-800: #215180;
+
+  --theme-accent: #3B82C4;
+  --theme-accent-light: #5A98D6;
+  --theme-accent-dark: #2F6EB1;
+  --theme-accent-contrast: #FFFFFF;
+
+  // ---------------------------------------------------------------------------
+  // Warn / Destructive
+  // ---------------------------------------------------------------------------
+  --theme-warn: #D32F2F;
+  --theme-warn-light: #EF5350;
+  --theme-warn-dark: #B71C1C;
+  --theme-warn-contrast: #FFFFFF;
+
+  // ---------------------------------------------------------------------------
+  // Neutral — Grays
+  // ---------------------------------------------------------------------------
+  --theme-neutral-50: #FAFAFA;
+  --theme-neutral-100: #F5F5F5;
+  --theme-neutral-200: #EEEEEE;
+  --theme-neutral-300: #E0E0E0;
+  --theme-neutral-400: #BDBDBD;
+  --theme-neutral-500: #9E9E9E;
+  --theme-neutral-600: #757575;
+  --theme-neutral-700: #616161;
+  --theme-neutral-800: #424242;
+  --theme-neutral-900: #212121;
+
+  // ---------------------------------------------------------------------------
+  // Backgrounds
+  // ---------------------------------------------------------------------------
+  --theme-bg-primary: #FFFFFF;
+  --theme-bg-secondary: #F4F6F8;
+  --theme-bg-card: #FFFFFF;
+  --theme-bg-sidebar: #0F335D;
+  --theme-bg-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --theme-bg-sidebar-active: rgba(255, 255, 255, 0.20);
+  --theme-bg-header: #2F6EB1;
+  --theme-bg-input: #FFFFFF;
+  --theme-bg-table-header: #F4F6F8;
+  --theme-bg-table-hover: #F0F5FA;
+  --theme-bg-table-stripe: #F7FAFE;
+  --theme-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  // ---------------------------------------------------------------------------
+  // Text
+  // ---------------------------------------------------------------------------
+  --theme-text-primary: #1A1A2E;
+  --theme-text-secondary: #5F6368;
+  --theme-text-tertiary: #9AA0A6;
+  --theme-text-disabled: #BDBDBD;
+  --theme-text-on-primary: #FFFFFF;
+  --theme-text-on-accent: #FFFFFF;
+  --theme-text-on-dark: rgba(255, 255, 255, 0.92);
+  --theme-text-on-dark-secondary: rgba(255, 255, 255, 0.75);
+  --theme-text-link: #2F6EB1;
+
+  // ---------------------------------------------------------------------------
+  // Borders
+  // ---------------------------------------------------------------------------
+  --theme-border-primary: #E0E0E0;
+  --theme-border-secondary: #EEEEEE;
+  --theme-border-focus: #2F6EB1;
+  --theme-border-input: rgba(229, 231, 235, 1);
+
+  // ---------------------------------------------------------------------------
+  // Form-specific tokens
+  // ---------------------------------------------------------------------------
+  --theme-form-input-border: 1px solid rgba(229, 231, 235, 1);
+  --theme-form-input-text: rgba(10, 10, 10, 0.50);
+  --theme-form-separator: 2px solid #2F6EB1;
+  --theme-form-btn: #3B82C4;
+  --theme-form-icon: #3B82C4;
+
+  // ---------------------------------------------------------------------------
+  // Semantic / State Colors
+  // ---------------------------------------------------------------------------
+  --theme-success: #16A34A;
+  --theme-success-bg: #F0FDF4;
+  --theme-error: #D32F2F;
+  --theme-error-bg: #FFEBEE;
+  --theme-warning: #F57C00;
+  --theme-warning-bg: #FFF3E0;
+  --theme-info: #2F6EB1;
+  --theme-info-bg: #E8F1FA;
+
+  // ---------------------------------------------------------------------------
+  // Estado de Tramites — colores accesibles con contraste >= 4.5:1
+  // ---------------------------------------------------------------------------
+  --theme-estado-borrador-bg: #FFF3E0;
+  --theme-estado-borrador-text: #BF360C;
+  --theme-estado-borrador-border: #FFCC80;
+  --theme-estado-borrador-icon: #E65100;
+
+  --theme-estado-revision-bg: #E8F1FA;
+  --theme-estado-revision-text: #1A4779;
+  --theme-estado-revision-border: #9EC4E8;
+  --theme-estado-revision-icon: #2F6EB1;
+
+  --theme-estado-publicado-bg: #F0FDF4;
+  --theme-estado-publicado-text: #166534;
+  --theme-estado-publicado-border: #86EFAC;
+  --theme-estado-publicado-icon: #16A34A;
+
+  --theme-estado-despublicado-bg: #FFEBEE;
+  --theme-estado-despublicado-text: #B71C1C;
+  --theme-estado-despublicado-border: #EF9A9A;
+  --theme-estado-despublicado-icon: #C62828;
+
+  // ---------------------------------------------------------------------------
+  // Spacing (8px grid system)
+  // ---------------------------------------------------------------------------
+  --theme-space-2xs: 2px;
+  --theme-space-xs: 4px;
+  --theme-space-sm: 8px;
+  --theme-space-md: 16px;
+  --theme-space-lg: 24px;
+  --theme-space-xl: 32px;
+  --theme-space-2xl: 48px;
+  --theme-space-3xl: 64px;
+
+  // ---------------------------------------------------------------------------
+  // Typography
+  // ---------------------------------------------------------------------------
+  --theme-font-family: 'Oak Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --theme-font-size-2xs: 0.6875rem;   // 11px
+  --theme-font-size-xs: 0.75rem;      // 12px
+  --theme-font-size-sm: 0.8125rem;    // 13px
+  --theme-font-size-base: 0.875rem;   // 14px — body default
+  --theme-font-size-md: 1rem;         // 16px
+  --theme-font-size-lg: 1.125rem;     // 18px
+  --theme-font-size-xl: 1.25rem;      // 20px
+  --theme-font-size-2xl: 1.5rem;      // 24px
+  --theme-font-size-3xl: 1.875rem;    // 30px
+
+  --theme-font-weight-light: 300;
+  --theme-font-weight-normal: 400;
+  --theme-font-weight-medium: 500;
+  --theme-font-weight-semibold: 600;
+  --theme-font-weight-bold: 700;
+
+  --theme-line-height-tight: 1.25;
+  --theme-line-height-normal: 1.5;
+  --theme-line-height-relaxed: 1.75;
+
+  // ---------------------------------------------------------------------------
+  // Border Radius
+  // ---------------------------------------------------------------------------
+  --theme-radius-xs: 2px;
+  --theme-radius-sm: 4px;
+  --theme-radius-md: 8px;
+  --theme-radius-lg: 12px;
+  --theme-radius-xl: 16px;
+  --theme-radius-2xl: 20px;
+  --theme-radius-full: 9999px;
+
+  // ---------------------------------------------------------------------------
+  // Shadows (softer, more professional)
+  // ---------------------------------------------------------------------------
+  --theme-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --theme-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --theme-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --theme-shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --theme-shadow-dialog: 0 24px 48px rgba(0, 0, 0, 0.16), 0 8px 16px rgba(0, 0, 0, 0.08);
+
+  // ---------------------------------------------------------------------------
+  // Layout
+  // ---------------------------------------------------------------------------
+  --theme-sidebar-width: 264px;
+  --theme-sidebar-collapsed-width: 64px;
+  --theme-header-height: 64px;
+  --theme-header-height-mobile: 56px;
+  --theme-content-max-width: 1400px;
+  --theme-form-max-width: 1200px;
+
+  // ---------------------------------------------------------------------------
+  // Transitions
+  // ---------------------------------------------------------------------------
+  --theme-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  // ---------------------------------------------------------------------------
+  // Z-Index Scale
+  // ---------------------------------------------------------------------------
+  --theme-z-dropdown: 100;
+  --theme-z-sticky: 200;
+  --theme-z-header: 1000;
+  --theme-z-sidebar: 1100;
+  --theme-z-overlay: 1200;
+  --theme-z-modal: 1300;
+  --theme-z-toast: 1400;
+}

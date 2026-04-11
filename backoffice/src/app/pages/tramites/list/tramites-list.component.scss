@@ -1,0 +1,96 @@
+ .Filtros {
+   display: flex;
+   gap: var(--theme-space-md);
+   padding: var(--theme-space-md) var(--theme-space-lg);
+   background: var(--theme-bg-card);
+   border-radius: var(--theme-radius-lg);
+   box-shadow: var(--theme-shadow-card);
+   border: 1px solid var(--theme-border-secondary);
+   margin-bottom: var(--theme-space-md);
+   flex-wrap: wrap;
+   align-items: flex-start;
+
+   @media (max-width: 767px) {
+     flex-direction: column;
+     padding: var(--theme-space-md);
+   }
+
+   &-field {
+     flex: 1;
+     min-width: 200px;
+
+     @media (max-width: 767px) {
+       min-width: 100%;
+     }
+   }
+ }
+
+ .tramite-titulo-cell {
+   display: flex;
+   align-items: center;
+   gap: var(--theme-space-sm);
+ }
+
+ .tramite-icono {
+   font-size: 24px;
+   width: 24px;
+   height: 24px;
+   color: var(--theme-primary);
+   flex-shrink: 0;
+ }
+
+ .star-icon {
+   color: #F9A825;
+   font-size: 18px;
+   width: 18px;
+   height: 18px;
+ }
+
+ .text-secondary {
+   color: var(--theme-text-secondary);
+   font-size: var(--theme-font-size-xs);
+   display: block;
+   margin-top: 2px;
+ }
+
+ .estado-badge {
+   display: inline-flex;
+   align-items: center;
+   padding: 4px 14px;
+   border-radius: var(--theme-radius-full);
+   font-size: var(--theme-font-size-xs);
+   font-weight: var(--theme-font-weight-semibold);
+   white-space: nowrap;
+   letter-spacing: 0.01em;
+
+   &[data-estado="borrador"] {
+     background: var(--theme-estado-borrador-bg);
+     color: var(--theme-estado-borrador-text);
+     border: 1px solid var(--theme-estado-borrador-border);
+   }
+
+   &[data-estado="revision"] {
+     background: var(--theme-estado-revision-bg);
+     color: var(--theme-estado-revision-text);
+     border: 1px solid var(--theme-estado-revision-border);
+   }
+
+   &[data-estado="publicado"] {
+     background: var(--theme-estado-publicado-bg);
+     color: var(--theme-estado-publicado-text);
+     border: 1px solid var(--theme-estado-publicado-border);
+   }
+
+   &[data-estado="despublicado"] {
+     background: var(--theme-estado-despublicado-bg);
+     color: var(--theme-estado-despublicado-text);
+     border: 1px solid var(--theme-estado-despublicado-border);
+   }
+ }
+
+
+ mat-divider {
+   margin: 4px 0;
+ }
+
+  

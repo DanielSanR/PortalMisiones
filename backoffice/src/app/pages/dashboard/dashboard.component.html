@@ -1,0 +1,75 @@
+<app-page-header title="Dashboard" subtitle="Resumen general del portal"></app-page-header>
+
+<div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+</div>
+
+<ng-container *ngIf="!loading">
+    <!-- Metric Cards -->
+    <div class="metrics-grid">
+        <mat-card *ngFor="let card of metricCards" class="metric-card">
+            <mat-card-content>
+                <div class="metric-card__icon" [style.background-color]="card.color + '20'" [style.color]="card.color">
+                    <mat-icon>{{ card.icon }}</mat-icon>
+                </div>
+                <div class="metric-card__info">
+                    <span class="metric-card__value">{{ card.value }}</span>
+                    <span class="metric-card__label">{{ card.label }}</span>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="tables-grid">
+        <!-- Top Trámites -->
+        <mat-card class="data-card">
+            <mat-card-header>
+                <mat-card-title>Trámites más consultados</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <table mat-table [dataSource]="topTramites" class="full-width">
+                    <ng-container matColumnDef="titulo">
+                        <th mat-header-cell *matHeaderCellDef>Trámite</th>
+                        <td mat-cell *matCellDef="let row">{{ row.titulo }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="consultas">
+                        <th mat-header-cell *matHeaderCellDef>Consultas</th>
+                        <td mat-cell *matCellDef="let row">
+                            <strong>{{ row.consultas }}</strong>
+                        </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="['titulo', 'consultas']"></tr>
+                    <tr mat-row *matRowDef="let row; columns: ['titulo', 'consultas']"></tr>
+                </table>
+            </mat-card-content>
+        </mat-card>
+
+        <!-- Top Búsquedas -->
+        <mat-card class="data-card">
+            <mat-card-header>
+                <mat-card-title>Búsquedas frecuentes</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <table mat-table [dataSource]="topBusquedas" class="full-width">
+                    <ng-container matColumnDef="termino">
+                        <th mat-header-cell *matHeaderCellDef>Término</th>
+                        <td mat-cell *matCellDef="let row">{{ row.termino }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="cantidad">
+                        <th mat-header-cell *matHeaderCellDef>Cantidad</th>
+                        <td mat-cell *matCellDef="let row">{{ row.cantidad }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="sinResultados">
+                        <th mat-header-cell *matHeaderCellDef>Sin resultados</th>
+                        <td mat-cell *matCellDef="let row">
+                            <mat-icon *ngIf="row.sinResultados" class="warning-icon">warning</mat-icon>
+                        </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="['termino', 'cantidad', 'sinResultados']"></tr>
+                    <tr mat-row *matRowDef="let row; columns: ['termino', 'cantidad', 'sinResultados']"></tr>
+                </table>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</ng-container>
