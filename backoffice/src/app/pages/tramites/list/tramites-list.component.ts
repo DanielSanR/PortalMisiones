@@ -17,11 +17,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { TramitePreviewComponent } from '../../../shared/components/tramite-preview/tramite-preview.component';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { EstadoBadgePipe } from '../../../shared/pipes/estado-badge.pipe';
 import { TramiteService } from '../../../core/services/tramite.service';
 import { OrganismoService } from '../../../core/services/organismo.service';
-import { Tramite, TramiteFilter, Organismo } from '../../../core/models/tramite.model';
+import { LocalidadService } from '../../../core/services/localidad.service';
+import { Tramite, TramiteFilter, Organismo, Localidad } from '../../../core/models/tramite.model';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { UserRole } from '../../../core/enums/user-role.enum';
 
@@ -51,6 +53,7 @@ import { UserRole } from '../../../core/enums/user-role.enum';
 export class TramitesListComponent implements OnInit {
   tramites: Tramite[] = [];
   organismos: Organismo[] = [];
+  localidades: Localidad[] = [];
   loading = true;
   totalItems = 0;
   currentPage = 0;
@@ -72,6 +75,7 @@ export class TramitesListComponent implements OnInit {
     private fb: FormBuilder,
     private tramiteService: TramiteService,
     private organismoService: OrganismoService,
+    private localidadService: LocalidadService,
     private authTokenService: AuthTokenService,
     private router: Router,
     private dialog: MatDialog,
@@ -81,6 +85,7 @@ export class TramitesListComponent implements OnInit {
       search: [''],
       organismoId: [''],
       estado: [''],
+      localidadId: [''],
     });
 
     this.isSuperAdmin = this.authTokenService.getUserRole() === UserRole.SUPERADMIN;
@@ -113,6 +118,15 @@ export class TramitesListComponent implements OnInit {
 
     this.loadTramites();
     this.loadOrganismos();
+    this.loadLocalidades();
+  }
+
+  loadLocalidades(): void {
+    this.localidadService.getAll().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (response) => (this.localidades = response.data),
+    });
   }
 
   loadTramites(): void {
@@ -156,6 +170,16 @@ export class TramitesListComponent implements OnInit {
 
   onView(tramite: Tramite): void {
     this.router.navigate(['/dashboard/tramites/detalle', tramite.id]);
+  }
+
+  onPreview(tramite: Tramite): void {
+    this.dialog.open(TramitePreviewComponent, {
+      data: tramite,
+      width: '95vw',
+      maxWidth: '1100px',
+      maxHeight: '90vh',
+      panelClass: 'preview-dialog-panel',
+    });
   }
 
   onSendToReview(tramite: Tramite): void {

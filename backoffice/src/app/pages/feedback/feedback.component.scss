@@ -1,0 +1,194 @@
+// ── Stats Cards ─────────────────────────────────────────────
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--theme-space-md);
+  margin-bottom: var(--theme-space-lg);
+}
+
+.stat-card {
+  .mat-mdc-card-content {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-md);
+    padding: 18px var(--theme-space-md);
+  }
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--theme-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .mat-icon {
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
+    }
+
+    &--total     { background: #3B82F618; color: #3B82F6; }
+    &--util      { background: #16A34A18; color: #16A34A; }
+    &--noUtil    { background: #F4433618; color: #F44336; }
+    &--comentario { background: #F59E0B18; color: #F59E0B; }
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__value {
+    font-size: var(--theme-font-size-2xl);
+    font-weight: var(--theme-font-weight-bold);
+    line-height: 1;
+    color: var(--theme-text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  &__label {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+    margin-top: 6px;
+    font-weight: var(--theme-font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+// ── Filtros ──────────────────────────────────────────────────
+
+.filters-card {
+  background: var(--theme-bg-card);
+  border-radius: var(--theme-radius-lg);
+  box-shadow: var(--theme-shadow-card);
+  border: 1px solid var(--theme-border-secondary);
+  padding: var(--theme-space-md) var(--theme-space-lg);
+  margin-bottom: var(--theme-space-lg);
+}
+
+.filters-row {
+  display: flex;
+  gap: var(--theme-space-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-search {
+  flex: 1;
+  min-width: 250px;
+}
+
+.filter-select { width: 160px; }
+.filter-date   { width: 170px; }
+
+// ── Tabla ────────────────────────────────────────────────────
+
+.table-container {
+  background: var(--theme-bg-card);
+  border-radius: var(--theme-radius-lg);
+  box-shadow: var(--theme-shadow-card);
+  border: 1px solid var(--theme-border-secondary);
+  overflow: hidden;
+
+  @media (max-width: 767px) { overflow-x: auto; }
+}
+
+.full-width { width: 100%; }
+
+.col-util  { width: 110px; }
+.col-fecha { width: 150px; white-space: nowrap; }
+
+// Chip útil/no útil
+.util-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--theme-radius-full);
+  font-size: var(--theme-font-size-xs);
+  font-weight: var(--theme-font-weight-semibold);
+  border: 1px solid transparent;
+
+  &--si {
+    background: var(--theme-estado-publicado-bg);
+    color: var(--theme-estado-publicado-text);
+    border-color: #16A34A30;
+  }
+
+  &--no {
+    background: var(--theme-estado-error-bg, #FEE2E2);
+    color: var(--theme-error, #DC2626);
+    border-color: #F4433630;
+  }
+}
+
+.util-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+// Tramite cell
+.tramite-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.organismo-label {
+  font-size: var(--theme-font-size-xs);
+  color: var(--theme-text-secondary);
+}
+
+// Comentario
+.comentario-text {
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 440px;
+  cursor: default;
+}
+
+.sin-comentario {
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-sm);
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--theme-space-2xl);
+  color: var(--theme-text-secondary);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: var(--theme-space-sm);
+    opacity: 0.5;
+  }
+}
+
+// ── Responsive ───────────────────────────────────────────────
+
+@media (max-width: 767px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--theme-space-sm);
+  }
+
+  .filter-select,
+  .filter-date {
+    width: 100%;
+  }
+}

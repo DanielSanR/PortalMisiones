@@ -11,6 +11,15 @@ import { TramiteDetailComponent } from './tramites/detail/tramite-detail.compone
 import { OrganismosListComponent } from './organismos/list/organismos-list.component';
 import { OrganismoFormComponent } from './organismos/create/organismo-form.component';
 import { UsuariosListComponent } from './usuarios/list/usuarios-list.component';
+import { EtiquetasListComponent } from './etiquetas/list/etiquetas-list.component';
+import { EtiquetaFormComponent } from './etiquetas/create/etiqueta-form.component';
+import { ModalidadesListComponent } from './modalidades/list/modalidades-list.component';
+import { ModalidadFormComponent } from './modalidades/create/modalidad-form.component';
+import { AuditoriaListComponent } from './auditoria/auditoria-list.component';
+import { EventosDeVidaListComponent } from './eventos-de-vida/list/eventos-de-vida-list.component';
+import { EventoDeVidaFormComponent } from './eventos-de-vida/create/evento-de-vida-form.component';
+import { FeedbackComponent } from './feedback/feedback.component';
+import { UsuarioFormComponent } from './usuarios/create/usuario-form.component';
 
 const routes: Routes = [
   {
@@ -45,15 +54,103 @@ const routes: Routes = [
         data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
       },
 
-      // Usuarios (superadmin + admin_organismo)
+      // Auditoría (solo superadmin)
       {
-        path: 'usuarios/lista',
-        component: UsuariosListComponent,
+        path: 'auditoria',
+        component: AuditoriaListComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+
+      // Modalidades (solo superadmin)
+      {
+        path: 'modalidades/lista',
+        component: ModalidadesListComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'modalidades/nuevo',
+        component: ModalidadFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'modalidades/editar/:id',
+        component: ModalidadFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+
+      // Etiquetas (solo superadmin)
+      {
+        path: 'etiquetas/lista',
+        component: EtiquetasListComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'etiquetas/nuevo',
+        component: EtiquetaFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'etiquetas/editar/:id',
+        component: EtiquetaFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+
+      // Feedback Ciudadano (superadmin + admin_organismo)
+      {
+        path: 'feedback',
+        component: FeedbackComponent,
         canActivate: [roleGuard],
         data: {
           allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
           redirectTo: '/dashboard/home',
         },
+      },
+
+      // Eventos de Vida (solo superadmin)
+      {
+        path: 'eventos-de-vida/lista',
+        component: EventosDeVidaListComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'eventos-de-vida/nuevo',
+        component: EventoDeVidaFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'eventos-de-vida/editar/:id',
+        component: EventoDeVidaFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+
+      // Usuarios (superadmin + admin_organismo)
+      {
+        path: 'usuarios/lista',
+        component: UsuariosListComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'usuarios/nuevo',
+        component: UsuarioFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'usuarios/editar/:id',
+        component: UsuarioFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO], redirectTo: '/dashboard/home' },
       },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },

@@ -1,0 +1,125 @@
+<app-page-header
+  title="Feedback Ciudadano"
+  [subtitle]="tramiteIdFijo ? 'Filtrando por trámite seleccionado' : 'Opiniones de los ciudadanos sobre los trámites del portal'">
+  <button mat-stroked-button *ngIf="hasFilters()" (click)="clearFilters()">
+    <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
+  </button>
+</app-page-header>
+
+<!-- ── Stats Cards ── -->
+<div class="stats-grid" *ngIf="stats">
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-card__icon stat-card__icon--total"><mat-icon>forum</mat-icon></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.total }}</span>
+        <span class="stat-card__label">Respuestas totales</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-card__icon stat-card__icon--util"><mat-icon>thumb_up</mat-icon></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.porcentajeUtil }}%</span>
+        <span class="stat-card__label">Consideraron útil el trámite</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-card__icon stat-card__icon--noUtil"><mat-icon>thumb_down</mat-icon></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.totalNoUtil }}</span>
+        <span class="stat-card__label">Opiniones negativas</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-card__icon stat-card__icon--comentario"><mat-icon>comment</mat-icon></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.totalConComentario }}</span>
+        <span class="stat-card__label">Con comentario escrito</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<!-- ── Filtros ── -->
+<div class="filters-card">
+  <form [formGroup]="filterForm" class="filters-row">
+    <mat-form-field appearance="outline" class="filter-search">
+      <mat-label>Buscar trámite u organismo</mat-label>
+      <input matInput formControlName="search" placeholder="Ej: BEEG, IPS...">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>Valoración</mat-label>
+      <mat-select formControlName="esUtil">
+        <mat-option value="">Todas</mat-option>
+        <mat-option [value]="true">Útil</mat-option>
+        <mat-option [value]="false">No útil</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-date">
+      <mat-label>Desde</mat-label>
+      <input matInput [matDatepicker]="pickerDesde" formControlName="fechaDesde" readonly>
+      <mat-datepicker-toggle matSuffix [for]="pickerDesde"></mat-datepicker-toggle>
+      <mat-datepicker #pickerDesde></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-date">
+      <mat-label>Hasta</mat-label>
+      <input matInput [matDatepicker]="pickerHasta" formControlName="fechaHasta" readonly>
+      <mat-datepicker-toggle matSuffix [for]="pickerHasta"></mat-datepicker-toggle>
+      <mat-datepicker #pickerHasta></mat-datepicker>
+    </mat-form-field>
+  </form>
+</div>
+
+<!-- ── Tabla ── -->
+<app-shared-table
+    [data]="registros"
+    [columns]="columns"
+    [loading]="loading"
+    [paginated]="true"
+    [totalItems]="totalItems"
+    [pageSize]="pageSize"
+    [pageIndex]="currentPage"
+    [pageSizeOptions]="[5, 10, 25]"
+    emptyMessage="No se encontraron registros de feedback"
+    emptyIcon="forum"
+    (pageChange)="onPageChange($event)">
+
+    <ng-template appTableCell="util" let-row>
+        <span class="util-chip" [class.util-chip--si]="row.esUtil" [class.util-chip--no]="!row.esUtil">
+            <mat-icon class="util-icon">{{ row.esUtil ? 'thumb_up' : 'thumb_down' }}</mat-icon>
+            {{ row.esUtil ? 'Útil' : 'No útil' }}
+        </span>
+    </ng-template>
+
+    <ng-template appTableCell="tramite" let-row>
+        <div class="tramite-info">
+            <strong>{{ row.tramiteTitulo }}</strong>
+            <span class="organismo-label">{{ row.organismoNombre }}</span>
+        </div>
+    </ng-template>
+
+    <ng-template appTableCell="comentario" let-row>
+        <span *ngIf="row.comentario" class="comentario-text" [matTooltip]="row.comentario">
+            {{ row.comentario }}
+        </span>
+        <span *ngIf="!row.comentario" class="sin-comentario">—</span>
+    </ng-template>
+
+    <ng-template appTableCell="fecha" let-row>
+        {{ row.fechaFeedback | date:'dd/MM/yyyy HH:mm' }}
+    </ng-template>
+
+</app-shared-table>

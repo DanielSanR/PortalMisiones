@@ -11,6 +11,8 @@ export interface Tramite {
   estado: TramiteEstado;
   destacado: boolean;
   etiquetas: Etiqueta[];
+  localidades?: Pick<Localidad, 'id' | 'nombre'>[];
+  eventosDeVida?: Pick<EventoDeVida, 'id' | 'nombre'>[];
   organismo?: Organismo;
   modalidad?: Modalidad;
   createdAt: string;
@@ -28,6 +30,8 @@ export interface TramiteCreate {
   modalidadId: number;
   icono: string;
   etiquetaIds: number[];
+  localidadIds?: number[];
+  eventoDeVidaIds?: number[];
   destacado?: boolean;
 }
 
@@ -41,6 +45,7 @@ export interface TramiteFilter {
   modalidadId?: number;
   estado?: TramiteEstado;
   etiquetaId?: number;
+  localidadId?: number;
   destacado?: boolean;
   page?: number;
   pageSize?: number;
@@ -67,13 +72,87 @@ export interface OrganismoCreate {
 
 export interface Modalidad {
   id: number;
-  nombre: 'Digital' | 'Presencial' | 'Mixto';
+  nombre: string;
+  descripcion: string | null;
+  icono: string;
+  color: string;
+  activo: boolean;
+  tramitesCount?: number;
+}
+
+export interface ModalidadCreate {
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  color?: string;
+}
+
+export interface ModalidadUpdate extends Partial<ModalidadCreate> {
+  activo?: boolean;
 }
 
 export interface Etiqueta {
   id: number;
   nombre: string;
+  slug: string;
   categoria: string;
+  icono: string;
+  color: string;
+  activo: boolean;
+  tramitesCount?: number;
+}
+
+export interface EtiquetaCreate {
+  nombre: string;
+  categoria: string;
+  icono?: string;
+  color?: string;
+}
+
+export interface EtiquetaUpdate extends Partial<EtiquetaCreate> {
+  activo?: boolean;
+}
+
+export interface Localidad {
+  id: number;
+  nombre: string;
+  departamento: string;
+  codigoPostal: string | null;
+  activo: boolean;
+  tramitesCount?: number;
+}
+
+export interface LocalidadCreate {
+  nombre: string;
+  departamento: string;
+  codigoPostal?: string;
+}
+
+export interface LocalidadUpdate extends Partial<LocalidadCreate> {
+  activo?: boolean;
+}
+
+export interface EventoDeVida {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  icono: string;
+  color: string;
+  activo: boolean;
+  tramitesCount?: number;
+  tramites?: Pick<Tramite, 'id' | 'titulo'>[];
+}
+
+export interface EventoDeVidaCreate {
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  color?: string;
+  tramiteIds?: string[];
+}
+
+export interface EventoDeVidaUpdate extends Partial<EventoDeVidaCreate> {
+  activo?: boolean;
 }
 
 export interface PaginatedResponse<T> {

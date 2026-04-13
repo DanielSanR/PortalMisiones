@@ -30,6 +30,16 @@
             <mat-option value="despublicado">Despublicado</mat-option>
         </mat-select>
     </mat-form-field>
+
+    <mat-form-field appearance="outline" class="Filtros-field">
+        <mat-label>Localidad</mat-label>
+        <mat-select formControlName="localidadId">
+            <mat-option value="">Todas</mat-option>
+            <mat-option *ngFor="let loc of localidades" [value]="loc.id">
+                {{ loc.nombre }}
+            </mat-option>
+        </mat-select>
+    </mat-form-field>
 </div>
 
 <!-- Table -->
@@ -90,6 +100,9 @@
             </button>
             <button mat-menu-item (click)="onView(row)">
                 <mat-icon>visibility</mat-icon> Ver detalle
+            </button>
+            <button mat-menu-item (click)="onPreview(row)">
+                <mat-icon>preview</mat-icon> Vista previa
             </button>
             <mat-divider></mat-divider>
             <button mat-menu-item *ngIf="row.estado === 'borrador'" (click)="onSendToReview(row)">

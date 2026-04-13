@@ -1,0 +1,341 @@
+// ── Toolbar ──────────────────────────────────────────
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-md);
+  padding: 12px 20px;
+  background: var(--theme-bg-sidebar);
+  color: white;
+  border-radius: var(--theme-radius-lg) var(--theme-radius-lg) 0 0;
+}
+
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-weight: var(--theme-font-weight-medium);
+  font-size: var(--theme-font-size-sm);
+}
+
+.view-toggle {
+  .mat-button-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+
+    &.mat-button-toggle-checked {
+      background: rgba(255, 255, 255, 0.25);
+      color: white;
+    }
+  }
+}
+
+// ── Frame ────────────────────────────────────────────
+.preview-frame {
+  background: #FFFFFF;
+  max-width: 1024px;
+  margin: 0 auto;
+  font-family: 'Poppins', 'Oak Sans', sans-serif;
+  transition: max-width 0.3s ease;
+  overflow-y: auto;
+  max-height: 70vh;
+
+  &.mobile {
+    max-width: 375px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 16px auto;
+
+    .portal-nav-links { display: none; }
+    .portal-hero-title { font-size: 18px; }
+    .portal-info-bar { flex-direction: column; }
+    .portal-search-bar input { font-size: 13px; }
+    .portal-title { font-size: 18px; }
+    .portal-content { padding: 16px; }
+    .portal-breadcrumb { padding: 12px 16px; font-size: 11px; }
+  }
+}
+
+// ── Hero ─────────────────────────────────────────────
+.portal-hero {
+  background: linear-gradient(135deg, #1A4779 0%, #2F6EB1 50%, #4A90D9 100%);
+  color: white;
+  padding: 24px 40px 32px;
+  position: relative;
+}
+
+.portal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.portal-logo {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.portal-nav-links {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.portal-hero-title {
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.portal-search-bar {
+  display: flex;
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+
+  input {
+    flex: 1;
+    border: none;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #333;
+    outline: none;
+  }
+}
+
+.portal-search-btn {
+  background: #2F6EB1;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: default;
+}
+
+// ── Breadcrumb ───────────────────────────────────────
+.portal-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 40px;
+  font-size: 12px;
+  color: #666;
+  border-bottom: 1px solid #eee;
+}
+
+.breadcrumb-sep {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #bbb;
+}
+
+.breadcrumb-current {
+  color: #2F6EB1;
+  font-weight: 500;
+}
+
+// ── Content ──────────────────────────────────────────
+.portal-content {
+  padding: 24px 40px 32px;
+}
+
+.portal-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.portal-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.portal-modalidad {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #E8F1FA;
+  color: #1A4779;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// ── Info bar ─────────────────────────────────────────
+.portal-info-bar {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+
+  mat-icon {
+    color: #2F6EB1;
+    margin-top: 2px;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.info-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+// ── Description ──────────────────────────────────────
+.portal-description {
+  margin-bottom: 12px;
+
+  p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+  }
+}
+
+.portal-description-long {
+  margin-bottom: 20px;
+
+  p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #555;
+    white-space: pre-wrap;
+    margin: 0;
+  }
+}
+
+// ── Tags ─────────────────────────────────────────────
+.portal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.portal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  background: white;
+}
+
+.tag-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+// ── Steps ────────────────────────────────────────────
+.portal-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.step-item {
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: default;
+  background: #FAFAFA;
+
+  mat-icon { color: #999; }
+}
+
+// ── CTA ──────────────────────────────────────────────
+.portal-cta {
+  text-align: center;
+  margin: 8px 0 16px;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: #2F6EB1;
+  color: white;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+
+  &:hover { background: #1A4779; }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ── Footer ───────────────────────────────────────────
+.portal-footer {
+  background: #1A4779;
+  color: white;
+  padding: 24px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-logo {
+  font-size: 16px;
+}
+
+.footer-copy {
+  font-size: 12px;
+  opacity: 0.7;
+}

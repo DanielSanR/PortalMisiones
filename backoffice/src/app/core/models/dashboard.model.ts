@@ -3,10 +3,17 @@ export interface DashboardMetrics {
   tramitesPublicados: number;
   tramitesBorrador: number;
   tramitesRevision: number;
+  tramitesDespublicados: number;
   totalOrganismos: number;
   busquedasHoy: number;
   busquedasSinResultado: number;
   satisfaccionPromedio: number;
+}
+
+export interface TramitesPorOrganismo {
+  organismo: string;
+  sigla: string;
+  total: number;
 }
 
 export interface TopTramite {
@@ -21,11 +28,13 @@ export interface TopBusqueda {
   sinResultados: boolean;
 }
 
+export type AuditoriaAccion = 'crear' | 'editar' | 'publicar' | 'despublicar' | 'enviar_revision' | 'eliminar';
+
 export interface AuditoriaTramite {
   id: number;
   tramiteId: string;
   usuarioId: string;
-  accion: 'crear' | 'editar' | 'publicar' | 'despublicar';
+  accion: AuditoriaAccion;
   datosAnteriores: Record<string, unknown> | null;
   datosNuevos: Record<string, unknown> | null;
   fechaAccion: string;
@@ -33,10 +42,41 @@ export interface AuditoriaTramite {
   tramiteTitulo?: string;
 }
 
+export interface AuditoriaFilter {
+  search?: string;
+  accion?: AuditoriaAccion;
+  usuarioId?: string;
+  tramiteId?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export interface FeedbackTramite {
   id: number;
   tramiteId: string;
+  tramiteTitulo?: string;
+  organismoNombre?: string;
   esUtil: boolean;
   comentario: string | null;
   fechaFeedback: string;
+}
+
+export interface FeedbackFilter {
+  search?: string;
+  esUtil?: boolean;
+  tramiteId?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface FeedbackStats {
+  total: number;
+  totalUtil: number;
+  totalNoUtil: number;
+  totalConComentario: number;
+  porcentajeUtil: number;
 }

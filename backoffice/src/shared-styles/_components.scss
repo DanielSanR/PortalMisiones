@@ -22,6 +22,20 @@
 
 } */
 
+// Preview dialog — sin padding ni bordes del dialog
+.preview-dialog-panel {
+  .mat-mdc-dialog-container {
+    padding: 0;
+    border-radius: var(--theme-radius-lg);
+    overflow: hidden;
+  }
+
+  .mat-mdc-dialog-content {
+    padding: 0;
+    max-height: none;
+  }
+}
+
 //presset de estilos para componentes comunes
 /* .FormInput,
 .FormTextarea,

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { DashboardMetrics, TopTramite, TopBusqueda, AuditoriaTramite } from '../models/dashboard.model';
+import { DashboardMetrics, TopTramite, TopBusqueda, AuditoriaTramite, TramitesPorOrganismo } from '../models/dashboard.model';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -30,5 +30,9 @@ export class DashboardService {
     return this.http.get<AuditoriaTramite[]>(`${this.apiUrl}/auditoria`, {
       params: { page: String(page), pageSize: String(pageSize) },
     });
+  }
+
+  getTramitesPorOrganismo(): Observable<TramitesPorOrganismo[]> {
+    return this.http.get<TramitesPorOrganismo[]>(`${this.apiUrl}/tramites-por-organismo`);
   }
 }

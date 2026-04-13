@@ -6,6 +6,7 @@ import { registerLocaleData } from '@angular/common';
 import { LOCALE_ID } from '@angular/core';
 import localeEsAr from '@angular/common/locales/es-AR';
 
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
@@ -21,5 +22,6 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([mockApiInterceptor, authInterceptor, httpErrorInterceptor])
     ),
     { provide: LOCALE_ID, useValue: 'es-AR' },
+    provideCharts(withDefaultRegisterables()),
   ],
 };

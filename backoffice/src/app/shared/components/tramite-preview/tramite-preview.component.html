@@ -1,0 +1,127 @@
+<div class="preview-toolbar">
+  <span class="preview-title">
+    <mat-icon>preview</mat-icon> Vista previa — Portal ciudadano
+  </span>
+  <mat-button-toggle-group [(value)]="viewMode" class="view-toggle">
+    <mat-button-toggle value="desktop">
+      <mat-icon>computer</mat-icon>
+    </mat-button-toggle>
+    <mat-button-toggle value="mobile">
+      <mat-icon>smartphone</mat-icon>
+    </mat-button-toggle>
+  </mat-button-toggle-group>
+  <button mat-icon-button (click)="dialogRef.close()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <div class="preview-frame" [class.mobile]="viewMode === 'mobile'">
+
+    <!-- Hero -->
+    <div class="portal-hero">
+      <div class="portal-nav">
+        <span class="portal-logo">MISIONES</span>
+        <div class="portal-nav-links">
+          <span>Inicio</span>
+          <span>Trámites</span>
+          <span>Temas</span>
+          <span>Organismos</span>
+        </div>
+      </div>
+      <h1 class="portal-hero-title">¿Qué trámite necesitás hacer hoy?</h1>
+      <div class="portal-search-bar">
+        <input type="text" [value]="tramite.titulo" readonly>
+        <button class="portal-search-btn">Buscar</button>
+      </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="portal-breadcrumb">
+      <span>Inicio</span>
+      <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+      <span>{{ tramite.organismo?.nombre || 'Organismo' }}</span>
+      <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+      <span class="breadcrumb-current">{{ tramite.titulo }}</span>
+    </div>
+
+    <!-- Content -->
+    <div class="portal-content">
+
+      <!-- Title + Estado -->
+      <div class="portal-title-row">
+        <h2 class="portal-title">{{ tramite.titulo }}</h2>
+        <span class="portal-modalidad" *ngIf="tramite.modalidad">
+          {{ tramite.modalidad.nombre }}
+        </span>
+      </div>
+
+      <!-- Info bar -->
+      <div class="portal-info-bar">
+        <div class="info-item">
+          <mat-icon>business</mat-icon>
+          <div>
+            <span class="info-label">Organismo responsable</span>
+            <span class="info-value">{{ tramite.organismo?.nombre || '-' }}</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <mat-icon>swap_horiz</mat-icon>
+          <div>
+            <span class="info-label">Modalidad</span>
+            <span class="info-value">{{ tramite.modalidad?.nombre || '-' }}</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <mat-icon>people</mat-icon>
+          <div>
+            <span class="info-label">Destinatarios</span>
+            <span class="info-value">Ciudadanos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="portal-description" *ngIf="tramite.resumen">
+        <p>{{ tramite.resumen }}</p>
+      </div>
+
+      <div class="portal-description-long" *ngIf="tramite.descripcionLarga">
+        <p>{{ tramite.descripcionLarga }}</p>
+      </div>
+
+      <!-- Etiquetas -->
+      <div class="portal-tags" *ngIf="tramite.etiquetas?.length">
+        <span class="portal-tag" *ngFor="let etq of tramite.etiquetas"
+              [style.borderColor]="etq.color" [style.color]="etq.color">
+          <mat-icon class="tag-icon" [style.color]="etq.color">{{ etq.icono }}</mat-icon>
+          {{ etq.nombre }}
+        </span>
+      </div>
+
+      <!-- Accordion steps (placeholder) -->
+      <div class="portal-steps">
+        <div class="step-item" *ngFor="let step of ['Requisitos', 'Costos', 'Formularios', 'Ubicación', 'Sitio Web']">
+          <div class="step-header">
+            <span>{{ step }}</span>
+            <mat-icon>expand_more</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="portal-cta">
+        <a class="cta-button" [href]="tramite.urlOficial" target="_blank" rel="noopener">
+          <mat-icon>open_in_new</mat-icon>
+          Iniciar trámite
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="portal-footer">
+      <span class="portal-logo footer-logo">MISIONES</span>
+      <span class="footer-copy">Gobierno de la Provincia de Misiones. &copy; 2026</span>
+    </div>
+  </div>
+</mat-dialog-content>

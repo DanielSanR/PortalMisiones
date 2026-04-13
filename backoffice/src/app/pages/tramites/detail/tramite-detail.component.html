@@ -1,4 +1,7 @@
 <app-page-header [title]="tramite?.titulo || 'Detalle de trámite'" [showBack]="true" (back)="goBack()">
+    <button mat-stroked-button color="primary" (click)="onPreview()">
+        <mat-icon>preview</mat-icon> Vista previa
+    </button>
     <button mat-raised-button color="primary" (click)="onEdit()">
         <mat-icon>edit</mat-icon> Editar
     </button>
@@ -50,6 +53,31 @@
                     <mat-chip *ngFor="let etq of tramite.etiquetas">{{ etq.nombre }}</mat-chip>
                 </mat-chip-set>
             </div>
+            <mat-divider></mat-divider>
+
+            <div class="detail-row" *ngIf="tramite.eventosDeVida?.length">
+                <span class="detail-label">Eventos de Vida</span>
+                <mat-chip-set>
+                    <mat-chip *ngFor="let ev of tramite.eventosDeVida">
+                        <mat-icon matChipAvatar>event_note</mat-icon>
+                        {{ ev.nombre }}
+                    </mat-chip>
+                </mat-chip-set>
+            </div>
+            <mat-divider *ngIf="tramite.eventosDeVida?.length"></mat-divider>
+
+            <div class="detail-row">
+                <span class="detail-label">Disponibilidad</span>
+                <span *ngIf="!tramite.localidades?.length" class="disponibilidad-provincial">
+                    <mat-icon class="disponibilidad-icon">public</mat-icon> Toda la provincia
+                </span>
+                <mat-chip-set *ngIf="tramite.localidades?.length">
+                    <mat-chip *ngFor="let loc of tramite.localidades">
+                        <mat-icon matChipAvatar>location_on</mat-icon>
+                        {{ loc.nombre }}
+                    </mat-chip>
+                </mat-chip-set>
+            </div>
         </mat-card-content>
     </mat-card>
 
@@ -68,6 +96,60 @@
         </mat-card-header>
         <mat-card-content>
             <p class="description-text">{{ tramite.descripcionLarga }}</p>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- ── Feedback Ciudadano ── -->
+    <mat-card class="detail-card feedback-card">
+        <mat-card-header>
+            <mat-card-title>
+                <mat-icon class="section-icon">forum</mat-icon>
+                Feedback ciudadano
+            </mat-card-title>
+            <button mat-stroked-button class="ver-todo-btn" *ngIf="feedbackTotal > feedbackLimit"
+                (click)="goToFeedback()">
+                Ver los {{ feedbackTotal }} registros
+                <mat-icon>arrow_forward</mat-icon>
+            </button>
+        </mat-card-header>
+
+        <mat-card-content>
+            <!-- Stats mini -->
+            <div class="feedback-stats" *ngIf="feedbackTotal > 0">
+                <div class="feedback-stat">
+                    <span class="feedback-stat__value">{{ feedbackTotal }}</span>
+                    <span class="feedback-stat__label">Respuestas</span>
+                </div>
+                <div class="feedback-stat">
+                    <span class="feedback-stat__value feedback-stat__value--util">{{ feedbackPorcentajeUtil }}%</span>
+                    <span class="feedback-stat__label">Lo encontraron útil</span>
+                </div>
+                <div class="feedback-stat">
+                    <span class="feedback-stat__value">{{ feedbackTotal - feedbackUtil }}</span>
+                    <span class="feedback-stat__label">Opiniones negativas</span>
+                </div>
+            </div>
+
+            <!-- Lista de respuestas -->
+            <ul class="feedback-list" *ngIf="feedbackItems.length">
+                <li *ngFor="let fb of feedbackItems" class="feedback-item">
+                    <span class="util-chip" [class.util-chip--si]="fb.esUtil" [class.util-chip--no]="!fb.esUtil">
+                        <mat-icon class="util-icon">{{ fb.esUtil ? 'thumb_up' : 'thumb_down' }}</mat-icon>
+                        {{ fb.esUtil ? 'Útil' : 'No útil' }}
+                    </span>
+                    <span class="feedback-comentario" *ngIf="fb.comentario" [matTooltip]="fb.comentario">
+                        {{ fb.comentario }}
+                    </span>
+                    <span class="feedback-sin-comentario" *ngIf="!fb.comentario">Sin comentario</span>
+                    <span class="feedback-fecha">{{ fb.fechaFeedback | date:'dd/MM/yyyy' }}</span>
+                </li>
+            </ul>
+
+            <!-- Sin feedback -->
+            <div class="feedback-empty" *ngIf="feedbackTotal === 0">
+                <mat-icon>forum</mat-icon>
+                <p>Este trámite aún no recibió valoraciones</p>
+            </div>
         </mat-card-content>
     </mat-card>
 </div>

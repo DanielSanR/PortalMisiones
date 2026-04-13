@@ -1,0 +1,92 @@
+<app-page-header
+    [title]="isEdit ? 'Editar usuario' : 'Nuevo usuario'"
+    [showBack]="true"
+    (back)="goBack()">
+</app-page-header>
+
+<app-loading [loading]="loading" message="Cargando..."></app-loading>
+
+<div class="form-card" *ngIf="!loading">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+        <!-- ── Datos personales ── -->
+        <div class="section-header">Datos personales</div>
+        <div class="form-grid">
+            <mat-form-field appearance="outline">
+                <mat-label>Nombre</mat-label>
+                <input matInput formControlName="nombre" placeholder="Ej: María">
+                <mat-error *ngIf="fieldError('nombre', 'required')">El nombre es obligatorio</mat-error>
+                <mat-error *ngIf="fieldError('nombre', 'maxlength')">Máximo 100 caracteres</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Apellido</mat-label>
+                <input matInput formControlName="apellido" placeholder="Ej: González">
+                <mat-error *ngIf="fieldError('apellido', 'required')">El apellido es obligatorio</mat-error>
+                <mat-error *ngIf="fieldError('apellido', 'maxlength')">Máximo 100 caracteres</mat-error>
+            </mat-form-field>
+        </div>
+
+        <!-- ── Acceso ── -->
+        <div class="section-header">Acceso</div>
+        <div class="form-grid">
+            <mat-form-field appearance="outline">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email" type="email" placeholder="usuario@misiones.gob.ar">
+                <mat-icon matPrefix>email</mat-icon>
+                <mat-hint *ngIf="isEdit">El email no puede modificarse</mat-hint>
+                <mat-error *ngIf="fieldError('email', 'required')">El email es obligatorio</mat-error>
+                <mat-error *ngIf="fieldError('email', 'email')">Ingresá un email válido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngIf="!isEdit">
+                <mat-label>Contraseña</mat-label>
+                <input matInput formControlName="password"
+                    [type]="hidePassword ? 'password' : 'text'"
+                    placeholder="Mínimo 8 caracteres">
+                <button mat-icon-button matSuffix type="button"
+                    (click)="hidePassword = !hidePassword"
+                    [attr.aria-label]="hidePassword ? 'Mostrar contraseña' : 'Ocultar contraseña'">
+                    <mat-icon>{{ hidePassword ? 'visibility' : 'visibility_off' }}</mat-icon>
+                </button>
+                <mat-error *ngIf="fieldError('password', 'required')">La contraseña es obligatoria</mat-error>
+                <mat-error *ngIf="fieldError('password', 'minlength')">Mínimo 8 caracteres</mat-error>
+            </mat-form-field>
+        </div>
+
+        <!-- ── Rol y organismo ── -->
+        <div class="section-header">Rol y organismo</div>
+        <div class="form-grid">
+            <mat-form-field appearance="outline">
+                <mat-label>Rol</mat-label>
+                <mat-select formControlName="rol">
+                    <mat-option *ngFor="let r of rolesDisponibles" [value]="r.value">
+                        {{ r.label }}
+                    </mat-option>
+                </mat-select>
+                <mat-error *ngIf="fieldError('rol', 'required')">Seleccioná un rol</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngIf="requiresOrganismo">
+                <mat-label>Organismo</mat-label>
+                <mat-select formControlName="organismoId">
+                    <mat-option [value]="null">— Sin organismo —</mat-option>
+                    <mat-option *ngFor="let org of organismos" [value]="org.id">
+                        {{ org.nombre }}
+                    </mat-option>
+                </mat-select>
+                <mat-error *ngIf="organismoError">El organismo es obligatorio para este rol</mat-error>
+            </mat-form-field>
+        </div>
+
+        <!-- ── Acciones ── -->
+        <div class="form-actions">
+            <button mat-stroked-button type="button" (click)="goBack()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+                <mat-icon *ngIf="saving" class="spin">sync</mat-icon>
+                {{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear usuario') }}
+            </button>
+        </div>
+
+    </form>
+</div>

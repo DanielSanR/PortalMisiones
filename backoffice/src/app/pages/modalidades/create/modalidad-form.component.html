@@ -1,0 +1,9 @@
+<app-page-header [title]="isEdit ? 'Editar modalidad' : 'Nueva modalidad'" [showBack]="true"
+    (back)="goBack()"></app-page-header>
+
+<div class="form-card">
+    <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear modalidad'"
+        cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
+        (formCancel)="goBack()">
+    </app-dynamic-form>
+</div>

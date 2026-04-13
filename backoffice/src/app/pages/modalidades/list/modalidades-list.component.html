@@ -1,0 +1,47 @@
+<app-page-header title="Modalidades" subtitle="Gestión de modalidades de trámites">
+  <button mat-raised-button color="primary" (click)="onCreate()">
+    <mat-icon>add</mat-icon> Nueva modalidad
+  </button>
+</app-page-header>
+
+<app-shared-table
+    [data]="modalidades"
+    [columns]="columns"
+    [loading]="loading"
+    emptyMessage="No hay modalidades registradas"
+    emptyIcon="tune">
+
+    <ng-template appTableCell="color" let-row>
+        <span class="color-dot" [style.background]="row.color"></span>
+    </ng-template>
+
+    <ng-template appTableCell="nombre" let-row>
+        <div class="modalidad-name">
+            <mat-icon class="modalidad-icon" [style.color]="row.color">{{ row.icono }}</mat-icon>
+            <strong>{{ row.nombre }}</strong>
+        </div>
+    </ng-template>
+
+    <ng-template appTableCell="descripcion" let-row>
+        <span class="text-secondary">{{ row.descripcion || '—' }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="tramitesCount" let-row>
+        <span class="count-badge">{{ row.tramitesCount || 0 }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="acciones" let-row>
+        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="onEdit(row)">
+                <mat-icon>edit</mat-icon> Editar
+            </button>
+            <button mat-menu-item class="delete-action" (click)="onDelete(row)">
+                <mat-icon>delete</mat-icon> Eliminar
+            </button>
+        </mat-menu>
+    </ng-template>
+
+</app-shared-table>

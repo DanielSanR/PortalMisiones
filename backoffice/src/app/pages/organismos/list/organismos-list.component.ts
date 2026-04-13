@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
-import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { OrganismoService } from '../../../core/services/organismo.service';
 import { Organismo } from '../../../core/models/tramite.model';
 
@@ -18,13 +17,13 @@ import { Organismo } from '../../../core/models/tramite.model';
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
     MatSnackBarModule,
     PageHeaderComponent,
-    LoadingComponent,
+    SharedTableComponent,
+    TableCellDirective,
   ],
   templateUrl: './organismos-list.component.html',
   styleUrls: ['./organismos-list.component.scss'],
@@ -33,11 +32,17 @@ export class OrganismosListComponent implements OnInit {
   organismos: Organismo[] = [];
   loading = true;
 
+  columns: TableColumn<Organismo>[] = [
+    { key: 'nombre',   label: 'Nombre' },
+    { key: 'sitioWeb', label: 'Sitio web', hideOnMobile: true },
+    { key: 'acciones', label: 'Acciones', width: '80px' },
+  ];
+
   constructor(
     private organismoService: OrganismoService,
     private router: Router,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {

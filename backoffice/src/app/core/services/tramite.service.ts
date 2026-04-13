@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { shareReplay } from 'rxjs/operators';
+import { map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   Tramite,
@@ -69,13 +69,19 @@ export class TramiteService {
     return this.http.patch<Tramite>(`${this.apiUrl}/${id}/revision`, {});
   }
 
-  private modalidades$ = this.http.get<Modalidad[]>(
+  private modalidades$ = this.http.get<PaginatedResponse<Modalidad>>(
     `${environment.apiUrl}/modalidades`
-  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+  ).pipe(
+    map(response => response.data),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 
-  private etiquetas$ = this.http.get<Etiqueta[]>(
+  private etiquetas$ = this.http.get<PaginatedResponse<Etiqueta>>(
     `${environment.apiUrl}/etiquetas`
-  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+  ).pipe(
+    map(response => response.data),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 
   getModalidades(): Observable<Modalidad[]> {
     return this.modalidades$;

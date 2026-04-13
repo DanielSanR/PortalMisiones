@@ -1,0 +1,17 @@
+<app-page-header
+    [title]="isEdit ? 'Editar evento de vida' : 'Nuevo evento de vida'"
+    [showBack]="true"
+    (back)="goBack()">
+</app-page-header>
+
+<div class="form-card">
+    <app-dynamic-form
+        [fields]="config.fields!"
+        [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear evento de vida'"
+        cancelButtonText="Cancelar"
+        [initialData]="initialData"
+        [saving]="saving"
+        (formSubmit)="onSubmit($event)"
+        (formCancel)="goBack()">
+    </app-dynamic-form>
+</div>

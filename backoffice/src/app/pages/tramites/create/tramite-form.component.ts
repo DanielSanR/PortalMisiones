@@ -9,6 +9,8 @@ import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dy
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { TramiteService } from '../../../core/services/tramite.service';
 import { OrganismoService } from '../../../core/services/organismo.service';
+import { LocalidadService } from '../../../core/services/localidad.service';
+import { EventoDeVidaService } from '../../../core/services/evento-de-vida.service';
 import { Tramite } from '../../../core/models/tramite.model';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { UserRole } from '../../../core/enums/user-role.enum';
@@ -37,6 +39,8 @@ export class TramiteFormComponent implements OnInit {
   constructor(
     private tramiteService: TramiteService,
     private organismoService: OrganismoService,
+    private localidadService: LocalidadService,
+    private eventoDeVidaService: EventoDeVidaService,
     private authTokenService: AuthTokenService,
     private route: ActivatedRoute,
     private router: Router,
@@ -64,6 +68,8 @@ export class TramiteFormComponent implements OnInit {
             organismoId: tramite.organismoId,
             modalidadId: tramite.modalidadId,
             etiquetaIds: tramite.etiquetas.map(e => e.id),
+            localidadIds: (tramite.localidades ?? []).map(l => l.id),
+            eventoDeVidaIds: (tramite.eventosDeVida ?? []).map(e => e.id),
             destacado: tramite.destacado,
           };
         },
@@ -94,6 +100,18 @@ export class TramiteFormComponent implements OnInit {
         tap(data => {
           this.config = updateFormConfigOptions(this.config, 'etiquetaIds',
             data.map(e => ({ id: e.id, name: e.nombre })));
+        })
+      ),
+      this.localidadService.getAll().pipe(
+        tap(response => {
+          this.config = updateFormConfigOptions(this.config, 'localidadIds',
+            response.data.map(l => ({ id: l.id, name: `${l.nombre} (${l.departamento})` })));
+        })
+      ),
+      this.eventoDeVidaService.getAll().pipe(
+        tap(response => {
+          this.config = updateFormConfigOptions(this.config, 'eventoDeVidaIds',
+            response.data.map(e => ({ id: e.id, name: e.nombre })));
         })
       ),
     ];

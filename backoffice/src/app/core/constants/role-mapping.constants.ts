@@ -28,10 +28,40 @@ export const NAV_ITEMS: NavItem[] = [
     roles: [UserRole.SUPERADMIN],
   },
   {
+    label: 'Etiquetas',
+    icon: 'label',
+    route: '/dashboard/etiquetas/lista',
+    roles: [UserRole.SUPERADMIN],
+  },
+  {
+    label: 'Modalidades',
+    icon: 'tune',
+    route: '/dashboard/modalidades/lista',
+    roles: [UserRole.SUPERADMIN],
+  },
+  {
     label: 'Usuarios',
     icon: 'people',
     route: '/dashboard/usuarios/lista',
     roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
+  },
+  {
+    label: 'Eventos de Vida',
+    icon: 'event_note',
+    route: '/dashboard/eventos-de-vida/lista',
+    roles: [UserRole.SUPERADMIN],
+  },
+  {
+    label: 'Feedback Ciudadano',
+    icon: 'forum',
+    route: '/dashboard/feedback',
+    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
+  },
+  {
+    label: 'Auditoría',
+    icon: 'history',
+    route: '/dashboard/auditoria',
+    roles: [UserRole.SUPERADMIN],
   },
   {
     label: 'Reportes',
