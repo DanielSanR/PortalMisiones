@@ -11,6 +11,9 @@ import {
   PaginatedResponse,
   Modalidad,
   Etiqueta,
+  TramiteContenidoLocalidad,
+  TramiteContenidoLocalidadCreate,
+  TramiteContenidoLocalidadUpdate,
 } from '../models/tramite.model';
 import { SKIP_ERROR_INTERCEPTOR } from '../interceptors/http-error.interceptor';
 
@@ -89,5 +92,27 @@ export class TramiteService {
 
   getEtiquetas(): Observable<Etiqueta[]> {
     return this.etiquetas$;
+  }
+
+  // ── Contenido por localidad ──────────────────────────────
+
+  getContenidoLocalidades(tramiteId: string): Observable<TramiteContenidoLocalidad[]> {
+    return this.http.get<TramiteContenidoLocalidad[]>(`${this.apiUrl}/${tramiteId}/localidades`);
+  }
+
+  getContenidoLocalidad(tramiteId: string, localidadId: number): Observable<TramiteContenidoLocalidad> {
+    return this.http.get<TramiteContenidoLocalidad>(`${this.apiUrl}/${tramiteId}/localidades/${localidadId}`);
+  }
+
+  addContenidoLocalidad(tramiteId: string, data: TramiteContenidoLocalidadCreate): Observable<TramiteContenidoLocalidad> {
+    return this.http.post<TramiteContenidoLocalidad>(`${this.apiUrl}/${tramiteId}/localidades`, data);
+  }
+
+  updateContenidoLocalidad(tramiteId: string, localidadId: number, data: TramiteContenidoLocalidadUpdate): Observable<TramiteContenidoLocalidad> {
+    return this.http.put<TramiteContenidoLocalidad>(`${this.apiUrl}/${tramiteId}/localidades/${localidadId}`, data);
+  }
+
+  removeContenidoLocalidad(tramiteId: string, localidadId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${tramiteId}/localidades/${localidadId}`);
   }
 }

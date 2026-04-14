@@ -22,12 +22,6 @@
         </div>
     </ng-template>
 
-    <ng-template appTableCell="categoria" let-row>
-        <span class="categoria-chip" [class.categoria-perfil]="row.categoria === 'Perfil'">
-            {{ row.categoria }}
-        </span>
-    </ng-template>
-
     <ng-template appTableCell="tramitesCount" let-row>
         <span class="count-badge">{{ row.tramitesCount || 0 }}</span>
     </ng-template>

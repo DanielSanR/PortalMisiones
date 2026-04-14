@@ -1,0 +1,130 @@
+1. Búsqueda con IA semántica ("Ciudadano no sabe el nombre del trámite")                                                                                                                                                                                                                                                              
+  El problema real: el ciudadano no escribe "Obtener credencial de afiliado IPS", escribe "cómo me atiendo en salud" o "me operé y no sé qué hacer".                                                                                                                                                                                      Implementación:                                                                                                                                                     - Integrar un modelo de embeddings liviano (ej. all-MiniLM-L6-v2 vía FastAPI) para búsqueda vectorial                                                               - Meilisearch ya tiene soporte nativo de semantic hybrid search                                                                                                     - En el backoffice: campo "palabras clave semánticas" que el admin puede enriquecer para cada trámite                                                               - Widget de búsqueda en el portal con sugerencias tipo "¿Quisiste decir...?"                                                                                      
+
+  ---
+  2. Navegación por "Eventos de Vida" con Packs de Trámites
+
+  En lugar de categorías planas, agrupar trámites por momentos vitales:
+
+  Nació un bebé → [Inscripción Civil, Alta IPS, Asignación Familiar, Libreta de Salud]
+  Emprendí un negocio → [Habilitación, IIBB, AFIP, Registro PyME]
+  Perdí un familiar → [Acta de defunción, Sucesión, Baja de beneficios]
+
+  En el backoffice: campo "Eventos de vida" como tag especial. El admin los asocia al crear el trámite. El portal los renderiza como "journeys" con progreso visual 
+  (stepper).
+
+  ---
+  3. Dashboard con Inteligencia de Demanda Insatisfecha
+
+  El mayor valor analítico para el Estado: ¿qué busca la gente que no encuentra?
+
+  Métricas que no existen hoy pero deberían:
+  - Heat map temporal: búsquedas por hora/día/mes → detecta picos (Enero = IIBB, Marzo = educación)
+  - Tasa de rebote por trámite: el ciudadano entró, leyó 3 segundos y salió → contenido insuficiente
+  - Embudo de conversión: búsqueda → click en trámite → click en "Ir al trámite oficial"
+  - Radar de términos sin resultado agrupados por semántica (no es solo "sin resultados", es "certificado" + "conducir" = hay demanda de algo que no está cargado)  
+
+  Visualización: Gráfico de burbujas por organismo: eje X = volumen de búsquedas, eje Y = tasa de satisfacción. Los organismos en zona "alto volumen / baja
+  satisfacción" necesitan atención urgente.
+
+  ---
+  4. Sistema de Versionado y Comparación de Trámites
+
+  Los trámites cambian: aumentan aranceles, cambian requisitos, se modifica la URL. Hoy no hay historial.
+
+  Propuesta:
+  - Al editar un trámite publicado, guardar versión anterior como v_anterior en JSONB
+  - En el backoffice: botón "Ver historial de cambios" con diff visual (estilo GitHub)
+  - En el portal público: banner automático "Este trámite fue actualizado el DD/MM/YYYY" cuando hay cambios recientes
+  - Alerta por email al admin cuando un trámite lleva más de 90 días sin actualización
+
+  ---
+  5. Verificador de URLs Oficiales (Link Rot Monitor)
+
+  El problema silencioso de los portales gubernamentales: los links mueren.
+
+  Implementación:
+  - Job programado (cron) que hace HEAD request a todos los urlOficial registrados
+  - Si falla 3 veces seguidas → estado del trámite se marca internamente como url_rota
+  - En el dashboard: panel "Trámites con URL rota" (badge rojo en la nav)
+  - El admin ve la lista y puede actualizar la URL sin pasar por el flujo de revisión completo
+
+  ---
+  6. Modo Offline / PWA para Zonas con Baja Conectividad
+
+  Misiones tiene municipios con conectividad intermitente (interior, comunidades mbya).
+
+  Implementación:
+  - Service Worker que cachea los trámites marcados como destacado = true
+  - En el portal: banner "Estás viendo versión sin conexión — actualizado el [fecha]"
+  - Sincronización automática al recuperar señal
+  - En el backoffice: checkbox por trámite "Disponible offline" + límite configurable (ej. top 50)
+
+  ---
+  7. Tramite Card con "Tiempo Estimado" y "Costo"
+
+  Hoy las cards son descripción + URL. Agregar:
+
+  [DIGITAL]  Inscripción en el Registro PyME
+  Tiempo estimado: 3-5 días hábiles
+  Costo: Sin cargo
+  Requiere: CUIT, DNI, Contrato social
+
+  En el backoffice: campos opcionales tiempoEstimado, costo, requisitosDestacados[] (array de strings cortos). En el portal se muestran como chips. Los campos      
+  vacíos no se muestran (no rompen el diseño).
+
+  ---
+  8. Asistente de Carga para Nuevos Editores (AI-assisted)
+
+  El editor más débil del sistema es el empleado provincial que tiene que cargar el trámite. Muchos no saben redactar en lenguaje ciudadano.
+
+  Propuesta:
+  - En el formulario de carga: botón "Mejorar con IA" al lado del campo resumen
+  - El editor pega el texto del reglamento oficial (jerga legal) → la IA genera el resumen en lenguaje llano
+  - Integración con Claude API (Haiku para costo bajo): prompt con instrucciones de estilo del portal
+  - El resultado es una sugerencia editable, no reemplaza al humano
+
+  ---
+  9. Sistema de Feedback Ciudadano en 2 Clicks
+
+  Post-consulta: "¿Encontraste lo que buscabas?" → Sí / No → Si No: selector de razón.
+
+  Flujo propuesto:
+  1. Click en "Ir al trámite oficial" → se registra conversión
+  2. Al volver al portal (o después de 30s): micro-encuesta flotante (1 pregunta)
+  3. Si dice "No": opciones rápidas: "Información desactualizada" / "No era lo que buscaba" / "El link no funciona"
+  4. En el backoffice: cada opción se agrega al campo feedback del trámite con timestamp y sin datos personales
+
+  ---
+  10. Embebido / Widget para Sitios de Organismos
+
+  Cada ministerio tiene su propio sitio. En lugar de competir, ofrecerles un widget:
+
+  <script src="portal-misiones.gob.ar/widget.js"></script>
+  <tramites-widget organismo="IPS" limit="5"></tramites-widget>
+
+  Renderiza las últimas 5 trámites publicados del organismo, siempre sincronizados con el portal central. El organismo no mantiene nada — el portal es la fuente de 
+  verdad.
+
+  En el backoffice: sección "Widget Embed" por organismo con código para copiar y configuración (número de items, tema claro/oscuro).
+
+  ---
+  Prioridad sugerida
+
+  ┌─────────────┬──────────┬──────────────────────────────────────────────────┐
+  │   Impacto   │ Esfuerzo │                       Idea                       │
+  ├─────────────┼──────────┼──────────────────────────────────────────────────┤
+  │ Alto        │ Bajo     │ URLs rot monitor (#5) + Campos tiempo/costo (#7) │
+  ├─────────────┼──────────┼──────────────────────────────────────────────────┤
+  │ Alto        │ Medio    │ Eventos de vida (#2) + Feedback ciudadano (#9)   │
+  ├─────────────┼──────────┼──────────────────────────────────────────────────┤
+  │ Alto        │ Medio    │ Dashboard de demanda insatisfecha (#3)           │
+  ├─────────────┼──────────┼──────────────────────────────────────────────────┤
+  │ Muy alto    │ Alto     │ Búsqueda semántica (#1)                          │
+  ├─────────────┼──────────┼──────────────────────────────────────────────────┤
+  │ Estratégico │ Alto     │ Widget embebido (#10) + Asistente IA (#8)        │
+  └─────────────┴──────────┴──────────────────────────────────────────────────┘
+
+  ---
+  ¿Querés que profundice en alguna de estas ideas con especificación técnica, diseño de base de datos, o mockup de UI? También puedo arrancar a implementar
+  cualquiera directamente en el backoffice o en el portal Next.js.

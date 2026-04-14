@@ -28,6 +28,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: [UserRole.SUPERADMIN],
   },
   {
+    label: 'Categorías',
+    icon: 'account_tree',
+    route: '/dashboard/categorias/lista',
+    roles: [UserRole.SUPERADMIN],
+  },
+  {
     label: 'Etiquetas',
     icon: 'label',
     route: '/dashboard/etiquetas/lista',

@@ -15,9 +15,12 @@ import {
   MOCK_FEEDBACK,
   MOCK_FEEDBACK_STATS,
   MOCK_LOCALIDADES,
+  MOCK_CATEGORIAS,
+  MOCK_DESTINATARIOS,
+  MOCK_CONTENIDO_LOCALIDAD,
   paginate,
 } from './mock-data';
-import { Tramite } from '../models/tramite.model';
+import { Tramite, TramiteContenidoLocalidad } from '../models/tramite.model';
 
 const MOCK_DELAY = 300;
 
@@ -27,6 +30,9 @@ let etiquetas = [...MOCK_ETIQUETAS];
 let modalidades = [...MOCK_MODALIDADES];
 let usuarios = [...MOCK_USUARIOS];
 let eventosDeVida = [...MOCK_EVENTOS_DE_VIDA];
+let localidades = [...MOCK_LOCALIDADES];
+let categorias = [...MOCK_CATEGORIAS];
+let contenidoLocalidad: TramiteContenidoLocalidad[] = [...MOCK_CONTENIDO_LOCALIDAD];
 
 function jsonResponse(body: unknown, status = 200) {
   return of(new HttpResponse({ status, body })).pipe(delay(MOCK_DELAY));
@@ -95,6 +101,67 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     });
   }
 
+  // ── Contenido por localidad de trámite (ANTES de tramites CRUD para evitar colisión) ──
+  if (matchUrl(url, '/api/tramites/') && matchUrl(url, '/localidades')) {
+    const parts = url.split('/');
+    const tramiteIdx = parts.indexOf('tramites');
+    const tramiteId = parts[tramiteIdx + 1];
+    const localidadIdx = parts.indexOf('localidades');
+    const localidadIdStr = parts[localidadIdx + 1];
+
+    // GET /tramites/:id/localidades
+    if (!localidadIdStr && method === 'GET') {
+      const items = contenidoLocalidad.filter(c => c.tramiteId === tramiteId);
+      return jsonResponse(items);
+    }
+
+    // POST /tramites/:id/localidades
+    if (!localidadIdStr && method === 'POST') {
+      const body = req.body as Record<string, any>;
+      const newContenido: TramiteContenidoLocalidad = {
+        id: Date.now(),
+        tramiteId,
+        localidadId: body['localidadId'],
+        localidadNombre: localidades.find(l => l.id === body['localidadId'])?.nombre,
+        costos: body['costos'] || null,
+        contacto: body['contacto'] || null,
+        sitioWeb: body['sitioWeb'] || null,
+        urlTramite: body['urlTramite'] || null,
+        horarios: body['horarios'] || null,
+        notas: body['notas'] || null,
+        activo: true,
+      };
+      contenidoLocalidad.push(newContenido);
+      return jsonResponse(newContenido, 201);
+    }
+
+    if (localidadIdStr) {
+      const locId = Number(localidadIdStr);
+
+      // GET /tramites/:id/localidades/:localidadId
+      if (method === 'GET') {
+        const item = contenidoLocalidad.find(c => c.tramiteId === tramiteId && c.localidadId === locId);
+        return item ? jsonResponse(item) : jsonResponse({ message: 'No encontrado' }, 404);
+      }
+
+      // PUT /tramites/:id/localidades/:localidadId
+      if (method === 'PUT') {
+        const idx = contenidoLocalidad.findIndex(c => c.tramiteId === tramiteId && c.localidadId === locId);
+        if (idx >= 0) {
+          contenidoLocalidad[idx] = { ...contenidoLocalidad[idx], ...(req.body as Record<string, any>) } as TramiteContenidoLocalidad;
+          return jsonResponse(contenidoLocalidad[idx]);
+        }
+        return jsonResponse({ message: 'No encontrado' }, 404);
+      }
+
+      // DELETE /tramites/:id/localidades/:localidadId
+      if (method === 'DELETE') {
+        contenidoLocalidad = contenidoLocalidad.filter(c => !(c.tramiteId === tramiteId && c.localidadId === locId));
+        return jsonResponse(null, 204);
+      }
+    }
+  }
+
   // ── Trámites CRUD ───────────────────────────────────────
   if (matchUrl(url, '/api/tramites') && !matchUrl(url, '/api/tramites/')) {
     if (method === 'GET') {
@@ -136,9 +203,15 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
         slug: body['titulo'].toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         resumen: body['resumen'],
         descripcionLarga: body['descripcionLarga'] || null,
+        requisitos: body['requisitos'] || null,
+        costos: body['costos'] || null,
+        formularios: body['formularios'] || null,
+        contacto: body['contacto'] || null,
+        sitioWebTramite: body['sitioWebTramite'] || null,
         urlOficial: body['urlOficial'],
         organismoId: body['organismoId'],
         modalidadId: body['modalidadId'],
+        categoriaId: body['categoriaId'] || null,
         icono: body['icono'] || 'description',
         estado: 'borrador',
         destacado: body['destacado'] || false,
@@ -259,6 +332,8 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
         apellido: body['apellido'],
         rol: body['rol'],
         organismoId: body['organismoId'] || null,
+        localidadId: body['localidadId'] || null,
+        localidadNombre: body['localidadId'] ? localidades.find(l => l.id === body['localidadId'])?.nombre : undefined,
         activo: true,
         createdAt: new Date().toISOString(),
         organismoNombre: organismos.find(o => o.id === body['organismoId'])?.sigla || '-',
@@ -300,7 +375,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
         id: Date.now(),
         nombre: body['nombre'],
         slug: body['nombre'].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        categoria: body['categoria'] || 'Temática',
         icono: body['icono'] || 'label',
         color: body['color'] || '#607D8B',
         activo: true,
@@ -538,6 +612,65 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
   if (matchUrl(url, '/api/dashboard/top-busquedas')) return jsonResponse(MOCK_TOP_BUSQUEDAS);
   if (matchUrl(url, '/api/dashboard/auditoria')) return jsonResponse(MOCK_AUDITORIA);
   if (matchUrl(url, '/api/dashboard/tramites-por-organismo')) return jsonResponse(MOCK_TRAMITES_POR_ORGANISMO);
+
+  // ── Categorías CRUD ─────────────────────────────────────
+  if (matchUrl(url, '/api/categorias') && !matchUrl(url, '/api/categorias/')) {
+    if (method === 'GET') {
+      // Devolver árbol: categorías raíz con children anidados
+      const roots = categorias.filter(c => c.parentId === null).sort((a, b) => a.orden - b.orden);
+      const tree = roots.map(r => ({
+        ...r,
+        children: categorias.filter(c => c.parentId === r.id).sort((a, b) => a.orden - b.orden),
+      }));
+      return jsonResponse(paginate(tree, 1, 100));
+    }
+    if (method === 'POST') {
+      const body = req.body as Record<string, any>;
+      const newCat = {
+        id: Date.now(),
+        nombre: body['nombre'],
+        slug: body['nombre'].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        descripcion: body['descripcion'] || null,
+        icono: body['icono'] || 'folder',
+        color: body['color'] || '#666666',
+        parentId: body['parentId'] || null,
+        orden: body['orden'] || 0,
+        activo: true,
+        tramitesCount: 0,
+      };
+      categorias.push(newCat);
+      return jsonResponse(newCat, 201);
+    }
+  }
+
+  if (matchUrl(url, '/api/categorias/')) {
+    const id = Number(extractId(url));
+    if (method === 'GET') {
+      const cat = categorias.find(c => c.id === id);
+      if (cat) {
+        const withChildren = { ...cat, children: categorias.filter(c => c.parentId === id) };
+        return jsonResponse(withChildren);
+      }
+      return jsonResponse({ message: 'No encontrado' }, 404);
+    }
+    if (method === 'PUT') {
+      const idx = categorias.findIndex(c => c.id === id);
+      if (idx >= 0) {
+        categorias[idx] = { ...categorias[idx], ...(req.body as Record<string, any>) } as typeof categorias[0];
+        return jsonResponse(categorias[idx]);
+      }
+      return jsonResponse({ message: 'No encontrado' }, 404);
+    }
+    if (method === 'DELETE') {
+      categorias = categorias.filter(c => c.id !== id && c.parentId !== id);
+      return jsonResponse(null, 204);
+    }
+  }
+
+  // ── Destinatarios (solo lectura) ───────────────────────
+  if (matchUrl(url, '/api/destinatarios') && method === 'GET') {
+    return jsonResponse(MOCK_DESTINATARIOS);
+  }
 
   // ── Fallthrough ─────────────────────────────────────────
   return next(req);

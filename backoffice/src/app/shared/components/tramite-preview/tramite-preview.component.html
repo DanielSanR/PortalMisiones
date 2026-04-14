@@ -48,46 +48,53 @@
     <!-- Content -->
     <div class="portal-content">
 
-      <!-- Title + Estado -->
-      <div class="portal-title-row">
-        <h2 class="portal-title">{{ tramite.titulo }}</h2>
-        <span class="portal-modalidad" *ngIf="tramite.modalidad">
+      <!-- Organismo header -->
+      <p class="portal-organismo-header" *ngIf="tramite.organismo">
+        Información otorgada por {{ tramite.organismo.nombre }}
+      </p>
+
+      <!-- Title -->
+      <h2 class="portal-title">{{ tramite.titulo }}</h2>
+
+      <!-- Badges -->
+      <div class="portal-badges">
+        <span class="badge badge-organismo" *ngIf="tramite.organismo">
+          <mat-icon>business</mat-icon>
+          {{ tramite.organismo.sigla || tramite.organismo.nombre }}
+        </span>
+        <span class="badge badge-modalidad" *ngIf="tramite.modalidad">
+          <mat-icon>{{ tramite.modalidad.icono }}</mat-icon>
           {{ tramite.modalidad.nombre }}
+        </span>
+        <span class="badge badge-destinatario">
+          <mat-icon>people</mat-icon>
+          {{ destinatarioNames }}
         </span>
       </div>
 
-      <!-- Info bar -->
-      <div class="portal-info-bar">
-        <div class="info-item">
-          <mat-icon>business</mat-icon>
-          <div>
-            <span class="info-label">Organismo responsable</span>
-            <span class="info-value">{{ tramite.organismo?.nombre || '-' }}</span>
-          </div>
+      <!-- Localidad selector -->
+      <div class="portal-localidad" *ngIf="contenidoLocalidades.length > 0">
+        <div class="localidad-header">
+          <span class="localidad-label">Localidad — {{ contenidoActual?.localidadNombre || 'Seleccioná' }}</span>
         </div>
-        <div class="info-item">
-          <mat-icon>swap_horiz</mat-icon>
-          <div>
-            <span class="info-label">Modalidad</span>
-            <span class="info-value">{{ tramite.modalidad?.nombre || '-' }}</span>
-          </div>
-        </div>
-        <div class="info-item">
-          <mat-icon>people</mat-icon>
-          <div>
-            <span class="info-label">Destinatarios</span>
-            <span class="info-value">Ciudadanos</span>
-          </div>
+        <div class="localidad-row">
+          <mat-form-field appearance="outline" class="localidad-select">
+            <mat-label>Cambiar localidad</mat-label>
+            <mat-select [value]="selectedLocalidadId" (selectionChange)="onLocalidadChange($event.value)">
+              <mat-option *ngFor="let loc of contenidoLocalidades" [value]="loc.localidadId">
+                {{ loc.localidadNombre }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <a class="cta-button-inline" [href]="urlTramiteResuelto" target="_blank" rel="noopener">
+            Iniciar trámite
+          </a>
         </div>
       </div>
 
       <!-- Description -->
       <div class="portal-description" *ngIf="tramite.resumen">
         <p>{{ tramite.resumen }}</p>
-      </div>
-
-      <div class="portal-description-long" *ngIf="tramite.descripcionLarga">
-        <p>{{ tramite.descripcionLarga }}</p>
       </div>
 
       <!-- Etiquetas -->
@@ -99,22 +106,68 @@
         </span>
       </div>
 
-      <!-- Accordion steps (placeholder) -->
-      <div class="portal-steps">
-        <div class="step-item" *ngFor="let step of ['Requisitos', 'Costos', 'Formularios', 'Ubicación', 'Sitio Web']">
-          <div class="step-header">
-            <span>{{ step }}</span>
-            <mat-icon>expand_more</mat-icon>
-          </div>
-        </div>
+      <!-- Accordion sections -->
+      <mat-accordion class="portal-accordion">
+        <mat-expansion-panel *ngIf="tramite.requisitos">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Guía de Requisitos Generales</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="accordion-content">{{ tramite.requisitos }}</p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel *ngIf="resolve('costos')">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Costos y modalidad de pago</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="accordion-content">{{ resolve('costos') }}</p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel *ngIf="tramite.formularios">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Formularios e instructivos</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="accordion-content">{{ tramite.formularios }}</p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel *ngIf="resolve('contacto')">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Contacto</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="accordion-content">{{ resolve('contacto') }}</p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel *ngIf="resolve('sitioWeb')">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Sitio Web</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="accordion-content">
+            <a [href]="resolve('sitioWeb')" target="_blank" rel="noopener">{{ resolve('sitioWeb') }}</a>
+          </p>
+        </mat-expansion-panel>
+
+        <!-- Horarios solo si hay localidad con override -->
+        <mat-expansion-panel *ngIf="resolve('horarios')">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Horarios de atención</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="accordion-content">{{ resolve('horarios') }}</p>
+        </mat-expansion-panel>
+      </mat-accordion>
+
+      <!-- Si no hay secciones, mostrar placeholder -->
+      <div class="portal-no-sections" *ngIf="!tramite.requisitos && !resolve('costos') && !tramite.formularios && !resolve('contacto')">
+        <mat-icon>info_outline</mat-icon>
+        <p>No hay contenido de secciones cargado para este trámite.</p>
       </div>
 
       <!-- CTA -->
       <div class="portal-cta">
-        <a class="cta-button" [href]="tramite.urlOficial" target="_blank" rel="noopener">
-          <mat-icon>open_in_new</mat-icon>
-          Iniciar trámite
-        </a>
+        <div class="cta-banner">
+          <span class="cta-text">¿Listo para iniciar tu trámite?</span>
+          <a class="cta-button" [href]="urlTramiteResuelto" target="_blank" rel="noopener">
+            Iniciar trámite <mat-icon>open_in_new</mat-icon>
+          </a>
+        </div>
       </div>
     </div>
 

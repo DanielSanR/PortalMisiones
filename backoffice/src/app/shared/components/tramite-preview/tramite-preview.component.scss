@@ -265,54 +265,171 @@
   height: 14px;
 }
 
-// ── Steps ────────────────────────────────────────────
-.portal-steps {
+// ── Organismo header ────────────────────────────────
+.portal-organismo-header {
+  font-size: 12px;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+// ── Badges ──────────────────────────────────────────
+.portal-badges {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 20px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &.badge-organismo {
+    background: #E8F1FA;
+    color: #1A4779;
+  }
+
+  &.badge-modalidad {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+
+  &.badge-destinatario {
+    background: #FFF3E0;
+    color: #E65100;
+  }
+}
+
+// ── Localidad selector ──────────────────────────────
+.portal-localidad {
+  background: #F5F7FA;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.localidad-header {
+  margin-bottom: 8px;
+}
+
+.localidad-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.localidad-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.localidad-select {
+  flex: 0 0 200px;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+.cta-button-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: #2F6EB1;
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover { background: #1A4779; }
+}
+
+// ── Accordion ───────────────────────────────────────
+.portal-accordion {
   margin-bottom: 24px;
 }
 
-.step-item {
-  border: 1px solid #E0E0E0;
-  border-radius: 8px;
-  overflow: hidden;
+.accordion-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #555;
+  white-space: pre-wrap;
+  margin: 0;
+
+  a {
+    color: #2F6EB1;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
 }
 
-.step-header {
+.portal-no-sections {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  cursor: default;
-  background: #FAFAFA;
+  padding: 24px;
+  color: #999;
+  font-size: 13px;
+  text-align: center;
 
-  mat-icon { color: #999; }
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+  }
 }
 
 // ── CTA ──────────────────────────────────────────────
 .portal-cta {
-  text-align: center;
   margin: 8px 0 16px;
+}
+
+.cta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #2F6EB1;
+  color: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+
+.cta-text {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .cta-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 32px;
-  background: #2F6EB1;
-  color: white;
+  padding: 10px 24px;
+  background: white;
+  color: #2F6EB1;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.2s;
 
-  &:hover { background: #1A4779; }
+  &:hover { background: #E8F1FA; }
 
   mat-icon {
     font-size: 18px;

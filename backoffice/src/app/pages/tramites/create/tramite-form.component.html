@@ -2,9 +2,207 @@
     [subtitle]="isEdit ? tramite?.titulo || '' : 'Completar la ficha del trámite'" [showBack]="true"
     (back)="goBack()"></app-page-header>
 
-<div class="form-card">
-    <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear trámite'"
-        cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
-        (formCancel)="goBack()">
-    </app-dynamic-form>
-</div>
+<mat-tab-group class="tramite-tabs" [selectedIndex]="0" animationDuration="200ms">
+
+  <!-- Tab 1+2: Datos generales + Contenido provincial -->
+  <mat-tab label="Ficha del trámite">
+    <div class="form-card">
+      <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear trámite'"
+          cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
+          (formCancel)="goBack()">
+      </app-dynamic-form>
+    </div>
+  </mat-tab>
+
+  <!-- Tab 3: Contenido por localidad (solo en modo edición) -->
+  <mat-tab [disabled]="!isEdit">
+    <ng-template mat-tab-label>
+      Contenido por localidad
+      @if (!isEdit) {
+        <mat-icon class="tab-lock-icon">lock</mat-icon>
+      } @else if (contenidoLocalidades.length > 0) {
+        <span class="tab-badge">{{ contenidoLocalidades.length }}</span>
+      }
+    </ng-template>
+
+    <div class="localidad-tab-content">
+
+      @if (!isEdit) {
+        <div class="localidad-disabled-msg">
+          <mat-icon>info</mat-icon>
+          <p>Primero creá el trámite. Después podrás agregar contenido específico por localidad.</p>
+        </div>
+      } @else {
+
+        <div class="localidad-header">
+          <div>
+            <h3>Contenido por localidad</h3>
+            <p class="localidad-hint">
+              Personalizá costos, contacto, horarios y URL de inicio para cada localidad.
+              Si un campo queda vacío, se usa el valor provincial (de la pestaña anterior).
+            </p>
+          </div>
+          <button mat-raised-button color="primary" (click)="startAddLocalidad()" [disabled]="addingLocalidad">
+            <mat-icon>add</mat-icon> Agregar localidad
+          </button>
+        </div>
+
+        <!-- Formulario para agregar nueva localidad -->
+        @if (addingLocalidad) {
+          <div class="localidad-form-card">
+            <h4>Nueva localidad</h4>
+            <div class="localidad-form-grid">
+              <mat-form-field appearance="outline" class="colspan-full">
+                <mat-label>Localidad</mat-label>
+                <mat-select [(ngModel)]="newLocalidad.localidadId">
+                  @for (loc of localidadesSinContenido; track loc.id) {
+                    <mat-option [value]="loc.id">{{ loc.nombre }} ({{ loc.departamento }})</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Costos</mat-label>
+                <textarea matInput [(ngModel)]="newLocalidad.costos" rows="2"
+                    placeholder="Ej: $15.000 - Efectivo o transferencia"></textarea>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Contacto</mat-label>
+                <textarea matInput [(ngModel)]="newLocalidad.contacto" rows="2"
+                    placeholder="Dirección, teléfono, email"></textarea>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Horarios</mat-label>
+                <textarea matInput [(ngModel)]="newLocalidad.horarios" rows="2"
+                    placeholder="Ej: Lunes a Viernes 8:00 a 13:00"></textarea>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>URL Iniciar trámite</mat-label>
+                <input matInput [(ngModel)]="newLocalidad.urlTramite" placeholder="https://...">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Sitio web</mat-label>
+                <input matInput [(ngModel)]="newLocalidad.sitioWeb" placeholder="https://...">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Notas adicionales</mat-label>
+                <textarea matInput [(ngModel)]="newLocalidad.notas" rows="2"></textarea>
+              </mat-form-field>
+            </div>
+            <div class="localidad-form-actions">
+              <button mat-button (click)="cancelAddLocalidad()">Cancelar</button>
+              <button mat-raised-button color="primary" (click)="saveNewLocalidad()"
+                  [disabled]="!newLocalidad.localidadId">
+                Guardar
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Lista de localidades con contenido -->
+        @if (contenidoLocalidades.length === 0 && !addingLocalidad) {
+          <div class="localidad-empty">
+            <mat-icon>location_off</mat-icon>
+            <p>No hay contenido específico por localidad. El trámite usa los valores provinciales.</p>
+            <p class="localidad-empty-hint">Agregá una localidad para personalizar costos, contacto y horarios.</p>
+          </div>
+        }
+
+        @for (item of contenidoLocalidades; track item.id) {
+          <div class="localidad-card">
+            @if (editingLocalidad?.id === item.id) {
+              <!-- Modo edición -->
+              <div class="localidad-card-header">
+                <h4>
+                  <mat-icon>location_on</mat-icon>
+                  Editando — {{ item.localidadNombre }}
+                </h4>
+              </div>
+              <div class="localidad-form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Costos</mat-label>
+                  <textarea matInput [(ngModel)]="editingLocalidad!.costos" rows="2"></textarea>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Contacto</mat-label>
+                  <textarea matInput [(ngModel)]="editingLocalidad!.contacto" rows="2"></textarea>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Horarios</mat-label>
+                  <textarea matInput [(ngModel)]="editingLocalidad!.horarios" rows="2"></textarea>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>URL Iniciar trámite</mat-label>
+                  <input matInput [(ngModel)]="editingLocalidad!.urlTramite">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Sitio web</mat-label>
+                  <input matInput [(ngModel)]="editingLocalidad!.sitioWeb">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Notas</mat-label>
+                  <textarea matInput [(ngModel)]="editingLocalidad!.notas" rows="2"></textarea>
+                </mat-form-field>
+              </div>
+              <div class="localidad-form-actions">
+                <button mat-button (click)="cancelEditLocalidad()">Cancelar</button>
+                <button mat-raised-button color="primary" (click)="saveEditLocalidad()">Guardar</button>
+              </div>
+            } @else {
+              <!-- Modo lectura -->
+              <div class="localidad-card-header">
+                <h4>
+                  <mat-icon>location_on</mat-icon>
+                  {{ item.localidadNombre }}
+                </h4>
+                <div class="localidad-card-actions">
+                  <button mat-icon-button (click)="startEditLocalidad(item)" aria-label="Editar">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="deleteLocalidad(item)" aria-label="Eliminar" class="delete-btn">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div class="localidad-card-body">
+                @if (item.costos) {
+                  <div class="localidad-field">
+                    <span class="field-label">Costos</span>
+                    <span class="field-value">{{ item.costos }}</span>
+                  </div>
+                }
+                @if (item.contacto) {
+                  <div class="localidad-field">
+                    <span class="field-label">Contacto</span>
+                    <span class="field-value">{{ item.contacto }}</span>
+                  </div>
+                }
+                @if (item.horarios) {
+                  <div class="localidad-field">
+                    <span class="field-label">Horarios</span>
+                    <span class="field-value">{{ item.horarios }}</span>
+                  </div>
+                }
+                @if (item.urlTramite) {
+                  <div class="localidad-field">
+                    <span class="field-label">URL trámite</span>
+                    <span class="field-value link">{{ item.urlTramite }}</span>
+                  </div>
+                }
+                @if (item.notas) {
+                  <div class="localidad-field">
+                    <span class="field-label">Notas</span>
+                    <span class="field-value">{{ item.notas }}</span>
+                  </div>
+                }
+                @if (!item.costos && !item.contacto && !item.horarios && !item.urlTramite) {
+                  <p class="localidad-no-data">Sin datos específicos cargados. Editá para agregar.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  </mat-tab>
+
+</mat-tab-group>

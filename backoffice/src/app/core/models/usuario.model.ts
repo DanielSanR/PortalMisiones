@@ -8,6 +8,8 @@ export interface Usuario {
   rol: UserRole;
   organismoId: string | null;
   organismoNombre?: string;
+  localidadId: number | null;
+  localidadNombre?: string;
   activo: boolean;
   createdAt: string;
 }
@@ -19,6 +21,7 @@ export interface UsuarioCreate {
   password: string;
   rol: UserRole;
   organismoId?: string;
+  localidadId?: number;
 }
 
 export interface UsuarioUpdate {
@@ -26,5 +29,6 @@ export interface UsuarioUpdate {
   apellido?: string;
   rol?: UserRole;
   organismoId?: string;
+  localidadId?: number;
   activo?: boolean;
 }

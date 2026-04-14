@@ -1,0 +1,193 @@
+.tramite-tabs {
+  ::ng-deep .mat-mdc-tab-body-wrapper {
+    padding-top: var(--theme-space-md);
+  }
+}
+
+.tab-lock-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  opacity: 0.5;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--theme-primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+// ── Tab contenido por localidad ─────────────────────
+
+.localidad-tab-content {
+  max-width: 900px;
+  padding: var(--theme-space-md) 0;
+}
+
+.localidad-disabled-msg {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-sm);
+  padding: var(--theme-space-lg);
+  background: var(--theme-bg-hover);
+  border-radius: var(--theme-radius-lg);
+  color: var(--theme-text-secondary);
+
+  mat-icon { flex-shrink: 0; }
+  p { margin: 0; }
+}
+
+.localidad-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--theme-space-lg);
+  gap: var(--theme-space-md);
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: var(--theme-font-size-lg);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+}
+
+.localidad-hint {
+  margin: 0;
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-secondary);
+  max-width: 500px;
+}
+
+.localidad-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--theme-space-2xl);
+  color: var(--theme-text-secondary);
+  text-align: center;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.4;
+    margin-bottom: var(--theme-space-sm);
+  }
+
+  p { margin: 4px 0; }
+}
+
+.localidad-empty-hint {
+  font-size: var(--theme-font-size-sm);
+  opacity: 0.7;
+}
+
+// ── Localidad cards ─────────────────────────────────
+
+.localidad-card, .localidad-form-card {
+  background: var(--theme-bg-card);
+  border: 1px solid var(--theme-border-secondary);
+  border-radius: var(--theme-radius-lg);
+  padding: var(--theme-space-lg);
+  margin-bottom: var(--theme-space-md);
+}
+
+.localidad-form-card h4,
+.localidad-card-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--theme-space-md);
+  font-size: var(--theme-font-size-md);
+  font-weight: var(--theme-font-weight-semibold);
+
+  mat-icon {
+    color: var(--theme-primary);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.localidad-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.localidad-card-actions {
+  display: flex;
+  gap: 0;
+}
+
+.localidad-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--theme-space-sm) var(--theme-space-md);
+
+  .colspan-full {
+    grid-column: 1 / -1;
+  }
+}
+
+.localidad-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--theme-space-sm);
+  margin-top: var(--theme-space-sm);
+}
+
+// ── Localidad card body (read mode) ─────────────────
+
+.localidad-card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--theme-space-xs) var(--theme-space-lg);
+}
+
+.localidad-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.field-label {
+  font-size: 11px;
+  color: var(--theme-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: var(--theme-font-weight-medium);
+}
+
+.field-value {
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-primary);
+  white-space: pre-line;
+
+  &.link {
+    color: var(--theme-primary);
+    word-break: break-all;
+  }
+}
+
+.localidad-no-data {
+  grid-column: 1 / -1;
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-sm);
+  font-style: italic;
+  margin: 0;
+}
+
+.delete-btn {
+  color: var(--theme-error) !important;
+}

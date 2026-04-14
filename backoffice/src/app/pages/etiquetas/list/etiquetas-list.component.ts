@@ -35,7 +35,6 @@ export class EtiquetasListComponent implements OnInit {
   columns: TableColumn<Etiqueta>[] = [
     { key: 'color',        label: '',            width: '48px' },
     { key: 'nombre',       label: 'Nombre' },
-    { key: 'categoria',    label: 'Categoría',   width: '140px', hideOnMobile: true },
     { key: 'tramitesCount', label: 'Trámites',   width: '100px' },
     { key: 'acciones',     label: 'Acciones',    width: '80px' },
   ];

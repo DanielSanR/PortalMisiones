@@ -1,0 +1,80 @@
+<app-page-header title="Categorías" subtitle="Estructura de navegación del portal (categorías y sub-categorías)">
+  <button mat-raised-button color="primary" (click)="onCreate()">
+    <mat-icon>add</mat-icon> Nueva categoría
+  </button>
+</app-page-header>
+
+@if (loading) {
+  <div class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (categorias.length === 0) {
+  <div class="empty-state">
+    <mat-icon>folder_off</mat-icon>
+    <p>No hay categorías registradas</p>
+  </div>
+} @else {
+  <div class="categorias-tree">
+    <mat-accordion multi>
+      @for (cat of categorias; track cat.id) {
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <div class="cat-header">
+                <span class="color-dot" [style.background]="cat.color"></span>
+                <mat-icon class="cat-icon" [style.color]="cat.color">{{ cat.icono }}</mat-icon>
+                <strong>{{ cat.nombre }}</strong>
+                <span class="count-badge">{{ cat.tramitesCount || 0 }} trámites</span>
+              </div>
+            </mat-panel-title>
+            <mat-panel-description>
+              <button mat-icon-button (click)="$event.stopPropagation(); onEdit(cat)" aria-label="Editar">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button (click)="$event.stopPropagation(); onDelete(cat)" aria-label="Eliminar" class="delete-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          @if (cat.descripcion) {
+            <p class="cat-description">{{ cat.descripcion }}</p>
+          }
+
+          <div class="subcategorias">
+            <div class="subcat-header">
+              <span class="subcat-title">Sub-categorías</span>
+              <button mat-stroked-button color="primary" (click)="onCreate(cat.id)">
+                <mat-icon>add</mat-icon> Agregar sub-categoría
+              </button>
+            </div>
+
+            @if (cat.children && cat.children.length > 0) {
+              <div class="subcat-list">
+                @for (sub of cat.children; track sub.id) {
+                  <div class="subcat-item">
+                    <div class="subcat-info">
+                      <mat-icon [style.color]="sub.color">{{ sub.icono }}</mat-icon>
+                      <span class="subcat-name">{{ sub.nombre }}</span>
+                      <span class="count-badge small">{{ sub.tramitesCount || 0 }}</span>
+                    </div>
+                    <div class="subcat-actions">
+                      <button mat-icon-button (click)="onEdit(sub)" aria-label="Editar">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="onDelete(sub)" aria-label="Eliminar" class="delete-btn">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="empty-subcat">Sin sub-categorías. Agregue una para organizar los trámites de esta categoría.</p>
+            }
+          </div>
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  </div>
+}

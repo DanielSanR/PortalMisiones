@@ -43,7 +43,6 @@ export class EtiquetaFormComponent implements OnInit {
         next: (etiqueta) => {
           this.initialData = {
             nombre: etiqueta.nombre,
-            categoria: etiqueta.categoria,
             icono: etiqueta.icono,
             color: etiqueta.color,
           };

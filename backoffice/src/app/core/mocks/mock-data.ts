@@ -1,4 +1,4 @@
-import { Tramite, Organismo, Modalidad, Etiqueta, EventoDeVida, Localidad, PaginatedResponse } from '../models/tramite.model';
+import { Tramite, Organismo, Modalidad, Etiqueta, EventoDeVida, Localidad, Categoria, Destinatario, TramiteContenidoLocalidad, PaginatedResponse } from '../models/tramite.model';
 import { Usuario } from '../models/usuario.model';
 import { UserRole } from '../enums/user-role.enum';
 import { DashboardMetrics, TopTramite, TopBusqueda, AuditoriaTramite, TramitesPorOrganismo, FeedbackTramite, FeedbackStats } from '../models/dashboard.model';
@@ -46,18 +46,69 @@ export const MOCK_MODALIDADES: Modalidad[] = [
   { id: 4, nombre: 'Informativo / derivación', descripcion: 'Solo información y enlace al organismo responsable', icono: 'info', color: '#9C27B0', activo: true, tramitesCount: 1 },
 ];
 
-// ── Etiquetas ───────────────────────────────────────────────
+// ── Etiquetas (chips transversales del Figma) ──────────────
 export const MOCK_ETIQUETAS: Etiqueta[] = [
-  { id: 1, nombre: 'Salud', slug: 'salud', categoria: 'Temática', icono: 'health_and_safety', color: '#4CAF50', activo: true, tramitesCount: 2 },
-  { id: 2, nombre: 'Educación', slug: 'educacion', categoria: 'Temática', icono: 'school', color: '#2196F3', activo: true, tramitesCount: 2 },
-  { id: 3, nombre: 'DNI / Identidad', slug: 'dni-identidad', categoria: 'Temática', icono: 'badge', color: '#FF9800', activo: true, tramitesCount: 2 },
-  { id: 4, nombre: 'Impuestos', slug: 'impuestos', categoria: 'Temática', icono: 'payments', color: '#F44336', activo: true, tramitesCount: 1 },
-  { id: 5, nombre: 'Vivienda', slug: 'vivienda', categoria: 'Temática', icono: 'house', color: '#795548', activo: true, tramitesCount: 1 },
-  { id: 6, nombre: 'Empleo', slug: 'empleo', categoria: 'Temática', icono: 'work', color: '#607D8B', activo: true, tramitesCount: 1 },
-  { id: 7, nombre: 'Niñez', slug: 'ninez', categoria: 'Perfil', icono: 'child_care', color: '#E91E63', activo: true, tramitesCount: 1 },
-  { id: 8, nombre: 'Jubilados', slug: 'jubilados', categoria: 'Perfil', icono: 'elderly', color: '#9C27B0', activo: true, tramitesCount: 0 },
-  { id: 9, nombre: 'Empresas', slug: 'empresas', categoria: 'Perfil', icono: 'business', color: '#3F51B5', activo: true, tramitesCount: 2 },
-  { id: 10, nombre: 'Emprendedores', slug: 'emprendedores', categoria: 'Perfil', icono: 'rocket_launch', color: '#009688', activo: true, tramitesCount: 1 },
+  { id: 1,  nombre: 'Personas',         slug: 'personas',         icono: 'person',             color: '#2196F3', activo: true, tramitesCount: 5 },
+  { id: 2,  nombre: 'Niños',            slug: 'ninos',            icono: 'child_care',         color: '#E91E63', activo: true, tramitesCount: 1 },
+  { id: 3,  nombre: 'DNI',              slug: 'dni',              icono: 'badge',              color: '#FF9800', activo: true, tramitesCount: 2 },
+  { id: 4,  nombre: 'Salud',            slug: 'salud',            icono: 'health_and_safety',  color: '#4CAF50', activo: true, tramitesCount: 2 },
+  { id: 5,  nombre: 'Educación',        slug: 'educacion',        icono: 'school',             color: '#3F51B5', activo: true, tramitesCount: 2 },
+  { id: 6,  nombre: 'Alimentos',        slug: 'alimentos',        icono: 'restaurant',         color: '#8BC34A', activo: true, tramitesCount: 1 },
+  { id: 7,  nombre: 'Adultos Mayores',  slug: 'adultos-mayores',  icono: 'elderly',            color: '#9C27B0', activo: true, tramitesCount: 0 },
+  { id: 8,  nombre: 'Discapacidad',     slug: 'discapacidad',     icono: 'accessible',         color: '#00BCD4', activo: true, tramitesCount: 0 },
+  { id: 9,  nombre: 'Reciclaje',        slug: 'reciclaje',        icono: 'recycling',          color: '#4CAF50', activo: true, tramitesCount: 0 },
+  { id: 10, nombre: 'Seguridad',        slug: 'seguridad',        icono: 'security',           color: '#F44336', activo: true, tramitesCount: 0 },
+  { id: 11, nombre: 'Medio Ambiente',   slug: 'medio-ambiente',   icono: 'eco',                color: '#2E7D32', activo: true, tramitesCount: 0 },
+  { id: 12, nombre: 'Jubilaciones',     slug: 'jubilaciones',     icono: 'elderly_woman',      color: '#795548', activo: true, tramitesCount: 0 },
+  { id: 13, nombre: 'Cultura',          slug: 'cultura',          icono: 'theater_comedy',     color: '#FF5722', activo: true, tramitesCount: 0 },
+  { id: 14, nombre: 'Deportes',         slug: 'deportes',         icono: 'sports_soccer',      color: '#009688', activo: true, tramitesCount: 0 },
+  { id: 15, nombre: 'Turismo',          slug: 'turismo',          icono: 'flight',             color: '#03A9F4', activo: true, tramitesCount: 0 },
+];
+
+// ── Categorías (árbol de navegación del Figma) ─────────────
+export const MOCK_CATEGORIAS: Categoria[] = [
+  // Nivel 1 (raíz)
+  { id: 1,  nombre: 'Automotor, transporte y tránsito', slug: 'automotor-transporte-transito', descripcion: 'Licencias, infracciones, tasas y permisos vehiculares', icono: 'directions_car', color: '#1565C0', parentId: null, orden: 1, activo: true, tramitesCount: 4 },
+  { id: 2,  nombre: 'Denuncias',                        slug: 'denuncias',                     descripcion: 'Denuncias ante organismos provinciales',               icono: 'report',         color: '#C62828', parentId: null, orden: 2, activo: true, tramitesCount: 0 },
+  { id: 3,  nombre: 'Jubilaciones y pensiones',         slug: 'jubilaciones-pensiones',         descripcion: 'Trámites previsionales y certificaciones',             icono: 'elderly',        color: '#6A1B9A', parentId: null, orden: 3, activo: true, tramitesCount: 0 },
+  { id: 4,  nombre: 'Impuestos, pagos y deudas',        slug: 'impuestos-pagos-deudas',         descripcion: 'Consultas y gestión tributaria provincial',            icono: 'payments',       color: '#E65100', parentId: null, orden: 4, activo: true, tramitesCount: 1 },
+  { id: 5,  nombre: 'Actividades comerciales, productivas y de servicio', slug: 'actividades-comerciales', descripcion: 'Registros, habilitaciones y permisos comerciales', icono: 'storefront', color: '#2E7D32', parentId: null, orden: 5, activo: true, tramitesCount: 1 },
+  { id: 6,  nombre: 'Educación y becas',                slug: 'educacion-becas',                descripcion: 'Inscripciones, becas y programas educativos',          icono: 'school',         color: '#1565C0', parentId: null, orden: 6, activo: true, tramitesCount: 2 },
+  { id: 7,  nombre: 'Salud',                            slug: 'salud',                          descripcion: 'Credenciales, libretas sanitarias y turnos',           icono: 'health_and_safety', color: '#2E7D32', parentId: null, orden: 7, activo: true, tramitesCount: 2 },
+  { id: 8,  nombre: 'Vivienda',                         slug: 'vivienda',                       descripcion: 'Planes habitacionales y certificados',                icono: 'house',          color: '#795548', parentId: null, orden: 8, activo: true, tramitesCount: 1 },
+  { id: 9,  nombre: 'Trabajo y empleo',                 slug: 'trabajo-empleo',                 descripcion: 'Capacitaciones y programas de inserción laboral',      icono: 'work',           color: '#37474F', parentId: null, orden: 9, activo: true, tramitesCount: 1 },
+  { id: 10, nombre: 'Documentación e identidad',        slug: 'documentacion-identidad',        descripcion: 'DNI, partidas, registros civiles',                    icono: 'badge',          color: '#FF8F00', parentId: null, orden: 10, activo: true, tramitesCount: 1 },
+
+  // Nivel 2 — hijos de "Automotor, transporte y tránsito" (id: 1)
+  { id: 101, nombre: 'Licencia de conducir',      slug: 'licencia-conducir',      descripcion: null, icono: 'card_membership', color: '#1565C0', parentId: 1, orden: 1, activo: true, tramitesCount: 3 },
+  { id: 102, nombre: 'Infracciones',              slug: 'infracciones',           descripcion: null, icono: 'gavel',           color: '#1565C0', parentId: 1, orden: 2, activo: true, tramitesCount: 0 },
+  { id: 103, nombre: 'Tasas',                     slug: 'tasas',                  descripcion: null, icono: 'receipt_long',    color: '#1565C0', parentId: 1, orden: 3, activo: true, tramitesCount: 0 },
+  { id: 104, nombre: 'Permisos y solicitudes',    slug: 'permisos-solicitudes',   descripcion: null, icono: 'approval',        color: '#1565C0', parentId: 1, orden: 4, activo: true, tramitesCount: 1 },
+
+  // Nivel 2 — hijos de "Impuestos, pagos y deudas" (id: 4)
+  { id: 401, nombre: 'Ingresos Brutos',           slug: 'ingresos-brutos',        descripcion: null, icono: 'account_balance', color: '#E65100', parentId: 4, orden: 1, activo: true, tramitesCount: 1 },
+
+  // Nivel 2 — hijos de "Actividades comerciales" (id: 5)
+  { id: 501, nombre: 'Registro PyME',             slug: 'registro-pyme',          descripcion: null, icono: 'business_center', color: '#2E7D32', parentId: 5, orden: 1, activo: true, tramitesCount: 1 },
+];
+
+// ── Destinatarios (tabs del Figma) ─────────────────────────
+export const MOCK_DESTINATARIOS: Destinatario[] = [
+  { id: 1, nombre: 'Ciudadanía',                   slug: 'ciudadania',               icono: 'person',           orden: 1, activo: true },
+  { id: 2, nombre: 'Organizaciones y empresas',    slug: 'organizaciones-empresas',  icono: 'business',         orden: 2, activo: true },
+  { id: 3, nombre: 'Organismos',                   slug: 'organismos',               icono: 'account_balance',  orden: 3, activo: true },
+];
+
+// ── Contenido por localidad (overrides) ────────────────────
+export const MOCK_CONTENIDO_LOCALIDAD: TramiteContenidoLocalidad[] = [
+  // Credencial IPS — Posadas
+  { id: 1, tramiteId: 'tram-1', localidadId: 1, localidadNombre: 'Posadas', costos: 'Gratuito para afiliados activos', contacto: 'Av. Roque Pérez N°2398, Posadas\nTel: (0376) 444-7800\nHorario: Lunes a Viernes 7:00 a 13:00', sitioWeb: 'https://ips.misiones.gob.ar/posadas', urlTramite: 'https://ips.misiones.gob.ar/posadas/credencial', horarios: 'Lunes a Viernes 7:00 a 13:00', notas: null, activo: true },
+  // Credencial IPS — Oberá
+  { id: 2, tramiteId: 'tram-1', localidadId: 4, localidadNombre: 'Oberá', costos: 'Gratuito para afiliados activos', contacto: 'Calle Italia N°520, Oberá\nTel: (03755) 42-1100\nHorario: Lunes a Viernes 7:00 a 12:00', sitioWeb: 'https://ips.misiones.gob.ar/obera', urlTramite: 'https://ips.misiones.gob.ar/obera/credencial', horarios: 'Lunes a Viernes 7:00 a 12:00', notas: null, activo: true },
+  // Credencial IPS — Eldorado
+  { id: 3, tramiteId: 'tram-1', localidadId: 6, localidadNombre: 'Eldorado', costos: 'Gratuito para afiliados activos', contacto: 'Av. San Martín N°1850, Eldorado\nTel: (03751) 42-2000\nHorario: Lunes a Viernes 7:30 a 12:30', sitioWeb: null, urlTramite: null, horarios: 'Lunes a Viernes 7:30 a 12:30', notas: 'Atención con turno previo únicamente', activo: true },
+  // Turno Registro Civil — Posadas
+  { id: 4, tramiteId: 'tram-3', localidadId: 1, localidadNombre: 'Posadas', costos: '$5.000 (partida) / $2.500 (turno DNI)', contacto: 'Av. Corrientes N°2231, Posadas\nTel: (0376) 444-3600', sitioWeb: null, urlTramite: 'https://turnos.registro.misiones.gob.ar/posadas', horarios: 'Lunes a Viernes 7:30 a 12:30', notas: null, activo: true },
 ];
 
 // ── Trámites ────────────────────────────────────────────────
@@ -68,7 +119,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     descripcionLarga: '¿A quién se dirige?\nA todos los afiliados activos del IPS.\n\nRequisitos:\n- DNI vigente\n- Último recibo de sueldo\n- Foto carnet 4x4\n\nPaso a paso:\n1. Presentarse en la delegación más cercana\n2. Completar el formulario de solicitud\n3. Adjuntar documentación requerida\n4. Retirar la credencial en 15 días hábiles',
     urlOficial: 'https://ips.misiones.gob.ar/credencial', organismoId: 'org-1', modalidadId: 2, icono: 'health_and_safety',
     estado: 'publicado', destacado: true,
-    etiquetas: [MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[0], modalidad: MOCK_MODALIDADES[1],
+    requisitos: 'DNI vigente\nÚltimo recibo de sueldo\nFoto carnet 4x4', costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[3]], organismo: MOCK_ORGANISMOS[0], modalidad: MOCK_MODALIDADES[1],
     localidades: [{ id: 1, nombre: 'Posadas' }, { id: 4, nombre: 'Oberá' }, { id: 6, nombre: 'Eldorado' }],
     createdAt: '2026-02-15T10:00:00Z', updatedAt: '2026-03-20T14:30:00Z',
   },
@@ -78,7 +130,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     descripcionLarga: 'El BEEG permite a estudiantes de nivel primario, secundario y terciario viajar gratis en transporte público provincial.',
     urlOficial: 'https://beeg.misiones.gob.ar', organismoId: 'org-4', modalidadId: 1, icono: 'directions_bus',
     estado: 'publicado', destacado: true,
-    etiquetas: [MOCK_ETIQUETAS[1]], organismo: MOCK_ORGANISMOS[3], modalidad: MOCK_MODALIDADES[0],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[4]], organismo: MOCK_ORGANISMOS[3], modalidad: MOCK_MODALIDADES[0],
     createdAt: '2026-01-10T08:00:00Z', updatedAt: '2026-03-18T09:15:00Z',
   },
   {
@@ -86,7 +139,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Reserva de turnos online para trámites de DNI, partidas y actas.',
     descripcionLarga: null, urlOficial: 'https://turnos.registro.misiones.gob.ar', organismoId: 'org-2', modalidadId: 3, icono: 'badge',
     estado: 'publicado', destacado: true,
-    etiquetas: [MOCK_ETIQUETAS[2]], organismo: MOCK_ORGANISMOS[1], modalidad: MOCK_MODALIDADES[2],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[2], MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[1], modalidad: MOCK_MODALIDADES[2],
     localidades: [{ id: 1, nombre: 'Posadas' }],
     createdAt: '2026-01-20T12:00:00Z', updatedAt: '2026-03-15T16:45:00Z',
   },
@@ -95,7 +149,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Verificar el estado de cuenta y deuda del impuesto sobre Ingresos Brutos.',
     descripcionLarga: null, urlOficial: 'https://rentas.misiones.gob.ar/iibb', organismoId: 'org-3', modalidadId: 1, icono: 'payments',
     estado: 'publicado', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[3], MOCK_ETIQUETAS[8]], organismo: MOCK_ORGANISMOS[2], modalidad: MOCK_MODALIDADES[0],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[2], modalidad: MOCK_MODALIDADES[0],
     createdAt: '2026-02-01T09:00:00Z', updatedAt: '2026-03-10T11:20:00Z',
   },
   {
@@ -103,7 +158,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Tramitación del certificado de residencia provincial para presentaciones ante organismos.',
     descripcionLarga: null, urlOficial: 'https://registro.misiones.gob.ar/residencia', organismoId: 'org-2', modalidadId: 2, icono: 'contact_page',
     estado: 'revision', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[2]], organismo: MOCK_ORGANISMOS[1], modalidad: MOCK_MODALIDADES[1],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[2], MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[1], modalidad: MOCK_MODALIDADES[1],
     createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-25T08:00:00Z',
   },
   {
@@ -111,7 +167,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Inscripción en el registro provincial de PyMEs para acceder a beneficios fiscales y crediticios.',
     descripcionLarga: null, urlOficial: 'https://pyme.misiones.gob.ar', organismoId: 'org-3', modalidadId: 1, icono: 'storefront',
     estado: 'borrador', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[8], MOCK_ETIQUETAS[9]], organismo: MOCK_ORGANISMOS[2], modalidad: MOCK_MODALIDADES[0],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[2], modalidad: MOCK_MODALIDADES[0],
     createdAt: '2026-03-20T14:00:00Z', updatedAt: '2026-03-26T10:00:00Z',
   },
   {
@@ -119,7 +176,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Inscripción para acceder a los planes de vivienda del Instituto Provincial de Desarrollo Habitacional.',
     descripcionLarga: null, urlOficial: 'https://iprodha.misiones.gob.ar/planes', organismoId: 'org-6', modalidadId: 2, icono: 'house',
     estado: 'publicado', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[4]], organismo: MOCK_ORGANISMOS[5], modalidad: MOCK_MODALIDADES[1],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[5], modalidad: MOCK_MODALIDADES[1],
     createdAt: '2026-02-10T08:00:00Z', updatedAt: '2026-03-12T15:30:00Z',
   },
   {
@@ -127,7 +185,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Registro en cursos de formación profesional del Ministerio de Trabajo y Empleo.',
     descripcionLarga: null, urlOficial: 'https://trabajo.misiones.gob.ar/capacitaciones', organismoId: 'org-7', modalidadId: 3, icono: 'work',
     estado: 'borrador', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[5]], organismo: MOCK_ORGANISMOS[6], modalidad: MOCK_MODALIDADES[2],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[6], modalidad: MOCK_MODALIDADES[2],
     createdAt: '2026-03-22T11:00:00Z', updatedAt: '2026-03-27T09:00:00Z',
   },
   {
@@ -135,7 +194,8 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Trámite para obtener o renovar la libreta sanitaria obligatoria para manipuladores de alimentos.',
     descripcionLarga: null, urlOficial: 'https://salud.misiones.gob.ar/libreta', organismoId: 'org-5', modalidadId: 2, icono: 'medical_services',
     estado: 'despublicado', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[0]], organismo: MOCK_ORGANISMOS[4], modalidad: MOCK_MODALIDADES[1],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[3], MOCK_ETIQUETAS[5]], organismo: MOCK_ORGANISMOS[4], modalidad: MOCK_MODALIDADES[1],
     createdAt: '2026-01-05T10:00:00Z', updatedAt: '2026-02-28T12:00:00Z',
   },
   {
@@ -143,18 +203,19 @@ export const MOCK_TRAMITES: Tramite[] = [
     resumen: 'Postulación para becas destinadas a estudiantes de nivel terciario y universitario de Misiones.',
     descripcionLarga: null, urlOficial: 'https://educacion.misiones.gob.ar/becas', organismoId: 'org-4', modalidadId: 1, icono: 'school',
     estado: 'publicado', destacado: false,
-    etiquetas: [MOCK_ETIQUETAS[1], MOCK_ETIQUETAS[6]], organismo: MOCK_ORGANISMOS[3], modalidad: MOCK_MODALIDADES[0],
+    requisitos: null, costos: null, formularios: null, contacto: null, sitioWebTramite: null, categoriaId: null,
+    etiquetas: [MOCK_ETIQUETAS[4], MOCK_ETIQUETAS[1]], organismo: MOCK_ORGANISMOS[3], modalidad: MOCK_MODALIDADES[0],
     createdAt: '2026-02-20T09:00:00Z', updatedAt: '2026-03-22T13:00:00Z',
   },
 ];
 
 // ── Usuarios ────────────────────────────────────────────────
 export const MOCK_USUARIOS: Usuario[] = [
-  { id: 'usr-1', email: 'admin@misiones.gob.ar', nombre: 'Carlos', apellido: 'Fernández', rol: UserRole.SUPERADMIN, organismoId: null, organismoNombre: '-', activo: true, createdAt: '2026-01-01T00:00:00Z' },
-  { id: 'usr-2', email: 'ips.admin@misiones.gob.ar', nombre: 'María', apellido: 'González', rol: UserRole.ADMIN_ORGANISMO, organismoId: 'org-1', organismoNombre: 'IPS', activo: true, createdAt: '2026-01-15T00:00:00Z' },
-  { id: 'usr-3', email: 'registro.admin@misiones.gob.ar', nombre: 'Juan', apellido: 'Pérez', rol: UserRole.ADMIN_ORGANISMO, organismoId: 'org-2', organismoNombre: 'Registro Provincial', activo: true, createdAt: '2026-01-20T00:00:00Z' },
-  { id: 'usr-4', email: 'editor.rentas@misiones.gob.ar', nombre: 'Laura', apellido: 'Martínez', rol: UserRole.EDITOR, organismoId: 'org-3', organismoNombre: 'DGR', activo: true, createdAt: '2026-02-01T00:00:00Z' },
-  { id: 'usr-5', email: 'editor.edu@misiones.gob.ar', nombre: 'Roberto', apellido: 'Silva', rol: UserRole.EDITOR, organismoId: 'org-4', organismoNombre: 'Min. Educación', activo: false, createdAt: '2026-02-15T00:00:00Z' },
+  { id: 'usr-1', email: 'admin@misiones.gob.ar', nombre: 'Carlos', apellido: 'Fernández', rol: UserRole.SUPERADMIN, organismoId: null, organismoNombre: '-', localidadId: null, localidadNombre: undefined, activo: true, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'usr-2', email: 'ips.admin@misiones.gob.ar', nombre: 'María', apellido: 'González', rol: UserRole.ADMIN_ORGANISMO, organismoId: 'org-1', organismoNombre: 'IPS', localidadId: null, localidadNombre: undefined, activo: true, createdAt: '2026-01-15T00:00:00Z' },
+  { id: 'usr-3', email: 'registro.admin@misiones.gob.ar', nombre: 'Juan', apellido: 'Pérez', rol: UserRole.ADMIN_ORGANISMO, organismoId: 'org-2', organismoNombre: 'Registro Provincial', localidadId: null, localidadNombre: undefined, activo: true, createdAt: '2026-01-20T00:00:00Z' },
+  { id: 'usr-4', email: 'editor.rentas@misiones.gob.ar', nombre: 'Laura', apellido: 'Martínez', rol: UserRole.EDITOR, organismoId: 'org-3', organismoNombre: 'DGR', localidadId: 1, localidadNombre: 'Posadas', activo: true, createdAt: '2026-02-01T00:00:00Z' },
+  { id: 'usr-5', email: 'editor.edu@misiones.gob.ar', nombre: 'Roberto', apellido: 'Silva', rol: UserRole.EDITOR, organismoId: 'org-4', organismoNombre: 'Min. Educación', localidadId: null, localidadNombre: undefined, activo: false, createdAt: '2026-02-15T00:00:00Z' },
 ];
 
 // ── Dashboard Metrics ───────────────────────────────────────

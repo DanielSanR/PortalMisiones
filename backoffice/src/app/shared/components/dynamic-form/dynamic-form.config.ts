@@ -3,9 +3,10 @@ import { FieldConfig, FormConfig } from '../../../core/models/field.interface';
 const FORM_CONFIGS: Record<string, FormConfig> = {
   TRAMITE: {
     fields: [
+      // ── Tab 1: Datos Generales ───────────────────────────
       {
         name: '_section_info',
-        label: 'Información del trámite',
+        label: 'Datos generales',
         type: 'section-header',
       },
       {
@@ -28,12 +29,6 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         validations: {
           required: true,
         },
-      },
-      {
-        name: 'descripcionLarga',
-        label: 'Descripción completa',
-        type: 'textarea',
-        placeholder: 'Información detallada: a quién se dirige, requisitos, paso a paso...',
       },
       {
         name: 'urlOficial',
@@ -82,15 +77,32 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         options: [],
       },
       {
+        name: 'categoriaIds',
+        label: 'Categorías',
+        type: 'select-multiple',
+        placeholder: 'Seleccione las categorías (sub-categorías)',
+        hint: 'Donde aparecerá el trámite en la navegación del portal.',
+        options: [],
+      },
+      {
         name: 'etiquetaIds',
         label: 'Etiquetas',
         type: 'select-multiple',
-        placeholder: 'Seleccione etiquetas',
+        placeholder: 'Seleccione etiquetas (filtros transversales)',
+        hint: 'Chips para filtrado cruzado entre categorías.',
+        options: [],
+      },
+      {
+        name: 'destinatarioIds',
+        label: 'Destinatarios',
+        type: 'select-multiple',
+        placeholder: 'Seleccione los destinatarios',
+        hint: 'Público objetivo: Ciudadanía, Organizaciones, Organismos.',
         options: [],
       },
       {
         name: '_section_disponibilidad',
-        label: 'Disponibilidad y clasificación ciudadana',
+        label: 'Disponibilidad',
         type: 'section-header',
       },
       {
@@ -107,14 +119,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         label: 'Localidades',
         type: 'select-multiple',
         placeholder: 'Dejar vacío para disponibilidad provincial',
-        hint: 'Si no seleccioná ninguna, el trámite estará disponible en toda la provincia.',
+        hint: 'Si no selecciona ninguna, el trámite estará disponible en toda la provincia.',
         cssClass: 'colspan-full',
         options: [],
-      },
-      {
-        name: '_section_visibilidad',
-        label: 'Visibilidad',
-        type: 'section-header',
       },
       {
         name: 'destacado',
@@ -122,6 +129,54 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'checkbox',
         value: false,
       },
+      // ── Tab 2: Contenido Provincial ──────────────────────
+      {
+        name: '_section_contenido',
+        label: 'Contenido provincial (igual para toda la provincia)',
+        type: 'section-header',
+      },
+      {
+        name: 'descripcionLarga',
+        label: 'Descripción completa',
+        type: 'textarea',
+        placeholder: 'Información detallada: a quién se dirige, paso a paso...',
+        cssClass: 'colspan-full',
+      },
+      {
+        name: 'requisitos',
+        label: 'Guía de Requisitos Generales',
+        type: 'textarea',
+        placeholder: 'Listar los requisitos necesarios para realizar el trámite',
+        cssClass: 'colspan-full',
+      },
+      {
+        name: 'costos',
+        label: 'Costos y modalidad de pago (default provincial)',
+        type: 'textarea',
+        placeholder: 'Costos generales. Se puede personalizar por localidad.',
+        hint: 'Este valor se usa como fallback cuando una localidad no tiene costo específico.',
+      },
+      {
+        name: 'formularios',
+        label: 'Formularios e instructivos',
+        type: 'textarea',
+        placeholder: 'Links a formularios PDF, instructivos, etc.',
+      },
+      {
+        name: 'contacto',
+        label: 'Contacto (default provincial)',
+        type: 'textarea',
+        placeholder: 'Dirección, teléfono, email de contacto general.',
+        hint: 'Se puede personalizar por localidad.',
+      },
+      {
+        name: 'sitioWebTramite',
+        label: 'Sitio web del trámite',
+        type: 'url',
+        placeholder: 'https://...',
+        hint: 'Página específica del trámite en el sitio del organismo.',
+      },
+      // Nota: Tab 3 (contenido por localidad) se maneja fuera del DynamicForm
     ],
     submitButtonText: 'Crear trámite',
     cancelButtonText: 'Cancelar',
@@ -197,20 +252,6 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
           required: true,
           maxLength: 100,
         },
-      },
-      {
-        name: 'categoria',
-        label: 'Categoría',
-        type: 'select',
-        placeholder: 'Seleccione una categoría',
-        cssClass: 'colspan-half',
-        validations: {
-          required: true,
-        },
-        options: [
-          { id: 'Temática', name: 'Temática' },
-          { id: 'Perfil', name: 'Perfil' },
-        ],
       },
       {
         name: '_section_visual',

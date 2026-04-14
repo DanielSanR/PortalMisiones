@@ -20,6 +20,8 @@ import { EventosDeVidaListComponent } from './eventos-de-vida/list/eventos-de-vi
 import { EventoDeVidaFormComponent } from './eventos-de-vida/create/evento-de-vida-form.component';
 import { FeedbackComponent } from './feedback/feedback.component';
 import { UsuarioFormComponent } from './usuarios/create/usuario-form.component';
+import { CategoriasListComponent } from './categorias/list/categorias-list.component';
+import { CategoriaFormComponent } from './categorias/create/categoria-form.component';
 
 const routes: Routes = [
   {
@@ -98,6 +100,26 @@ const routes: Routes = [
       {
         path: 'etiquetas/editar/:id',
         component: EtiquetaFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+
+      // Categorías (solo superadmin)
+      {
+        path: 'categorias/lista',
+        component: CategoriasListComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'categorias/nuevo',
+        component: CategoriaFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'categorias/editar/:id',
+        component: CategoriaFormComponent,
         canActivate: [roleGuard],
         data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
       },
