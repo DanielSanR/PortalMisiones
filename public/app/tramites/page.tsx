@@ -25,7 +25,7 @@ export default async function TramitesPage({ searchParams }: TramitesPageProps) 
   })
 
   return (
-    <PortalShell hero>
+    <PortalShell>
       <main className="relative z-10">
         {/* Breadcrumb */}
         <div className="mx-auto max-w-[1440px] px-4 pt-6 md:px-10">

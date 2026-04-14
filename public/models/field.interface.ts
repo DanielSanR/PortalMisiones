@@ -12,9 +12,7 @@ export interface FieldConfig {
     | 'url'
     | 'email'
     | 'password'
-    | 'radio'
-    | 'tip'
-    | 'slide-toggle';
+    | 'tip';
   placeholder?: string;
   hint?: string;
   cssClass?: 'colspan-full' | 'colspan-half' | 'colspan-third';

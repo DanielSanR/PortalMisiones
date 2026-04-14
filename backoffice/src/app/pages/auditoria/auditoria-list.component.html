@@ -1,7 +1,9 @@
 <app-page-header title="Auditoría" subtitle="Registro de cambios y acciones sobre trámites">
-  <button mat-stroked-button *ngIf="hasFilters()" (click)="clearFilters()">
-    <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
-  </button>
+  @if (hasFilters()) {
+    <button mat-stroked-button (click)="clearFilters()">
+      <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
+    </button>
+  }
 </app-page-header>
 
 <div class="filters-card">
@@ -16,7 +18,9 @@
       <mat-label>Acción</mat-label>
       <mat-select formControlName="accion">
         <mat-option value="">Todas</mat-option>
-        <mat-option *ngFor="let a of acciones" [value]="a.value">{{ a.label }}</mat-option>
+        @for (a of acciones; track a.value) {
+          <mat-option [value]="a.value">{{ a.label }}</mat-option>
+        }
       </mat-select>
     </mat-form-field>
   </form>

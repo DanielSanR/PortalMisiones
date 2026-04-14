@@ -3,7 +3,7 @@ import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
 import { initMockAuth } from './app/core/mocks/mock-auth-init';
 
-// Initialize mock auth so all views are accessible without backend
+// Iniciamos el mock de auth
 initMockAuth();
 
 bootstrapApplication(AppComponent, appConfig)

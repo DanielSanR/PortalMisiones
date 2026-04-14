@@ -1,53 +1,57 @@
 <app-page-header
   title="Feedback Ciudadano"
   [subtitle]="tramiteIdFijo ? 'Filtrando por trámite seleccionado' : 'Opiniones de los ciudadanos sobre los trámites del portal'">
-  <button mat-stroked-button *ngIf="hasFilters()" (click)="clearFilters()">
-    <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
-  </button>
+  @if (hasFilters()) {
+    <button mat-stroked-button (click)="clearFilters()">
+      <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
+    </button>
+  }
 </app-page-header>
 
 <!-- ── Stats Cards ── -->
-<div class="stats-grid" *ngIf="stats">
-  <mat-card class="stat-card">
-    <mat-card-content>
-      <div class="stat-card__icon stat-card__icon--total"><mat-icon>forum</mat-icon></div>
-      <div class="stat-card__info">
-        <span class="stat-card__value">{{ stats.total }}</span>
-        <span class="stat-card__label">Respuestas totales</span>
-      </div>
-    </mat-card-content>
-  </mat-card>
+@if (stats) {
+  <div class="stats-grid">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-card__icon stat-card__icon--total"><mat-icon>forum</mat-icon></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ stats.total }}</span>
+          <span class="stat-card__label">Respuestas totales</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="stat-card">
-    <mat-card-content>
-      <div class="stat-card__icon stat-card__icon--util"><mat-icon>thumb_up</mat-icon></div>
-      <div class="stat-card__info">
-        <span class="stat-card__value">{{ stats.porcentajeUtil }}%</span>
-        <span class="stat-card__label">Consideraron útil el trámite</span>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-card__icon stat-card__icon--util"><mat-icon>thumb_up</mat-icon></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ stats.porcentajeUtil }}%</span>
+          <span class="stat-card__label">Consideraron útil el trámite</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="stat-card">
-    <mat-card-content>
-      <div class="stat-card__icon stat-card__icon--noUtil"><mat-icon>thumb_down</mat-icon></div>
-      <div class="stat-card__info">
-        <span class="stat-card__value">{{ stats.totalNoUtil }}</span>
-        <span class="stat-card__label">Opiniones negativas</span>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-card__icon stat-card__icon--noUtil"><mat-icon>thumb_down</mat-icon></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ stats.totalNoUtil }}</span>
+          <span class="stat-card__label">Opiniones negativas</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="stat-card">
-    <mat-card-content>
-      <div class="stat-card__icon stat-card__icon--comentario"><mat-icon>comment</mat-icon></div>
-      <div class="stat-card__info">
-        <span class="stat-card__value">{{ stats.totalConComentario }}</span>
-        <span class="stat-card__label">Con comentario escrito</span>
-      </div>
-    </mat-card-content>
-  </mat-card>
-</div>
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-card__icon stat-card__icon--comentario"><mat-icon>comment</mat-icon></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ stats.totalConComentario }}</span>
+          <span class="stat-card__label">Con comentario escrito</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}
 
 <!-- ── Filtros ── -->
 <div class="filters-card">
@@ -112,10 +116,11 @@
     </ng-template>
 
     <ng-template appTableCell="comentario" let-row>
-        <span *ngIf="row.comentario" class="comentario-text" [matTooltip]="row.comentario">
-            {{ row.comentario }}
-        </span>
-        <span *ngIf="!row.comentario" class="sin-comentario">—</span>
+        @if (row.comentario) {
+          <span class="comentario-text" [matTooltip]="row.comentario">{{ row.comentario }}</span>
+        } @else {
+          <span class="sin-comentario">—</span>
+        }
     </ng-template>
 
     <ng-template appTableCell="fecha" let-row>

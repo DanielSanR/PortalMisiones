@@ -1,5 +1,5 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -21,8 +21,9 @@ import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../../core/model
 @Component({
   selector: 'app-feedback',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DatePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
@@ -41,7 +42,8 @@ import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../../core/model
   styleUrls: ['./feedback.component.scss'],
 })
 export class FeedbackComponent implements OnInit {
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   registros: FeedbackTramite[] = [];
   stats: FeedbackStats | null = null;
@@ -52,10 +54,10 @@ export class FeedbackComponent implements OnInit {
   tramiteIdFijo: string | null = null;
 
   columns: TableColumn<FeedbackTramite>[] = [
-    { key: 'util',      label: 'Valoración', width: '120px' },
-    { key: 'tramite',   label: 'Trámite' },
+    { key: 'util',       label: 'Valoración', width: '120px' },
+    { key: 'tramite',    label: 'Trámite' },
     { key: 'comentario', label: 'Comentario' },
-    { key: 'fecha',     label: 'Fecha',      width: '150px', hideOnMobile: true },
+    { key: 'fecha',      label: 'Fecha',      width: '150px', hideOnMobile: true },
   ];
 
   filterForm: FormGroup;
@@ -76,9 +78,14 @@ export class FeedbackComponent implements OnInit {
   ngOnInit(): void {
     this.tramiteIdFijo = this.route.snapshot.queryParamMap.get('tramiteId');
 
-    this.feedbackService.getStats().subscribe({
-      next: (stats) => (this.stats = stats),
-    });
+    this.feedbackService.getStats()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (stats) => {
+          this.stats = stats;
+          this.cdr.markForCheck();
+        },
+      });
 
     this.loadData();
 
@@ -106,14 +113,20 @@ export class FeedbackComponent implements OnInit {
       tramiteId: this.tramiteIdFijo ?? undefined,
     };
 
-    this.feedbackService.getAll(filter).subscribe({
-      next: (response) => {
-        this.registros = response.data;
-        this.totalItems = response.total;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.feedbackService.getAll(filter)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.registros = response.data;
+          this.totalItems = response.total;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onPageChange(event: TablePageEvent): void {

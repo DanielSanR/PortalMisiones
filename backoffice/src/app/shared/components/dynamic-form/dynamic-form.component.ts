@@ -99,7 +99,7 @@ export class DynamicFormComponent implements OnInit {
       }
     }
 
-    const fullWidthTypes = ['textarea', 'select', 'select-multiple', 'checkbox', 'slide-toggle', 'tip', 'radio', 'section-header', 'icon-picker'];
+    const fullWidthTypes = ['textarea', 'select', 'select-multiple', 'checkbox', 'tip', 'section-header', 'icon-picker'];
     if (fullWidthTypes.includes(field.type)) return 'dynamic-form-field-full';
 
     const halfWidthTypes = ['datepicker', 'number'];

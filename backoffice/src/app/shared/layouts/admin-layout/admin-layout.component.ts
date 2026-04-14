@@ -13,6 +13,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AuthUser } from '../../../core/models/auth.model';
 import { Router } from '@angular/router';
 import { NAV_ITEMS, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
@@ -71,6 +72,21 @@ export class AdminLayoutComponent implements OnInit {
         item.roles.includes(user.role as UserRole)
       );
     }
+  }
+
+  changeRoleUser(role: string): void {
+    const user = this.authTokenService.getCurrentUser();
+    if (!user) return;
+
+    const updatedUser: AuthUser = { ...user, role: role as UserRole };
+    localStorage.setItem('user_data', JSON.stringify(updatedUser));
+    this.authTokenService.updateUserFromToken();
+
+    this.userName = `${updatedUser.nombre} ${updatedUser.apellido}`;
+    this.userRoleSpanish = this.authTokenService.getUserRoleSpanish() || '';
+    this.filteredNavItems = NAV_ITEMS.filter((item) =>
+      item.roles.includes(updatedUser.role)
+    );
   }
 
   toggleCollapse(): void {

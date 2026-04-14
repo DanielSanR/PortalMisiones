@@ -1,5 +1,5 @@
-import { Component, Inject } from '@angular/core';
-import { CommonModule, KeyValuePipe } from '@angular/common';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { DatePipe, TitleCasePipe, KeyValuePipe } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,7 +8,8 @@ import { AuditoriaTramite } from '../../core/models/dashboard.model';
 @Component({
   selector: 'app-auditoria-detail-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, KeyValuePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DatePipe, TitleCasePipe, KeyValuePipe, MatDialogModule, MatButtonModule, MatIconModule],
   template: `
     <h2 mat-dialog-title>
       <mat-icon class="title-icon">{{ accionIcon }}</mat-icon>
@@ -31,32 +32,42 @@ import { AuditoriaTramite } from '../../core/models/dashboard.model';
         </div>
       </div>
 
-      <div class="diff-container" *ngIf="data.datosAnteriores || data.datosNuevos">
-        <div class="diff-panel diff-old" *ngIf="data.datosAnteriores">
-          <h4><mat-icon>remove_circle_outline</mat-icon> Antes</h4>
-          <div class="diff-content">
-            <div *ngFor="let item of data.datosAnteriores | keyvalue" class="diff-row">
-              <span class="diff-key">{{ item.key }}</span>
-              <span class="diff-value diff-removed">{{ item.value }}</span>
+      @if (data.datosAnteriores || data.datosNuevos) {
+        <div class="diff-container">
+          @if (data.datosAnteriores) {
+            <div class="diff-panel diff-old">
+              <h4><mat-icon>remove_circle_outline</mat-icon> Antes</h4>
+              <div class="diff-content">
+                @for (item of data.datosAnteriores | keyvalue; track item.key) {
+                  <div class="diff-row">
+                    <span class="diff-key">{{ item.key }}</span>
+                    <span class="diff-value diff-removed">{{ item.value }}</span>
+                  </div>
+                }
+              </div>
             </div>
-          </div>
-        </div>
+          }
 
-        <div class="diff-panel diff-new" *ngIf="data.datosNuevos">
-          <h4><mat-icon>add_circle_outline</mat-icon> Después</h4>
-          <div class="diff-content">
-            <div *ngFor="let item of data.datosNuevos | keyvalue" class="diff-row">
-              <span class="diff-key">{{ item.key }}</span>
-              <span class="diff-value diff-added">{{ item.value }}</span>
+          @if (data.datosNuevos) {
+            <div class="diff-panel diff-new">
+              <h4><mat-icon>add_circle_outline</mat-icon> Después</h4>
+              <div class="diff-content">
+                @for (item of data.datosNuevos | keyvalue; track item.key) {
+                  <div class="diff-row">
+                    <span class="diff-key">{{ item.key }}</span>
+                    <span class="diff-value diff-added">{{ item.value }}</span>
+                  </div>
+                }
+              </div>
             </div>
-          </div>
+          }
         </div>
-      </div>
-
-      <div class="no-diff" *ngIf="!data.datosAnteriores && !data.datosNuevos">
-        <mat-icon>info_outline</mat-icon>
-        <p>No se registraron cambios de datos para esta acción.</p>
-      </div>
+      } @else {
+        <div class="no-diff">
+          <mat-icon>info_outline</mat-icon>
+          <p>No se registraron cambios de datos para esta acción.</p>
+        </div>
+      }
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">

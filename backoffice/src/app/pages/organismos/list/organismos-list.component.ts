@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { filter, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -15,8 +16,8 @@ import { Organismo } from '../../../core/models/tramite.model';
 @Component({
   selector: 'app-organismos-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -26,7 +27,6 @@ import { Organismo } from '../../../core/models/tramite.model';
     TableCellDirective,
   ],
   templateUrl: './organismos-list.component.html',
-  styleUrls: ['./organismos-list.component.scss'],
 })
 export class OrganismosListComponent implements OnInit {
   organismos: Organismo[] = [];
@@ -37,6 +37,9 @@ export class OrganismosListComponent implements OnInit {
     { key: 'sitioWeb', label: 'Sitio web', hideOnMobile: true },
     { key: 'acciones', label: 'Acciones', width: '80px' },
   ];
+
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private organismoService: OrganismoService,
@@ -51,13 +54,19 @@ export class OrganismosListComponent implements OnInit {
 
   loadOrganismos(): void {
     this.loading = true;
-    this.organismoService.getAll().subscribe({
-      next: (response) => {
-        this.organismos = response.data;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.organismoService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.organismos = response.data;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onCreate(): void {
@@ -78,15 +87,17 @@ export class OrganismosListComponent implements OnInit {
       panelClass: 'custom-modal-panel',
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.organismoService.delete(organismo.id).subscribe({
-          next: () => {
-            this.snackBar.open('Organismo eliminado', 'OK', { duration: 3000 });
-            this.loadOrganismos();
-          },
-        });
-      }
-    });
+    dialogRef.afterClosed()
+      .pipe(
+        filter(Boolean),
+        switchMap(() => this.organismoService.delete(organismo.id)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Organismo eliminado', 'OK', { duration: 3000 });
+          this.loadOrganismos();
+        },
+      });
   }
 }

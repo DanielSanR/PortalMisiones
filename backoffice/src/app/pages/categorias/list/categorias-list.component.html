@@ -18,8 +18,8 @@
     <mat-accordion multi>
       @for (cat of categorias; track cat.id) {
         <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>
+          <mat-expansion-panel-header class="header">
+            <mat-panel-title class="header-title">
               <div class="cat-header">
                 <span class="color-dot" [style.background]="cat.color"></span>
                 <mat-icon class="cat-icon" [style.color]="cat.color">{{ cat.icono }}</mat-icon>
@@ -27,7 +27,7 @@
                 <span class="count-badge">{{ cat.tramitesCount || 0 }} trámites</span>
               </div>
             </mat-panel-title>
-            <mat-panel-description>
+            <mat-panel-description class="header-actions">
               <button mat-icon-button (click)="$event.stopPropagation(); onEdit(cat)" aria-label="Editar">
                 <mat-icon>edit</mat-icon>
               </button>

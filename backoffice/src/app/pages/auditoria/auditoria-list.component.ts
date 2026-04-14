@@ -1,5 +1,5 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
@@ -19,8 +19,9 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
 @Component({
   selector: 'app-auditoria-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DatePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
@@ -36,7 +37,8 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
   styleUrls: ['./auditoria-list.component.scss'],
 })
 export class AuditoriaListComponent implements OnInit {
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   registros: AuditoriaTramite[] = [];
   loading = true;
@@ -55,12 +57,12 @@ export class AuditoriaListComponent implements OnInit {
   filterForm: FormGroup;
 
   acciones: { value: AuditoriaAccion; label: string }[] = [
-    { value: 'crear',          label: 'Creación' },
-    { value: 'editar',         label: 'Edición' },
-    { value: 'publicar',       label: 'Publicación' },
-    { value: 'despublicar',    label: 'Despublicación' },
+    { value: 'crear',           label: 'Creación' },
+    { value: 'editar',          label: 'Edición' },
+    { value: 'publicar',        label: 'Publicación' },
+    { value: 'despublicar',     label: 'Despublicación' },
     { value: 'enviar_revision', label: 'Envío a revisión' },
-    { value: 'eliminar',       label: 'Eliminación' },
+    { value: 'eliminar',        label: 'Eliminación' },
   ];
 
   constructor(
@@ -95,14 +97,20 @@ export class AuditoriaListComponent implements OnInit {
       accion: v.accion || undefined,
     };
 
-    this.auditoriaService.getAll(filter).subscribe({
-      next: (response) => {
-        this.registros = response.data;
-        this.totalItems = response.total;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.auditoriaService.getAll(filter)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.registros = response.data;
+          this.totalItems = response.total;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onPageChange(event: TablePageEvent): void {

@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
@@ -11,8 +11,8 @@ import { FormConfig } from '../../../core/models/field.interface';
 @Component({
   selector: 'app-etiqueta-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatSnackBarModule,
     PageHeaderComponent,
     DynamicFormComponent,
@@ -23,9 +23,11 @@ export class EtiquetaFormComponent implements OnInit {
   config: FormConfig = getFormConfig('ETIQUETA');
   isEdit = false;
   saving = false;
-  initialData: any = null;
+  initialData: Record<string, any> | null = null;
 
   private editId: number | null = null;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private etiquetaService: EtiquetaService,
@@ -35,19 +37,22 @@ export class EtiquetaFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.params['id'];
-    if (id) {
+    const rawId = this.route.snapshot.params['id'];
+    if (rawId) {
       this.isEdit = true;
-      this.editId = Number(id);
-      this.etiquetaService.getById(this.editId).subscribe({
-        next: (etiqueta) => {
-          this.initialData = {
-            nombre: etiqueta.nombre,
-            icono: etiqueta.icono,
-            color: etiqueta.color,
-          };
-        },
-      });
+      this.editId = Number(rawId);
+      this.etiquetaService.getById(this.editId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (etiqueta) => {
+            this.initialData = {
+              nombre: etiqueta.nombre,
+              icono: etiqueta.icono,
+              color: etiqueta.color,
+            };
+            this.cdr.markForCheck();
+          },
+        });
     }
   }
 
@@ -58,17 +63,22 @@ export class EtiquetaFormComponent implements OnInit {
       ? this.etiquetaService.update(this.editId!, data)
       : this.etiquetaService.create(data);
 
-    request$.subscribe({
-      next: () => {
-        this.snackBar.open(
-          this.isEdit ? 'Etiqueta actualizada' : 'Etiqueta creada',
-          'OK',
-          { duration: 3000 },
-        );
-        this.router.navigate(['/dashboard/etiquetas/lista']);
-      },
-      error: () => { this.saving = false; },
-    });
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.isEdit ? 'Etiqueta actualizada' : 'Etiqueta creada',
+            'OK',
+            { duration: 3000 },
+          );
+          this.router.navigate(['/dashboard/etiquetas/lista']);
+        },
+        error: () => {
+          this.saving = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   goBack(): void {

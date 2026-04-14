@@ -1,160 +1,168 @@
 <app-page-header title="Dashboard" subtitle="Resumen general del portal"></app-page-header>
 
-<div *ngIf="loading" class="loading-container">
+@if (loading) {
+  <div class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
-</div>
+  </div>
+} @else {
 
-<ng-container *ngIf="!loading">
-
-    <!-- ── KPI Cards ──────────────────────────────────────── -->
-    <div class="metrics-grid">
-        <mat-card *ngFor="let card of metricCards" class="metric-card">
-            <mat-card-content>
-                <div class="metric-card__icon" [style.background-color]="card.color + '18'" [style.color]="card.color">
-                    <mat-icon>{{ card.icon }}</mat-icon>
-                </div>
-                <div class="metric-card__info">
-                    <span class="metric-card__value">
-                        {{ card.value }}<span *ngIf="card.suffix" class="metric-card__suffix"> {{ card.suffix }}</span>
-                    </span>
-                    <span class="metric-card__label">{{ card.label }}</span>
-                </div>
-            </mat-card-content>
-        </mat-card>
-    </div>
-
-    <!-- ── Gráficos ───────────────────────────────────────── -->
-    <div class="charts-grid">
-
-        <!-- Donut: distribución por estado -->
-        <mat-card class="chart-card">
-            <mat-card-header>
-                <mat-card-title>Distribución por estado</mat-card-title>
-                <mat-card-subtitle>{{ metrics.totalTramites }} trámites en total</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content class="chart-card__body">
-                <div class="donut-wrapper">
-                    <canvas baseChart
-                        [data]="doughnutData"
-                        [options]="doughnutOptions"
-                        type="doughnut">
-                    </canvas>
-                    <div class="donut-center">
-                        <span class="donut-center__value">{{ metrics.totalTramites }}</span>
-                        <span class="donut-center__label">Total</span>
-                    </div>
-                </div>
-                <div class="donut-legend">
-                    <div class="donut-legend__item">
-                        <span class="donut-legend__dot" style="background:#16A34A"></span>
-                        <span>Publicados</span>
-                        <strong>{{ metrics.tramitesPublicados }}</strong>
-                    </div>
-                    <div class="donut-legend__item">
-                        <span class="donut-legend__dot" style="background:#F59E0B"></span>
-                        <span>Borrador</span>
-                        <strong>{{ metrics.tramitesBorrador }}</strong>
-                    </div>
-                    <div class="donut-legend__item">
-                        <span class="donut-legend__dot" style="background:#3B82F6"></span>
-                        <span>Revisión</span>
-                        <strong>{{ metrics.tramitesRevision }}</strong>
-                    </div>
-                    <div class="donut-legend__item">
-                        <span class="donut-legend__dot" style="background:#9CA3AF"></span>
-                        <span>Despublicados</span>
-                        <strong>{{ metrics.tramitesDespublicados }}</strong>
-                    </div>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <!-- Bar: trámites por organismo -->
-        <mat-card class="chart-card">
-            <mat-card-header>
-                <mat-card-title>Trámites por organismo</mat-card-title>
-                <mat-card-subtitle>{{ metrics.totalOrganismos }} organismos activos</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content class="chart-card__body chart-card__body--bar">
-                <canvas baseChart
-                    [data]="barData"
-                    [options]="barOptions"
-                    type="bar">
-                </canvas>
-            </mat-card-content>
-        </mat-card>
-
-    </div>
-
-    <!-- ── Tablas ─────────────────────────────────────────── -->
-    <div class="tables-grid">
-
-        <!-- Top Trámites -->
-        <mat-card class="data-card">
-            <mat-card-header>
-                <mat-card-title>Trámites más consultados</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="data-card__table">
-                <app-shared-table
-                    [data]="topTramites"
-                    [columns]="topTramitesColumns"
-                    emptyMessage="Sin datos"
-                    emptyIcon="description">
-                    <ng-template appTableCell="consultas" let-row>
-                        <strong>{{ row.consultas | number }}</strong>
-                    </ng-template>
-                </app-shared-table>
-            </mat-card-content>
-        </mat-card>
-
-        <!-- Top Búsquedas -->
-        <mat-card class="data-card">
-            <mat-card-header>
-                <mat-card-title>Búsquedas frecuentes</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="data-card__table">
-                <app-shared-table
-                    [data]="topBusquedas"
-                    [columns]="topBusquedasColumns"
-                    emptyMessage="Sin datos"
-                    emptyIcon="search">
-                    <ng-template appTableCell="cantidad" let-row>
-                        {{ row.cantidad | number }}
-                    </ng-template>
-                    <ng-template appTableCell="sinResultados" let-row>
-                        <mat-icon *ngIf="row.sinResultados" class="warning-icon">warning</mat-icon>
-                    </ng-template>
-                </app-shared-table>
-            </mat-card-content>
-        </mat-card>
-
-    </div>
-
-    <!-- ── Actividad reciente ─────────────────────────────── -->
-    <mat-card class="activity-card" *ngIf="actividadReciente.length">
-        <mat-card-header>
-            <mat-card-title>Actividad reciente</mat-card-title>
-            <mat-card-subtitle>Últimas acciones registradas en el sistema</mat-card-subtitle>
-        </mat-card-header>
+  <!-- ── KPI Cards ──────────────────────────────────────── -->
+  <div class="metrics-grid">
+    @for (card of metricCards; track card.label) {
+      <mat-card class="metric-card">
         <mat-card-content>
-            <ul class="activity-list">
-                <li *ngFor="let item of actividadReciente" class="activity-item">
-                    <span class="activity-item__icon"
-                        [style.background-color]="getAccionBgColor(item.accion)"
-                        [style.color]="item.accion | accionLabel:'color'">
-                        <mat-icon>{{ item.accion | accionLabel:'icon' }}</mat-icon>
-                    </span>
-                    <div class="activity-item__body">
-                        <p class="activity-item__text">
-                            <strong>{{ item.usuarioNombre }}</strong>
-                            realizó la acción <em>{{ item.accion | accionLabel }}</em> en
-                            <strong>{{ item.tramiteTitulo }}</strong>
-                        </p>
-                        <span class="activity-item__date">{{ item.fechaAccion | date:'dd/MM/yyyy HH:mm' }}</span>
-                    </div>
-                </li>
-            </ul>
+          <div class="metric-card__icon" [style.background-color]="card.color + '18'" [style.color]="card.color">
+            <mat-icon>{{ card.icon }}</mat-icon>
+          </div>
+          <div class="metric-card__info">
+            <span class="metric-card__value">
+              {{ card.value }}@if (card.suffix) {<span class="metric-card__suffix"> {{ card.suffix }}</span>}
+            </span>
+            <span class="metric-card__label">{{ card.label }}</span>
+          </div>
         </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <!-- ── Gráficos ───────────────────────────────────────── -->
+  <div class="charts-grid">
+
+    <!-- Donut: distribución por estado -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Distribución por estado</mat-card-title>
+        <mat-card-subtitle>{{ metrics.totalTramites }} trámites en total</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="chart-card__body">
+        <div class="donut-wrapper">
+          <canvas baseChart
+            [data]="doughnutData"
+            [options]="doughnutOptions"
+            type="doughnut">
+          </canvas>
+          <div class="donut-center">
+            <span class="donut-center__value">{{ metrics.totalTramites }}</span>
+            <span class="donut-center__label">Total</span>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="donut-legend__item">
+            <span class="donut-legend__dot" style="background:#16A34A"></span>
+            <span>Publicados</span>
+            <strong>{{ metrics.tramitesPublicados }}</strong>
+          </div>
+          <div class="donut-legend__item">
+            <span class="donut-legend__dot" style="background:#F59E0B"></span>
+            <span>Borrador</span>
+            <strong>{{ metrics.tramitesBorrador }}</strong>
+          </div>
+          <div class="donut-legend__item">
+            <span class="donut-legend__dot" style="background:#3B82F6"></span>
+            <span>Revisión</span>
+            <strong>{{ metrics.tramitesRevision }}</strong>
+          </div>
+          <div class="donut-legend__item">
+            <span class="donut-legend__dot" style="background:#9CA3AF"></span>
+            <span>Despublicados</span>
+            <strong>{{ metrics.tramitesDespublicados }}</strong>
+          </div>
+        </div>
+      </mat-card-content>
     </mat-card>
 
-</ng-container>
+    <!-- Bar: trámites por organismo -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Trámites por organismo</mat-card-title>
+        <mat-card-subtitle>{{ metrics.totalOrganismos }} organismos activos</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="chart-card__body chart-card__body--bar">
+        <canvas baseChart
+          [data]="barData"
+          [options]="barOptions"
+          type="bar">
+        </canvas>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <!-- ── Tablas ─────────────────────────────────────────── -->
+  <div class="tables-grid">
+
+    <!-- Top Trámites -->
+    <mat-card class="data-card">
+      <mat-card-header>
+        <mat-card-title>Trámites más consultados</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="data-card__table">
+        <app-shared-table
+          [data]="topTramites"
+          [columns]="topTramitesColumns"
+          emptyMessage="Sin datos"
+          emptyIcon="description">
+          <ng-template appTableCell="consultas" let-row>
+            <strong>{{ row.consultas | number }}</strong>
+          </ng-template>
+        </app-shared-table>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Top Búsquedas -->
+    <mat-card class="data-card">
+      <mat-card-header>
+        <mat-card-title>Búsquedas frecuentes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="data-card__table">
+        <app-shared-table
+          [data]="topBusquedas"
+          [columns]="topBusquedasColumns"
+          emptyMessage="Sin datos"
+          emptyIcon="search">
+          <ng-template appTableCell="cantidad" let-row>
+            {{ row.cantidad | number }}
+          </ng-template>
+          <ng-template appTableCell="sinResultados" let-row>
+            @if (row.sinResultados) {
+              <mat-icon class="warning-icon">warning</mat-icon>
+            }
+          </ng-template>
+        </app-shared-table>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <!-- ── Actividad reciente ─────────────────────────────── -->
+  @if (actividadReciente.length) {
+    <mat-card class="activity-card">
+      <mat-card-header>
+        <mat-card-title>Actividad reciente</mat-card-title>
+        <mat-card-subtitle>Últimas acciones registradas en el sistema</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <ul class="activity-list">
+          @for (item of actividadReciente; track item.id) {
+            <li class="activity-item">
+              <span class="activity-item__icon"
+                [style.background-color]="getAccionBgColor(item.accion)"
+                [style.color]="item.accion | accionLabel:'color'">
+                <mat-icon>{{ item.accion | accionLabel:'icon' }}</mat-icon>
+              </span>
+              <div class="activity-item__body">
+                <p class="activity-item__text">
+                  <strong>{{ item.usuarioNombre }}</strong>
+                  realizó la acción <em>{{ item.accion | accionLabel }}</em> en
+                  <strong>{{ item.tramiteTitulo }}</strong>
+                </p>
+                <span class="activity-item__date">{{ item.fechaAccion | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  }
+
+}

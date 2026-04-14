@@ -15,7 +15,7 @@
         position: fixed;
         top: 0;
         left: 0;
-        right: 0; 
+        right: 0;
         z-index: var(--theme-z-header);
         background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%);
         color: var(--theme-text-on-primary);
@@ -36,14 +36,8 @@
     }
 
     &__menu-btn {
-        position: relative;
-
         .mat-icon {
             transition: transform var(--theme-transition-normal);
-        }
-
-        &--open .mat-icon {
-            transform: rotate(0deg);
         }
     }
 
@@ -203,7 +197,6 @@
                 outline-offset: -2px;
             }
 
-            // --- Hover: subtle lift + glow ---
             &:hover {
                 background-color: rgba(255, 255, 255, 0.1);
                 color: var(--theme-text-on-dark);
@@ -214,7 +207,6 @@
                 }
             }
 
-            // --- Active: bold left accent bar + highlighted bg ---
             &.active {
                 background: linear-gradient(
                     90deg,
@@ -224,7 +216,6 @@
                 color: #FFFFFF;
                 font-weight: var(--theme-font-weight-semibold);
 
-                // Left accent bar
                 &::before {
                     content: '';
                     position: absolute;
@@ -308,6 +299,7 @@
     &__content {
         background-color: var(--theme-bg-secondary);
         scroll-padding-top: calc(var(--theme-header-height) + 16px);
+        position: relative;
     }
 
     &__page {
@@ -359,7 +351,7 @@
 }
 
 // ==========================================================================
-// USER MENU DROPDOWN — Redesigned with avatar + role badge
+// USER MENU DROPDOWN
 // ==========================================================================
 .user-menu {
     min-width: 240px;
@@ -372,8 +364,18 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: linear-gradient(135deg, var(--theme-primary-50) 0%, #f0f9f0 100%);
-    border-bottom: 1px solid var(--theme-border-secondary);
+}
+
+.test-roles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 24px;
+    gap: 12px;
+
+    h2 {
+        color: white;
+    }
 }
 
 .user-menu-avatar {
@@ -425,47 +427,73 @@ mat-divider {
 }
 
 // ==========================================================================
-// COLLAPSE TOGGLE BUTTON (at bottom of sidenav)
+// COLLAPSE TOGGLE — Floating pill on the right edge of the sidenav
+//
+// Sits inside mat-sidenav-content with position: fixed so it's always
+// anchored to the viewport, independent of scroll. Left value tracks
+// the sidenav width (264px expanded, 64px collapsed). The pill shape
+// (rounded on the right, flush on the left) visually extends the sidenav.
 // ==========================================================================
 .sidenav-collapse-btn {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: fixed;
+    // Aligned with the logo section: header height + ~40px to center within the logo block
+    top: calc(var(--theme-header-height) + 40px);
+    left: 264px;
+    transform: translateY(-50%);
+    z-index: calc(var(--theme-z-header) - 1);
+
+    // Pill shape: flush left side, rounded right side
+    width: 16px;
+    height: 52px;
+    border-radius: 0 26px 26px 0;
+    padding: 0;
+
+    // Visual style: same green as sidenav with slight depth
+    background: var(--theme-primary-dark, #1a3f20);
+    border: none;
+    box-shadow:
+        2px 0 6px rgba(0, 0, 0, 0.18),
+        inset -1px 0 0 rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 44px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(0, 0, 0, 0.15);
-    color: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    width: 100%;
-    transition: color var(--theme-transition-fast),
-                background-color var(--theme-transition-fast);
-    font-family: inherit;
+    color: rgba(255, 255, 255, 0.75);
+
+    transition:
+        left var(--theme-transition-normal),
+        background-color var(--theme-transition-fast),
+        color var(--theme-transition-fast),
+        box-shadow var(--theme-transition-fast);
 
     &:hover {
-        color: rgba(255, 255, 255, 0.85);
-        background: rgba(0, 0, 0, 0.25);
+        background: var(--theme-primary);
+        color: #ffffff;
+        box-shadow:
+            3px 0 10px rgba(0, 0, 0, 0.25),
+            inset -1px 0 0 rgba(255, 255, 255, 0.12);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--theme-primary-200);
+        outline-offset: 2px;
     }
 
     .mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
         transition: transform var(--theme-transition-normal);
     }
 
-    &--collapsed .mat-icon {
-        transform: rotate(180deg);
-    }
+    // Collapsed state: move to 64px edge and flip arrow
+    &--collapsed {
+        left: 64px;
 
-    // Hide on mobile (no need for collapse)
-    @media (max-width: 767px) {
-        display: none;
+        .mat-icon {
+            transform: rotate(180deg);
+        }
     }
 }
 
@@ -490,11 +518,15 @@ mat-divider {
             }
         }
 
-        .sidenav-collapse-btn .mat-icon {
+        .sidenav-logo__img {
             transition: none;
         }
+    }
 
-        .sidenav-logo__img {
+    .sidenav-collapse-btn {
+        transition: none;
+
+        .mat-icon {
             transition: none;
         }
     }

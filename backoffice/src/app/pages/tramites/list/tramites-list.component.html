@@ -1,6 +1,6 @@
-<app-page-header title="Tramites" subtitle="Gestion de tramites del portal">
+<app-page-header title="Trámites" subtitle="Gestión de trámites del portal">
     <button mat-raised-button color="primary" (click)="onCreate()">
-        <mat-icon>add</mat-icon> Nuevo tramite
+        <mat-icon>add</mat-icon> Nuevo trámite
     </button>
 </app-page-header>
 
@@ -12,20 +12,24 @@
         <mat-icon matSuffix>search</mat-icon>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="Filtros-field" *ngIf="isSuperAdmin">
-        <mat-label>Organismo</mat-label>
-        <mat-select formControlName="organismoId">
-            <mat-option value="">Todos</mat-option>
-            <mat-option *ngFor="let org of organismos" [value]="org.id">{{ org.nombre }}</mat-option>
-        </mat-select>
-    </mat-form-field>
+    @if (isSuperAdmin) {
+      <mat-form-field appearance="outline" class="Filtros-field">
+          <mat-label>Organismo</mat-label>
+          <mat-select formControlName="organismoId">
+              <mat-option value="">Todos</mat-option>
+              @for (org of organismos; track org.id) {
+                <mat-option [value]="org.id">{{ org.nombre }}</mat-option>
+              }
+          </mat-select>
+      </mat-form-field>
+    }
 
     <mat-form-field appearance="outline" class="Filtros-field">
         <mat-label>Estado</mat-label>
         <mat-select formControlName="estado">
             <mat-option value="">Todos</mat-option>
             <mat-option value="borrador">Borrador</mat-option>
-            <mat-option value="revision">En revision</mat-option>
+            <mat-option value="revision">En revisión</mat-option>
             <mat-option value="publicado">Publicado</mat-option>
             <mat-option value="despublicado">Despublicado</mat-option>
         </mat-select>
@@ -35,63 +39,62 @@
         <mat-label>Localidad</mat-label>
         <mat-select formControlName="localidadId">
             <mat-option value="">Todas</mat-option>
-            <mat-option *ngFor="let loc of localidades" [value]="loc.id">
-                {{ loc.nombre }}
-            </mat-option>
+            @for (loc of localidades; track loc.id) {
+              <mat-option [value]="loc.id">{{ loc.nombre }}</mat-option>
+            }
         </mat-select>
     </mat-form-field>
 </div>
 
 <!-- Table -->
-<app-shared-table 
-    [data]="tramites" 
-    [columns]="columns" 
-    [loading]="loading" 
-    [sortable]="true" 
+<app-shared-table
+    [data]="tramites"
+    [columns]="columns"
+    [loading]="loading"
+    [sortable]="true"
     [paginated]="true"
     [striped]="true"
-    [totalItems]="totalItems" 
-    [pageSize]="pageSize" 
+    [totalItems]="totalItems"
+    [pageSize]="pageSize"
     [pageIndex]="currentPage"
     [pageSizeOptions]="[10, 25, 50]"
-    emptyMessage="No se encontraron tramites" 
-    (pageChange)="onPageChange($event)" 
+    emptyMessage="No se encontraron trámites"
+    (pageChange)="onPageChange($event)"
     (sortChange)="onSortChange($event)">
 
-    <!-- Columna: Titulo -->
     <ng-template appTableCell="titulo" let-row>
         <div class="tramite-titulo-cell">
-            <mat-icon class="tramite-icono" *ngIf="row.icono">{{ row.icono }}</mat-icon>
+            @if (row.icono) {
+              <mat-icon class="tramite-icono">{{ row.icono }}</mat-icon>
+            }
             <div>
                 <div>
                     <strong>{{ row.titulo }}</strong>
-                    <mat-icon *ngIf="row.destacado" class="star-icon" matTooltip="Destacado">star</mat-icon>
+                    @if (row.destacado) {
+                      <mat-icon class="star-icon" matTooltip="Destacado">star</mat-icon>
+                    }
                 </div>
                 <small class="text-secondary">{{ row.organismo?.nombre }}</small>
             </div>
         </div>
     </ng-template>
 
-    <!-- Columna: Estado  -->
     <ng-template appTableCell="estado" let-row>
         <span class="estado-badge" [attr.data-estado]="row.estado">
             {{ row.estado | estadoBadge }}
         </span>
     </ng-template>
 
-    <!-- Columna: Modalidad -->
     <ng-template appTableCell="modalidad" let-row>
         {{ row.modalidad?.nombre }}
     </ng-template>
 
-    <!-- Columna: Fecha de actualizacion -->
     <ng-template appTableCell="updatedAt" let-row>
         {{ row.updatedAt | date:'dd/MM/yyyy HH:mm' }}
     </ng-template>
 
-    <!-- Columna: Acciones -->
     <ng-template appTableCell="acciones" let-row>
-        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del tramite">
+        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del trámite">
             <mat-icon>more_vert</mat-icon>
         </button>
         <mat-menu #menu="matMenu">
@@ -105,20 +108,26 @@
                 <mat-icon>preview</mat-icon> Vista previa
             </button>
             <mat-divider></mat-divider>
-            <button mat-menu-item *ngIf="row.estado === 'borrador'" (click)="onSendToReview(row)">
-                <mat-icon>send</mat-icon> Enviar a revision
-            </button>
-            <button mat-menu-item *ngIf="row.estado === 'revision' && isSuperAdmin" (click)="onPublish(row)">
-                <mat-icon>publish</mat-icon> Publicar
-            </button>
-            <button mat-menu-item *ngIf="row.estado === 'publicado'" (click)="onUnpublish(row)">
-                <mat-icon>unpublished</mat-icon> Despublicar
-            </button>
+            @if (row.estado === 'borrador') {
+              <button mat-menu-item (click)="onSendToReview(row)">
+                  <mat-icon>send</mat-icon> Enviar a revisión
+              </button>
+            }
+            @if (row.estado === 'revision' && isSuperAdmin) {
+              <button mat-menu-item (click)="onPublish(row)">
+                  <mat-icon>publish</mat-icon> Publicar
+              </button>
+            }
+            @if (row.estado === 'publicado') {
+              <button mat-menu-item (click)="onUnpublish(row)">
+                  <mat-icon>unpublished</mat-icon> Despublicar
+              </button>
+            }
             <mat-divider></mat-divider>
-            <button mat-menu-item class="delete-action" color="warn"  (click)="onDelete(row)">
+            <button mat-menu-item class="delete-action" (click)="onDelete(row)">
                 <mat-icon>delete</mat-icon> Eliminar
             </button>
         </mat-menu>
     </ng-template>
 
-</app-shared-table> 
+</app-shared-table>

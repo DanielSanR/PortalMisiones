@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { filter, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -17,8 +18,8 @@ import { Categoria } from '../../../core/models/tramite.model';
 @Component({
   selector: 'app-categorias-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -35,6 +36,9 @@ export class CategoriasListComponent implements OnInit {
   categorias: Categoria[] = [];
   loading = true;
 
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   constructor(
     private categoriaService: CategoriaService,
     private router: Router,
@@ -48,13 +52,19 @@ export class CategoriasListComponent implements OnInit {
 
   loadCategorias(): void {
     this.loading = true;
-    this.categoriaService.getAll().subscribe({
-      next: (response) => {
-        this.categorias = response.data;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.categoriaService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.categorias = response.data;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onCreate(parentId?: number): void {
@@ -86,15 +96,17 @@ export class CategoriasListComponent implements OnInit {
       panelClass: 'custom-modal-panel',
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.categoriaService.delete(categoria.id).subscribe({
-          next: () => {
-            this.snackBar.open('Categoría eliminada', 'OK', { duration: 3000 });
-            this.loadCategorias();
-          },
-        });
-      }
-    });
+    dialogRef.afterClosed()
+      .pipe(
+        filter(Boolean),
+        switchMap(() => this.categoriaService.delete(categoria.id)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Categoría eliminada', 'OK', { duration: 3000 });
+          this.loadCategorias();
+        },
+      });
   }
 }

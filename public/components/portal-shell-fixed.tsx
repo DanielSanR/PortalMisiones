@@ -12,8 +12,13 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
   return (
     <div className="min-h-screen bg-[#f7f8fb] text-slate-900">
       <div className="relative overflow-hidden">
+        {/* Background band for non-hero pages */}
+        {!hero && (
+          <div className="absolute inset-x-0 top-0 h-[320px] bg-gradient-to-b from-[#2b5f99] to-[#3d7dc2]" />
+        )}
+
         <header className={`${hero ? "absolute inset-x-0 top-0" : "relative"} z-20 px-4 py-5 md:px-10`}>
-          <div className="max-w-[1440px] rounded-full bg-[#4f8ed2] px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
+          <div className="mx-auto max-w-[1440px] rounded-full bg-[#4f8ed2] px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
             <div className="mx-auto flex max-w-[1130px] items-center justify-between">
             <Link href="/" className="flex items-center">
               <div className="relative h-[34px] w-[208px]">

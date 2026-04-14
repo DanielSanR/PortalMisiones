@@ -1,12 +1,10 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { RolLabelPipe } from '../../../shared/pipes/rol-label.pipe';
@@ -16,8 +14,8 @@ import { Usuario } from '../../../core/models/usuario.model';
 @Component({
   selector: 'app-usuarios-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatIconModule,
     MatSlideToggleModule,
@@ -30,24 +28,25 @@ import { Usuario } from '../../../core/models/usuario.model';
   templateUrl: './usuarios-list.component.html',
 })
 export class UsuariosListComponent implements OnInit {
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   usuarios: Usuario[] = [];
   loading = true;
 
-  /** Configuracion de columnas para la tabla de usuarios */
   columns: TableColumn<Usuario>[] = [
-    { key: 'nombre', label: 'Nombre', width: '25%' },
-    { key: 'email', label: 'Email', width: '25%', hideOnMobile: true },
-    { key: 'rol', label: 'Rol', width: '140px' },
+    { key: 'nombre',    label: 'Nombre',    width: '25%' },
+    { key: 'email',     label: 'Email',     width: '25%', hideOnMobile: true },
+    { key: 'rol',       label: 'Rol',       width: '140px' },
     { key: 'organismo', label: 'Organismo', hideOnMobile: true },
-    { key: 'activo', label: 'Activo', width: '100px' },
-    { key: 'acciones', label: 'Acciones', width: '80px' },
+    { key: 'activo',    label: 'Activo',    width: '100px' },
+    { key: 'acciones',  label: 'Acciones',  width: '80px' },
   ];
 
   constructor(
     private usuarioService: UsuarioService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
@@ -56,15 +55,19 @@ export class UsuariosListComponent implements OnInit {
 
   loadUsuarios(): void {
     this.loading = true;
-    this.usuarioService.getAll().pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (response) => {
-        this.usuarios = response.data;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.usuarioService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.usuarios = response.data;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onCreate(): void {
@@ -79,20 +82,21 @@ export class UsuariosListComponent implements OnInit {
     const previousState = usuario.activo;
     usuario.activo = !usuario.activo;
 
-    this.usuarioService.toggleActive(usuario.id).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.snackBar.open(
-          previousState ? 'Usuario desactivado' : 'Usuario activado',
-          'OK',
-          { duration: 3000 }
-        );
-      },
-      error: () => {
-        usuario.activo = previousState;
-        this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 });
-      },
-    });
+    this.usuarioService.toggleActive(usuario.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(
+            previousState ? 'Usuario desactivado' : 'Usuario activado',
+            'OK',
+            { duration: 3000 },
+          );
+        },
+        error: () => {
+          usuario.activo = previousState;
+          this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 });
+          this.cdr.markForCheck();
+        },
+      });
   }
 }

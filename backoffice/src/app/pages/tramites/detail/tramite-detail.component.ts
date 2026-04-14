@@ -1,6 +1,6 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,8 +23,9 @@ const FEEDBACK_PREVIEW_LIMIT = 5;
 @Component({
   selector: 'app-tramite-detail',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DatePipe,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -39,7 +40,9 @@ const FEEDBACK_PREVIEW_LIMIT = 5;
   styleUrls: ['./tramite-detail.component.scss'],
 })
 export class TramiteDetailComponent implements OnInit {
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   tramite: Tramite | null = null;
   loading = true;
 
@@ -68,26 +71,33 @@ export class TramiteDetailComponent implements OnInit {
       return;
     }
 
-    this.tramiteService.getById(id).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (tramite) => {
-        this.tramite = tramite;
-        this.loading = false;
-        this.loadFeedback(tramite.id);
-      },
-      error: () => { this.loading = false; },
-    });
+    this.tramiteService.getById(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (tramite) => {
+          this.tramite = tramite;
+          this.loading = false;
+          this.loadFeedback(tramite.id);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private loadFeedback(tramiteId: string): void {
-    this.feedbackService.getAll({ tramiteId, pageSize: 100 }).subscribe({
-      next: (response) => {
-        this.feedbackTotal = response.total;
-        this.feedbackUtil = response.data.filter(f => f.esUtil).length;
-        this.feedbackItems = response.data.slice(0, FEEDBACK_PREVIEW_LIMIT);
-      },
-    });
+    this.feedbackService.getAll({ tramiteId, pageSize: 100 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.feedbackTotal = response.total;
+          this.feedbackUtil = response.data.filter(f => f.esUtil).length;
+          this.feedbackItems = response.data.slice(0, FEEDBACK_PREVIEW_LIMIT);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   goToFeedback(): void {
@@ -97,7 +107,8 @@ export class TramiteDetailComponent implements OnInit {
   }
 
   onPreview(): void {
-    if (this.tramite) {
+    console.log("deshabilitado temporalmente");
+ /*    if (this.tramite) {
       this.dialog.open(TramitePreviewComponent, {
         data: this.tramite,
         width: '95vw',
@@ -105,7 +116,7 @@ export class TramiteDetailComponent implements OnInit {
         maxHeight: '90vh',
         panelClass: 'preview-dialog-panel',
       });
-    }
+    } */
   }
 
   onEdit(): void {

@@ -11,10 +11,6 @@
     emptyMessage="No hay etiquetas registradas"
     emptyIcon="label_off">
 
-    <ng-template appTableCell="color" let-row>
-        <span class="color-dot" [style.background]="row.color"></span>
-    </ng-template>
-
     <ng-template appTableCell="nombre" let-row>
         <div class="etiqueta-name">
             <mat-icon class="etiqueta-icon" [style.color]="row.color">{{ row.icono }}</mat-icon>
@@ -23,7 +19,7 @@
     </ng-template>
 
     <ng-template appTableCell="tramitesCount" let-row>
-        <span class="count-badge">{{ row.tramitesCount || 0 }}</span>
+        <strong class="count-badge">{{ row.tramitesCount || 0 }}</strong>
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>

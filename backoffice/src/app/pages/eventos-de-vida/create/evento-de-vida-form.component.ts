@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
@@ -12,8 +13,8 @@ import { FormConfig } from '../../../core/models/field.interface';
 @Component({
   selector: 'app-evento-de-vida-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatSnackBarModule,
     PageHeaderComponent,
     DynamicFormComponent,
@@ -24,9 +25,11 @@ export class EventoDeVidaFormComponent implements OnInit {
   config: FormConfig = getFormConfig('EVENTO_DE_VIDA');
   isEdit = false;
   saving = false;
-  initialData: any = null;
+  initialData: Record<string, any> | null = null;
 
   private editId: number | null = null;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private eventoService: EventoDeVidaService,
@@ -37,30 +40,34 @@ export class EventoDeVidaFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.params['id'];
-    this.isEdit = !!id;
-    this.editId = id ? Number(id) : null;
+    const rawId = this.route.snapshot.params['id'];
+    this.isEdit = !!rawId;
+    this.editId = rawId ? Number(rawId) : null;
 
-    this.tramiteService.getAll({ pageSize: 100 }).subscribe({
-      next: (response) => {
-        const tramiteOptions = response.data.map(t => ({ id: t.id, name: t.titulo }));
-        this.config = updateFormConfigOptions(this.config, 'tramiteIds', tramiteOptions);
-      },
-    });
+    const tramites$ = this.tramiteService.getAll({ pageSize: 100 });
+    const editData$ = this.isEdit && this.editId
+      ? this.eventoService.getById(this.editId)
+      : of(null);
 
-    if (this.isEdit && this.editId) {
-      this.eventoService.getById(this.editId).subscribe({
-        next: (ev) => {
-          this.initialData = {
-            nombre: ev.nombre,
-            descripcion: ev.descripcion,
-            icono: ev.icono,
-            color: ev.color,
-            tramiteIds: (ev.tramites ?? []).map(t => t.id),
-          };
+    forkJoin({ tramites: tramites$, editData: editData$ })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ tramites, editData }) => {
+          const tramiteOptions = tramites.data.map(t => ({ id: t.id, name: t.titulo }));
+          this.config = updateFormConfigOptions(this.config, 'tramiteIds', tramiteOptions);
+
+          if (editData) {
+            this.initialData = {
+              nombre:      editData.nombre,
+              descripcion: editData.descripcion,
+              icono:       editData.icono,
+              color:       editData.color,
+              tramiteIds:  (editData.tramites ?? []).map(t => t.id),
+            };
+          }
+          this.cdr.markForCheck();
         },
       });
-    }
   }
 
   onSubmit(data: any): void {
@@ -70,17 +77,22 @@ export class EventoDeVidaFormComponent implements OnInit {
       ? this.eventoService.update(this.editId!, data)
       : this.eventoService.create(data);
 
-    request$.subscribe({
-      next: () => {
-        this.snackBar.open(
-          this.isEdit ? 'Evento actualizado' : 'Evento creado',
-          'OK',
-          { duration: 3000 },
-        );
-        this.router.navigate(['/dashboard/eventos-de-vida/lista']);
-      },
-      error: () => { this.saving = false; },
-    });
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.isEdit ? 'Evento actualizado' : 'Evento creado',
+            'OK',
+            { duration: 3000 },
+          );
+          this.router.navigate(['/dashboard/eventos-de-vida/lista']);
+        },
+        error: () => {
+          this.saving = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   goBack(): void {

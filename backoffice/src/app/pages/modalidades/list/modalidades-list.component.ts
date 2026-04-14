@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { filter, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -15,8 +16,8 @@ import { Modalidad } from '../../../core/models/tramite.model';
 @Component({
   selector: 'app-modalidades-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -40,6 +41,9 @@ export class ModalidadesListComponent implements OnInit {
     { key: 'acciones',     label: 'Acciones',    width: '80px' },
   ];
 
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   constructor(
     private modalidadService: ModalidadService,
     private router: Router,
@@ -53,13 +57,19 @@ export class ModalidadesListComponent implements OnInit {
 
   loadModalidades(): void {
     this.loading = true;
-    this.modalidadService.getAll().subscribe({
-      next: (response) => {
-        this.modalidades = response.data;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.modalidadService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.modalidades = response.data;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onCreate(): void {
@@ -84,15 +94,17 @@ export class ModalidadesListComponent implements OnInit {
       panelClass: 'custom-modal-panel',
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.modalidadService.delete(modalidad.id).subscribe({
-          next: () => {
-            this.snackBar.open('Modalidad eliminada', 'OK', { duration: 3000 });
-            this.loadModalidades();
-          },
-        });
-      }
-    });
+    dialogRef.afterClosed()
+      .pipe(
+        filter(Boolean),
+        switchMap(() => this.modalidadService.delete(modalidad.id)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Modalidad eliminada', 'OK', { duration: 3000 });
+          this.loadModalidades();
+        },
+      });
   }
 }

@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { filter, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -15,8 +16,8 @@ import { Etiqueta } from '../../../core/models/tramite.model';
 @Component({
   selector: 'app-etiquetas-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -33,11 +34,14 @@ export class EtiquetasListComponent implements OnInit {
   loading = true;
 
   columns: TableColumn<Etiqueta>[] = [
-    { key: 'color',        label: '',            width: '48px' },
+
     { key: 'nombre',       label: 'Nombre' },
     { key: 'tramitesCount', label: 'Trámites',   width: '100px' },
     { key: 'acciones',     label: 'Acciones',    width: '80px' },
   ];
+
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private etiquetaService: EtiquetaService,
@@ -52,13 +56,19 @@ export class EtiquetasListComponent implements OnInit {
 
   loadEtiquetas(): void {
     this.loading = true;
-    this.etiquetaService.getAll().subscribe({
-      next: (response) => {
-        this.etiquetas = response.data;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.etiquetaService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.etiquetas = response.data;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   onCreate(): void {
@@ -83,15 +93,17 @@ export class EtiquetasListComponent implements OnInit {
       panelClass: 'custom-modal-panel',
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.etiquetaService.delete(etiqueta.id).subscribe({
-          next: () => {
-            this.snackBar.open('Etiqueta eliminada', 'OK', { duration: 3000 });
-            this.loadEtiquetas();
-          },
-        });
-      }
-    });
+    dialogRef.afterClosed()
+      .pipe(
+        filter(Boolean),
+        switchMap(() => this.etiquetaService.delete(etiqueta.id)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Etiqueta eliminada', 'OK', { duration: 3000 });
+          this.loadEtiquetas();
+        },
+      });
   }
 }

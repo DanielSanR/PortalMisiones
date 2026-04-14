@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -28,8 +29,10 @@ interface MetricCard {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DatePipe,
+    DecimalPipe,
     MatCardModule,
     MatIconModule,
     MatProgressSpinnerModule,
@@ -43,6 +46,9 @@ interface MetricCard {
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   loading = true;
   metrics!: DashboardMetrics;
   metricCards: MetricCard[] = [];
@@ -52,13 +58,13 @@ export class DashboardComponent implements OnInit {
   tramitesPorOrganismo: TramitesPorOrganismo[] = [];
 
   topTramitesColumns: TableColumn<TopTramite>[] = [
-    { key: 'titulo',   label: 'Trámite' },
+    { key: 'titulo',    label: 'Trámite' },
     { key: 'consultas', label: 'Consultas', width: '100px' },
   ];
 
   topBusquedasColumns: TableColumn<TopBusqueda>[] = [
-    { key: 'termino',      label: 'Término' },
-    { key: 'cantidad',     label: 'Cantidad',      width: '90px' },
+    { key: 'termino',       label: 'Término' },
+    { key: 'cantidad',      label: 'Cantidad',       width: '90px' },
     { key: 'sinResultados', label: 'Sin resultados', width: '130px' },
   ];
 
@@ -114,57 +120,81 @@ export class DashboardComponent implements OnInit {
 
   getAccionBgColor(accion: AuditoriaTramite['accion']): string {
     const colorMap: Record<string, string> = {
-      crear: '#4CAF5018',
-      editar: '#2196F318',
-      publicar: '#1B5E2018',
-      despublicar: '#F4433618',
+      crear:           '#4CAF5018',
+      editar:          '#2196F318',
+      publicar:        '#1B5E2018',
+      despublicar:     '#F4433618',
       enviar_revision: '#FF980018',
-      eliminar: '#B71C1C18',
+      eliminar:        '#B71C1C18',
     };
     return colorMap[accion] ?? '#60708B18';
   }
 
   private loadData(): void {
-    this.dashboardService.getMetrics().subscribe({
-      next: (metrics) => {
-        this.metrics = metrics;
-        this.buildMetricCards(metrics);
-        this.buildDoughnutChart(metrics);
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.dashboardService.getMetrics()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (metrics) => {
+          this.metrics = metrics;
+          this.buildMetricCards(metrics);
+          this.buildDoughnutChart(metrics);
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
 
-    this.dashboardService.getTopTramites().subscribe({
-      next: (data) => (this.topTramites = data),
-    });
+    this.dashboardService.getTopTramites()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.topTramites = data;
+          this.cdr.markForCheck();
+        },
+      });
 
-    this.dashboardService.getTopBusquedas().subscribe({
-      next: (data) => (this.topBusquedas = data),
-    });
+    this.dashboardService.getTopBusquedas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.topBusquedas = data;
+          this.cdr.markForCheck();
+        },
+      });
 
-    this.dashboardService.getAuditoria(1, 5).subscribe({
-      next: (data) => (this.actividadReciente = data.slice(0, 5)),
-    });
+    this.dashboardService.getAuditoria(1, 5)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.actividadReciente = data.slice(0, 5);
+          this.cdr.markForCheck();
+        },
+      });
 
-    this.dashboardService.getTramitesPorOrganismo().subscribe({
-      next: (data) => {
-        this.tramitesPorOrganismo = data;
-        this.buildBarChart(data);
-      },
-    });
+    this.dashboardService.getTramitesPorOrganismo()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.tramitesPorOrganismo = data;
+          this.buildBarChart(data);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private buildMetricCards(metrics: DashboardMetrics): void {
     this.metricCards = [
-      { label: 'Total trámites', value: metrics.totalTramites, icon: 'description', color: '#2F6EB1' },
-      { label: 'Publicados', value: metrics.tramitesPublicados, icon: 'check_circle', color: '#16A34A' },
-      { label: 'En borrador', value: metrics.tramitesBorrador, icon: 'edit_note', color: '#F59E0B' },
-      { label: 'En revisión', value: metrics.tramitesRevision, icon: 'rate_review', color: '#3B82F6' },
-      { label: 'Organismos', value: metrics.totalOrganismos, icon: 'business', color: '#6366F1' },
-      { label: 'Búsquedas hoy', value: metrics.busquedasHoy, icon: 'search', color: '#9C27B0' },
-      { label: 'Sin resultados', value: metrics.busquedasSinResultado, icon: 'search_off', color: '#F44336' },
-      { label: 'Satisfacción', value: metrics.satisfaccionPromedio.toFixed(1), icon: 'star', color: '#F59E0B', suffix: '/ 5' },
+      { label: 'Total trámites', value: metrics.totalTramites,          icon: 'description', color: '#2F6EB1' },
+      { label: 'Publicados',     value: metrics.tramitesPublicados,      icon: 'check_circle', color: '#16A34A' },
+      { label: 'En borrador',    value: metrics.tramitesBorrador,        icon: 'edit_note',    color: '#F59E0B' },
+      { label: 'En revisión',    value: metrics.tramitesRevision,        icon: 'rate_review',  color: '#3B82F6' },
+      { label: 'Organismos',     value: metrics.totalOrganismos,         icon: 'business',     color: '#6366F1' },
+      { label: 'Búsquedas hoy',  value: metrics.busquedasHoy,           icon: 'search',       color: '#9C27B0' },
+      { label: 'Sin resultados', value: metrics.busquedasSinResultado,   icon: 'search_off',   color: '#F44336' },
+      { label: 'Satisfacción',   value: metrics.satisfaccionPromedio.toFixed(1), icon: 'star', color: '#F59E0B', suffix: '/ 5' },
     ];
   }
 
@@ -178,7 +208,7 @@ export class DashboardComponent implements OnInit {
           metrics.tramitesRevision,
           metrics.tramitesDespublicados,
         ],
-        backgroundColor: ['#16A34A', '#F59E0B', '#3B82F6', '#9CA3AF'],
+        backgroundColor:      ['#16A34A', '#F59E0B', '#3B82F6', '#9CA3AF'],
         hoverBackgroundColor: ['#15803D', '#D97706', '#2563EB', '#6B7280'],
         borderWidth: 0,
         hoverOffset: 6,
@@ -190,11 +220,11 @@ export class DashboardComponent implements OnInit {
     this.barData = {
       labels: data.map((o) => o.sigla),
       datasets: [{
-        data: data.map((o) => o.total),
-        backgroundColor: '#3B82F620',
-        borderColor: '#3B82F6',
-        borderWidth: 2,
-        borderRadius: 6,
+        data:                data.map((o) => o.total),
+        backgroundColor:     '#3B82F620',
+        borderColor:         '#3B82F6',
+        borderWidth:         2,
+        borderRadius:        6,
         hoverBackgroundColor: '#3B82F640',
       }],
     };

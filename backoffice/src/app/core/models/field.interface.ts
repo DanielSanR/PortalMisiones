@@ -12,9 +12,7 @@ export interface FieldConfig {
   | 'url'
   | 'email'
   | 'password'
-  | 'radio'
   | 'tip'
-  | 'slide-toggle'
   | 'icon-picker'
   | 'section-header';
   placeholder?: string;
@@ -25,7 +23,7 @@ export interface FieldConfig {
   options?: { id: any; name: string }[];
   validations?: FieldValidations;
 }
-
+ 
 export interface FieldValidations {
   required?: boolean;
   minLength?: number;

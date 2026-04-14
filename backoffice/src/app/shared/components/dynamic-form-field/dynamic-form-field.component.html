@@ -17,7 +17,7 @@
   </div>
 
   <!-- All form controls -->
-  <ng-container *ngIf="field.type !== 'tip' && field.type !== 'section-header' && group.contains(field.name)">
+  <ng-container *ngIf="field.type !== 'section-header' && group.contains(field.name)">
     <ng-container [ngSwitch]="field.type">
 
       <!-- Text -->
@@ -155,28 +155,9 @@
         </mat-checkbox>
       </div>
 
-      <!-- Slide Toggle -->
-      <div *ngSwitchCase="'slide-toggle'" class="slide-toggle-field">
-        <mat-slide-toggle [formControlName]="field.name">
-          {{ field.label }}
-        </mat-slide-toggle>
-      </div>
-
       <!-- Radio -->
-      <div *ngSwitchCase="'radio'" class="radio-field">
-        <label class="radio-label">{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</label>
-        <mat-radio-group [formControlName]="field.name" class="radio-group">
-          <mat-radio-button *ngFor="let option of field.options"
-                            [value]="option.id"
-                            class="radio-option">
-            {{ option.name }}
-          </mat-radio-button>
-        </mat-radio-group>
-        <mat-error *ngIf="group.get(field.name)?.touched && group.get(field.name)?.invalid"
-                   appFormErrorMessage [control]="group.get(field.name)" [field]="field">
-        </mat-error>
-      </div>
 
+      
       <!-- Icon Picker -->
       <div *ngSwitchCase="'icon-picker'" class="icon-picker-field">
         <label class="icon-picker-label">

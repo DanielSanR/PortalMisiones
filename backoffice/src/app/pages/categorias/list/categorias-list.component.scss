@@ -20,10 +20,14 @@
   }
 }
 
-.categorias-tree {
-  max-width: 900px;
+.header{ 
+  &-actions{
+    display: flex;
+    align-items: end;
+    gap: var(--theme-space-xs);
+    place-content: end;
+  }
 }
-
 .cat-header {
   display: flex;
   align-items: center;

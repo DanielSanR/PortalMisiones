@@ -5,7 +5,7 @@ export function initMockAuth(): void {
     const mockUser = {
       id: 'usr-1',
       email: 'admin@misiones.gob.ar',
-      nombre: 'Carlos',
+      nombre: 'Juan',
       apellido: 'Fernández',
       role: UserRole.SUPERADMIN,
       organismoId: null,

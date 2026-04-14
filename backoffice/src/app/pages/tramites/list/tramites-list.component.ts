@@ -1,5 +1,5 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,7 +14,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDivider } from '@angular/material/divider';
 import { Subject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TramitePreviewComponent } from '../../../shared/components/tramite-preview/tramite-preview.component';
@@ -30,8 +29,9 @@ import { UserRole } from '../../../core/enums/user-role.enum';
 @Component({
   selector: 'app-tramites-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DatePipe,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -61,14 +61,16 @@ export class TramitesListComponent implements OnInit {
   isSuperAdmin = false;
   filterForm: FormGroup;
 
-  private destroyRef = inject(DestroyRef);
-  private loadTrigger$ = new Subject<TramiteFilter>();
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly loadTrigger$ = new Subject<TramiteFilter>();
+
   columns: TableColumn<Tramite>[] = [
-    { key: 'titulo', label: 'Titulo', sortable: true, width: '30%' },
-    { key: 'estado', label: 'Estado', sortable: true, width: '130px' },
-    { key: 'modalidad', label: 'Modalidad', hideOnMobile: true },
+    { key: 'titulo',    label: 'Titulo',      sortable: true, width: '30%' },
+    { key: 'estado',    label: 'Estado',      sortable: true, width: '130px' },
+    { key: 'modalidad', label: 'Modalidad',   hideOnMobile: true },
     { key: 'updatedAt', label: 'Actualizado', sortable: true, width: '160px', hideOnMobile: true },
-    { key: 'acciones', label: 'Acciones', width: '80px' },
+    { key: 'acciones',  label: 'Acciones',    width: '80px' },
   ];
 
   constructor(
@@ -79,15 +81,14 @@ export class TramitesListComponent implements OnInit {
     private authTokenService: AuthTokenService,
     private router: Router,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {
     this.filterForm = this.fb.group({
-      search: [''],
+      search:      [''],
       organismoId: [''],
-      estado: [''],
+      estado:      [''],
       localidadId: [''],
     });
-
     this.isSuperAdmin = this.authTokenService.getUserRole() === UserRole.SUPERADMIN;
   }
 
@@ -95,22 +96,24 @@ export class TramitesListComponent implements OnInit {
     this.loadTrigger$.pipe(
       tap(() => this.loading = true),
       switchMap(f => this.tramiteService.getAll(f)),
-      takeUntilDestroyed(this.destroyRef)
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: (response) => {
         this.tramites = response.data;
         this.totalItems = response.total;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
 
     this.filterForm.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
-      takeUntilDestroyed(this.destroyRef)
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => {
       this.currentPage = 0;
       this.loadTramites();
@@ -122,11 +125,14 @@ export class TramitesListComponent implements OnInit {
   }
 
   loadLocalidades(): void {
-    this.localidadService.getAll().pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (response) => (this.localidades = response.data),
-    });
+    this.localidadService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.localidades = response.data;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   loadTramites(): void {
@@ -139,13 +145,15 @@ export class TramitesListComponent implements OnInit {
   }
 
   loadOrganismos(): void {
-    if (this.isSuperAdmin) {
-      this.organismoService.getAll().pipe(
-        takeUntilDestroyed(this.destroyRef)
-      ).subscribe({
-        next: (response) => (this.organismos = response.data),
+    if (!this.isSuperAdmin) return;
+    this.organismoService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.organismos = response.data;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   onPageChange(event: TablePageEvent): void {
@@ -157,8 +165,6 @@ export class TramitesListComponent implements OnInit {
   onSortChange(_event: TableSortEvent): void {
     this.loadTramites();
   }
-
-// Acciones
 
   onCreate(): void {
     this.router.navigate(['/dashboard/tramites/nuevo']);
@@ -173,53 +179,54 @@ export class TramitesListComponent implements OnInit {
   }
 
   onPreview(tramite: Tramite): void {
-    this.dialog.open(TramitePreviewComponent, {
+    console.log("deshabilitado temporalmente");
+    /* this.dialog.open(TramitePreviewComponent, {
       data: tramite,
       width: '95vw',
       maxWidth: '1100px',
       maxHeight: '90vh',
       panelClass: 'preview-dialog-panel',
-    });
+    }); */
   }
 
   onSendToReview(tramite: Tramite): void {
-    this.tramiteService.sendToReview(tramite.id).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.snackBar.open('Tramite enviado a revision', 'OK', { duration: 3000 });
-        this.loadTramites();
-      },
-    });
+    this.tramiteService.sendToReview(tramite.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Trámite enviado a revisión', 'OK', { duration: 3000 });
+          this.loadTramites();
+        },
+      });
   }
 
   onPublish(tramite: Tramite): void {
-    this.tramiteService.publish(tramite.id).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.snackBar.open('Tramite publicado', 'OK', { duration: 3000 });
-        this.loadTramites();
-      },
-    });
+    this.tramiteService.publish(tramite.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Trámite publicado', 'OK', { duration: 3000 });
+          this.loadTramites();
+        },
+      });
   }
 
   onUnpublish(tramite: Tramite): void {
-    this.tramiteService.unpublish(tramite.id).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.snackBar.open('Tramite despublicado', 'OK', { duration: 3000 });
-        this.loadTramites();
-      },
-    });
+    this.tramiteService.unpublish(tramite.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Trámite despublicado', 'OK', { duration: 3000 });
+          this.loadTramites();
+        },
+      });
   }
 
   onDelete(tramite: Tramite): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Eliminar tramite',
-        message: `Esta seguro de eliminar "${tramite.titulo}"?`,
+        title: 'Eliminar trámite',
+        message: `¿Está seguro de eliminar "${tramite.titulo}"?`,
         confirmText: 'Eliminar',
       },
       panelClass: 'custom-modal-panel',
@@ -228,9 +235,9 @@ export class TramitesListComponent implements OnInit {
     dialogRef.afterClosed().pipe(
       filter(Boolean),
       switchMap(() => this.tramiteService.delete(tramite.id)),
-      takeUntilDestroyed(this.destroyRef)
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => {
-      this.snackBar.open('Tramite eliminado', 'OK', { duration: 3000 });
+      this.snackBar.open('Trámite eliminado', 'OK', { duration: 3000 });
       this.loadTramites();
     });
   }

@@ -13,12 +13,17 @@
 
     <ng-template appTableCell="nombre" let-row>
         <strong>{{ row.nombre }}</strong>
-        <small *ngIf="row.sigla" class="text-secondary"> ({{ row.sigla }})</small>
+        @if (row.sigla) {
+          <small class="text-secondary"> ({{ row.sigla }})</small>
+        }
     </ng-template>
 
     <ng-template appTableCell="sitioWeb" let-row>
-        <a *ngIf="row.sitioWeb" [href]="row.sitioWeb" target="_blank" rel="noopener">{{ row.sitioWeb }}</a>
-        <span *ngIf="!row.sitioWeb" class="text-secondary">—</span>
+        @if (row.sitioWeb) {
+          <a [href]="row.sitioWeb" target="_blank" rel="noopener">{{ row.sitioWeb }}</a>
+        } @else {
+          <span class="text-secondary">—</span>
+        }
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>

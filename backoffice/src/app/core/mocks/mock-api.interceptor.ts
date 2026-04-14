@@ -42,14 +42,12 @@ function matchUrl(url: string, pattern: string): boolean {
   return url.includes(pattern);
 }
 
-/** Calcula los eventos de vida a los que pertenece un trámite, leyendo desde la fuente de verdad */
 function getEventosDeVidaForTramite(tramiteId: string): { id: number; nombre: string }[] {
   return eventosDeVida
     .filter(e => e.tramites?.some(t => t.id === tramiteId))
     .map(e => ({ id: e.id, nombre: e.nombre }));
 }
 
-/** Sincroniza la asociación tramite↔eventoDeVida cuando se crean o editan trámites */
 function syncEventosDeVida(tramiteId: string, tramiteTitulo: string, eventoDeVidaIds: number[]): void {
   eventosDeVida = eventosDeVida.map(e => {
     const shouldInclude = eventoDeVidaIds.includes(e.id);
@@ -79,7 +77,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
   const url = req.url;
   const method = req.method;
 
-  // ── Auth ────────────────────────────────────────────────
   if (matchUrl(url, '/auth/login') && method === 'POST') {
     return jsonResponse({
       code: 200,
@@ -101,7 +98,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     });
   }
 
-  // ── Contenido por localidad de trámite (ANTES de tramites CRUD para evitar colisión) ──
   if (matchUrl(url, '/api/tramites/') && matchUrl(url, '/localidades')) {
     const parts = url.split('/');
     const tramiteIdx = parts.indexOf('tramites');
@@ -109,13 +105,11 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     const localidadIdx = parts.indexOf('localidades');
     const localidadIdStr = parts[localidadIdx + 1];
 
-    // GET /tramites/:id/localidades
     if (!localidadIdStr && method === 'GET') {
       const items = contenidoLocalidad.filter(c => c.tramiteId === tramiteId);
       return jsonResponse(items);
     }
 
-    // POST /tramites/:id/localidades
     if (!localidadIdStr && method === 'POST') {
       const body = req.body as Record<string, any>;
       const newContenido: TramiteContenidoLocalidad = {
@@ -138,13 +132,11 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     if (localidadIdStr) {
       const locId = Number(localidadIdStr);
 
-      // GET /tramites/:id/localidades/:localidadId
       if (method === 'GET') {
         const item = contenidoLocalidad.find(c => c.tramiteId === tramiteId && c.localidadId === locId);
         return item ? jsonResponse(item) : jsonResponse({ message: 'No encontrado' }, 404);
       }
 
-      // PUT /tramites/:id/localidades/:localidadId
       if (method === 'PUT') {
         const idx = contenidoLocalidad.findIndex(c => c.tramiteId === tramiteId && c.localidadId === locId);
         if (idx >= 0) {
@@ -154,7 +146,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
         return jsonResponse({ message: 'No encontrado' }, 404);
       }
 
-      // DELETE /tramites/:id/localidades/:localidadId
       if (method === 'DELETE') {
         contenidoLocalidad = contenidoLocalidad.filter(c => !(c.tramiteId === tramiteId && c.localidadId === locId));
         return jsonResponse(null, 204);
@@ -162,7 +153,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Trámites CRUD ───────────────────────────────────────
   if (matchUrl(url, '/api/tramites') && !matchUrl(url, '/api/tramites/')) {
     if (method === 'GET') {
       const params = req.params;
@@ -232,7 +222,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // Tramite by ID operations
   if (matchUrl(url, '/api/tramites/') && !matchUrl(url, '/slug/')) {
     const id = extractId(url.split('?')[0]);
 
@@ -288,7 +277,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Organismos CRUD ─────────────────────────────────────
+  // ── Organismos  ─────────────────────────────────────
   if (matchUrl(url, '/api/organismos') && !matchUrl(url, '/api/organismos/')) {
     if (method === 'GET') return jsonResponse(paginate(organismos, 1, 100));
     if (method === 'POST') {
@@ -366,7 +355,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Etiquetas CRUD ──────────────────────────────────────
+  // ── Etiquetas  ──────────────────────────────────────
   if (matchUrl(url, '/api/etiquetas') && !matchUrl(url, '/api/etiquetas/')) {
     if (method === 'GET') return jsonResponse(paginate(etiquetas, 1, 100));
     if (method === 'POST') {
@@ -406,7 +395,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Modalidades CRUD ────────────────────────────────────
+  // ── Modalidades  ────────────────────────────────────
   if (matchUrl(url, '/api/modalidades') && !matchUrl(url, '/api/modalidades/')) {
     if (method === 'GET') return jsonResponse(paginate(modalidades, 1, 100));
     if (method === 'POST') {
@@ -446,7 +435,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Eventos de Vida CRUD ────────────────────────────────
+  // ── Eventos de Vida  ────────────────────────────────
   if (matchUrl(url, '/api/eventos-de-vida') && !matchUrl(url, '/api/eventos-de-vida/')) {
     if (method === 'GET') return jsonResponse(paginate(eventosDeVida, 1, 100));
     if (method === 'POST') {
@@ -506,7 +495,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Localidades (solo lectura — datos maestros de API) ──
+  // ── Localidades ──
   if (matchUrl(url, '/api/localidades') && method === 'GET') {
     const params = req.params;
     let filtered = [...MOCK_LOCALIDADES];
@@ -616,7 +605,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
   // ── Categorías CRUD ─────────────────────────────────────
   if (matchUrl(url, '/api/categorias') && !matchUrl(url, '/api/categorias/')) {
     if (method === 'GET') {
-      // Devolver árbol: categorías raíz con children anidados
       const roots = categorias.filter(c => c.parentId === null).sort((a, b) => a.orden - b.orden);
       const tree = roots.map(r => ({
         ...r,
@@ -667,7 +655,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ── Destinatarios (solo lectura) ───────────────────────
+  // ── Destinatarios───────────────────────
   if (matchUrl(url, '/api/destinatarios') && method === 'GET') {
     return jsonResponse(MOCK_DESTINATARIOS);
   }

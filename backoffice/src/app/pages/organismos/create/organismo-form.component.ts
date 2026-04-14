@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
@@ -11,21 +12,23 @@ import { FormConfig } from '../../../core/models/field.interface';
 @Component({
   selector: 'app-organismo-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     MatSnackBarModule,
     PageHeaderComponent,
     DynamicFormComponent,
   ],
-  templateUrl: './organismo-form.component.html', 
+  templateUrl: './organismo-form.component.html',
 })
 export class OrganismoFormComponent implements OnInit {
   config: FormConfig = getFormConfig('ORGANISMO');
   isEdit = false;
   saving = false;
-  initialData: any = null;
+  initialData: Record<string, any> | null = null;
 
   private editId: string | null = null;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private organismoService: OrganismoService,
@@ -35,31 +38,34 @@ export class OrganismoFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.organismoService.getAll().subscribe({
-      next: (response) => {
-        this.config = updateFormConfigOptions(this.config, 'parentId', [
-          { id: '', name: 'Ninguno (raíz)' },
-          ...response.data.map(o => ({ id: o.id, name: o.nombre })),
-        ]);
-      },
-    });
+    const rawId = this.route.snapshot.params['id'];
+    this.isEdit = !!rawId;
+    this.editId = rawId ?? null;
 
-    const id = this.route.snapshot.params['id'];
-    if (id) {
-      this.isEdit = true;
-      this.editId = id;
-      this.organismoService.getById(id).subscribe({
-        next: (org) => {
-          this.initialData = {
-            nombre: org.nombre,
-            sigla: org.sigla,
-            sitioWeb: org.sitioWeb,
-            logoUrl: org.logoUrl,
-            parentId: org.parentId || '',
-          };
+    const organismos$ = this.organismoService.getAll();
+    const editData$ = this.editId ? this.organismoService.getById(this.editId) : of(null);
+
+    forkJoin({ organismos: organismos$, editData: editData$ })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ organismos, editData }) => {
+          this.config = updateFormConfigOptions(this.config, 'parentId', [
+            { id: '', name: 'Ninguno (raíz)' },
+            ...organismos.data.map(o => ({ id: o.id, name: o.nombre })),
+          ]);
+
+          if (editData) {
+            this.initialData = {
+              nombre: editData.nombre,
+              sigla: editData.sigla,
+              sitioWeb: editData.sitioWeb,
+              logoUrl: editData.logoUrl,
+              parentId: editData.parentId || '',
+            };
+          }
+          this.cdr.markForCheck();
         },
       });
-    }
   }
 
   onSubmit(data: any): void {
@@ -69,17 +75,22 @@ export class OrganismoFormComponent implements OnInit {
       ? this.organismoService.update(this.editId!, data)
       : this.organismoService.create(data);
 
-    request$.subscribe({
-      next: () => {
-        this.snackBar.open(
-          this.isEdit ? 'Organismo actualizado' : 'Organismo creado',
-          'OK',
-          { duration: 3000 },
-        );
-        this.router.navigate(['/dashboard/organismos/lista']);
-      },
-      error: () => { this.saving = false; },
-    });
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.isEdit ? 'Organismo actualizado' : 'Organismo creado',
+            'OK',
+            { duration: 3000 },
+          );
+          this.router.navigate(['/dashboard/organismos/lista']);
+        },
+        error: () => {
+          this.saving = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   goBack(): void {

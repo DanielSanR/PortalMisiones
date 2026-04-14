@@ -1,13 +1,14 @@
 <div class="admin-layout">
     <mat-toolbar class="admin-layout__header" color="primary">
+        <!-- Hamburger: mobile only -->
         <button mat-icon-button
+            *ngIf="isMobile"
             class="admin-layout__menu-btn"
-            [class.admin-layout__menu-btn--open]="sidenav.opened"
             (click)="sidenav.toggle()"
             [attr.aria-expanded]="sidenav.opened"
             aria-label="Menú de navegación"
             matTooltip="Menú">
-            <mat-icon>{{ sidenav.opened && !isMobile ? 'menu_open' : 'menu' }}</mat-icon>
+            <mat-icon>{{ sidenav.opened ? 'close' : 'menu' }}</mat-icon>
         </button>
 
         <a class="admin-layout__title" routerLink="/dashboard/home">
@@ -77,19 +78,28 @@
                     <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
                     <span matListItemTitle>{{ item.label }}</span>
                 </a>
+                <div class="test-roles" *ngIf="!isCollapsed">
+                    <h2>Roles del Usuario</h2>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('SUPERADMIN')">SUPERADMIN</button>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('ADMIN_ORGANISMO')">ADMIN_ORGANISMO</button>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('EDITOR')">EDITOR</button>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('EDITOR_LOCAL')">EDITOR_LOCAL(no priv)</button>
+                </div>
             </mat-nav-list>
-
-            <!-- Collapse toggle (desktop only) -->
-            <button class="sidenav-collapse-btn"
-                [class.sidenav-collapse-btn--collapsed]="isCollapsed"
-                (click)="toggleCollapse()"
-                [matTooltip]="isCollapsed ? 'Expandir menú' : 'Colapsar menú'"
-                aria-label="Colapsar menú lateral">
-                <mat-icon>chevron_left</mat-icon>
-            </button>
         </mat-sidenav>
 
         <mat-sidenav-content class="admin-layout__content">
+            <!-- Collapse toggle: floating pill on the sidenav border, 50% vertical (desktop only) -->
+            <button *ngIf="!isMobile"
+                class="sidenav-collapse-btn"
+                [class.sidenav-collapse-btn--collapsed]="isCollapsed"
+                (click)="toggleCollapse()"
+                [matTooltip]="isCollapsed ? 'Expandir menú' : 'Colapsar menú'"
+                matTooltipPosition="right"
+                aria-label="Colapsar menú lateral">
+                <mat-icon>chevron_left</mat-icon>
+            </button>
+
             <div class="admin-layout__page">
                 <router-outlet></router-outlet>
             </div>

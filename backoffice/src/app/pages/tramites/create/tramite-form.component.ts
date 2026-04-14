@@ -1,7 +1,6 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, Observable, tap, map } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { forkJoin, Observable, tap, map, filter, switchMap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -30,8 +29,8 @@ import { FormConfig } from '../../../core/models/field.interface';
 @Component({
   selector: 'app-tramite-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     FormsModule,
     MatSnackBarModule,
     MatTabsModule,
@@ -42,20 +41,22 @@ import { FormConfig } from '../../../core/models/field.interface';
     MatSelectModule,
     PageHeaderComponent,
     DynamicFormComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './tramite-form.component.html',
   styleUrls: ['./tramite-form.component.scss'],
 })
 export class TramiteFormComponent implements OnInit {
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   config: FormConfig = getFormConfig('TRAMITE');
   isEdit = false;
   saving = false;
   isSuperAdmin = false;
   tramite: Tramite | null = null;
-  initialData: any = null;
+  initialData: Record<string, any> | null = null;
 
-  // ── Contenido por localidad ──────────────────────────
   contenidoLocalidades: TramiteContenidoLocalidad[] = [];
   localidadesDisponibles: Localidad[] = [];
   editingLocalidad: TramiteContenidoLocalidad | null = null;
@@ -84,37 +85,40 @@ export class TramiteFormComponent implements OnInit {
 
     if (id) {
       this.isEdit = true;
-      forkJoin([catalogues$, this.tramiteService.getById(id)]).pipe(
-        takeUntilDestroyed(this.destroyRef)
-      ).subscribe({
-        next: ([_, tramite]) => {
-          this.tramite = tramite;
-          this.loadContenidoLocalidades();
-          this.initialData = {
-            titulo: tramite.titulo,
-            resumen: tramite.resumen,
-            descripcionLarga: tramite.descripcionLarga,
-            requisitos: tramite.requisitos,
-            costos: tramite.costos,
-            formularios: tramite.formularios,
-            contacto: tramite.contacto,
-            sitioWebTramite: tramite.sitioWebTramite,
-            urlOficial: tramite.urlOficial,
-            organismoId: tramite.organismoId,
-            modalidadId: tramite.modalidadId,
-            categoriaIds: (tramite.categorias ?? []).map(c => c.id),
-            etiquetaIds: tramite.etiquetas.map(e => e.id),
-            destinatarioIds: (tramite.destinatarios ?? []).map(d => d.id),
-            localidadIds: (tramite.localidades ?? []).map(l => l.id),
-            eventoDeVidaIds: (tramite.eventosDeVida ?? []).map(e => e.id),
-            destacado: tramite.destacado,
-          };
-        },
-      });
+      forkJoin([catalogues$, this.tramiteService.getById(id)])
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: ([_, tramite]) => {
+            this.tramite = tramite;
+            this.loadContenidoLocalidades();
+            this.initialData = {
+              titulo:           tramite.titulo,
+              resumen:          tramite.resumen,
+              descripcionLarga: tramite.descripcionLarga,
+              requisitos:       tramite.requisitos,
+              costos:           tramite.costos,
+              formularios:      tramite.formularios,
+              contacto:         tramite.contacto,
+              sitioWebTramite:  tramite.sitioWebTramite,
+              urlOficial:       tramite.urlOficial,
+              organismoId:      tramite.organismoId,
+              modalidadId:      tramite.modalidadId,
+              categoriaIds:     (tramite.categorias ?? []).map(c => c.id),
+              etiquetaIds:      tramite.etiquetas.map(e => e.id),
+              destinatarioIds:  (tramite.destinatarios ?? []).map(d => d.id),
+              localidadIds:     (tramite.localidades ?? []).map(l => l.id),
+              eventoDeVidaIds:  (tramite.eventosDeVida ?? []).map(e => e.id),
+              destacado:        tramite.destacado,
+            };
+            this.cdr.markForCheck();
+          },
+        });
     } else {
-      catalogues$.pipe(
-        takeUntilDestroyed(this.destroyRef)
-      ).subscribe();
+      catalogues$
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => this.cdr.markForCheck(),
+        });
 
       if (!this.isSuperAdmin) {
         const organismoId = this.authTokenService.getUserOrganismoId();
@@ -131,17 +135,16 @@ export class TramiteFormComponent implements OnInit {
         tap(data => {
           this.config = updateFormConfigOptions(this.config, 'modalidadId',
             data.map(m => ({ id: m.id, name: m.nombre })));
-        })
+        }),
       ),
       this.tramiteService.getEtiquetas().pipe(
         tap(data => {
           this.config = updateFormConfigOptions(this.config, 'etiquetaIds',
             data.map(e => ({ id: e.id, name: e.nombre })));
-        })
+        }),
       ),
       this.categoriaService.getAll().pipe(
         tap(response => {
-          // Aplanar el árbol: mostrar sub-categorías con prefijo del padre
           const options: { id: any; name: string }[] = [];
           response.data.forEach(parent => {
             if (parent.children?.length) {
@@ -151,25 +154,25 @@ export class TramiteFormComponent implements OnInit {
             }
           });
           this.config = updateFormConfigOptions(this.config, 'categoriaIds', options);
-        })
+        }),
       ),
       this.destinatarioService.getAll().pipe(
         tap(data => {
           this.config = updateFormConfigOptions(this.config, 'destinatarioIds',
             data.map(d => ({ id: d.id, name: d.nombre })));
-        })
+        }),
       ),
       this.localidadService.getAll().pipe(
         tap(response => {
           this.config = updateFormConfigOptions(this.config, 'localidadIds',
             response.data.map(l => ({ id: l.id, name: `${l.nombre} (${l.departamento})` })));
-        })
+        }),
       ),
       this.eventoDeVidaService.getAll().pipe(
         tap(response => {
           this.config = updateFormConfigOptions(this.config, 'eventoDeVidaIds',
             response.data.map(e => ({ id: e.id, name: e.nombre })));
-        })
+        }),
       ),
     ];
 
@@ -179,8 +182,8 @@ export class TramiteFormComponent implements OnInit {
           tap(response => {
             this.config = updateFormConfigOptions(this.config, 'organismoId',
               response.data.map(o => ({ id: o.id, name: o.nombre })));
-          })
-        )
+          }),
+        ),
       );
     }
 
@@ -194,35 +197,50 @@ export class TramiteFormComponent implements OnInit {
       ? this.tramiteService.update(this.tramite!.id, data)
       : this.tramiteService.create(data);
 
-    request$.pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.snackBar.open(
-          this.isEdit ? 'Trámite actualizado' : 'Trámite creado',
-          'OK',
-          { duration: 3000 },
-        );
-        this.router.navigate(['/dashboard/tramites/lista']);
-      },
-      error: () => { this.saving = false; },
-    });
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.isEdit ? 'Trámite actualizado' : 'Trámite creado',
+            'OK',
+            { duration: 3000 },
+          );
+          this.router.navigate(['/dashboard/tramites/lista']);
+        },
+        error: () => {
+          this.saving = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   goBack(): void {
     this.router.navigate(['/dashboard/tramites/lista']);
   }
 
-  // ── Contenido por localidad — metodos ────────────────
+  // ── Contenido por localidad ──────────────────────────
 
   loadContenidoLocalidades(): void {
     if (!this.tramite) return;
-    this.tramiteService.getContenidoLocalidades(this.tramite.id).subscribe({
-      next: (data) => { this.contenidoLocalidades = data; },
-    });
-    this.localidadService.getAll().subscribe({
-      next: (response) => { this.localidadesDisponibles = response.data; },
-    });
+
+    this.tramiteService.getContenidoLocalidades(this.tramite.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.contenidoLocalidades = data;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.localidadService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.localidadesDisponibles = response.data;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   get localidadesSinContenido(): Localidad[] {
@@ -243,19 +261,20 @@ export class TramiteFormComponent implements OnInit {
     if (!this.tramite || !this.newLocalidad.localidadId) return;
     this.tramiteService.addContenidoLocalidad(this.tramite.id, {
       localidadId: this.newLocalidad.localidadId,
-      costos: this.newLocalidad.costos || undefined,
-      contacto: this.newLocalidad.contacto || undefined,
-      sitioWeb: this.newLocalidad.sitioWeb || undefined,
-      urlTramite: this.newLocalidad.urlTramite || undefined,
-      horarios: this.newLocalidad.horarios || undefined,
-      notas: this.newLocalidad.notas || undefined,
-    }).subscribe({
-      next: () => {
-        this.snackBar.open('Localidad agregada', 'OK', { duration: 3000 });
-        this.addingLocalidad = false;
-        this.loadContenidoLocalidades();
-      },
-    });
+      costos:      this.newLocalidad.costos || undefined,
+      contacto:    this.newLocalidad.contacto || undefined,
+      sitioWeb:    this.newLocalidad.sitioWeb || undefined,
+      urlTramite:  this.newLocalidad.urlTramite || undefined,
+      horarios:    this.newLocalidad.horarios || undefined,
+      notas:       this.newLocalidad.notas || undefined,
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Localidad agregada', 'OK', { duration: 3000 });
+          this.addingLocalidad = false;
+          this.loadContenidoLocalidades();
+        },
+      });
   }
 
   startEditLocalidad(item: TramiteContenidoLocalidad): void {
@@ -269,19 +288,20 @@ export class TramiteFormComponent implements OnInit {
   saveEditLocalidad(): void {
     if (!this.tramite || !this.editingLocalidad) return;
     this.tramiteService.updateContenidoLocalidad(this.tramite.id, this.editingLocalidad.localidadId, {
-      costos: this.editingLocalidad.costos || undefined,
-      contacto: this.editingLocalidad.contacto || undefined,
-      sitioWeb: this.editingLocalidad.sitioWeb || undefined,
+      costos:     this.editingLocalidad.costos || undefined,
+      contacto:   this.editingLocalidad.contacto || undefined,
+      sitioWeb:   this.editingLocalidad.sitioWeb || undefined,
       urlTramite: this.editingLocalidad.urlTramite || undefined,
-      horarios: this.editingLocalidad.horarios || undefined,
-      notas: this.editingLocalidad.notas || undefined,
-    }).subscribe({
-      next: () => {
-        this.snackBar.open('Localidad actualizada', 'OK', { duration: 3000 });
-        this.editingLocalidad = null;
-        this.loadContenidoLocalidades();
-      },
-    });
+      horarios:   this.editingLocalidad.horarios || undefined,
+      notas:      this.editingLocalidad.notas || undefined,
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Localidad actualizada', 'OK', { duration: 3000 });
+          this.editingLocalidad = null;
+          this.loadContenidoLocalidades();
+        },
+      });
   }
 
   deleteLocalidad(item: TramiteContenidoLocalidad): void {
@@ -294,15 +314,15 @@ export class TramiteFormComponent implements OnInit {
       panelClass: 'custom-modal-panel',
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed && this.tramite) {
-        this.tramiteService.removeContenidoLocalidad(this.tramite.id, item.localidadId).subscribe({
-          next: () => {
-            this.snackBar.open('Contenido de localidad eliminado', 'OK', { duration: 3000 });
-            this.loadContenidoLocalidades();
-          },
-        });
-      }
+    dialogRef.afterClosed().pipe(
+      filter(Boolean),
+      switchMap(() => this.tramiteService.removeContenidoLocalidad(this.tramite!.id, item.localidadId)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        this.snackBar.open('Contenido de localidad eliminado', 'OK', { duration: 3000 });
+        this.loadContenidoLocalidades();
+      },
     });
   }
 }

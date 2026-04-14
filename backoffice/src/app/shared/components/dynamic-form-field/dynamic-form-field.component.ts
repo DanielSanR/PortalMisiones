@@ -11,8 +11,6 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatRadioModule } from '@angular/material/radio';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { FormErrorMessageDirective } from './FormErrorMessage.directive';
@@ -33,8 +31,6 @@ import { ICON_CATALOG, IconCategory } from './icon-catalog';
     MatNativeDateModule,
     MatButtonModule,
     MatIconModule,
-    MatRadioModule,
-    MatSlideToggleModule,
     MatTooltipModule,
     TextFieldModule,
     FormErrorMessageDirective,
@@ -57,7 +53,7 @@ export class DynamicFormFieldComponent implements OnInit {
 
   get isOptional(): boolean {
     return !this.field?.validations?.required &&
-           !['checkbox', 'slide-toggle', 'tip', 'section-header', 'icon-picker'].includes(this.field?.type);
+           !['checkbox', 'tip', 'section-header', 'icon-picker'].includes(this.field?.type);
   }
 
   ngOnInit() {

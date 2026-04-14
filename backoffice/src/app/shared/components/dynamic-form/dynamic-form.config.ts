@@ -340,6 +340,62 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
     cancelButtonText: 'Cancelar',
   },
 
+  CATEGORIA: {
+    fields: [
+      { name: '_section_datos', label: 'Datos de la categoría', type: 'section-header' },
+      {
+        name: 'nombre',
+        label: 'Nombre',
+        type: 'text',
+        placeholder: 'Ej: Automotor, transporte y tránsito',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 100 },
+      },
+      {
+        name: 'parentId',
+        label: 'Categoría padre',
+        type: 'select',
+        placeholder: 'Seleccione categoría padre',
+        cssClass: 'colspan-half',
+        hint: 'Dejar vacío para crear una categoría raíz (nivel 1)',
+        options: [],
+      },
+      {
+        name: 'descripcion',
+        label: 'Descripción',
+        type: 'textarea',
+        placeholder: 'Descripción breve de la categoría',
+        cssClass: 'colspan-full',
+      },
+      {
+        name: 'orden',
+        label: 'Orden',
+        type: 'number',
+        placeholder: '1',
+        cssClass: 'colspan-half',
+        hint: 'Orden de aparición (menor = primero)',
+      },
+      { name: '_section_visual', label: 'Apariencia', type: 'section-header' },
+      {
+        name: 'icono',
+        label: 'Ícono',
+        type: 'icon-picker',
+        placeholder: 'Seleccione un ícono',
+        cssClass: 'colspan-full',
+      },
+      {
+        name: 'color',
+        label: 'Color',
+        type: 'text',
+        placeholder: '#1565C0',
+        hint: 'Color hexadecimal',
+        cssClass: 'colspan-half',
+      },
+    ],
+    submitButtonText: 'Crear categoría',
+    cancelButtonText: 'Cancelar',
+  },
+
   MODALIDAD: {
     fields: [
       {
