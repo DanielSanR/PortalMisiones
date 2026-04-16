@@ -24,11 +24,10 @@ export function FeaturedShortcutCard({ title, index }: FeaturedShortcutCardProps
       href={`/tramites?search=${encodeURIComponent(title)}`} 
       className="block shrink-0" // Evita que la tarjeta se encoja
     >
-      <Card className="h-[140px] w-[240px] rounded-[14px] border-[#dbe2ee] transition-all hover:shadow-[0_14px_40px_rgba(33,72,114,0.1)] xl:w-[260px]">
+      <Card className="h-[140px] w-[240px] rounded-[14px] border-[#c0c5cf] transition-all hover:shadow-[0_14px_40px_rgba(33,72,114,0.1)] xl:w-[260px]">
         <CardContent className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
-          {/* El contenedor del icono se mantiene circular y centrado */}
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#eef5ff] text-[#4f8ed2]">
-            <Image alt="" src={iconSrc} width={24} height={24} className="h-6 w-6" />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e8f0fa]">
+            <Image alt="" src={iconSrc} width={28} height={28} className="h-7 w-7" />
           </div>
           
           <span className="line-clamp-2 text-sm font-medium text-slate-700 leading-tight px-2">

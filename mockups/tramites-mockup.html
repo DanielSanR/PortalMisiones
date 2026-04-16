@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tramites ABM — Portal Misiones Backoffice</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+/* ═══════ TOKENS ═══════ */
+:root {
+  --primary: #2F6EB1;
+  --primary-dark: #1A4779;
+  --primary-light: #3B82C4;
+  --primary-50: #E8F1FA;
+  --primary-100: #C5DCF2;
+  --sidebar-bg: #0F335D;
+  --success: #16A34A;
+  --success-bg: #F0FDF4;
+  --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
+  --error: #DC2626;
+  --error-bg: #FEF2F2;
+  --info: #3B82F6;
+  --info-bg: #EFF6FF;
+  --purple: #7C3AED;
+  --text-primary: #1A1A2E;
+  --text-secondary: #5F6368;
+  --text-tertiary: #9AA0A6;
+  --text-on-dark: rgba(255,255,255,0.92);
+  --text-on-dark-secondary: rgba(255,255,255,0.60);
+  --bg-page: #F4F6F8;
+  --bg-card: #FFFFFF;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-card-hover: 0 8px 24px rgba(0,0,0,0.08);
+  --sidebar-w: 264px;
+  --header-h: 64px;
+  --transition: 250ms cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════ LAYOUT ═══════ */
+.layout { display: flex; min-height: 100vh; }
+
+/* ─── SIDEBAR (compact for mockup) ─── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 20px 24px 16px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo__shield {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #2F6EB1, #5A98D6);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 16px;
+}
+.sidebar-logo__text { display: flex; flex-direction: column; }
+.sidebar-logo__title { color: white; font-size: 14px; font-weight: 600; }
+.sidebar-logo__sub { color: var(--text-on-dark-secondary); font-size: 11px; }
+
+.sidebar-section {
+  padding: 16px 16px 6px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-on-dark-secondary);
+}
+.sidebar-nav { list-style: none; padding: 0 8px; }
+.sidebar-nav li a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; border-radius: var(--radius-md);
+  color: var(--text-on-dark); text-decoration: none;
+  font-size: 13px; font-weight: 400;
+  transition: all var(--transition); margin-bottom: 2px;
+}
+.sidebar-nav li a:hover { background: rgba(255,255,255,0.08); }
+.sidebar-nav li a.active { background: rgba(255,255,255,0.18); font-weight: 500; color: white; }
+.sidebar-nav li a .material-icons-outlined { font-size: 20px; opacity: 0.75; }
+.sidebar-nav li a.active .material-icons-outlined { opacity: 1; }
+
+/* ─── MAIN ─── */
+.main { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; }
+
+/* ─── HEADER ─── */
+.header {
+  height: var(--header-h); background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 32px;
+  position: sticky; top: 0; z-index: 50;
+}
+.header__breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.header__breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.header__breadcrumb a:hover { color: var(--primary); }
+.header__breadcrumb .sep { color: var(--text-tertiary); }
+.header__breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+.header__spacer { flex: 1; }
+.header__avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--primary), #5A98D6);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+/* ─── CONTENT ─── */
+.content { padding: 28px 32px 60px; max-width: 1440px; }
+
+/* ═══════ PAGE HEADER ═══════ */
+.page-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 24px;
+}
+.page-header__title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.page-header__subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.page-header__actions { display: flex; gap: 10px; }
+
+/* ═══════ BUTTONS ═══════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500; border: none;
+  cursor: pointer; transition: all var(--transition); font-family: inherit;
+}
+.btn--primary { background: var(--primary); color: white; }
+.btn--primary:hover { background: var(--primary-dark); }
+.btn--success { background: var(--success); color: white; }
+.btn--success:hover { background: #15803D; }
+.btn--outline {
+  background: white; color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn--outline:hover { background: var(--bg-page); }
+.btn--ghost {
+  background: transparent; color: var(--text-secondary);
+  border: none; padding: 6px 10px;
+}
+.btn--ghost:hover { background: var(--bg-page); color: var(--text-primary); }
+.btn--sm { padding: 5px 12px; font-size: 12px; }
+.btn--danger { background: transparent; color: var(--error); border: 1px solid #FECACA; }
+.btn--danger:hover { background: var(--error-bg); }
+.btn .material-icons-outlined { font-size: 18px; }
+.btn--icon-only {
+  width: 36px; height: 36px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius-md); cursor: pointer;
+  color: var(--text-secondary); transition: all var(--transition);
+}
+.btn--icon-only:hover { background: var(--bg-page); color: var(--text-primary); }
+.btn--icon-only.danger { color: var(--error); border-color: #FECACA; }
+.btn--icon-only.danger:hover { background: var(--error-bg); }
+
+/* ═══════ CARD ═══════ */
+.card {
+  background: var(--bg-card); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+.card__header {
+  padding: 20px 24px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card__title { font-size: 15px; font-weight: 600; }
+.card__subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.card__action {
+  font-size: 12px; color: var(--primary); text-decoration: none;
+  font-weight: 500; cursor: pointer; padding: 4px 10px;
+  border-radius: var(--radius-sm); transition: all var(--transition);
+}
+.card__action:hover { background: var(--primary-50); }
+.card__body { padding: 20px 24px 24px; }
+
+/* ═══════ ESTADO BADGES ═══════ */
+.estado-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.estado-badge--publicado { background: var(--success-bg); color: #166534; }
+.estado-badge--borrador { background: var(--warning-bg); color: #92400E; }
+.estado-badge--revision { background: var(--info-bg); color: #1E40AF; }
+.estado-badge--despublicado { background: var(--error-bg); color: #991B1B; }
+
+/* ═══════ TABS ═══════ */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border-light);
+  margin-bottom: 0;
+  gap: 0;
+}
+.tab {
+  padding: 12px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border-top: none; border-left: none; border-right: none;
+  font-family: inherit;
+}
+.tab:hover { color: var(--text-primary); background: var(--bg-page); }
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+.tab .tab-badge {
+  background: var(--primary);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+.tab .tab-icon-lock {
+  font-size: 16px;
+  opacity: 0.4;
+}
+.tab-content { padding: 24px 0; }
+
+/* ═══════ SCREEN DIVIDER ═══════ */
+.screen-divider {
+  border: none;
+  border-top: 3px dashed var(--primary);
+  margin: 60px 0 40px;
+  position: relative;
+}
+.screen-divider::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-page);
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ═══════ FILTERS BAR ═══════ */
+.filters-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 180px;
+  max-width: 260px;
+}
+.filter-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.filter-field select,
+.filter-field input {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: white;
+  transition: border-color var(--transition);
+}
+.filter-field select:focus,
+.filter-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47,110,177,0.1);
+}
+
+/* ═══════ DATA TABLE ═══════ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-page);
+}
+.data-table td {
+  padding: 14px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: #F9FAFB; }
+.data-table .col-right { text-align: right; }
+.data-table .col-center { text-align: center; }
+
+.tramite-cell {
+  display: flex; align-items: center; gap: 12px;
+}
+.tramite-cell__icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--primary-50);
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tramite-cell__icon .material-icons-outlined { font-size: 18px; }
+.tramite-cell__info { min-width: 0; }
+.tramite-cell__title {
+  font-weight: 500; color: var(--text-primary);
+  display: flex; align-items: center; gap: 6px;
+}
+.tramite-cell__title .star { color: #F59E0B; font-size: 16px; }
+.tramite-cell__org { font-size: 11px; color: var(--text-secondary); }
+
+.localidad-chips {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.localidad-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--primary-50);
+  color: var(--primary-dark);
+  font-weight: 500;
+}
+.localidad-chip--more {
+  background: var(--border-light);
+  color: var(--text-secondary);
+}
+
+/* ═══════ FORM ═══════ */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.form-group.full { grid-column: 1 / -1; }
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.form-group label .required { color: var(--error); }
+.form-group .hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.form-input,
+.form-select,
+.form-textarea {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: white;
+  transition: border-color var(--transition);
+}
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47,110,177,0.1);
+}
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select { appearance: auto; }
+
+/* Multi-select chips inside input */
+.multi-select-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-height: 42px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+.multi-select-box:hover { border-color: var(--primary); }
+.multi-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.multi-chip .close {
+  font-size: 14px; cursor: pointer; opacity: 0.6;
+}
+.multi-chip .close:hover { opacity: 1; }
+.multi-chip--blue { background: var(--primary-50); color: var(--primary-dark); }
+.multi-chip--green { background: var(--success-bg); color: #166534; }
+.multi-chip--purple { background: #F5F3FF; color: #6D28D9; }
+.multi-chip--orange { background: #FFF7ED; color: #C2410C; }
+.multi-select-placeholder {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ═══════ SECTION HEADER (within form) ═══════ */
+.section-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary);
+}
+.section-header__icon {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--primary-50);
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+}
+.section-header__icon .material-icons-outlined { font-size: 18px; }
+.section-header__text { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+/* ═══════ LOCALIDAD MANAGEMENT ═══════ */
+.loc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.loc-header__info h3 {
+  font-size: 16px; font-weight: 600; margin: 0 0 4px;
+}
+.loc-header__info p {
+  font-size: 12px; color: var(--text-secondary); margin: 0; max-width: 520px;
+}
+.loc-header__actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* Bulk add panel */
+.bulk-add-panel {
+  background: var(--primary-50);
+  border: 1px solid var(--primary-100);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.bulk-add-panel__title {
+  font-size: 14px; font-weight: 600; color: var(--primary-dark);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.bulk-add-panel__title .material-icons-outlined { font-size: 20px; }
+.bulk-add-panel__desc {
+  font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;
+}
+
+.bulk-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bulk-loc-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: white;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 13px;
+}
+.bulk-loc-option:hover {
+  border-color: var(--primary);
+  background: white;
+}
+.bulk-loc-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+.bulk-loc-option .checkbox {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.bulk-loc-option.selected .checkbox {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+.bulk-loc-option .checkbox .material-icons-outlined {
+  font-size: 14px;
+  display: none;
+}
+.bulk-loc-option.selected .checkbox .material-icons-outlined {
+  display: block;
+}
+.bulk-loc-option__name { font-weight: 500; }
+.bulk-loc-option__dept { font-size: 11px; color: var(--text-tertiary); margin-left: auto; }
+
+.bulk-add-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid rgba(47,110,177,0.15);
+}
+.bulk-add-panel__count {
+  font-size: 12px; color: var(--text-secondary);
+}
+.bulk-add-panel__count strong { color: var(--primary); }
+
+/* ── Localidad cards table ─── */
+.loc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+.loc-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 12px 8px;
+}
+.loc-table td {
+  padding: 14px 12px;
+  font-size: 13px;
+  vertical-align: top;
+  background: white;
+}
+.loc-table tr td:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-left: 1px solid var(--border-light);
+}
+.loc-table tr td:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-right: 1px solid var(--border-light);
+}
+.loc-table tr td {
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+.loc-table tr:hover td {
+  background: #FAFBFC;
+  border-color: var(--border);
+}
+
+.loc-name-cell {
+  display: flex; align-items: center; gap: 10px;
+}
+.loc-name-cell .material-icons-outlined {
+  font-size: 20px; color: var(--primary);
+}
+.loc-name-cell__name { font-weight: 600; }
+.loc-name-cell__dept { font-size: 11px; color: var(--text-tertiary); }
+
+.loc-field-value {
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+.loc-field-value.empty {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+.loc-field-value.inherited {
+  color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 4px;
+}
+.loc-field-value.inherited .material-icons-outlined {
+  font-size: 14px;
+}
+
+.loc-actions-cell {
+  display: flex; gap: 4px; justify-content: flex-end;
+}
+
+/* ── Inline edit row ─── */
+.loc-edit-row {
+  background: var(--primary-50) !important;
+}
+.loc-edit-row td {
+  border-color: var(--primary-100) !important;
+  background: var(--primary-50) !important;
+}
+.loc-edit-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  background: white;
+  resize: vertical;
+  min-height: 60px;
+}
+.loc-edit-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(47,110,177,0.1);
+}
+
+/* ── Copy template panel ─── */
+.copy-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: #92400E;
+}
+.copy-panel .material-icons-outlined { font-size: 20px; }
+.copy-panel__text { flex: 1; }
+
+/* ── Empty state ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.empty-state .material-icons-outlined {
+  font-size: 56px; opacity: 0.3; margin-bottom: 12px;
+}
+.empty-state__title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+.empty-state__desc { font-size: 12px; color: var(--text-tertiary); max-width: 360px; }
+.empty-state .btn { margin-top: 16px; }
+
+/* ── Fallback info ─── */
+.fallback-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--info-bg);
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #1E40AF;
+}
+.fallback-info .material-icons-outlined { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+/* ═══════ PREVIEW PANEL ═══════ */
+.preview-sidebar {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  position: sticky;
+  top: calc(var(--header-h) + 20px);
+}
+.preview-sidebar__title {
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.preview-sidebar__title .material-icons-outlined { font-size: 18px; }
+.preview-card {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.preview-card__header {
+  background: var(--primary);
+  color: white;
+  padding: 16px;
+}
+.preview-card__header-title { font-size: 16px; font-weight: 600; }
+.preview-card__header-org { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+.preview-card__body { padding: 16px; }
+.preview-card__field { margin-bottom: 12px; }
+.preview-card__field-label {
+  font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.preview-card__field-value { font-size: 12px; color: var(--text-primary); margin-top: 2px; }
+
+.preview-loc-select {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.preview-loc-select .material-icons-outlined { font-size: 18px; color: var(--primary); }
+.preview-loc-select select {
+  border: none; background: transparent;
+  font-size: 12px; font-family: inherit; font-weight: 500;
+  color: var(--text-primary); cursor: pointer; flex: 1;
+}
+.preview-loc-select select:focus { outline: none; }
+
+/* ═══════ 2-COL LAYOUT ═══════ */
+.form-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .form-layout { grid-template-columns: 1fr; }
+}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .filters-bar { flex-direction: column; }
+  .filter-field { max-width: none; }
+  .bulk-select-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo__shield">PM</div>
+      <div class="sidebar-logo__text">
+        <span class="sidebar-logo__title">Portal Misiones</span>
+        <span class="sidebar-logo__sub">Backoffice</span>
+      </div>
+    </div>
+    <div class="sidebar-section">Principal</div>
+    <ul class="sidebar-nav">
+      <li><a href="#"><span class="material-icons-outlined">dashboard</span> Dashboard</a></li>
+      <li><a href="#" class="active"><span class="material-icons-outlined">description</span> Tramites</a></li>
+      <li><a href="#"><span class="material-icons-outlined">business</span> Organismos</a></li>
+    </ul>
+    <div class="sidebar-section">Catalogos</div>
+    <ul class="sidebar-nav">
+      <li><a href="#"><span class="material-icons-outlined">account_tree</span> Categorias</a></li>
+      <li><a href="#"><span class="material-icons-outlined">label</span> Etiquetas</a></li>
+      <li><a href="#"><span class="material-icons-outlined">tune</span> Modalidades</a></li>
+    </ul>
+    <div class="sidebar-section">Gestion</div>
+    <ul class="sidebar-nav">
+      <li><a href="#"><span class="material-icons-outlined">people</span> Usuarios</a></li>
+      <li><a href="#"><span class="material-icons-outlined">history</span> Auditoria</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+
+    <!-- ═══════════════════════════════════════════════════
+         PANTALLA 1: LISTADO DE TRAMITES
+         ═══════════════════════════════════════════════════ -->
+    <header class="header">
+      <div class="header__breadcrumb">
+        <a href="#">Dashboard</a>
+        <span class="sep">/</span>
+        <span class="current">Tramites</span>
+      </div>
+      <div class="header__spacer"></div>
+      <div class="header__avatar">CF</div>
+    </header>
+
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Tramites</h1>
+          <p class="page-header__subtitle">Gestion de tramites del portal &mdash; 10 tramites registrados</p>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--outline">
+            <span class="material-icons-outlined">download</span> Exportar
+          </button>
+          <button class="btn btn--primary">
+            <span class="material-icons-outlined">add</span> Nuevo tramite
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filters-bar">
+        <div class="filter-field" style="max-width:300px">
+          <label>Buscar</label>
+          <input type="text" placeholder="Titulo o descripcion..." />
+        </div>
+        <div class="filter-field">
+          <label>Organismo</label>
+          <select><option>Todos</option><option>IPS</option><option>RPP</option><option>DGR</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Estado</label>
+          <select><option>Todos</option><option>Publicado</option><option>Borrador</option><option>En revision</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Localidad</label>
+          <select><option>Todas</option><option>Posadas</option><option>Obera</option><option>Eldorado</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Modalidad</label>
+          <select><option>Todas</option><option>Digital</option><option>Presencial</option></select>
+        </div>
+      </div>
+
+      <!-- Tabla de tramites -->
+      <div class="card" style="overflow:visible">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:35%">Tramite</th>
+              <th>Estado</th>
+              <th>Modalidad</th>
+              <th>Localidades</th>
+              <th>Actualizado</th>
+              <th class="col-center" style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon"><span class="material-icons-outlined">health_and_safety</span></div>
+                  <div class="tramite-cell__info">
+                    <div class="tramite-cell__title">Obtener credencial IPS <span class="material-icons-outlined star">star</span></div>
+                    <div class="tramite-cell__org">IPS</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="estado-badge estado-badge--publicado">Publicado</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">Digital con instancia presencial</td>
+              <td>
+                <div class="localidad-chips">
+                  <span class="localidad-chip">Posadas</span>
+                  <span class="localidad-chip">Obera</span>
+                  <span class="localidad-chip">Eldorado</span>
+                </div>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">20/03/2026</td>
+              <td class="col-center"><button class="btn--icon-only"><span class="material-icons-outlined" style="font-size:18px">more_vert</span></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon"><span class="material-icons-outlined">directions_bus</span></div>
+                  <div class="tramite-cell__info">
+                    <div class="tramite-cell__title">Inscribirse en el BEEG <span class="material-icons-outlined star">star</span></div>
+                    <div class="tramite-cell__org">Min. Educacion</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="estado-badge estado-badge--publicado">Publicado</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">Digital de punta a punta</td>
+              <td><span style="font-size:12px;color:var(--text-tertiary);font-style:italic">Provincial</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">18/03/2026</td>
+              <td class="col-center"><button class="btn--icon-only"><span class="material-icons-outlined" style="font-size:18px">more_vert</span></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon"><span class="material-icons-outlined">badge</span></div>
+                  <div class="tramite-cell__info">
+                    <div class="tramite-cell__title">Solicitar turno Registro Civil <span class="material-icons-outlined star">star</span></div>
+                    <div class="tramite-cell__org">Registro Provincial</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="estado-badge estado-badge--publicado">Publicado</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">Presencial con apoyo digital</td>
+              <td>
+                <div class="localidad-chips">
+                  <span class="localidad-chip">Posadas</span>
+                </div>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">15/03/2026</td>
+              <td class="col-center"><button class="btn--icon-only"><span class="material-icons-outlined" style="font-size:18px">more_vert</span></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon" style="background:#FFF7ED;color:#C2410C"><span class="material-icons-outlined">contact_page</span></div>
+                  <div class="tramite-cell__info">
+                    <div class="tramite-cell__title">Obtener certificado de residencia</div>
+                    <div class="tramite-cell__org">Registro Provincial</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="estado-badge estado-badge--revision">En revision</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">Digital con instancia presencial</td>
+              <td><span style="font-size:12px;color:var(--text-tertiary);font-style:italic">Provincial</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">25/03/2026</td>
+              <td class="col-center"><button class="btn--icon-only"><span class="material-icons-outlined" style="font-size:18px">more_vert</span></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon" style="background:var(--warning-bg);color:#B45309"><span class="material-icons-outlined">storefront</span></div>
+                  <div class="tramite-cell__info">
+                    <div class="tramite-cell__title">Registrar emprendimiento PyME</div>
+                    <div class="tramite-cell__org">DGR</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="estado-badge estado-badge--borrador">Borrador</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">Digital de punta a punta</td>
+              <td><span style="font-size:12px;color:var(--text-tertiary);font-style:italic">Provincial</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">26/03/2026</td>
+              <td class="col-center"><button class="btn--icon-only"><span class="material-icons-outlined" style="font-size:18px">more_vert</span></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 2: FORMULARIO — EDITAR TRAMITE
+           3 tabs: Ficha | Contenido Provincial | Contenido por Localidad
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Pantalla 2: Editar Tramite">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Editar tramite</h1>
+          <p class="page-header__subtitle">Obtener credencial IPS</p>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--outline"><span class="material-icons-outlined">preview</span> Vista previa</button>
+          <button class="btn btn--outline"><span class="material-icons-outlined">arrow_back</span> Volver</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active">
+          <span class="material-icons-outlined" style="font-size:18px">edit_note</span>
+          Ficha del tramite
+        </button>
+        <button class="tab">
+          <span class="material-icons-outlined" style="font-size:18px">article</span>
+          Contenido provincial
+        </button>
+        <button class="tab">
+          <span class="material-icons-outlined" style="font-size:18px">location_on</span>
+          Contenido por localidad
+          <span class="tab-badge">3</span>
+        </button>
+      </div>
+
+      <!-- ─── TAB 1: Ficha del tramite ─── -->
+      <div class="tab-content">
+        <div class="form-layout">
+          <div class="card">
+            <div class="card__body">
+              <div class="form-grid">
+                <div class="section-header">
+                  <div class="section-header__icon"><span class="material-icons-outlined">info</span></div>
+                  <span class="section-header__text">Datos generales</span>
+                </div>
+
+                <div class="form-group full">
+                  <label>Titulo del tramite <span class="required">*</span></label>
+                  <input class="form-input" type="text" value="Obtener credencial IPS" />
+                  <span class="hint">Debe comenzar con un verbo en infinitivo</span>
+                </div>
+
+                <div class="form-group">
+                  <label>Resumen <span class="required">*</span></label>
+                  <textarea class="form-textarea" rows="3">Solicitud de credencial para afiliados al Instituto Provincial de Salud.</textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>URL oficial del tramite <span class="required">*</span></label>
+                  <input class="form-input" type="url" value="https://ips.misiones.gob.ar/credencial" />
+                </div>
+
+                <div class="form-group full">
+                  <label>Icono del tramite <span class="required">*</span></label>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:48px;height:48px;border-radius:10px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center">
+                      <span class="material-icons-outlined" style="font-size:24px">health_and_safety</span>
+                    </div>
+                    <button class="btn btn--outline btn--sm">Cambiar icono</button>
+                  </div>
+                </div>
+
+                <div class="section-header">
+                  <div class="section-header__icon"><span class="material-icons-outlined">category</span></div>
+                  <span class="section-header__text">Clasificacion</span>
+                </div>
+
+                <div class="form-group">
+                  <label>Organismo <span class="required">*</span></label>
+                  <select class="form-select">
+                    <option selected>Instituto Provincial de Salud (IPS)</option>
+                    <option>Registro Provincial de las Personas</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Modalidad <span class="required">*</span></label>
+                  <select class="form-select">
+                    <option>Digital de punta a punta</option>
+                    <option selected>Digital con instancia presencial</option>
+                    <option>Presencial con apoyo digital</option>
+                    <option>Informativo / derivacion</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Categorias</label>
+                  <div class="multi-select-box">
+                    <span class="multi-chip multi-chip--blue">Salud <span class="material-icons-outlined close">close</span></span>
+                    <span class="multi-select-placeholder">+ Agregar</span>
+                  </div>
+                  <span class="hint">Donde aparecera el tramite en la navegacion del portal.</span>
+                </div>
+
+                <div class="form-group">
+                  <label>Etiquetas</label>
+                  <div class="multi-select-box">
+                    <span class="multi-chip multi-chip--green">Salud <span class="material-icons-outlined close">close</span></span>
+                    <span class="multi-select-placeholder">+ Agregar</span>
+                  </div>
+                  <span class="hint">Chips para filtrado cruzado entre categorias.</span>
+                </div>
+
+                <div class="form-group">
+                  <label>Destinatarios</label>
+                  <div class="multi-select-box">
+                    <span class="multi-chip multi-chip--purple">Ciudadania <span class="material-icons-outlined close">close</span></span>
+                    <span class="multi-select-placeholder">+ Agregar</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Eventos de Vida</label>
+                  <div class="multi-select-box">
+                    <span class="multi-select-placeholder">Seleccionar eventos de vida...</span>
+                  </div>
+                </div>
+
+                <div class="section-header">
+                  <div class="section-header__icon"><span class="material-icons-outlined">pin_drop</span></div>
+                  <span class="section-header__text">Disponibilidad</span>
+                </div>
+
+                <div class="form-group full">
+                  <label>Localidades</label>
+                  <div class="multi-select-box">
+                    <span class="multi-chip multi-chip--orange">Posadas <span class="material-icons-outlined close">close</span></span>
+                    <span class="multi-chip multi-chip--orange">Obera <span class="material-icons-outlined close">close</span></span>
+                    <span class="multi-chip multi-chip--orange">Eldorado <span class="material-icons-outlined close">close</span></span>
+                    <span class="multi-select-placeholder">+ Agregar</span>
+                  </div>
+                  <span class="hint">Si no selecciona ninguna, el tramite estara disponible en toda la provincia.</span>
+                </div>
+
+                <div class="form-group" style="flex-direction:row;align-items:center;gap:10px">
+                  <input type="checkbox" id="destacado" checked style="width:18px;height:18px;accent-color:var(--primary)">
+                  <label for="destacado" style="margin:0">Marcar como tramite destacado</label>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border-light)">
+                <button class="btn btn--outline">Cancelar</button>
+                <button class="btn btn--primary"><span class="material-icons-outlined">save</span> Guardar cambios</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview sidebar -->
+          <div class="preview-sidebar">
+            <div class="preview-sidebar__title">
+              <span class="material-icons-outlined">visibility</span>
+              Vista previa del portal
+            </div>
+            <div class="preview-card">
+              <div class="preview-card__header">
+                <div class="preview-card__header-title">Obtener credencial IPS</div>
+                <div class="preview-card__header-org">Instituto Provincial de Salud (IPS)</div>
+              </div>
+              <div class="preview-card__body">
+                <div class="preview-loc-select">
+                  <span class="material-icons-outlined">location_on</span>
+                  <select>
+                    <option>Posadas</option>
+                    <option>Obera</option>
+                    <option>Eldorado</option>
+                  </select>
+                </div>
+                <div class="preview-card__field">
+                  <div class="preview-card__field-label">Resumen</div>
+                  <div class="preview-card__field-value">Solicitud de credencial para afiliados al IPS.</div>
+                </div>
+                <div class="preview-card__field">
+                  <div class="preview-card__field-label">Modalidad</div>
+                  <div class="preview-card__field-value">Digital con instancia presencial</div>
+                </div>
+                <div class="preview-card__field">
+                  <div class="preview-card__field-label">Costos</div>
+                  <div class="preview-card__field-value">Gratuito para afiliados activos</div>
+                </div>
+                <div class="preview-card__field">
+                  <div class="preview-card__field-label">Horarios</div>
+                  <div class="preview-card__field-value">Lunes a Viernes 7:00 a 13:00</div>
+                </div>
+                <div style="margin-top:14px">
+                  <button class="btn btn--primary btn--sm" style="width:100%;justify-content:center">
+                    <span class="material-icons-outlined">open_in_new</span> Iniciar tramite
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 3: TAB 3 — CONTENIDO POR LOCALIDAD
+           (el core del mockup: ABM multiple)
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Pantalla 3: Tab Contenido por Localidad">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Editar tramite</h1>
+          <p class="page-header__subtitle">Obtener credencial IPS</p>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--outline"><span class="material-icons-outlined">preview</span> Vista previa</button>
+          <button class="btn btn--outline"><span class="material-icons-outlined">arrow_back</span> Volver</button>
+        </div>
+      </div>
+
+      <!-- Tabs (localidad active) -->
+      <div class="tabs">
+        <button class="tab">
+          <span class="material-icons-outlined" style="font-size:18px">edit_note</span>
+          Ficha del tramite
+        </button>
+        <button class="tab">
+          <span class="material-icons-outlined" style="font-size:18px">article</span>
+          Contenido provincial
+        </button>
+        <button class="tab active">
+          <span class="material-icons-outlined" style="font-size:18px">location_on</span>
+          Contenido por localidad
+          <span class="tab-badge">3</span>
+        </button>
+      </div>
+
+      <div class="tab-content">
+
+        <!-- Info: fallback provincial -->
+        <div class="fallback-info">
+          <span class="material-icons-outlined">info</span>
+          <div>
+            <strong>Herencia provincial:</strong> Si un campo queda vacio, el ciudadano vera el valor provincial
+            cargado en la pestana "Contenido provincial". Solo carga lo que difiere en cada localidad.
+          </div>
+        </div>
+
+        <!-- Header con acciones -->
+        <div class="loc-header">
+          <div class="loc-header__info">
+            <h3>Contenido por localidad</h3>
+            <p>Personaliza costos, contacto, horarios y URL de inicio para cada localidad donde esta disponible el tramite.</p>
+          </div>
+          <div class="loc-header__actions">
+            <button class="btn btn--outline" id="toggleBulk" onclick="document.getElementById('bulkPanel').style.display = document.getElementById('bulkPanel').style.display === 'none' ? 'block' : 'none'">
+              <span class="material-icons-outlined">playlist_add</span> Agregar multiples
+            </button>
+            <button class="btn btn--outline">
+              <span class="material-icons-outlined">content_copy</span> Copiar de otra localidad
+            </button>
+          </div>
+        </div>
+
+        <!-- ═══════ PANEL: CARGA MASIVA DE LOCALIDADES ═══════ -->
+        <div class="bulk-add-panel" id="bulkPanel">
+          <div class="bulk-add-panel__title">
+            <span class="material-icons-outlined">playlist_add</span>
+            Agregar multiples localidades
+          </div>
+          <div class="bulk-add-panel__desc">
+            Selecciona las localidades para las que queres agregar contenido especifico.
+            Despues podras editar cada una individualmente.
+          </div>
+
+          <!-- Quick filters -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn--outline btn--sm" style="font-size:11px">Seleccionar todas</button>
+            <button class="btn btn--outline btn--sm" style="font-size:11px">Capital (Posadas, Garupa, Candelaria)</button>
+            <button class="btn btn--outline btn--sm" style="font-size:11px">Zona Centro (Obera, L.N.Alem)</button>
+            <button class="btn btn--outline btn--sm" style="font-size:11px">Zona Norte (Eldorado, P.Iguazu)</button>
+            <button class="btn btn--outline btn--sm" style="font-size:11px">Deseleccionar todas</button>
+          </div>
+
+          <!-- Grid de localidades -->
+          <div class="bulk-select-grid">
+            <div class="bulk-loc-option" style="opacity:0.5;pointer-events:none">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div>
+                <div class="bulk-loc-option__name">Posadas</div>
+              </div>
+              <span class="bulk-loc-option__dept" style="color:var(--success)">Ya cargada</span>
+            </div>
+            <div class="bulk-loc-option selected">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Garupa</div></div>
+              <span class="bulk-loc-option__dept">Capital</span>
+            </div>
+            <div class="bulk-loc-option selected">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Candelaria</div></div>
+              <span class="bulk-loc-option__dept">Candelaria</span>
+            </div>
+            <div class="bulk-loc-option" style="opacity:0.5;pointer-events:none">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Obera</div></div>
+              <span class="bulk-loc-option__dept" style="color:var(--success)">Ya cargada</span>
+            </div>
+            <div class="bulk-loc-option">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Campo Viera</div></div>
+              <span class="bulk-loc-option__dept">Obera</span>
+            </div>
+            <div class="bulk-loc-option" style="opacity:0.5;pointer-events:none">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Eldorado</div></div>
+              <span class="bulk-loc-option__dept" style="color:var(--success)">Ya cargada</span>
+            </div>
+            <div class="bulk-loc-option selected">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Montecarlo</div></div>
+              <span class="bulk-loc-option__dept">Montecarlo</span>
+            </div>
+            <div class="bulk-loc-option selected">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Puerto Iguazu</div></div>
+              <span class="bulk-loc-option__dept">Iguazu</span>
+            </div>
+            <div class="bulk-loc-option">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">L.N. Alem</div></div>
+              <span class="bulk-loc-option__dept">L.N. Alem</span>
+            </div>
+            <div class="bulk-loc-option">
+              <div class="checkbox"><span class="material-icons-outlined">check</span></div>
+              <div><div class="bulk-loc-option__name">Apostoles</div></div>
+              <span class="bulk-loc-option__dept">Apostoles</span>
+            </div>
+          </div>
+
+          <!-- Plantilla opcional -->
+          <div class="copy-panel">
+            <span class="material-icons-outlined">content_copy</span>
+            <div class="copy-panel__text">
+              <strong>Aplicar plantilla:</strong> Copiar datos de una localidad existente como punto de partida para las nuevas.
+            </div>
+            <select class="form-select" style="width:180px;height:34px;font-size:12px">
+              <option>Sin plantilla</option>
+              <option>Copiar de Posadas</option>
+              <option>Copiar de Obera</option>
+              <option>Copiar de Eldorado</option>
+            </select>
+          </div>
+
+          <div class="bulk-add-panel__footer">
+            <div class="bulk-add-panel__count">
+              <strong>4 localidades</strong> seleccionadas (Garupa, Candelaria, Montecarlo, Puerto Iguazu)
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn--outline btn--sm" onclick="document.getElementById('bulkPanel').style.display='none'">Cancelar</button>
+              <button class="btn btn--success btn--sm">
+                <span class="material-icons-outlined">add</span> Agregar 4 localidades
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════ TABLA DE LOCALIDADES CON CONTENIDO ═══════ -->
+        <table class="loc-table">
+          <thead>
+            <tr>
+              <th style="width:160px">Localidad</th>
+              <th>Costos</th>
+              <th>Contacto</th>
+              <th>Horarios</th>
+              <th style="width:130px">URL tramite</th>
+              <th style="width:100px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Posadas: lectura -->
+            <tr>
+              <td>
+                <div class="loc-name-cell">
+                  <span class="material-icons-outlined">location_on</span>
+                  <div>
+                    <div class="loc-name-cell__name">Posadas</div>
+                    <div class="loc-name-cell__dept">Capital</div>
+                  </div>
+                </div>
+              </td>
+              <td><div class="loc-field-value">Gratuito para afiliados activos</div></td>
+              <td><div class="loc-field-value">Av. Roque Perez N2398, Posadas<br>Tel: (0376) 444-7800</div></td>
+              <td><div class="loc-field-value">Lunes a Viernes<br>7:00 a 13:00</div></td>
+              <td><div class="loc-field-value" style="color:var(--primary);font-size:11px;word-break:break-all">ips.misiones.gob.ar/posadas/credencial</div></td>
+              <td>
+                <div class="loc-actions-cell">
+                  <button class="btn--icon-only" title="Editar"><span class="material-icons-outlined" style="font-size:18px">edit</span></button>
+                  <button class="btn--icon-only danger" title="Eliminar"><span class="material-icons-outlined" style="font-size:18px">delete</span></button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Obera: edicion inline -->
+            <tr class="loc-edit-row">
+              <td>
+                <div class="loc-name-cell">
+                  <span class="material-icons-outlined">edit_location_alt</span>
+                  <div>
+                    <div class="loc-name-cell__name">Obera</div>
+                    <div class="loc-name-cell__dept" style="color:var(--primary)">Editando...</div>
+                  </div>
+                </div>
+              </td>
+              <td><textarea class="loc-edit-input">Gratuito para afiliados activos</textarea></td>
+              <td><textarea class="loc-edit-input">Calle Italia N520, Obera
+Tel: (03755) 42-1100</textarea></td>
+              <td><textarea class="loc-edit-input" style="min-height:60px">Lunes a Viernes
+7:00 a 12:00</textarea></td>
+              <td><input class="loc-edit-input" style="min-height:auto;height:36px" value="ips.misiones.gob.ar/obera" /></td>
+              <td>
+                <div class="loc-actions-cell" style="flex-direction:column;gap:6px">
+                  <button class="btn btn--success btn--sm" style="width:100%">
+                    <span class="material-icons-outlined">check</span>
+                  </button>
+                  <button class="btn btn--outline btn--sm" style="width:100%">
+                    <span class="material-icons-outlined">close</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Eldorado: lectura -->
+            <tr>
+              <td>
+                <div class="loc-name-cell">
+                  <span class="material-icons-outlined">location_on</span>
+                  <div>
+                    <div class="loc-name-cell__name">Eldorado</div>
+                    <div class="loc-name-cell__dept">Eldorado</div>
+                  </div>
+                </div>
+              </td>
+              <td><div class="loc-field-value">Gratuito para afiliados activos</div></td>
+              <td><div class="loc-field-value">Av. San Martin N1850, Eldorado<br>Tel: (03751) 42-2000</div></td>
+              <td><div class="loc-field-value">Lunes a Viernes<br>7:30 a 12:30</div></td>
+              <td>
+                <div class="loc-field-value inherited">
+                  <span class="material-icons-outlined">subdirectory_arrow_right</span>
+                  Hereda provincial
+                </div>
+              </td>
+              <td>
+                <div class="loc-actions-cell">
+                  <button class="btn--icon-only" title="Editar"><span class="material-icons-outlined" style="font-size:18px">edit</span></button>
+                  <button class="btn--icon-only danger" title="Eliminar"><span class="material-icons-outlined" style="font-size:18px">delete</span></button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Garupa: nueva (solo placeholder) -->
+            <tr style="opacity:0.7">
+              <td>
+                <div class="loc-name-cell">
+                  <span class="material-icons-outlined" style="color:var(--success)">add_location_alt</span>
+                  <div>
+                    <div class="loc-name-cell__name">Garupa</div>
+                    <div class="loc-name-cell__dept" style="color:var(--success)">Nueva</div>
+                  </div>
+                </div>
+              </td>
+              <td><div class="loc-field-value inherited"><span class="material-icons-outlined">subdirectory_arrow_right</span> Hereda provincial</div></td>
+              <td><div class="loc-field-value inherited"><span class="material-icons-outlined">subdirectory_arrow_right</span> Hereda provincial</div></td>
+              <td><div class="loc-field-value inherited"><span class="material-icons-outlined">subdirectory_arrow_right</span> Hereda provincial</div></td>
+              <td><div class="loc-field-value inherited"><span class="material-icons-outlined">subdirectory_arrow_right</span> Hereda provincial</div></td>
+              <td>
+                <div class="loc-actions-cell">
+                  <button class="btn--icon-only" title="Editar"><span class="material-icons-outlined" style="font-size:18px">edit</span></button>
+                  <button class="btn--icon-only danger" title="Eliminar"><span class="material-icons-outlined" style="font-size:18px">delete</span></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Nota al pie -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px;padding:12px 16px;background:var(--bg-page);border-radius:var(--radius-md);font-size:12px;color:var(--text-secondary)">
+          <span class="material-icons-outlined" style="font-size:18px">help_outline</span>
+          <span class="material-icons-outlined" style="font-size:14px;color:var(--text-tertiary)">subdirectory_arrow_right</span>
+          indica que el campo hereda el valor cargado en "Contenido provincial". Edita la localidad para personalizarlo.
+        </div>
+
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 4: ESTADO VACIO — SIN LOCALIDADES
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Variante: Tab Localidad vacia">
+
+      <div class="tabs">
+        <button class="tab">Ficha del tramite</button>
+        <button class="tab">Contenido provincial</button>
+        <button class="tab active">
+          <span class="material-icons-outlined" style="font-size:18px">location_on</span>
+          Contenido por localidad
+        </button>
+      </div>
+
+      <div class="tab-content">
+        <div class="empty-state">
+          <span class="material-icons-outlined">location_off</span>
+          <div class="empty-state__title">Sin contenido especifico por localidad</div>
+          <div class="empty-state__desc">
+            Este tramite usa los valores provinciales por defecto para todas las localidades.
+            Agrega localidades para personalizar costos, contacto y horarios.
+          </div>
+          <button class="btn btn--primary">
+            <span class="material-icons-outlined">add_location_alt</span> Agregar localidades
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 5: TAB BLOQUEADA (modo creacion)
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Variante: Tab bloqueada (nuevo tramite)">
+
+      <div class="tabs">
+        <button class="tab active">Ficha del tramite</button>
+        <button class="tab">Contenido provincial</button>
+        <button class="tab" style="opacity:0.5;cursor:not-allowed">
+          <span class="material-icons-outlined" style="font-size:18px">location_on</span>
+          Contenido por localidad
+          <span class="material-icons-outlined tab-icon-lock">lock</span>
+        </button>
+      </div>
+
+      <div class="tab-content">
+        <div style="display:flex;align-items:center;gap:10px;padding:20px;background:var(--bg-page);border-radius:var(--radius-md);color:var(--text-secondary);font-size:13px">
+          <span class="material-icons-outlined" style="font-size:20px">info</span>
+          Primero crea el tramite. Despues podras agregar contenido especifico por localidad.
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+</body>
+</html>

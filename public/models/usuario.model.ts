@@ -8,23 +8,8 @@ export interface Usuario {
   rol: UserRole;
   organismoId: string | null;
   organismoNombre?: string;
+  localidadId: number | null;
+  localidadNombre?: string;
   activo: boolean;
   createdAt: string;
-}
-
-export interface UsuarioCreate {
-  email: string;
-  nombre: string;
-  apellido: string;
-  password: string;
-  rol: UserRole;
-  organismoId?: string;
-}
-
-export interface UsuarioUpdate {
-  nombre?: string;
-  apellido?: string;
-  rol?: UserRole;
-  organismoId?: string;
-  activo?: boolean;
 }

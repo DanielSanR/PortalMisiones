@@ -1,10 +1,32 @@
-import { MOCK_ETIQUETAS, MOCK_MODALIDADES, MOCK_ORGANISMOS, MOCK_TRAMITES } from '@/mocks/mock-data';
-import type { Etiqueta, Modalidad, Organismo, Tramite } from '@/models/tramite.model';
+import {
+  MOCK_CATEGORIAS,
+  MOCK_CONTENIDO_LOCALIDAD,
+  MOCK_DESTINATARIOS,
+  MOCK_ETIQUETAS,
+  MOCK_EVENTOS_DE_VIDA,
+  MOCK_LOCALIDADES,
+  MOCK_MODALIDADES,
+  MOCK_ORGANISMOS,
+  MOCK_TRAMITES,
+} from '@/mocks/mock-data';
+import type {
+  Categoria,
+  Destinatario,
+  Etiqueta,
+  EventoDeVida,
+  Localidad,
+  Modalidad,
+  Organismo,
+  Tramite,
+  TramiteContenidoLocalidad,
+} from '@/models/tramite.model';
 
 export interface PublicSearchParams {
   search?: string;
   organismoId?: string;
   modalidadId?: number;
+  destinatarioId?: number;
+  localidadId?: number;
   etiquetaId?: number;
 }
 
@@ -28,14 +50,14 @@ function sanitizeText(value: string | null | undefined) {
   }
 
   return value
-    .replaceAll('Ã³', 'o')
-    .replaceAll('Ã©', 'e')
-    .replaceAll('Ã¡', 'a')
-    .replaceAll('Ã­', 'i')
-    .replaceAll('Ãº', 'u')
-    .replaceAll('Ã±', 'n')
-    .replaceAll('Â¿', '')
-    .replaceAll('Ãš', 'U');
+    .replaceAll('\u00c3\u00b3', 'o')
+    .replaceAll('\u00c3\u00a9', 'e')
+    .replaceAll('\u00c3\u00a1', 'a')
+    .replaceAll('\u00c3\u00ad', 'i')
+    .replaceAll('\u00c3\u00ba', 'u')
+    .replaceAll('\u00c3\u00b1', 'n')
+    .replaceAll('\u00c2\u00bf', '')
+    .replaceAll('\u00c3\u0098', 'U');
 }
 
 function sanitizeOrganismo(organismo: Organismo | undefined): Organismo | undefined {
@@ -53,7 +75,6 @@ function sanitizeEtiqueta(etiqueta: Etiqueta): Etiqueta {
   return {
     ...etiqueta,
     nombre: sanitizeText(etiqueta.nombre) ?? etiqueta.nombre,
-    categoria: sanitizeText(etiqueta.categoria) ?? etiqueta.categoria,
   };
 }
 
@@ -97,10 +118,17 @@ export function searchPublicTramites(params: PublicSearchParams): Tramite[] {
 
     const coincideOrganismo = !params.organismoId || tramite.organismoId === params.organismoId;
     const coincideModalidad = !params.modalidadId || tramite.modalidadId === params.modalidadId;
+    const coincideDestinatario =
+      !params.destinatarioId ||
+      (tramite.destinatarios ?? []).some((d) => d.id === params.destinatarioId);
+    const coincideLocalidad =
+      !params.localidadId ||
+      (tramite.localidades ?? []).some((l) => l.id === params.localidadId);
     const coincideEtiqueta =
-      !params.etiquetaId || tramite.etiquetas.some((etiqueta) => etiqueta.id === params.etiquetaId);
+      !params.etiquetaId ||
+      tramite.etiquetas.some((e) => e.id === params.etiquetaId);
 
-    return hayTexto && coincideOrganismo && coincideModalidad && coincideEtiqueta;
+    return hayTexto && coincideOrganismo && coincideModalidad && coincideDestinatario && coincideLocalidad && coincideEtiqueta;
   });
 }
 
@@ -116,11 +144,65 @@ export function getOrganismos(): Organismo[] {
 }
 
 export function getModalidades(): Modalidad[] {
-  return MOCK_MODALIDADES;
+  return MOCK_MODALIDADES.filter((m) => m.activo);
 }
 
 export function getEtiquetas(): Etiqueta[] {
-  return MOCK_ETIQUETAS.map(sanitizeEtiqueta);
+  return MOCK_ETIQUETAS.filter((e) => e.activo).map(sanitizeEtiqueta);
+}
+
+export function getCategorias(): Categoria[] {
+  const roots = MOCK_CATEGORIAS
+    .filter((c) => c.parentId === null && c.activo)
+    .sort((a, b) => a.orden - b.orden);
+
+  return roots.map((root) => ({
+    ...root,
+    children: MOCK_CATEGORIAS
+      .filter((c) => c.parentId === root.id && c.activo)
+      .sort((a, b) => a.orden - b.orden),
+  }));
+}
+
+export function getCategoriaBySlug(slug: string): Categoria | undefined {
+  const all = getCategorias();
+  for (const cat of all) {
+    if (cat.slug === slug) return cat;
+    const child = cat.children?.find((c) => c.slug === slug);
+    if (child) return child;
+  }
+  return undefined;
+}
+
+export function getDestinatarios(): Destinatario[] {
+  return MOCK_DESTINATARIOS.filter((d) => d.activo).sort((a, b) => a.orden - b.orden);
+}
+
+export function getLocalidades(): Localidad[] {
+  return MOCK_LOCALIDADES.filter((l) => l.activo).sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+export function getEventosDeVida(): EventoDeVida[] {
+  return MOCK_EVENTOS_DE_VIDA.filter((e) => e.activo);
+}
+
+export function getSubcategorias(parentId: number): Categoria[] {
+  return MOCK_CATEGORIAS
+    .filter((c) => c.parentId === parentId && c.activo)
+    .sort((a, b) => a.orden - b.orden);
+}
+
+export function getTramitesByCategoriaId(categoriaId: number): Tramite[] {
+  return getPublishedTramites().filter((t) => t.categoriaId === categoriaId);
+}
+
+export function getContenidoLocalidad(
+  tramiteId: string,
+  localidadId: number
+): TramiteContenidoLocalidad | undefined {
+  return MOCK_CONTENIDO_LOCALIDAD.find(
+    (c) => c.tramiteId === tramiteId && c.localidadId === localidadId && c.activo
+  );
 }
 
 export function getLifeEvents(): LifeEvent[] {

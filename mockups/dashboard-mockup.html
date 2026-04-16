@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Portal Misiones Backoffice</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS — Portal Provincial de Trámites Misiones
+   Primary: #2F6EB1 | Sidebar: #0F335D
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --primary: #2F6EB1;
+  --primary-dark: #1A4779;
+  --primary-light: #3B82C4;
+  --primary-lighter: #5A98D6;
+  --primary-50: #E8F1FA;
+  --primary-100: #C5DCF2;
+
+  --sidebar-bg: #0F335D;
+  --sidebar-hover: rgba(255,255,255,0.08);
+  --sidebar-active: rgba(255,255,255,0.18);
+
+  --success: #16A34A;
+  --success-bg: #F0FDF4;
+  --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
+  --error: #DC2626;
+  --error-bg: #FEF2F2;
+  --info: #3B82F6;
+  --info-bg: #EFF6FF;
+  --purple: #7C3AED;
+  --purple-bg: #F5F3FF;
+
+  --text-primary: #1A1A2E;
+  --text-secondary: #5F6368;
+  --text-tertiary: #9AA0A6;
+  --text-on-dark: rgba(255,255,255,0.92);
+  --text-on-dark-secondary: rgba(255,255,255,0.60);
+
+  --bg-page: #F4F6F8;
+  --bg-card: #FFFFFF;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-card-hover: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.08);
+
+  --sidebar-w: 264px;
+  --header-h: 64px;
+  --transition: 250ms cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ═══════ RESET ═══════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════ LAYOUT ═══════ */
+.layout { display: flex; min-height: 100vh; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-logo {
+  padding: 20px 24px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo__shield {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #2F6EB1, #5A98D6);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 16px;
+}
+.sidebar-logo__text {
+  display: flex; flex-direction: column;
+}
+.sidebar-logo__title {
+  color: white; font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+}
+.sidebar-logo__sub {
+  color: var(--text-on-dark-secondary); font-size: 11px; font-weight: 400;
+}
+
+.sidebar-section {
+  padding: 16px 16px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-on-dark-secondary);
+}
+
+.sidebar-nav { list-style: none; padding: 0 8px; }
+.sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  color: var(--text-on-dark);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 400;
+  transition: all var(--transition);
+  margin-bottom: 2px;
+}
+.sidebar-nav li a:hover {
+  background: var(--sidebar-hover);
+}
+.sidebar-nav li a.active {
+  background: var(--sidebar-active);
+  font-weight: 500;
+  color: white;
+}
+.sidebar-nav li a .material-icons-outlined {
+  font-size: 20px;
+  opacity: 0.75;
+}
+.sidebar-nav li a.active .material-icons-outlined {
+  opacity: 1;
+}
+
+.sidebar-nav li a .nav-badge {
+  margin-left: auto;
+  background: var(--error);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ─── MAIN ─── */
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── HEADER ─── */
+.header {
+  height: var(--header-h);
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.header__greeting {
+  display: flex;
+  flex-direction: column;
+}
+.header__greeting-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.header__greeting-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.header__spacer { flex: 1; }
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header__icon-btn {
+  width: 40px; height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  position: relative;
+}
+.header__icon-btn:hover {
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+.header__icon-btn .badge-dot {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 8px; height: 8px;
+  background: var(--error);
+  border-radius: 50%;
+  border: 2px solid white;
+}
+.header__avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-lighter));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* ─── CONTENT ─── */
+.content {
+  padding: 28px 32px 40px;
+  max-width: 1440px;
+}
+
+/* ═══════ PAGE HEADER ═══════ */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.page-header__left { }
+.page-header__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.page-header__subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.page-header__actions {
+  display: flex;
+  gap: 10px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.btn--primary {
+  background: var(--primary);
+  color: white;
+}
+.btn--primary:hover { background: var(--primary-dark); }
+.btn--outline {
+  background: white;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn--outline:hover { background: var(--bg-page); border-color: #D1D5DB; }
+.btn .material-icons-outlined { font-size: 18px; }
+
+/* ═══════ ALERT BANNER ═══════ */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+.alert-banner--warning {
+  background: var(--warning-bg);
+  border: 1px solid #FDE68A;
+  color: #92400E;
+}
+.alert-banner--info {
+  background: var(--info-bg);
+  border: 1px solid #BFDBFE;
+  color: #1E40AF;
+}
+.alert-banner .material-icons-outlined {
+  font-size: 20px;
+}
+.alert-banner__text { flex: 1; }
+.alert-banner__text strong { font-weight: 600; }
+.alert-banner__action {
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(0,0,0,0.06);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* ═══════ KPI CARDS ═══════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition);
+  border: 1px solid var(--border-light);
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.kpi-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.kpi-card__icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kpi-card__icon .material-icons-outlined { font-size: 22px; }
+
+.kpi-card__trend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.kpi-card__trend--up { background: var(--success-bg); color: var(--success); }
+.kpi-card__trend--down { background: var(--error-bg); color: var(--error); }
+.kpi-card__trend--neutral { background: var(--bg-page); color: var(--text-secondary); }
+.kpi-card__trend .material-icons-outlined { font-size: 14px; }
+
+.kpi-card__value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.kpi-card__value .suffix {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 3px;
+}
+
+.kpi-card__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.kpi-card__sparkline {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40px;
+  opacity: 0.15;
+}
+
+/* Minibar inside KPI */
+.kpi-card__minibar {
+  display: flex;
+  gap: 3px;
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--border-light);
+}
+.kpi-card__minibar-segment {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--transition);
+}
+
+/* ═══════ GRID SECTIONS ═══════ */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.grid-3-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.grid-1-3 {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* ═══════ CARD ═══════ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+.card__header {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.card__subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.card__action {
+  font-size: 12px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+.card__action:hover {
+  background: var(--primary-50);
+}
+.card__body {
+  padding: 20px 24px 24px;
+}
+
+/* ═══════ DONUT CHART ═══════ */
+.donut-section {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.donut-chart {
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  /* Simulating donut with conic-gradient */
+  background: conic-gradient(
+    #16A34A 0deg 216deg,
+    #F59E0B 216deg 288deg,
+    #3B82F6 288deg 324deg,
+    #9CA3AF 324deg 360deg
+  );
+}
+.donut-chart::after {
+  content: '';
+  position: absolute;
+  inset: 30px;
+  background: white;
+  border-radius: 50%;
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.donut-center__value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.donut-center__label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+.donut-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.donut-legend__dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.donut-legend__item strong {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.donut-legend__item .pct {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  min-width: 36px;
+}
+
+/* ═══════ BAR CHART (CSS) ═══════ */
+.bar-chart { display: flex; flex-direction: column; gap: 12px; }
+.bar-chart__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bar-chart__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.bar-chart__track {
+  flex: 1;
+  height: 28px;
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+.bar-chart__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  transition: width 600ms cubic-bezier(0.4,0,0.2,1);
+  min-width: 32px;
+}
+
+/* ═══════ LINE CHART (SVG) ═══════ */
+.line-chart-container {
+  width: 100%;
+  height: 200px;
+  position: relative;
+}
+.line-chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════ TABLE ═══════ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 12px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table .col-right { text-align: right; }
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 10px;
+}
+.rank-badge--1 { background: #FEF3C7; color: #B45309; }
+.rank-badge--2 { background: #F3F4F6; color: #6B7280; }
+.rank-badge--3 { background: #FDE8D8; color: #C2410C; }
+.rank-badge--n { background: var(--bg-page); color: var(--text-tertiary); }
+
+.search-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--error);
+  font-size: 12px;
+  font-weight: 500;
+}
+.search-warning .material-icons-outlined { font-size: 16px; }
+
+.num-cell {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════ ESTADO BADGES ═══════ */
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.estado-badge--publicado { background: var(--success-bg); color: #166534; }
+.estado-badge--borrador { background: var(--warning-bg); color: #92400E; }
+.estado-badge--revision { background: var(--info-bg); color: #1E40AF; }
+.estado-badge--despublicado { background: var(--error-bg); color: #991B1B; }
+
+/* ═══════ ACTIVITY TIMELINE ═══════ */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.timeline-item:last-child { border-bottom: none; padding-bottom: 0; }
+.timeline-item__icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.timeline-item__icon .material-icons-outlined { font-size: 18px; }
+.timeline-item__body { flex: 1; min-width: 0; }
+.timeline-item__text {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.timeline-item__text strong { font-weight: 600; }
+.timeline-item__text em {
+  font-style: normal;
+  color: var(--primary);
+  font-weight: 500;
+}
+.timeline-item__date {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ═══════ FEEDBACK SECTION ═══════ */
+.feedback-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.feedback-item:last-child { border-bottom: none; }
+.feedback-item__thumb {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.feedback-item__thumb--up { background: var(--success-bg); color: var(--success); }
+.feedback-item__thumb--down { background: var(--error-bg); color: var(--error); }
+.feedback-item__thumb .material-icons-outlined { font-size: 18px; }
+.feedback-item__body { flex: 1; }
+.feedback-item__tramite {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.feedback-item__comment {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+.feedback-item__date {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* ═══════ QUICK STATS ROW ═══════ */
+.stat-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+}
+.stat-item__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.stat-item__label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ═══════ PROGRESS RING ═══════ */
+.progress-ring-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.progress-ring {
+  width: 80px; height: 80px;
+  position: relative;
+  flex-shrink: 0;
+}
+.progress-ring svg { transform: rotate(-90deg); }
+.progress-ring circle {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.progress-ring .bg { stroke: var(--border-light); }
+.progress-ring .fill { transition: stroke-dashoffset 600ms ease; }
+.progress-ring__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+}
+.progress-ring__value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+.progress-ring__text {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+/* ═══════ WORKFLOW FUNNEL ═══════ */
+.workflow-funnel {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 8px 0;
+}
+.workflow-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.workflow-step__count {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.workflow-step__label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.workflow-step__bar {
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 10px;
+}
+.workflow-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-tertiary);
+  margin-top: -20px;
+}
+.workflow-arrow .material-icons-outlined { font-size: 20px; }
+
+/* ═══════ DEMAND HEATMAP MINI ═══════ */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  position: relative;
+}
+.heatmap-cell::after {
+  content: attr(data-val);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  color: transparent;
+}
+.heatmap-cell:hover::after { color: var(--text-primary); }
+
+/* ═══════ COVERAGE INDICATOR ═══════ */
+.coverage-list { display: flex; flex-direction: column; gap: 10px; }
+.coverage-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.coverage-item__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 130px;
+  flex-shrink: 0;
+}
+.coverage-item__bar {
+  flex: 1;
+  height: 8px;
+  background: var(--border-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.coverage-item__fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 600ms ease;
+}
+.coverage-item__pct {
+  font-size: 12px;
+  font-weight: 600;
+  width: 40px;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+/* ═══════ QUICK ACTIONS ═══════ */
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.quick-action-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-50);
+}
+.quick-action-btn .material-icons-outlined {
+  font-size: 18px;
+  color: var(--primary);
+}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-2, .grid-3, .grid-3-1, .grid-1-3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 16px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .page-header { flex-direction: column; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ═══════════════════════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo__shield">PM</div>
+      <div class="sidebar-logo__text">
+        <span class="sidebar-logo__title">Portal Misiones</span>
+        <span class="sidebar-logo__sub">Backoffice</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">Principal</div>
+    <ul class="sidebar-nav">
+      <li><a href="#" class="active">
+        <span class="material-icons-outlined">dashboard</span> Dashboard
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">description</span> Tramites
+        <span class="nav-badge">2</span>
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">business</span> Organismos
+      </a></li>
+    </ul>
+
+    <div class="sidebar-section">Catalogos</div>
+    <ul class="sidebar-nav">
+      <li><a href="#">
+        <span class="material-icons-outlined">account_tree</span> Categorias
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">label</span> Etiquetas
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">tune</span> Modalidades
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">event_note</span> Eventos de Vida
+      </a></li>
+    </ul>
+
+    <div class="sidebar-section">Gestion</div>
+    <ul class="sidebar-nav">
+      <li><a href="#">
+        <span class="material-icons-outlined">people</span> Usuarios
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">forum</span> Feedback
+        <span class="nav-badge">5</span>
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">history</span> Auditoria
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">bar_chart</span> Reportes
+      </a></li>
+    </ul>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════ -->
+  <main class="main">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header__greeting">
+        <span class="header__greeting-title">Buen dia, Carlos</span>
+        <span class="header__greeting-sub">Lunes 14 de abril, 2026 &mdash; Super Administrador</span>
+      </div>
+      <div class="header__spacer"></div>
+      <div class="header__actions">
+        <button class="header__icon-btn" title="Buscar">
+          <span class="material-icons-outlined">search</span>
+        </button>
+        <button class="header__icon-btn" title="Notificaciones">
+          <span class="material-icons-outlined">notifications</span>
+          <span class="badge-dot"></span>
+        </button>
+        <button class="header__icon-btn" title="Ayuda">
+          <span class="material-icons-outlined">help_outline</span>
+        </button>
+        <div class="header__avatar" title="Carlos Fernandez">CF</div>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ── Page Header ─────────────────── -->
+      <div class="page-header">
+        <div class="page-header__left">
+          <h1 class="page-header__title">Dashboard</h1>
+          <p class="page-header__subtitle">Resumen general del Portal Provincial de Tramites</p>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--outline">
+            <span class="material-icons-outlined">download</span>
+            Exportar reporte
+          </button>
+          <button class="btn btn--primary">
+            <span class="material-icons-outlined">add</span>
+            Nuevo tramite
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Alert Banner ────────────────── -->
+      <div class="alert-banner alert-banner--warning">
+        <span class="material-icons-outlined">warning</span>
+        <span class="alert-banner__text">
+          <strong>3 busquedas frecuentes sin resultados</strong> &mdash;
+          "certificado antecedentes", "licencia de conducir" y "subsidio gas" no tienen tramites asociados.
+        </span>
+        <a class="alert-banner__action">Ver detalles</a>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           KPI CARDS — Fila 1: Metricas principales
+           ═══════════════════════════════════ -->
+      <div class="kpi-grid">
+        <!-- Total Tramites -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#E8F1FA;color:#2F6EB1">
+              <span class="material-icons-outlined">description</span>
+            </div>
+            <div class="kpi-card__trend kpi-card__trend--up">
+              <span class="material-icons-outlined">trending_up</span> +2
+            </div>
+          </div>
+          <div class="kpi-card__value">10</div>
+          <div class="kpi-card__label">Total tramites</div>
+          <!-- Mini breakdown bar -->
+          <div class="kpi-card__minibar">
+            <div class="kpi-card__minibar-segment" style="width:60%;background:#16A34A" title="6 publicados"></div>
+            <div class="kpi-card__minibar-segment" style="width:20%;background:#F59E0B" title="2 borrador"></div>
+            <div class="kpi-card__minibar-segment" style="width:10%;background:#3B82F6" title="1 revision"></div>
+            <div class="kpi-card__minibar-segment" style="width:10%;background:#9CA3AF" title="1 despublicado"></div>
+          </div>
+        </div>
+
+        <!-- Publicados -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#F0FDF4;color:#16A34A">
+              <span class="material-icons-outlined">check_circle</span>
+            </div>
+            <div class="kpi-card__trend kpi-card__trend--up">
+              <span class="material-icons-outlined">trending_up</span> +1
+            </div>
+          </div>
+          <div class="kpi-card__value">6 <span class="suffix">/ 10</span></div>
+          <div class="kpi-card__label">Tramites publicados</div>
+          <div class="kpi-card__minibar">
+            <div class="kpi-card__minibar-segment" style="width:60%;background:#16A34A"></div>
+          </div>
+        </div>
+
+        <!-- Busquedas Hoy -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#F5F3FF;color:#7C3AED">
+              <span class="material-icons-outlined">search</span>
+            </div>
+            <div class="kpi-card__trend kpi-card__trend--up">
+              <span class="material-icons-outlined">trending_up</span> +12%
+            </div>
+          </div>
+          <div class="kpi-card__value">342</div>
+          <div class="kpi-card__label">Busquedas hoy</div>
+        </div>
+
+        <!-- Satisfaccion -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#FFFBEB;color:#F59E0B">
+              <span class="material-icons-outlined">star</span>
+            </div>
+            <div class="kpi-card__trend kpi-card__trend--up">
+              <span class="material-icons-outlined">trending_up</span> +0.3
+            </div>
+          </div>
+          <div class="kpi-card__value">4.2 <span class="suffix">/ 5</span></div>
+          <div class="kpi-card__label">Satisfaccion ciudadana</div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           KPI CARDS — Fila 2: Metricas secundarias
+           ═══════════════════════════════════ -->
+      <div class="kpi-grid" style="margin-bottom: 28px;">
+        <!-- Organismos -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#EEF2FF;color:#6366F1">
+              <span class="material-icons-outlined">business</span>
+            </div>
+          </div>
+          <div class="kpi-card__value">7</div>
+          <div class="kpi-card__label">Organismos activos</div>
+        </div>
+
+        <!-- Sin resultados -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#FEF2F2;color:#DC2626">
+              <span class="material-icons-outlined">search_off</span>
+            </div>
+            <div class="kpi-card__trend kpi-card__trend--down">
+              <span class="material-icons-outlined">trending_up</span> +8
+            </div>
+          </div>
+          <div class="kpi-card__value">28</div>
+          <div class="kpi-card__label">Busquedas sin resultado</div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#ECFDF5;color:#059669">
+              <span class="material-icons-outlined">forum</span>
+            </div>
+          </div>
+          <div class="kpi-card__value">67% <span class="suffix">util</span></div>
+          <div class="kpi-card__label">Feedback positivo</div>
+        </div>
+
+        <!-- Localidades -->
+        <div class="kpi-card">
+          <div class="kpi-card__header">
+            <div class="kpi-card__icon" style="background:#FFF7ED;color:#EA580C">
+              <span class="material-icons-outlined">location_on</span>
+            </div>
+          </div>
+          <div class="kpi-card__value">4 <span class="suffix">/ 20</span></div>
+          <div class="kpi-card__label">Localidades con contenido</div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           WORKFLOW PIPELINE
+           ═══════════════════════════════════ -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card__header">
+          <div>
+            <div class="card__title">Pipeline de tramites</div>
+            <div class="card__subtitle">Estado actual del workflow de publicacion</div>
+          </div>
+          <a class="card__action">Ver todos</a>
+        </div>
+        <div class="card__body">
+          <div class="workflow-funnel">
+            <div class="workflow-step">
+              <div class="workflow-step__count">2</div>
+              <div class="workflow-step__label">Borrador</div>
+              <div class="workflow-step__bar" style="background: #F59E0B"></div>
+            </div>
+            <div class="workflow-arrow">
+              <span class="material-icons-outlined">chevron_right</span>
+            </div>
+            <div class="workflow-step">
+              <div class="workflow-step__count">1</div>
+              <div class="workflow-step__label">En revision</div>
+              <div class="workflow-step__bar" style="background: #3B82F6"></div>
+            </div>
+            <div class="workflow-arrow">
+              <span class="material-icons-outlined">chevron_right</span>
+            </div>
+            <div class="workflow-step">
+              <div class="workflow-step__count">6</div>
+              <div class="workflow-step__label">Publicados</div>
+              <div class="workflow-step__bar" style="background: #16A34A"></div>
+            </div>
+            <div class="workflow-arrow">
+              <span class="material-icons-outlined">chevron_right</span>
+            </div>
+            <div class="workflow-step">
+              <div class="workflow-step__count">1</div>
+              <div class="workflow-step__label">Despublicados</div>
+              <div class="workflow-step__bar" style="background: #9CA3AF"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           CHARTS ROW
+           ═══════════════════════════════════ -->
+      <div class="grid-2">
+        <!-- Donut: Distribucion por estado -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Distribucion por estado</div>
+              <div class="card__subtitle">10 tramites en total</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="donut-section">
+              <div class="donut-chart">
+                <div class="donut-center">
+                  <span class="donut-center__value">10</span>
+                  <span class="donut-center__label">Total</span>
+                </div>
+              </div>
+              <div class="donut-legend">
+                <div class="donut-legend__item">
+                  <span class="donut-legend__dot" style="background:#16A34A"></span>
+                  <span>Publicados</span>
+                  <span class="pct">60%</span>
+                  <strong>6</strong>
+                </div>
+                <div class="donut-legend__item">
+                  <span class="donut-legend__dot" style="background:#F59E0B"></span>
+                  <span>Borrador</span>
+                  <span class="pct">20%</span>
+                  <strong>2</strong>
+                </div>
+                <div class="donut-legend__item">
+                  <span class="donut-legend__dot" style="background:#3B82F6"></span>
+                  <span>En revision</span>
+                  <span class="pct">10%</span>
+                  <strong>1</strong>
+                </div>
+                <div class="donut-legend__item">
+                  <span class="donut-legend__dot" style="background:#9CA3AF"></span>
+                  <span>Despublicados</span>
+                  <span class="pct">10%</span>
+                  <strong>1</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar: Tramites por organismo -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Tramites por organismo</div>
+              <div class="card__subtitle">7 organismos activos</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="bar-chart">
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">ME</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:100%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">2</div>
+                </div>
+              </div>
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">RPP</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:100%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">2</div>
+                </div>
+              </div>
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">DGR</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:100%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">2</div>
+                </div>
+              </div>
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">IPS</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:50%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">1</div>
+                </div>
+              </div>
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">MSP</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:50%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">1</div>
+                </div>
+              </div>
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">IPRODHA</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:50%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">1</div>
+                </div>
+              </div>
+              <div class="bar-chart__row">
+                <span class="bar-chart__label">MTE</span>
+                <div class="bar-chart__track">
+                  <div class="bar-chart__fill" style="width:50%;background:linear-gradient(90deg,#3B82F6,#60A5FA)">1</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           COBERTURA + TENDENCIA BUSQUEDAS
+           ═══════════════════════════════════ -->
+      <div class="grid-2">
+        <!-- Cobertura de contenido -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Cobertura de contenido</div>
+              <div class="card__subtitle">Completitud de fichas de tramites publicados</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="coverage-list">
+              <div class="coverage-item">
+                <span class="coverage-item__label">Descripcion larga</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:40%;background:#16A34A"></div>
+                </div>
+                <span class="coverage-item__pct">40%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">Requisitos</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:20%;background:#F59E0B"></div>
+                </div>
+                <span class="coverage-item__pct">20%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">Costos</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:10%;background:#DC2626"></div>
+                </div>
+                <span class="coverage-item__pct">10%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">Contacto</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:10%;background:#DC2626"></div>
+                </div>
+                <span class="coverage-item__pct">10%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">Contenido local</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:30%;background:#F59E0B"></div>
+                </div>
+                <span class="coverage-item__pct">30%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">Etiquetas</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:80%;background:#16A34A"></div>
+                </div>
+                <span class="coverage-item__pct">80%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tendencia de busquedas -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Tendencia de busquedas</div>
+              <div class="card__subtitle">Ultimos 7 dias</div>
+            </div>
+            <a class="card__action">Ver detalle</a>
+          </div>
+          <div class="card__body">
+            <div class="line-chart-container">
+              <svg class="line-chart-svg" viewBox="0 0 500 200" preserveAspectRatio="none">
+                <!-- Grid lines -->
+                <line x1="0" y1="50" x2="500" y2="50" stroke="#F3F4F6" stroke-width="1"/>
+                <line x1="0" y1="100" x2="500" y2="100" stroke="#F3F4F6" stroke-width="1"/>
+                <line x1="0" y1="150" x2="500" y2="150" stroke="#F3F4F6" stroke-width="1"/>
+
+                <!-- Area fill -->
+                <path d="M0,140 L83,120 L166,90 L250,100 L333,70 L416,50 L500,60 L500,200 L0,200 Z"
+                      fill="url(#areaGradient)" opacity="0.3"/>
+
+                <!-- Line -->
+                <polyline points="0,140 83,120 166,90 250,100 333,70 416,50 500,60"
+                          fill="none" stroke="#2F6EB1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                <!-- Dots -->
+                <circle cx="0" cy="140" r="4" fill="white" stroke="#2F6EB1" stroke-width="2"/>
+                <circle cx="83" cy="120" r="4" fill="white" stroke="#2F6EB1" stroke-width="2"/>
+                <circle cx="166" cy="90" r="4" fill="white" stroke="#2F6EB1" stroke-width="2"/>
+                <circle cx="250" cy="100" r="4" fill="white" stroke="#2F6EB1" stroke-width="2"/>
+                <circle cx="333" cy="70" r="4" fill="white" stroke="#2F6EB1" stroke-width="2"/>
+                <circle cx="416" cy="50" r="5" fill="#2F6EB1" stroke="white" stroke-width="2"/>
+                <circle cx="500" cy="60" r="4" fill="white" stroke="#2F6EB1" stroke-width="2"/>
+
+                <defs>
+                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#2F6EB1" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#2F6EB1" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text-tertiary)">
+              <span>8 Abr</span><span>9 Abr</span><span>10 Abr</span><span>11 Abr</span><span>12 Abr</span><span>13 Abr</span><span>14 Abr</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           DIGITALIZACION + SATISFACCION
+           ═══════════════════════════════════ -->
+      <div class="grid-2">
+        <!-- Indice de digitalizacion por organismo -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Indice de digitalizacion</div>
+              <div class="card__subtitle">Porcentaje de tramites digitales por organismo</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="coverage-list">
+              <div class="coverage-item">
+                <span class="coverage-item__label">Min. Educacion</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:100%;background:linear-gradient(90deg,#16A34A,#4ADE80)"></div>
+                </div>
+                <span class="coverage-item__pct" style="color:#16A34A">100%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">DGR</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:100%;background:linear-gradient(90deg,#16A34A,#4ADE80)"></div>
+                </div>
+                <span class="coverage-item__pct" style="color:#16A34A">100%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">IPS</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:50%;background:linear-gradient(90deg,#F59E0B,#FCD34D)"></div>
+                </div>
+                <span class="coverage-item__pct" style="color:#F59E0B">50%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">IPRODHA</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:50%;background:linear-gradient(90deg,#F59E0B,#FCD34D)"></div>
+                </div>
+                <span class="coverage-item__pct" style="color:#F59E0B">50%</span>
+              </div>
+              <div class="coverage-item">
+                <span class="coverage-item__label">RPP</span>
+                <div class="coverage-item__bar">
+                  <div class="coverage-item__fill" style="width:0%;background:#DC2626"></div>
+                </div>
+                <span class="coverage-item__pct" style="color:#DC2626">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Satisfaccion por tramite -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Satisfaccion por tramite</div>
+              <div class="card__subtitle">CSAT de los tramites con mas feedback</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tramite</th>
+                  <th class="col-right">Util</th>
+                  <th class="col-right">No util</th>
+                  <th class="col-right">CSAT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:500">Inscribirse en el BEEG</td>
+                  <td class="col-right" style="color:#16A34A;font-weight:600">3</td>
+                  <td class="col-right" style="color:#DC2626;font-weight:600">1</td>
+                  <td class="col-right">
+                    <span style="color:#16A34A;font-weight:700">75%</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">Obtener credencial IPS</td>
+                  <td class="col-right" style="color:#16A34A;font-weight:600">2</td>
+                  <td class="col-right" style="color:#DC2626;font-weight:600">1</td>
+                  <td class="col-right">
+                    <span style="color:#16A34A;font-weight:700">67%</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">Solicitar turno Registro Civil</td>
+                  <td class="col-right" style="color:#16A34A;font-weight:600">1</td>
+                  <td class="col-right" style="color:#DC2626;font-weight:600">1</td>
+                  <td class="col-right">
+                    <span style="color:#F59E0B;font-weight:700">50%</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">Consultar deuda IIBB</td>
+                  <td class="col-right" style="color:#16A34A;font-weight:600">1</td>
+                  <td class="col-right" style="color:#DC2626;font-weight:600">1</td>
+                  <td class="col-right">
+                    <span style="color:#F59E0B;font-weight:700">50%</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           TABLES ROW
+           ═══════════════════════════════════ -->
+      <div class="grid-2">
+        <!-- Top Tramites Consultados -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Tramites mas consultados</div>
+              <div class="card__subtitle">Ranking por cantidad de visitas del portal</div>
+            </div>
+            <a class="card__action">Ver todos</a>
+          </div>
+          <div class="card__body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Tramite</th>
+                  <th>Organismo</th>
+                  <th class="col-right">Consultas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="rank-badge rank-badge--1">1</span></td>
+                  <td style="font-weight:500">Inscribirse en el BEEG</td>
+                  <td style="color:var(--text-secondary)">ME</td>
+                  <td class="col-right num-cell">1.250</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-badge--2">2</span></td>
+                  <td style="font-weight:500">Obtener credencial IPS</td>
+                  <td style="color:var(--text-secondary)">IPS</td>
+                  <td class="col-right num-cell">890</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-badge--3">3</span></td>
+                  <td style="font-weight:500">Solicitar turno Registro Civil</td>
+                  <td style="color:var(--text-secondary)">RPP</td>
+                  <td class="col-right num-cell">756</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-badge--n">4</span></td>
+                  <td style="font-weight:500">Consultar deuda IIBB</td>
+                  <td style="color:var(--text-secondary)">DGR</td>
+                  <td class="col-right num-cell">523</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-badge--n">5</span></td>
+                  <td style="font-weight:500">Solicitar vivienda IPRODHA</td>
+                  <td style="color:var(--text-secondary)">IPRODHA</td>
+                  <td class="col-right num-cell">412</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-badge rank-badge--n">6</span></td>
+                  <td style="font-weight:500">Solicitar beca estudiantil</td>
+                  <td style="color:var(--text-secondary)">ME</td>
+                  <td class="col-right num-cell">387</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Busquedas Frecuentes -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Busquedas frecuentes</div>
+              <div class="card__subtitle">Demanda ciudadana — alertas de busquedas sin resultado</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Termino de busqueda</th>
+                  <th class="col-right">Cantidad</th>
+                  <th class="col-right">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:500">boleto estudiantil</td>
+                  <td class="col-right num-cell">456</td>
+                  <td class="col-right"><span class="estado-badge estado-badge--publicado">Con resultado</span></td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">credencial ips</td>
+                  <td class="col-right num-cell">312</td>
+                  <td class="col-right"><span class="estado-badge estado-badge--publicado">Con resultado</span></td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">turno dni</td>
+                  <td class="col-right num-cell">289</td>
+                  <td class="col-right"><span class="estado-badge estado-badge--publicado">Con resultado</span></td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">certificado antecedentes</td>
+                  <td class="col-right num-cell">167</td>
+                  <td class="col-right">
+                    <span class="search-warning">
+                      <span class="material-icons-outlined">error</span>
+                      Sin resultado
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">licencia de conducir</td>
+                  <td class="col-right num-cell">145</td>
+                  <td class="col-right">
+                    <span class="search-warning">
+                      <span class="material-icons-outlined">error</span>
+                      Sin resultado
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">subsidio gas</td>
+                  <td class="col-right num-cell">89</td>
+                  <td class="col-right">
+                    <span class="search-warning">
+                      <span class="material-icons-outlined">error</span>
+                      Sin resultado
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           ACTIVIDAD + FEEDBACK + ACCIONES
+           ═══════════════════════════════════ -->
+      <div class="grid-3">
+        <!-- Actividad reciente -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Actividad reciente</div>
+              <div class="card__subtitle">Ultimas acciones en el sistema</div>
+            </div>
+            <a class="card__action">Ver auditoria</a>
+          </div>
+          <div class="card__body">
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-item__icon" style="background:#4CAF5018;color:#16A34A">
+                  <span class="material-icons-outlined">add_circle</span>
+                </div>
+                <div class="timeline-item__body">
+                  <div class="timeline-item__text">
+                    <strong>Laura Martinez</strong> <em>creo</em> <strong>Registrar emprendimiento PyME</strong>
+                  </div>
+                  <div class="timeline-item__date">26/03/2026 10:00</div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-item__icon" style="background:#FF980018;color:#F59E0B">
+                  <span class="material-icons-outlined">send</span>
+                </div>
+                <div class="timeline-item__body">
+                  <div class="timeline-item__text">
+                    <strong>Juan Perez</strong> <em>envio a revision</em> <strong>Obtener certificado de residencia</strong>
+                  </div>
+                  <div class="timeline-item__date">25/03/2026 09:15</div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-item__icon" style="background:#2196F318;color:#3B82F6">
+                  <span class="material-icons-outlined">edit</span>
+                </div>
+                <div class="timeline-item__body">
+                  <div class="timeline-item__text">
+                    <strong>Juan Perez</strong> <em>edito</em> <strong>Obtener certificado de residencia</strong>
+                  </div>
+                  <div class="timeline-item__date">25/03/2026 08:00</div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-item__icon" style="background:#1B5E2018;color:#16A34A">
+                  <span class="material-icons-outlined">check_circle</span>
+                </div>
+                <div class="timeline-item__body">
+                  <div class="timeline-item__text">
+                    <strong>Maria Gonzalez</strong> <em>publico</em> <strong>Obtener credencial IPS</strong>
+                  </div>
+                  <div class="timeline-item__date">20/03/2026 14:30</div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-item__icon" style="background:#F4433618;color:#DC2626">
+                  <span class="material-icons-outlined">unpublished</span>
+                </div>
+                <div class="timeline-item__body">
+                  <div class="timeline-item__text">
+                    <strong>Carlos Fernandez</strong> <em>despublico</em> <strong>Obtener libreta sanitaria</strong>
+                  </div>
+                  <div class="timeline-item__date">28/02/2026 12:00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback reciente -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Feedback ciudadano</div>
+              <div class="card__subtitle">Comentarios recientes</div>
+            </div>
+            <a class="card__action">Ver todos</a>
+          </div>
+          <div class="card__body">
+            <div style="display:flex;gap:12px;margin-bottom:16px;">
+              <div class="stat-item" style="margin-top:0;flex:1">
+                <div class="stat-item__value" style="color:#16A34A">10</div>
+                <div class="stat-item__label">Util</div>
+              </div>
+              <div class="stat-item" style="margin-top:0;flex:1">
+                <div class="stat-item__value" style="color:#DC2626">5</div>
+                <div class="stat-item__label">No util</div>
+              </div>
+              <div class="stat-item" style="margin-top:0;flex:1">
+                <div class="stat-item__value" style="color:var(--primary)">67%</div>
+                <div class="stat-item__label">Positivo</div>
+              </div>
+            </div>
+
+            <div class="feedback-item">
+              <div class="feedback-item__thumb feedback-item__thumb--down">
+                <span class="material-icons-outlined">thumb_down</span>
+              </div>
+              <div class="feedback-item__body">
+                <div class="feedback-item__tramite">Inscribirse en el BEEG</div>
+                <div class="feedback-item__comment">"La pagina tardaba en cargar y no pude completar la solicitud."</div>
+                <div class="feedback-item__date">08/04/2026</div>
+              </div>
+            </div>
+
+            <div class="feedback-item">
+              <div class="feedback-item__thumb feedback-item__thumb--down">
+                <span class="material-icons-outlined">thumb_down</span>
+              </div>
+              <div class="feedback-item__body">
+                <div class="feedback-item__tramite">Obtener credencial IPS</div>
+                <div class="feedback-item__comment">"Falta indicar el horario de atencion de la delegacion."</div>
+                <div class="feedback-item__date">06/04/2026</div>
+              </div>
+            </div>
+
+            <div class="feedback-item">
+              <div class="feedback-item__thumb feedback-item__thumb--up">
+                <span class="material-icons-outlined">thumb_up</span>
+              </div>
+              <div class="feedback-item__body">
+                <div class="feedback-item__tramite">Solicitar turno Registro Civil</div>
+                <div class="feedback-item__comment">"Excelente, pude sacar turno en menos de 5 minutos."</div>
+                <div class="feedback-item__date">09/04/2026</div>
+              </div>
+            </div>
+
+            <div class="feedback-item">
+              <div class="feedback-item__thumb feedback-item__thumb--down">
+                <span class="material-icons-outlined">thumb_down</span>
+              </div>
+              <div class="feedback-item__body">
+                <div class="feedback-item__tramite">Solicitar beca estudiantil</div>
+                <div class="feedback-item__comment">"La fecha limite no estaba clara en la ficha del tramite."</div>
+                <div class="feedback-item__date">02/04/2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones rapidas + Tramites pendientes -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Acciones rapidas</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="quick-actions">
+              <button class="quick-action-btn">
+                <span class="material-icons-outlined">add_circle</span>
+                Nuevo tramite
+              </button>
+              <button class="quick-action-btn">
+                <span class="material-icons-outlined">business</span>
+                Nuevo organismo
+              </button>
+              <button class="quick-action-btn">
+                <span class="material-icons-outlined">download</span>
+                Exportar CSV
+              </button>
+              <button class="quick-action-btn">
+                <span class="material-icons-outlined">person_add</span>
+                Nuevo usuario
+              </button>
+              <button class="quick-action-btn">
+                <span class="material-icons-outlined">preview</span>
+                Vista del portal
+              </button>
+            </div>
+
+            <div style="margin-top:24px;">
+              <div class="card__title" style="font-size:14px;margin-bottom:12px">Pendientes de revision</div>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)">
+                <span class="material-icons-outlined" style="color:var(--info);font-size:20px">rate_review</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500">Obtener certificado de residencia</div>
+                  <div style="font-size:11px;color:var(--text-tertiary)">RPP &mdash; Hace 20 dias</div>
+                </div>
+                <button class="btn btn--outline" style="padding:4px 10px;font-size:11px">Revisar</button>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)">
+                <span class="material-icons-outlined" style="color:var(--warning);font-size:20px">edit_note</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500">Registrar emprendimiento PyME</div>
+                  <div style="font-size:11px;color:var(--text-tertiary)">DGR &mdash; Borrador</div>
+                </div>
+                <button class="btn btn--outline" style="padding:4px 10px;font-size:11px">Editar</button>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+                <span class="material-icons-outlined" style="color:var(--warning);font-size:20px">edit_note</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500">Inscribirse en capacitaciones laborales</div>
+                  <div style="font-size:11px;color:var(--text-tertiary)">MTE &mdash; Borrador</div>
+                </div>
+                <button class="btn btn--outline" style="padding:4px 10px;font-size:11px">Editar</button>
+              </div>
+            </div>
+
+            <div style="margin-top:24px;">
+              <div class="card__title" style="font-size:14px;margin-bottom:12px">Contenido incompleto</div>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)">
+                <span class="material-icons-outlined" style="color:var(--error);font-size:20px">warning</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500">8 tramites sin requisitos</div>
+                  <div style="font-size:11px;color:var(--text-tertiary)">Campo obligatorio para publicacion</div>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+                <span class="material-icons-outlined" style="color:var(--warning);font-size:20px">info</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500">16 localidades sin contenido</div>
+                  <div style="font-size:11px;color:var(--text-tertiary)">Localidades activas sin overrides configurados</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+</body>
+</html>

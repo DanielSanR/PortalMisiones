@@ -1,6 +1,9 @@
+"use client"
+
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { MapPin, Phone } from "lucide-react"
+import { MapPin, Menu, Phone, X } from "lucide-react"
 import { siteAssets } from "@/lib/site-assets"
 
 interface PortalShellProps {
@@ -8,17 +11,40 @@ interface PortalShellProps {
   hero?: boolean
 }
 
+const navLinks = [
+  { label: "Inicio", href: "/", isExternal: false },
+  { label: "Trámites", href: "/tramites", isExternal: false },
+  { label: "Temas", href: "/tramites#temas", isExternal: true },
+  { label: "Organismos", href: "/tramites", isExternal: false },
+  { label: "Mi Portal", href: "/tramites", isExternal: false },
+] as const
+
 export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-[#f7f8fb] text-slate-900">
       <div className="relative overflow-hidden">
-        {/* Background band for non-hero pages */}
+        {/* Background image band for non-hero pages */}
         {!hero && (
-          <div className="absolute inset-x-0 top-0 h-[320px] bg-gradient-to-b from-[#2b5f99] to-[#3d7dc2]" />
+          <div className="absolute inset-x-0 top-0 h-[480px] md:h-[520px] overflow-hidden">
+            <Image
+              alt=""
+              src={siteAssets.heroCataratas}
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="100vw"
+            />
+            {/* Dark + blue overlay (same recipe as hero) */}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(16,29,44,0.25),rgba(16,29,44,0.70)),linear-gradient(180deg,rgba(47,110,177,0.5),rgba(41,72,109,0.55))]" />
+            {/* Bottom fade to page background */}
+            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[#ffff]" />
+          </div>
         )}
 
-        <header className={`${hero ? "absolute inset-x-0 top-0" : "relative"} z-20 px-4 py-5 md:px-10`}>
-          <div className="mx-auto max-w-[1440px] rounded-full bg-[#4f8ed2] px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
+        <header className={`${hero ? "absolute inset-x-0 top-0" : "relative"} z-20 px-4 py-7 md:px-10`}>
+          <div className="mx-auto max-w-[1440px] rounded-full bg-[#2f6eb1] px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
             <div className="mx-auto flex max-w-[1130px] items-center justify-between">
             <Link href="/" className="flex items-center">
               <div className="relative h-[34px] w-[208px]">
@@ -33,21 +59,83 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
             </Link>
 
             <nav className="hidden items-center gap-6 text-sm font-medium text-white md:flex">
-              <Link className="transition-colors hover:text-white/80" href="/">Inicio</Link>
-              <Link className="transition-colors hover:text-white/80" href="/tramites">Trámites</Link>
-              <a className="transition-colors hover:text-white/80" href="/tramites#temas">Temas</a>
-              <a className="transition-colors hover:text-white/80" href="/tramites">Organismos</a>
-              <a className="transition-colors hover:text-white/80" href="/tramites">Mi Portal</a>
+              {navLinks.map((link) =>
+                link.isExternal ? (
+                  <a
+                    key={link.label}
+                    className="transition-colors hover:text-white/80"
+                    href={link.href}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.label}
+                    className="transition-colors hover:text-white/80"
+                    href={link.href as "/tramites" | "/"}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
             </nav>
+
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-white md:hidden"
+              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
           </div>
+
+          {/* Mobile dropdown menu */}
+          {menuOpen && (
+            <nav className="mt-2 rounded-2xl bg-[#2f6eb1] px-6 py-4 shadow-lg md:hidden">
+              <ul className="flex flex-col gap-3">
+                {navLinks.map((link) => (
+                  <li key={link.label}>
+                    {link.isExternal ? (
+                      <a
+                        href={link.href}
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href as "/tramites" | "/"}
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
         </header>
 
         {children}
       </div>
 
-      <footer className="bg-[#4f8ed2] text-white">
-        <div className="mx-auto max-w-[1440px] px-4 pb-5 pt-8 md:px-10">
+      <footer className="relative overflow-hidden bg-[#2f6eb1] font-[family-name:var(--font-montserrat)] text-white">
+        {/* Decorative "M" — borde inferior derecho */}
+        <Image
+          alt=""
+          src={siteAssets.ui.mTransparent}
+          width={520}
+          height={520}
+          aria-hidden
+          className="pointer-events-none absolute -bottom-10 -right-10 h-[260px] w-auto opacity-100 md:h-[360px]"
+        />
+        <div className="relative mx-auto max-w-[1440px] px-4 pb-5 pt-8 md:px-10">
           <div className="mb-8 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="relative h-[51px] w-[212px]">
@@ -61,17 +149,29 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
               </div>
 
               <div className="mt-5 flex items-center gap-[10px]">
-                <Image alt="Instagram" src={siteAssets.ui.socialInstagram} width={24} height={24} className="h-6 w-6" />
-                <span className="text-sm font-medium">X</span>
-                <Image alt="YouTube" src={siteAssets.ui.socialYoutube} width={24} height={24} className="h-6 w-6" />
-                <Image alt="Facebook" src={siteAssets.ui.socialFacebook} width={24} height={24} className="h-6 w-6" />
-                <Image alt="WhatsApp" src={siteAssets.ui.socialWhatsapp} width={24} height={24} className="h-6 w-6" />
-                <Image alt="LinkedIn" src={siteAssets.ui.socialLinkedin} width={24} height={24} className="h-6 w-6" />
+                <a href="#" aria-label="Instagram">
+                  <Image alt="Instagram" src={siteAssets.ui.socialInstagram} width={24} height={24} className="h-6 w-6" />
+                </a>
+                <a href="#" aria-label="X (Twitter)" className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
+                  X
+                </a>
+                <a href="#" aria-label="YouTube">
+                  <Image alt="YouTube" src={siteAssets.ui.socialYoutube} width={24} height={24} className="h-6 w-6" />
+                </a>
+                <a href="#" aria-label="Facebook">
+                  <Image alt="Facebook" src={siteAssets.ui.socialFacebook} width={24} height={24} className="h-6 w-6" />
+                </a>
+                <a href="#" aria-label="WhatsApp">
+                  <Image alt="WhatsApp" src={siteAssets.ui.socialWhatsapp} width={24} height={24} className="h-6 w-6" />
+                </a>
+                <a href="#" aria-label="LinkedIn">
+                  <Image alt="LinkedIn" src={siteAssets.ui.socialLinkedin} width={24} height={24} className="h-6 w-6" />
+                </a>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[22px] bg-white px-5 py-4 text-sm text-slate-600 shadow-[0_14px_40px_rgba(16,51,92,0.15)]">
+          <div className="rounded-[22px] bg-white px-5 py-4 text-lg text-slate-600 shadow-[0_14px_40px_rgba(16,51,92,0.15)]">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-8">
                 <span className="inline-flex items-center gap-2">
@@ -91,7 +191,7 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
                   src={siteAssets.logos.ciudadanoMisiones}
                   width={160}
                   height={40}
-                  className="h-auto w-[160px] shrink-0"
+                  className="w-[211px]  h-[55px] hrink-0"
                 />
 
                 <div className="relative h-[42px] w-[174px] shrink-0">
@@ -107,17 +207,17 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 text-center text-xs text-white/90 md:flex-row md:items-center md:justify-center md:gap-6">
+          <div className="mt-4 flex flex-col gap-3 text-center text-md text-white/90 md:flex-row md:items-center md:justify-center md:gap-6">
             <span>Gobierno de la Provincia de Misiones. © 2026</span>
-            <span>Sugerencias</span>
-            <span>Soporte</span>
-            <span>Digital Factory</span>
+            <strong>Sugerencias</strong>
+            <strong>Soporte</strong>
+            <strong>Digital Factory</strong>
           </div>
         </div>
 
         <button
           type="button"
-          className="fixed bottom-6 right-6 z-20 flex h-[55px] w-[55px] items-center justify-center rounded-full p-0 shadow-lg"
+          className="fixed bottom-6 right-6 z-20 flex h-[55px] w-[55px] items-center justify-center rounded-full bg-white p-0 shadow-lg"
           aria-label="Accesibilidad"
         >
           <Image

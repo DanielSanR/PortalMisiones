@@ -1,30 +1,28 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Building2, FileSearch, Landmark, Layers3 } from "lucide-react"
 import { FeaturedShortcutCard } from "@/components/featured-shortcut-card"
 import { HomeTopicCard } from "@/components/home-topic-card"
 import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
 import { SearchFilters } from "@/components/search-filters"
-import { Button } from "@/components/ui/button"
-import { getFeaturedTramites, getPublishedTramites } from "@/lib/public-data"
+import { getFeaturedTramites } from "@/lib/public-data"
 import { siteAssets } from "@/lib/site-assets"
 
 export default function HomePage() {
   const featured = getFeaturedTramites(5)
-  const published = getPublishedTramites()
 
   const citizenTabs = [
-    "Trámites para la Ciudadanía",
-    "Trámites para Organizaciones y empresas",
-    "Trámites para Organismos",
+    { label: "Trámites para la Ciudadanía",               destinatarioId: 1 },
+    { label: "Trámites para Organizaciones y empresas",   destinatarioId: 2 },
+    { label: "Trámites para Organismos",                  destinatarioId: 3 },
   ]
 
   const topicCards = [
     {
       title: "Automotor, transporte y tránsito",
-      description: "Servicios relacionados con la compra, venta y registro de vehículos, permisos y certificados.",
+      description: "Servicios relacionados con la compra, venta y registro de vehículos, permi...",
       search: "Licencia de conducir",
       icon: "automotor" as const,
+      href: "/tramites/categoria/automotor-transporte-transito",
     },
     {
       title: "Denuncias",
@@ -40,7 +38,7 @@ export default function HomePage() {
     },
     {
       title: "Impuestos, pagos y deudas",
-      description: "Trámites relacionados con obligaciones de pago y consultas fiscales.",
+      description: "Trámites relacionados con obligaciones de pago.",
       search: "Ingresos Brutos",
       icon: "impuestos" as const,
     },
@@ -82,7 +80,6 @@ export default function HomePage() {
           <h2 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900 pt-6">
             Lo más buscado
           </h2>
-          {/* El grid define las columnas, pero la forma la define la tarjeta */}
           <div className="mt-5 flex flex-wrap justify-center gap-5">
             {featured.map((tramite, index) => (
               <FeaturedShortcutCard key={tramite.id} index={index} title={tramite.titulo} />
@@ -90,14 +87,18 @@ export default function HomePage() {
           </div>
         </div>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
-              {citizenTabs.map((item, index) => (
-                <Button
-                  key={item}
-                  variant={index === 1 ? "default" : "outline"}
-                  className="min-w-[326px] min-h-[56px] rounded-[16px] px-8 font-bold"
+              {citizenTabs.map((tab, index) => (
+                <Link
+                  key={tab.destinatarioId}
+                  href={`/tramites?destinatarioId=${tab.destinatarioId}`}
+                  className={`inline-flex min-h-[56px] min-w-[326px] items-center justify-center rounded-[16px] px-8 text-[17px] font-bold tracking-wide transition-colors ${
+                    index === 0
+                      ? "bg-[#2f6eb1] text-white hover:bg-[#264f82]"
+                      : "border border-[#2f6eb1] bg-white text-[#2f6eb1] hover:bg-[#eef5ff]"
+                  }`}
                 >
-                  {item}
-                </Button>
+                  {tab.label}
+                </Link>
               ))}
             </div>
 
@@ -105,15 +106,11 @@ export default function HomePage() {
               <SearchFilters />
             </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {topicCards.slice(0, 4).map((card) => (
-                <HomeTopicCard key={card.title} {...card} />
-              ))}
-            </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {topicCards.slice(4).map((card) => (
-                <HomeTopicCard key={card.title} {...card} />
+            <div className="mt-5 flex flex-wrap gap-4">
+              {topicCards.map((card) => (
+                <div key={card.title} className="w-full sm:w-[calc(50%-8px)] xl:w-[328px]">
+                  <HomeTopicCard {...card} />
+                </div>
               ))}
             </div>
 
@@ -121,37 +118,6 @@ export default function HomePage() {
               <Link href="/tramites" className="text-sm font-medium text-[#2b5f99] hover:text-[#234e80]">
                 Ver todos
               </Link>
-            </div>
-
-            <div className="mt-14 grid gap-4 rounded-[24px] bg-[#f8fbff] p-5 md:grid-cols-4">
-              <div className="rounded-[18px] bg-white p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef5ff] text-[#4f8ed2]">
-                  <FileSearch className="h-5 w-5" />
-                </div>
-                <p className="mt-3 text-sm text-slate-500">Trámites publicados</p>
-                <p className="mt-1 text-3xl font-semibold text-slate-900">{published.length}</p>
-              </div>
-              <div className="rounded-[18px] bg-white p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef5ff] text-[#4f8ed2]">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <p className="mt-3 text-sm text-slate-500">Organismos conectados</p>
-                <p className="mt-1 text-3xl font-semibold text-slate-900">7</p>
-              </div>
-              <div className="rounded-[18px] bg-white p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef5ff] text-[#4f8ed2]">
-                  <Layers3 className="h-5 w-5" />
-                </div>
-                <p className="mt-3 text-sm text-slate-500">Modalidades</p>
-                <p className="mt-1 text-3xl font-semibold text-slate-900">4</p>
-              </div>
-              <div className="rounded-[18px] bg-white p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef5ff] text-[#4f8ed2]">
-                  <Landmark className="h-5 w-5" />
-                </div>
-                <p className="mt-3 text-sm text-slate-500">Acceso institucional</p>
-                <p className="mt-1 text-3xl font-semibold text-slate-900">Oficial</p>
-              </div>
             </div>
           </div>
         </section>

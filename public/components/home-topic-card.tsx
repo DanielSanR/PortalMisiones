@@ -1,6 +1,5 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { siteAssets } from "@/lib/site-assets"
 
@@ -20,25 +19,23 @@ interface HomeTopicCardProps {
   description: string
   search: string
   icon: TopicIcon
+  href?: string
 }
 
-export function HomeTopicCard({ title, description, search, icon }: HomeTopicCardProps) {
+export function HomeTopicCard({ title, description, search, icon, href }: HomeTopicCardProps) {
   const iconSrc = iconMap[icon]
+  const linkHref = href ?? `/tramites?search=${encodeURIComponent(search)}`
 
   return (
-    <Link href={`/tramites?search=${encodeURIComponent(search)}`}>
-      <Card className="h-full rounded-[16px] border-[#dbe2ee] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(33,72,114,0.1)]">
-        <CardContent className="flex h-full items-start gap-4 p-5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#eef5ff] text-[#4f8ed2]">
-            <Image alt="" src={iconSrc} width={22} height={22} className="h-[22px] w-[22px]" />
+    <Link href={linkHref as never}>
+      <Card className="h-full rounded-[14px] border-[#e5e7eb] shadow-[2px_2px_4px_0px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 hover:shadow-[2px_4px_12px_0px_rgba(0,0,0,0.18)]">
+        <CardContent className="flex h-full items-center gap-6 p-[24.8px]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[rgba(47,110,177,0.1)]">
+            <Image alt="" src={iconSrc} width={24} height={24} className="h-6 w-6" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-[19px] font-semibold leading-6 text-slate-900">{title}</h3>
-            <p className="mt-2 text-sm leading-5 text-slate-600">{description}</p>
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#2b5f99]">
-              Ver más
-              <ArrowRight className="h-4 w-4" />
-            </span>
+            <h3 className="text-[18px] font-semibold leading-6 text-slate-900">{title}</h3>
+            <p className="mt-2 text-xs leading-[15px] text-slate-600 line-clamp-3">{description}</p>
           </div>
         </CardContent>
       </Card>

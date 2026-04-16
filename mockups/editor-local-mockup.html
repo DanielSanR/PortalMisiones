@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vista EDITOR_LOCAL — Portal Misiones Backoffice</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+:root {
+  --primary: #2F6EB1;
+  --primary-dark: #1A4779;
+  --primary-light: #3B82C4;
+  --primary-50: #E8F1FA;
+  --primary-100: #C5DCF2;
+  --sidebar-bg: #0F335D;
+  --success: #16A34A;
+  --success-bg: #F0FDF4;
+  --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
+  --error: #DC2626;
+  --error-bg: #FEF2F2;
+  --info: #3B82F6;
+  --info-bg: #EFF6FF;
+  --purple: #7C3AED;
+  --text-primary: #1A1A2E;
+  --text-secondary: #5F6368;
+  --text-tertiary: #9AA0A6;
+  --text-on-dark: rgba(255,255,255,0.92);
+  --text-on-dark-secondary: rgba(255,255,255,0.60);
+  --bg-page: #F4F6F8;
+  --bg-card: #FFFFFF;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-card-hover: 0 8px 24px rgba(0,0,0,0.08);
+  --sidebar-w: 240px;
+  --header-h: 64px;
+  --transition: 250ms cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-page); color: var(--text-primary);
+  line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════ LAYOUT ═══════ */
+.layout { display: flex; min-height: 100vh; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: var(--sidebar-w); background: var(--sidebar-bg);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo__shield {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #2F6EB1, #5A98D6);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 15px;
+}
+.sidebar-logo__text { display: flex; flex-direction: column; }
+.sidebar-logo__title { color: white; font-size: 13px; font-weight: 600; }
+.sidebar-logo__sub { color: var(--text-on-dark-secondary); font-size: 10px; }
+
+.sidebar-user {
+  padding: 16px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; gap: 10px;
+}
+.sidebar-user__avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #EA580C, #FB923C);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.sidebar-user__info { display: flex; flex-direction: column; min-width: 0; }
+.sidebar-user__name { color: white; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-user__role { font-size: 10px; font-weight: 500; color: #FB923C; }
+.sidebar-user__loc { font-size: 10px; color: var(--text-on-dark-secondary); display: flex; align-items: center; gap: 3px; }
+.sidebar-user__loc .material-icons-outlined { font-size: 12px; }
+
+.sidebar-section {
+  padding: 18px 16px 6px; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-on-dark-secondary);
+}
+.sidebar-nav { list-style: none; padding: 0 8px; }
+.sidebar-nav li a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: var(--radius-md);
+  color: var(--text-on-dark); text-decoration: none;
+  font-size: 13px; font-weight: 400;
+  transition: all var(--transition); margin-bottom: 2px;
+}
+.sidebar-nav li a:hover { background: rgba(255,255,255,0.08); }
+.sidebar-nav li a.active { background: rgba(255,255,255,0.18); font-weight: 500; color: white; }
+.sidebar-nav li a .material-icons-outlined { font-size: 20px; opacity: 0.75; }
+.sidebar-nav li a.active .material-icons-outlined { opacity: 1; }
+.sidebar-nav li a .nav-badge {
+  margin-left: auto; background: #EA580C; color: white;
+  font-size: 10px; font-weight: 600; padding: 1px 7px;
+  border-radius: 10px; min-width: 18px; text-align: center;
+}
+
+.sidebar-restricted {
+  margin: auto 16px 20px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-restricted__title {
+  font-size: 10px; font-weight: 600; color: var(--text-on-dark-secondary);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+.sidebar-restricted__text {
+  font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.5;
+}
+
+/* ─── MAIN ─── */
+.main { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; }
+
+/* ─── HEADER ─── */
+.header {
+  height: var(--header-h); background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 32px;
+  position: sticky; top: 0; z-index: 50;
+}
+.header__breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.header__breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.header__breadcrumb a:hover { color: var(--primary); }
+.header__breadcrumb .sep { color: var(--text-tertiary); }
+.header__breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+.header__spacer { flex: 1; }
+
+.header__loc-indicator {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px;
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-radius: 20px;
+  font-size: 12px; font-weight: 500; color: #C2410C;
+}
+.header__loc-indicator .material-icons-outlined { font-size: 16px; }
+
+/* ─── CONTENT ─── */
+.content { padding: 28px 32px 60px; max-width: 1400px; }
+
+/* ═══════ COMMON ═══════ */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+.page-header__title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.page-header__subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.page-header__actions { display: flex; gap: 10px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500; border: none;
+  cursor: pointer; transition: all var(--transition); font-family: inherit;
+}
+.btn--primary { background: var(--primary); color: white; }
+.btn--primary:hover { background: var(--primary-dark); }
+.btn--success { background: var(--success); color: white; }
+.btn--success:hover { background: #15803D; }
+.btn--outline { background: white; color: var(--text-primary); border: 1px solid var(--border); }
+.btn--outline:hover { background: var(--bg-page); }
+.btn--sm { padding: 6px 12px; font-size: 12px; }
+.btn--lg { padding: 14px 28px; font-size: 14px; }
+.btn .material-icons-outlined { font-size: 18px; }
+.btn--icon-only {
+  width: 34px; height: 34px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius-md); cursor: pointer;
+  color: var(--text-secondary); transition: all var(--transition);
+}
+.btn--icon-only:hover { background: var(--bg-page); color: var(--text-primary); }
+.btn--icon-only.danger { color: var(--error); border-color: #FECACA; }
+.btn--icon-only.danger:hover { background: var(--error-bg); }
+
+.card {
+  background: var(--bg-card); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); border: 1px solid var(--border-light); overflow: hidden;
+}
+.card__header {
+  padding: 20px 24px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card__title { font-size: 15px; font-weight: 600; }
+.card__subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.card__body { padding: 20px 24px 24px; }
+
+.estado-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.estado-badge--publicado { background: var(--success-bg); color: #166534; }
+
+/* ═══════ TABS ═══════ */
+.tabs { display: flex; border-bottom: 2px solid var(--border-light); gap: 0; }
+.tab {
+  padding: 12px 24px; font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); border-bottom: 2px solid transparent;
+  margin-bottom: -2px; cursor: pointer; transition: all var(--transition);
+  display: flex; align-items: center; gap: 8px;
+  background: none; border-top: none; border-left: none; border-right: none; font-family: inherit;
+}
+.tab:hover { color: var(--text-primary); background: var(--bg-page); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tab.readonly {
+  color: var(--text-tertiary); cursor: default;
+}
+.tab.readonly:hover { background: transparent; color: var(--text-tertiary); }
+.tab .tab-badge {
+  background: var(--primary); color: white; font-size: 10px; font-weight: 600;
+  padding: 1px 7px; border-radius: 10px;
+}
+.tab .readonly-icon { font-size: 14px; opacity: 0.4; }
+.tab-content { padding: 24px 0; }
+
+/* ═══════ SCREEN DIVIDER ═══════ */
+.screen-divider {
+  border: none; border-top: 3px dashed var(--primary);
+  margin: 60px 0 40px; position: relative;
+}
+.screen-divider::after {
+  content: attr(data-label); position: absolute; top: -12px;
+  left: 50%; transform: translateX(-50%);
+  background: var(--bg-page); padding: 0 20px;
+  font-size: 12px; font-weight: 700; color: var(--primary);
+  text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+}
+
+/* ═══════ ROLE COMPARISON BANNER ═══════ */
+.role-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; border-radius: var(--radius-md);
+  margin-bottom: 24px; font-size: 13px; font-weight: 500;
+}
+.role-banner--editor-local {
+  background: #FFF7ED; border: 1px solid #FDBA74; color: #9A3412;
+}
+.role-banner--admin {
+  background: var(--primary-50); border: 1px solid var(--primary-100); color: var(--primary-dark);
+}
+.role-banner .material-icons-outlined { font-size: 20px; }
+.role-banner__label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px;
+  margin-left: auto;
+}
+.role-banner--editor-local .role-banner__label { background: #FDBA74; color: #7C2D12; }
+.role-banner--admin .role-banner__label { background: var(--primary-100); color: var(--primary-dark); }
+
+/* ═══════ READONLY INFO BLOCKS ═══════ */
+.readonly-section {
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.readonly-section::before {
+  content: 'Solo lectura';
+  position: absolute; top: -9px; right: 16px;
+  background: var(--bg-page); padding: 0 10px;
+  font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  border: 1px solid var(--border-light); border-radius: 4px;
+}
+.readonly-section__title {
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.readonly-section__title .material-icons-outlined { font-size: 18px; color: var(--primary); }
+.readonly-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+.readonly-field { }
+.readonly-field__label {
+  font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px;
+}
+.readonly-field__value { font-size: 13px; color: var(--text-primary); }
+.readonly-field__value.muted { color: var(--text-tertiary); font-style: italic; }
+.readonly-field.full { grid-column: 1 / -1; }
+
+.readonly-chips {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.readonly-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 14px; font-size: 11px; font-weight: 500;
+}
+.readonly-chip--blue { background: var(--primary-50); color: var(--primary-dark); }
+.readonly-chip--green { background: var(--success-bg); color: #166534; }
+.readonly-chip--orange { background: #FFF7ED; color: #C2410C; }
+
+/* ═══════ MY LOCALITY CARD ═══════ */
+.my-loc-card {
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: white;
+}
+.my-loc-card__header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  padding: 18px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.my-loc-card__header-left {
+  display: flex; align-items: center; gap: 12px;
+}
+.my-loc-card__header-icon {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,0.2);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+}
+.my-loc-card__header-icon .material-icons-outlined { font-size: 24px; }
+.my-loc-card__header-title { font-size: 18px; font-weight: 600; }
+.my-loc-card__header-sub { font-size: 12px; opacity: 0.8; }
+.my-loc-card__header-badge {
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(255,255,255,0.2);
+  font-size: 11px; font-weight: 600;
+}
+
+.my-loc-card__body { padding: 24px; }
+
+.my-loc-card__audit {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 12px; color: var(--text-secondary);
+}
+.my-loc-card__audit .material-icons-outlined { font-size: 16px; }
+.my-loc-card__audit strong { color: var(--text-primary); }
+
+.my-loc-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.my-loc-field { display: flex; flex-direction: column; gap: 5px; }
+.my-loc-field.full { grid-column: 1 / -1; }
+.my-loc-field__label {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 6px;
+}
+.my-loc-field__label .inherited-tag {
+  font-size: 10px; font-weight: 500; color: var(--text-tertiary);
+  background: var(--border-light); padding: 1px 6px; border-radius: 4px;
+  font-style: normal;
+}
+
+.my-loc-input, .my-loc-textarea {
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 10px 14px; font-size: 13px; font-family: inherit;
+  color: var(--text-primary); background: white;
+  transition: border-color var(--transition);
+}
+.my-loc-input:focus, .my-loc-textarea:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47,110,177,0.1);
+}
+.my-loc-textarea { resize: vertical; min-height: 80px; }
+
+.my-loc-input.inherited {
+  background: var(--bg-page);
+  border-style: dashed;
+  color: var(--text-tertiary);
+}
+
+.my-loc-card__footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: space-between;
+  background: #FAFBFC;
+}
+.my-loc-card__footer-hint {
+  font-size: 12px; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 6px;
+}
+.my-loc-card__footer-hint .material-icons-outlined { font-size: 16px; }
+.my-loc-card__footer-actions { display: flex; gap: 8px; }
+
+/* ═══════ PROVINCIAL CONTEXT ═══════ */
+.provincial-context {
+  background: var(--info-bg);
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+.provincial-context__title {
+  font-size: 13px; font-weight: 600; color: #1E40AF;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.provincial-context__title .material-icons-outlined { font-size: 18px; }
+.provincial-context__grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.provincial-context__field { }
+.provincial-context__field-label {
+  font-size: 10px; font-weight: 600; color: #3B82F6;
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px;
+}
+.provincial-context__field-value {
+  font-size: 12px; color: #1E40AF;
+  white-space: pre-line;
+}
+.provincial-context__field-value.empty {
+  color: #93C5FD; font-style: italic;
+}
+
+/* ═══════ ACTIVATE LOCALITY ═══════ */
+.activate-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 48px 24px; text-align: center;
+}
+.activate-state__icon-wrap {
+  width: 80px; height: 80px;
+  background: #FFF7ED;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+}
+.activate-state__icon-wrap .material-icons-outlined {
+  font-size: 40px; color: #EA580C;
+}
+.activate-state__title {
+  font-size: 18px; font-weight: 600; margin-bottom: 6px;
+}
+.activate-state__desc {
+  font-size: 13px; color: var(--text-secondary);
+  max-width: 440px; margin-bottom: 24px;
+}
+.activate-state__what {
+  display: flex; flex-direction: column; gap: 8px;
+  text-align: left; margin-bottom: 28px;
+  padding: 16px 20px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  width: 100%; max-width: 420px;
+}
+.activate-state__what-title {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.activate-state__what-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-primary);
+}
+.activate-state__what-item .material-icons-outlined {
+  font-size: 18px; color: var(--success);
+}
+
+/* ═══════ LIST TABLE ═══════ */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--text-tertiary); text-transform: uppercase;
+  letter-spacing: 0.04em; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); background: var(--bg-page);
+}
+.data-table td {
+  padding: 14px; font-size: 13px;
+  border-bottom: 1px solid var(--border-light); vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: #FAFBFC; }
+
+.tramite-cell { display: flex; align-items: center; gap: 12px; }
+.tramite-cell__icon {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  background: var(--primary-50); color: var(--primary);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.tramite-cell__icon .material-icons-outlined { font-size: 18px; }
+.tramite-cell__title { font-weight: 500; }
+.tramite-cell__org { font-size: 11px; color: var(--text-secondary); }
+
+.loc-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.loc-status-badge--active { background: var(--success-bg); color: #166534; }
+.loc-status-badge--pending { background: var(--warning-bg); color: #92400E; }
+.loc-status-badge--none { background: var(--border-light); color: var(--text-tertiary); }
+
+/* ═══════ COMPARISON LAYOUT ═══════ */
+.comparison-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.comparison-col__label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 12px;
+  padding: 4px 12px; border-radius: 4px;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.comparison-col__label--admin { background: var(--primary-50); color: var(--primary-dark); }
+.comparison-col__label--local { background: #FFF7ED; color: #9A3412; }
+.comparison-col__label .material-icons-outlined { font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .comparison-row { grid-template-columns: 1fr; }
+  .readonly-grid { grid-template-columns: 1fr 1fr; }
+  .provincial-context__grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 16px; }
+  .my-loc-fields { grid-template-columns: 1fr; }
+  .readonly-grid { grid-template-columns: 1fr; }
+  .comparison-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ═══════ SIDEBAR — EDITOR_LOCAL (reducido) ═══════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo__shield">PM</div>
+      <div class="sidebar-logo__text">
+        <span class="sidebar-logo__title">Portal Misiones</span>
+        <span class="sidebar-logo__sub">Backoffice</span>
+      </div>
+    </div>
+
+    <!-- User card con localidad visible -->
+    <div class="sidebar-user">
+      <div class="sidebar-user__avatar">MG</div>
+      <div class="sidebar-user__info">
+        <span class="sidebar-user__name">Maria Gonzalez</span>
+        <span class="sidebar-user__role">Editor Local</span>
+        <span class="sidebar-user__loc">
+          <span class="material-icons-outlined">location_on</span> Obera
+        </span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">Mi portal</div>
+    <ul class="sidebar-nav">
+      <li><a href="#">
+        <span class="material-icons-outlined">dashboard</span> Dashboard
+      </a></li>
+      <li><a href="#" class="active">
+        <span class="material-icons-outlined">description</span> Tramites
+        <span class="nav-badge">2</span>
+      </a></li>
+      <li><a href="#">
+        <span class="material-icons-outlined">forum</span> Feedback
+      </a></li>
+    </ul>
+
+    <div class="sidebar-restricted">
+      <div class="sidebar-restricted__title">Acceso limitado</div>
+      <div class="sidebar-restricted__text">
+        Solo podes editar el contenido de <strong style="color:rgba(255,255,255,0.7)">Obera</strong>
+        en los tramites del <strong style="color:rgba(255,255,255,0.7)">IPS</strong>.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ═══════════════════════════════════════════════════
+         PANTALLA 1: LISTADO (vista EDITOR_LOCAL)
+         ═══════════════════════════════════════════════════ -->
+    <header class="header">
+      <div class="header__breadcrumb">
+        <a href="#">Dashboard</a>
+        <span class="sep">/</span>
+        <span class="current">Tramites</span>
+      </div>
+      <div class="header__spacer"></div>
+      <div class="header__loc-indicator">
+        <span class="material-icons-outlined">location_on</span>
+        Obera &mdash; IPS
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="role-banner role-banner--editor-local">
+        <span class="material-icons-outlined">info</span>
+        Estas viendo los tramites publicados del <strong>IPS</strong>. Solo podes editar el contenido de <strong>Obera</strong>.
+        <span class="role-banner__label">Editor Local</span>
+      </div>
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Tramites</h1>
+          <p class="page-header__subtitle">Tramites publicados del Instituto Provincial de Salud</p>
+        </div>
+      </div>
+
+      <!-- Tabla simplificada -->
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tramite</th>
+              <th>Modalidad</th>
+              <th>Mi localidad (Obera)</th>
+              <th style="width:140px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon"><span class="material-icons-outlined">health_and_safety</span></div>
+                  <div>
+                    <div class="tramite-cell__title">Obtener credencial IPS</div>
+                    <div class="tramite-cell__org">IPS</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">Digital con instancia presencial</td>
+              <td><span class="loc-status-badge loc-status-badge--active">Contenido cargado</span></td>
+              <td>
+                <button class="btn btn--outline btn--sm">
+                  <span class="material-icons-outlined">edit</span> Editar Obera
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tramite-cell">
+                  <div class="tramite-cell__icon"><span class="material-icons-outlined">medical_services</span></div>
+                  <div>
+                    <div class="tramite-cell__title">Obtener libreta sanitaria</div>
+                    <div class="tramite-cell__org">Min. Salud Publica</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">Digital con instancia presencial</td>
+              <td><span class="loc-status-badge loc-status-badge--none">Sin contenido</span></td>
+              <td>
+                <button class="btn btn--primary btn--sm">
+                  <span class="material-icons-outlined">add_location_alt</span> Activar Obera
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 2: DETALLE — EDITAR MI LOCALIDAD
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Pantalla 2: Editar contenido de mi localidad">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Obtener credencial IPS</h1>
+          <p class="page-header__subtitle">Editando contenido de Obera</p>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--outline"><span class="material-icons-outlined">arrow_back</span> Volver</button>
+        </div>
+      </div>
+
+      <!-- Tabs — Tab 1 y 2 son readonly, Tab 3 activa -->
+      <div class="tabs">
+        <button class="tab readonly">
+          <span class="material-icons-outlined" style="font-size:18px">visibility</span>
+          Info del tramite
+          <span class="material-icons-outlined readonly-icon">lock</span>
+        </button>
+        <button class="tab active">
+          <span class="material-icons-outlined" style="font-size:18px">edit_location_alt</span>
+          Mi localidad &mdash; Obera
+        </button>
+      </div>
+
+      <div class="tab-content">
+
+        <!-- ─── Contexto: Datos del tramite (solo lectura) ─── -->
+        <div class="readonly-section">
+          <div class="readonly-section__title">
+            <span class="material-icons-outlined">info</span>
+            Datos del tramite
+          </div>
+          <div class="readonly-grid">
+            <div class="readonly-field">
+              <div class="readonly-field__label">Organismo</div>
+              <div class="readonly-field__value">Instituto Provincial de Salud (IPS)</div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-field__label">Modalidad</div>
+              <div class="readonly-field__value">Digital con instancia presencial</div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-field__label">Estado</div>
+              <div class="readonly-field__value">
+                <span class="estado-badge estado-badge--publicado">Publicado</span>
+              </div>
+            </div>
+            <div class="readonly-field full">
+              <div class="readonly-field__label">Resumen</div>
+              <div class="readonly-field__value">Solicitud de credencial para afiliados al Instituto Provincial de Salud.</div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-field__label">Categorias</div>
+              <div class="readonly-chips">
+                <span class="readonly-chip readonly-chip--blue">Salud</span>
+              </div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-field__label">Etiquetas</div>
+              <div class="readonly-chips">
+                <span class="readonly-chip readonly-chip--green">Salud</span>
+              </div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-field__label">Localidades</div>
+              <div class="readonly-chips">
+                <span class="readonly-chip readonly-chip--orange">Posadas</span>
+                <span class="readonly-chip readonly-chip--orange" style="border:2px solid #EA580C;font-weight:700">Obera</span>
+                <span class="readonly-chip readonly-chip--orange">Eldorado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Contexto: Contenido provincial (referencia) ─── -->
+        <div class="provincial-context">
+          <div class="provincial-context__title">
+            <span class="material-icons-outlined">article</span>
+            Contenido provincial (valores por defecto)
+          </div>
+          <div class="provincial-context__grid">
+            <div class="provincial-context__field">
+              <div class="provincial-context__field-label">Requisitos</div>
+              <div class="provincial-context__field-value">DNI vigente
+Ultimo recibo de sueldo
+Foto carnet 4x4</div>
+            </div>
+            <div class="provincial-context__field">
+              <div class="provincial-context__field-label">Costos</div>
+              <div class="provincial-context__field-value empty">Sin definir</div>
+            </div>
+            <div class="provincial-context__field">
+              <div class="provincial-context__field-label">Contacto</div>
+              <div class="provincial-context__field-value empty">Sin definir</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:#60A5FA">
+            Los campos que dejes vacios mas abajo mostraran estos valores al ciudadano.
+          </div>
+        </div>
+
+        <!-- ═══════ CARD PRINCIPAL: MI LOCALIDAD ═══════ -->
+        <div class="my-loc-card">
+          <div class="my-loc-card__header">
+            <div class="my-loc-card__header-left">
+              <div class="my-loc-card__header-icon">
+                <span class="material-icons-outlined">edit_location_alt</span>
+              </div>
+              <div>
+                <div class="my-loc-card__header-title">Obera</div>
+                <div class="my-loc-card__header-sub">Departamento Obera</div>
+              </div>
+            </div>
+            <div class="my-loc-card__header-badge">Mi localidad</div>
+          </div>
+
+          <div class="my-loc-card__body">
+
+            <!-- Audit info -->
+            <div class="my-loc-card__audit">
+              <span class="material-icons-outlined">update</span>
+              Ultima edicion: <strong>Maria Gonzalez</strong> &mdash; 20/03/2026 14:30
+            </div>
+
+            <!-- Campos editables -->
+            <div class="my-loc-fields">
+
+              <div class="my-loc-field">
+                <label class="my-loc-field__label">
+                  Costos
+                  <span class="inherited-tag">Personalizado</span>
+                </label>
+                <textarea class="my-loc-textarea" rows="3">Gratuito para afiliados activos</textarea>
+              </div>
+
+              <div class="my-loc-field">
+                <label class="my-loc-field__label">
+                  Contacto
+                  <span class="inherited-tag">Personalizado</span>
+                </label>
+                <textarea class="my-loc-textarea" rows="3">Calle Italia N520, Obera
+Tel: (03755) 42-1100</textarea>
+              </div>
+
+              <div class="my-loc-field">
+                <label class="my-loc-field__label">
+                  Horarios
+                  <span class="inherited-tag">Personalizado</span>
+                </label>
+                <textarea class="my-loc-textarea" rows="3">Lunes a Viernes
+7:00 a 12:00</textarea>
+              </div>
+
+              <div class="my-loc-field">
+                <label class="my-loc-field__label">
+                  URL Iniciar tramite
+                </label>
+                <input class="my-loc-input" type="url" value="https://ips.misiones.gob.ar/obera/credencial" />
+              </div>
+
+              <div class="my-loc-field">
+                <label class="my-loc-field__label">
+                  Sitio web
+                </label>
+                <input class="my-loc-input" type="url" value="https://ips.misiones.gob.ar/obera" />
+              </div>
+
+              <div class="my-loc-field">
+                <label class="my-loc-field__label">
+                  Notas adicionales
+                  <span class="inherited-tag" style="background:var(--border-light);color:var(--text-tertiary)">Hereda provincial</span>
+                </label>
+                <textarea class="my-loc-textarea my-loc-input inherited" rows="2" placeholder="Dejar vacio para usar el valor provincial..."></textarea>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="my-loc-card__footer">
+            <div class="my-loc-card__footer-hint">
+              <span class="material-icons-outlined">help_outline</span>
+              Los campos vacios heredan el valor provincial
+            </div>
+            <div class="my-loc-card__footer-actions">
+              <button class="btn btn--outline">Descartar cambios</button>
+              <button class="btn btn--success">
+                <span class="material-icons-outlined">save</span> Guardar Obera
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 3: ACTIVAR MI LOCALIDAD (no existe aun)
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Variante: Tramite sin mi localidad activada">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Obtener libreta sanitaria</h1>
+          <p class="page-header__subtitle">Min. Salud Publica</p>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--outline"><span class="material-icons-outlined">arrow_back</span> Volver</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab readonly">
+          <span class="material-icons-outlined" style="font-size:18px">visibility</span>
+          Info del tramite
+          <span class="material-icons-outlined readonly-icon">lock</span>
+        </button>
+        <button class="tab active">
+          <span class="material-icons-outlined" style="font-size:18px">edit_location_alt</span>
+          Mi localidad &mdash; Obera
+        </button>
+      </div>
+
+      <div class="tab-content">
+        <div class="card">
+          <div class="card__body">
+            <div class="activate-state">
+              <div class="activate-state__icon-wrap">
+                <span class="material-icons-outlined">add_location_alt</span>
+              </div>
+              <div class="activate-state__title">Obera no esta activada en este tramite</div>
+              <div class="activate-state__desc">
+                Este tramite todavia no tiene contenido especifico para Obera.
+                Al activarla, podras cargar costos, contacto, horarios y URL propios de tu delegacion.
+              </div>
+
+              <div class="activate-state__what">
+                <div class="activate-state__what-title">Al activar Obera vas a poder cargar:</div>
+                <div class="activate-state__what-item">
+                  <span class="material-icons-outlined">check_circle</span>
+                  Costos y modalidad de pago
+                </div>
+                <div class="activate-state__what-item">
+                  <span class="material-icons-outlined">check_circle</span>
+                  Direccion y contacto de la delegacion
+                </div>
+                <div class="activate-state__what-item">
+                  <span class="material-icons-outlined">check_circle</span>
+                  Horarios de atencion
+                </div>
+                <div class="activate-state__what-item">
+                  <span class="material-icons-outlined">check_circle</span>
+                  URL para iniciar el tramite online
+                </div>
+                <div class="activate-state__what-item">
+                  <span class="material-icons-outlined">check_circle</span>
+                  Notas adicionales
+                </div>
+              </div>
+
+              <button class="btn btn--primary btn--lg">
+                <span class="material-icons-outlined">add_location_alt</span>
+                Activar Obera en este tramite
+              </button>
+
+              <div style="margin-top:14px;font-size:12px;color:var(--text-tertiary)">
+                Mientras no cargues datos, el ciudadano vera los valores provinciales.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PANTALLA 4: COMPARACION DE VISTAS POR ROL
+           ═══════════════════════════════════════════════════ -->
+      <hr class="screen-divider" data-label="Comparacion: misma pantalla, distinto rol">
+
+      <div style="margin-bottom:24px">
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Comparacion de interfaces por rol</h2>
+        <p style="font-size:13px;color:var(--text-secondary)">
+          El mismo tramite "Obtener credencial IPS" visto desde dos roles diferentes en la Tab de localidades
+        </p>
+      </div>
+
+      <div class="comparison-row">
+
+        <!-- ─── ADMIN_ORGANISMO ─── -->
+        <div>
+          <div class="comparison-col__label comparison-col__label--admin">
+            <span class="material-icons-outlined">admin_panel_settings</span>
+            Admin Organismo (Maria Gonzalez — IPS)
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Contenido por localidad</div>
+                <div class="card__subtitle">3 localidades configuradas</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn--outline btn--sm" style="font-size:11px">
+                  <span class="material-icons-outlined" style="font-size:14px">playlist_add</span> Agregar multiples
+                </button>
+              </div>
+            </div>
+            <div class="card__body" style="padding-top:14px">
+              <!-- Mini table -->
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border)">Localidad</th>
+                    <th style="text-align:left;font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border)">Costos</th>
+                    <th style="text-align:left;font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border)">Horarios</th>
+                    <th style="width:60px;border-bottom:1px solid var(--border)"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);font-weight:500"><span class="material-icons-outlined" style="font-size:14px;vertical-align:middle;color:var(--primary);margin-right:4px">location_on</span>Posadas</td>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)">Gratuito</td>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)">L-V 7:00-13:00</td>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);text-align:right">
+                      <span class="material-icons-outlined" style="font-size:16px;color:var(--text-tertiary);cursor:pointer">edit</span>
+                      <span class="material-icons-outlined" style="font-size:16px;color:var(--error);cursor:pointer;margin-left:4px">delete</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);font-weight:500"><span class="material-icons-outlined" style="font-size:14px;vertical-align:middle;color:var(--primary);margin-right:4px">location_on</span>Obera</td>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)">Gratuito</td>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)">L-V 7:00-12:00</td>
+                    <td style="padding:10px 8px;border-bottom:1px solid var(--border-light);text-align:right">
+                      <span class="material-icons-outlined" style="font-size:16px;color:var(--text-tertiary);cursor:pointer">edit</span>
+                      <span class="material-icons-outlined" style="font-size:16px;color:var(--error);cursor:pointer;margin-left:4px">delete</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 8px;font-weight:500"><span class="material-icons-outlined" style="font-size:14px;vertical-align:middle;color:var(--primary);margin-right:4px">location_on</span>Eldorado</td>
+                    <td style="padding:10px 8px;color:var(--text-secondary)">Gratuito</td>
+                    <td style="padding:10px 8px;color:var(--text-secondary)">L-V 7:30-12:30</td>
+                    <td style="padding:10px 8px;text-align:right">
+                      <span class="material-icons-outlined" style="font-size:16px;color:var(--text-tertiary);cursor:pointer">edit</span>
+                      <span class="material-icons-outlined" style="font-size:16px;color:var(--error);cursor:pointer;margin-left:4px">delete</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary)">
+                Ve y edita TODAS las localidades. Puede agregar, editar y eliminar cualquiera.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── EDITOR_LOCAL ─── -->
+        <div>
+          <div class="comparison-col__label comparison-col__label--local">
+            <span class="material-icons-outlined">person</span>
+            Editor Local (Juan Perez — Obera)
+          </div>
+
+          <div class="card" style="border:2px solid #FDBA74">
+            <div class="card__header" style="background:#FFF7ED;padding:16px 20px;border-radius:0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-icons-outlined" style="font-size:24px;color:#EA580C">edit_location_alt</span>
+                <div>
+                  <div class="card__title">Obera</div>
+                  <div class="card__subtitle">Departamento Obera — Mi localidad</div>
+                </div>
+              </div>
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;background:#FDBA74;color:#7C2D12;padding:3px 10px;border-radius:4px;letter-spacing:0.06em">
+                Solo mi localidad
+              </span>
+            </div>
+            <div class="card__body" style="padding-top:14px">
+              <!-- Solo su localidad, campos editables -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;margin-bottom:4px">Costos</div>
+                  <textarea style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:50px">Gratuito para afiliados activos</textarea>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;margin-bottom:4px">Contacto</div>
+                  <textarea style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:50px">Calle Italia N520, Obera
+Tel: (03755) 42-1100</textarea>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;margin-bottom:4px">Horarios</div>
+                  <textarea style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:50px">Lunes a Viernes
+7:00 a 12:00</textarea>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;margin-bottom:4px">URL tramite</div>
+                  <input style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit" value="ips.misiones.gob.ar/obera/credencial" />
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border-light)">
+                <button class="btn btn--outline btn--sm">Descartar</button>
+                <button class="btn btn--success btn--sm"><span class="material-icons-outlined">save</span> Guardar</button>
+              </div>
+              <div style="margin-top:12px;font-size:11px;color:var(--text-tertiary)">
+                Solo ve y edita SU localidad. No puede ver Posadas ni Eldorado. No puede eliminar.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══════ RESUMEN DE DIFERENCIAS ═══════ -->
+      <div class="card" style="margin-top:8px">
+        <div class="card__header">
+          <div class="card__title">Resumen: diferencias por rol en la seccion Localidad</div>
+        </div>
+        <div class="card__body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:30%">Capacidad</th>
+                <th>SUPERADMIN</th>
+                <th>ADMIN_ORGANISMO</th>
+                <th>EDITOR</th>
+                <th style="background:#FFF7ED">EDITOR_LOCAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:500">Ver lista de tramites</td>
+                <td style="color:var(--success)">Todos</td>
+                <td style="color:var(--success)">Su organismo</td>
+                <td style="color:var(--success)">Propios</td>
+                <td style="background:#FFFBF5;font-weight:500">Publicados de su org.</td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Editar ficha (Tab 1+2)</td>
+                <td style="color:var(--success)">Todos</td>
+                <td style="color:var(--success)">Su organismo</td>
+                <td style="color:var(--success)">Propios</td>
+                <td style="background:#FFFBF5;color:var(--error)">Solo lectura</td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Ver todas las localidades</td>
+                <td style="color:var(--success)">Si</td>
+                <td style="color:var(--success)">Si</td>
+                <td style="color:var(--text-tertiary)">No aplica</td>
+                <td style="background:#FFFBF5;color:var(--error)">No, solo la suya</td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Editar localidad</td>
+                <td style="color:var(--success)">Cualquiera</td>
+                <td style="color:var(--success)">Cualquiera de su org.</td>
+                <td style="color:var(--text-tertiary)">No</td>
+                <td style="background:#FFFBF5;font-weight:600;color:#EA580C">Solo la suya</td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Agregar localidades</td>
+                <td style="color:var(--success)">Multiples</td>
+                <td style="color:var(--success)">Multiples</td>
+                <td style="color:var(--text-tertiary)">No</td>
+                <td style="background:#FFFBF5;font-weight:500">Solo activar la suya</td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Eliminar localidad</td>
+                <td style="color:var(--success)">Si</td>
+                <td style="color:var(--success)">Si</td>
+                <td style="color:var(--text-tertiary)">No</td>
+                <td style="background:#FFFBF5;color:var(--error)">No</td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Carga masiva</td>
+                <td style="color:var(--success)">Si</td>
+                <td style="color:var(--success)">Si</td>
+                <td style="color:var(--text-tertiary)">No</td>
+                <td style="background:#FFFBF5;color:var(--text-tertiary)">No (1 sola localidad)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+</body>
+</html>

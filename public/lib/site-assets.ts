@@ -22,5 +22,6 @@ export const siteAssets = {
     socialWhatsapp: "/assets/ui/Whatsapp.svg",
     socialLinkedin: "/assets/ui/Linkedin.svg",
     socialYoutube: "/assets/ui/Youtube.svg",
+    mTransparent: "/assets/ui/m-transparent.svg",
   },
 } as const

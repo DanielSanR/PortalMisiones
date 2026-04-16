@@ -4,7 +4,7 @@
 @theme inline {
   --color-background: #f7f8fb;
   --color-foreground: #0f172a;
-  --font-sans: "Inter", "Segoe UI", sans-serif;
+  --font-sans: var(--font-oak-sans), "Segoe UI", sans-serif;
 }
 
 * {
@@ -26,5 +26,10 @@ a {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
