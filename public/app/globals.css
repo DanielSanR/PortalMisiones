@@ -23,6 +23,27 @@ a {
   text-decoration: none;
 }
 
+@keyframes m-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes m-loader-breath {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+
+@keyframes m-loader-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.95); }
+  50%      { opacity: 0.7;  transform: scale(1.08); }
+}
+
+@keyframes m-loader-dots {
+  0%   { clip-path: inset(0 100% 0 0); }
+  33%  { clip-path: inset(0 66% 0 0); }
+  66%  { clip-path: inset(0 33% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

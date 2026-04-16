@@ -22,7 +22,7 @@ export function SubcategoriaCard({
   selected = false,
 }: SubcategoriaCardProps) {
   return (
-    <Link href={href as never} className="block">
+    <Link href={href as never} scroll={false} className="block">
       <Card
         className={`h-[154px] w-full overflow-hidden rounded-[14px] transition-all hover:-translate-y-0.5 md:w-[328px] ${
           selected

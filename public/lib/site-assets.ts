@@ -19,9 +19,11 @@ export const siteAssets = {
     topicPaper: "/assets/ui/papel.svg",
     socialInstagram: "/assets/ui/Instagram.svg",
     socialFacebook: "/assets/ui/Facebook.svg",
+    socialX: "/assets/ui/x.svg",
     socialWhatsapp: "/assets/ui/Whatsapp.svg",
     socialLinkedin: "/assets/ui/Linkedin.svg",
     socialYoutube: "/assets/ui/Youtube.svg",
     mTransparent: "/assets/ui/m-transparent.svg",
+    mTransparentTramite: "/assets/ui/m-transparent-tramite.svg",
   },
 } as const

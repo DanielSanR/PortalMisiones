@@ -129,13 +129,13 @@ export function SearchFilters({
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const q = new FormData(e.currentTarget).get("search") as string
-    router.push(buildUrl({ search: q || undefined }) as never)
+    router.push(buildUrl({ search: q || undefined }) as never, { scroll: false })
   }
 
   // Fires when the native × in <input type="search"> is clicked (value becomes "")
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value === "") {
-      router.push(buildUrl({ search: undefined }) as never)
+      router.push(buildUrl({ search: undefined }) as never, { scroll: false })
     }
   }
 
@@ -179,6 +179,7 @@ export function SearchFilters({
               <Link
                 key={etiqueta.id}
                 href={buildUrl({ etiquetaId: etiquetaId === etiqueta.id ? undefined : etiqueta.id }) as never}
+                scroll={false}
                 className={`inline-flex h-[32px] items-center rounded-full border px-3 text-[12px] font-medium transition-colors ${
                   etiquetaId === etiqueta.id
                     ? "border-[#2f6eb1] bg-[#2f6eb1] text-white"
@@ -196,6 +197,7 @@ export function SearchFilters({
       <div className="flex flex-wrap gap-2" id="temas">
         <Link
           href={buildUrl({ modalidadId: undefined }) as never}
+          scroll={false}
           className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
             !modalidadId
               ? "bg-[#2f6eb1] text-white hover:bg-[#264f82]"
@@ -208,6 +210,7 @@ export function SearchFilters({
           <Link
             key={item.id}
             href={buildUrl({ modalidadId: item.id }) as never}
+            scroll={false}
             className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               modalidadId === item.id
                 ? "bg-[#2f6eb1] text-white hover:bg-[#264f82]"
@@ -239,7 +242,7 @@ export function SearchFilters({
         <NativeSelect
           value={destinatarioId?.toString() ?? ""}
           onChange={(e) =>
-            router.push(buildUrl({ destinatarioId: e.target.value ? Number(e.target.value) : undefined }) as never)
+            router.push(buildUrl({ destinatarioId: e.target.value ? Number(e.target.value) : undefined }) as never, { scroll: false })
           }
           className="h-[43px] rounded-[10px]"
         >
@@ -254,7 +257,7 @@ export function SearchFilters({
         <NativeSelect
           value={organismoId ?? ""}
           onChange={(e) =>
-            router.push(buildUrl({ organismoId: e.target.value || undefined }) as never)
+            router.push(buildUrl({ organismoId: e.target.value || undefined }) as never, { scroll: false })
           }
           className="h-[43px] rounded-[10px]"
         >
@@ -269,7 +272,7 @@ export function SearchFilters({
         <NativeSelect
           value={localidadId?.toString() ?? ""}
           onChange={(e) =>
-            router.push(buildUrl({ localidadId: e.target.value ? Number(e.target.value) : undefined }) as never)
+            router.push(buildUrl({ localidadId: e.target.value ? Number(e.target.value) : undefined }) as never, { scroll: false })
           }
           className="h-[43px] rounded-[10px]"
         >
@@ -283,6 +286,7 @@ export function SearchFilters({
 
         <Link
           href={clearHref as never}
+          scroll={false}
           className="inline-flex h-[43px] items-center justify-center rounded-[10px] border border-[#dbe2ee] bg-white px-5 text-sm font-medium text-slate-600 hover:bg-slate-50"
         >
           Limpiar

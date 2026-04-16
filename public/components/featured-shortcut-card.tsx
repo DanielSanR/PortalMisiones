@@ -21,7 +21,7 @@ export function FeaturedShortcutCard({ title, index }: FeaturedShortcutCardProps
 
   return (
    <Link 
-      href={`/tramites?search=${encodeURIComponent(title)}`} 
+      href={`/tramites?search=${encodeURIComponent(title)}#detalle`}
       className="block shrink-0" // Evita que la tarjeta se encoja
     >
       <Card className="h-[140px] w-[240px] rounded-[14px] border-[#c0c5cf] transition-all hover:shadow-[0_14px_40px_rgba(33,72,114,0.1)] xl:w-[260px]">

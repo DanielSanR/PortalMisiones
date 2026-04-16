@@ -24,7 +24,7 @@ interface HomeTopicCardProps {
 
 export function HomeTopicCard({ title, description, search, icon, href }: HomeTopicCardProps) {
   const iconSrc = iconMap[icon]
-  const linkHref = href ?? `/tramites?search=${encodeURIComponent(search)}`
+  const linkHref = href ? `${href}#detalle` : `/tramites?search=${encodeURIComponent(search)}#detalle`
 
   return (
     <Link href={linkHref as never}>

@@ -1,7 +1,9 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, Building2, ChevronDown, ChevronRight, ExternalLink, FileText, Globe, MapPin, Tag, Users } from "lucide-react"
 import { notFound } from "next/navigation"
 import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
+import { siteAssets } from "@/lib/site-assets"
 import { getContenidoLocalidad, getTramiteBySlug } from "@/lib/public-data"
 
 interface TramiteDetailPageProps {
@@ -9,6 +11,9 @@ interface TramiteDetailPageProps {
 }
 
 export default async function TramiteDetailPage({ params }: TramiteDetailPageProps) {
+  // TODO: remove — test-only delay to preview MLoader
+  await new Promise((r) => setTimeout(r, 1500))
+
   const { slug } = await params
   const tramite = getTramiteBySlug(slug)
 
@@ -61,7 +66,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
         <div className="h-[360px] md:h-[400px]" />
 
         {/* ── All content below the cataratas fold ─────────────── */}
-        <section className="mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
 
           {/* Breadcrumb + back link */}
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -103,7 +108,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
           {/* Info cards */}
           <div className="mt-8 grid gap-4 md:grid-cols-3 mx-auto max-w-fit" >
             <div className="flex h-[73px] w-full md:w-[377px] items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px]">
-              <Building2 className="h-5 w-5 shrink-0 text-[#99a1af]" />
+              <Building2 className="h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
                 <p className="text-[11px] leading-[16.5px] text-[#99a1af]">Organismo responsable</p>
                 <p className="text-[14px] leading-[21px] text-[#1e2939]">
@@ -113,7 +118,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
             </div>
 
             <div className="flex h-[73px] w-full md:w-[377px] items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px]">
-              <Tag className="h-5 w-5 shrink-0 text-[#99a1af]"  />
+              <Tag className="h-5 w-5 shrink-0 text-[#2f6eb1]"  />
               <div>
                 <p className="text-[11px] leading-[16.5px] text-[#99a1af]">Modalidad</p>
                 <p className="text-[13px] font-semibold leading-[19.5px] text-[#2f6eb1]">
@@ -123,7 +128,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
             </div>
 
             <div className="flex h-[73px] w-full md:w-[377px] items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px]">
-              <Users className="h-5 w-5 shrink-0 text-[#99a1af]" />
+              <Users className="h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
                 <p className="text-[11px] leading-[16.5px] text-[#99a1af]">Destinatarios</p>
                 <p className="text-[14px] leading-[21px] text-[#1e2939]">
@@ -143,7 +148,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <span className="text-[18px] text-[#1a1a2e]">Cambiar localidad:</span>
                   <div className="relative">
-                    <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#2f6eb1]" />
                     <select className="h-[43px] w-[264px] appearance-none rounded-[10px] border border-[#adadad] bg-white pl-9 pr-10 text-[12px] text-[rgba(10,10,10,0.7)] focus:outline-none">
                       {localidades.map((loc) => (
                         <option key={loc.id} value={loc.id}>{loc.nombre}</option>
@@ -160,6 +165,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
                 >
                   Iniciar trámite
                 </button>
+                
               </a>
             </div>
           )}
@@ -210,6 +216,14 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
             className="relative mt-6 flex h-[125px] items-center justify-between overflow-hidden rounded-[24px] px-8 md:px-10"
             style={{ background: "linear-gradient(-79.11deg, #3b82c4 0.57%, #1565bf 51.24%, #0e4d8c 100%)" }}
           >
+            <Image
+              alt=""
+              src={siteAssets.ui.mTransparentTramite}
+              width={243}
+              height={125}
+              aria-hidden
+              className="pointer-events-none absolute -bottom-0 -right-0 h-[125px] w-auto md:h-[125px]"
+            />
             <div className="absolute -left-7 -top-12 h-[74px] w-[74px] rounded-full bg-white/10" />
             <div className="absolute bottom-[-10px] left-[281px] h-[74px] w-[74px] rounded-full bg-white/10" />
 
@@ -225,7 +239,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
             <a href={tramite.urlOficial ?? "#"} target="_blank" rel="noreferrer" className="relative">
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-[8px] bg-white px-6 py-2.5 text-[15px] font-semibold text-[#2f6eb1] shadow-[0px_4px_20px_rgba(0,0,0,0.25)] hover:bg-slate-50"
+                className="flex items-center min-w-[240px]  justify-center  gap-2 rounded-[8px] bg-white px-6 py-2.5 text-[15px] font-semibold text-[#2f6eb1] shadow-[0px_4px_20px_rgba(0,0,0,0.25)] hover:bg-slate-50"
               >
                 Iniciar trámite
                 <ExternalLink className="h-4 w-4" />

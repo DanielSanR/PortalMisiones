@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { MapPin, Menu, Phone, X } from "lucide-react"
+import { MapPin, Menu, Smartphone, X } from "lucide-react"
 import { siteAssets } from "@/lib/site-assets"
 
 interface PortalShellProps {
@@ -133,7 +133,7 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
           width={520}
           height={520}
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -right-10 h-[260px] w-auto opacity-100 md:h-[360px]"
+          className="pointer-events-none absolute -bottom-5 -right-0 h-[260px] w-auto opacity-100 md:h-[360px]"
         />
         <div className="relative mx-auto max-w-[1440px] px-4 pb-5 pt-8 md:px-10">
           <div className="mb-8 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
@@ -152,8 +152,8 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
                 <a href="#" aria-label="Instagram">
                   <Image alt="Instagram" src={siteAssets.ui.socialInstagram} width={24} height={24} className="h-6 w-6" />
                 </a>
-                <a href="#" aria-label="X (Twitter)" className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
-                  X
+                <a href="#" aria-label="X (Twitter)">
+                  <Image alt="X (Twitter)" src={siteAssets.ui.socialX} width={24} height={24} className="h-6 w-6" />
                 </a>
                 <a href="#" aria-label="YouTube">
                   <Image alt="YouTube" src={siteAssets.ui.socialYoutube} width={24} height={24} className="h-6 w-6" />
@@ -175,10 +175,10 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-8">
                 <span className="inline-flex items-center gap-2">
-                  <Phone className="h-4 w-4" /> Entidades Civiles
+                  <Smartphone className="h-4 w-4" /> Entidades Civiles
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <Phone className="h-4 w-4" /> Registro Público
+                  <Smartphone className="h-4 w-4" /> Registro Público
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <MapPin className="h-4 w-4" /> Av. Roque Pérez N°2398

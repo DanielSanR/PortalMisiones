@@ -117,6 +117,9 @@ interface CategoriaPageProps {
 }
 
 export default async function CategoriaPage({ params, searchParams }: CategoriaPageProps) {
+  // TODO: remove — test-only delay to preview MLoader
+  await new Promise((r) => setTimeout(r, 1500))
+
   const { slug } = await params
   const sp = await searchParams
 
@@ -147,7 +150,7 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
         {/* Spacer — cataratas pure background */}
         <div className="h-[360px] md:h-[400px]" />
 
-        <section className="mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
 
           {/* Breadcrumb + back */}
           <div className="flex flex-wrap items-center justify-between gap-4">

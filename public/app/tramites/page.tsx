@@ -18,6 +18,9 @@ interface TramitesPageProps {
 }
 
 export default async function TramitesPage({ searchParams }: TramitesPageProps) {
+  // TODO: remove — test-only delay to preview MLoader
+  await new Promise((r) => setTimeout(r, 1500))
+
   const params = await searchParams
 
   const results = searchPublicTramites({
@@ -36,7 +39,7 @@ export default async function TramitesPage({ searchParams }: TramitesPageProps) 
         <div className="h-[360px] md:h-[400px]" />
 
         {/* Content — below cataratas fold */}
-        <section className="mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
           {/* Breadcrumb */}
           <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-[#555]">
             <div className="flex items-center gap-1">

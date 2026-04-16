@@ -47,7 +47,7 @@ export function TramiteCard({ tramite }: TramiteCardProps) {
   const Icon = getIcon(tramite.icono)
 
   return (
-    <Link href={`/tramites/${tramite.slug}` as never} className="block">
+    <Link href={`/tramites/${tramite.slug}#detalle` as never} className="block">
       <Card className="h-[154px] w-full overflow-hidden rounded-[14px] border-[#e5e7eb] shadow-[2px_2px_4px_0px_rgba(0,0,0,0.10)] transition-all hover:-translate-y-0.5 hover:border-[#2f6eb1] hover:shadow-[0_4px_16px_rgba(47,110,177,0.12)] md:w-[328px]">
         <CardContent className="flex h-full items-center gap-2 px-[24.8px] py-[22px]">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[rgba(47,110,177,0.1)]">
