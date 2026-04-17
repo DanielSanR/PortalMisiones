@@ -4,6 +4,13 @@
 @theme inline {
   --color-background: #f7f8fb;
   --color-foreground: #0f172a;
+
+  --color-brand: #2f6eb1;
+  --color-brand-dark: #264f82;
+  --color-brand-light: #4f8ed2;
+  --color-ink: #1a1a2e;
+  --color-border-soft: #dbe2ee;
+
   --font-sans: var(--font-oak-sans), "Segoe UI", sans-serif;
 }
 
@@ -24,24 +31,46 @@ a {
 }
 
 @keyframes m-loader-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes m-loader-breath {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.06); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
 }
 
 @keyframes m-loader-pulse {
-  0%, 100% { opacity: 0.35; transform: scale(0.95); }
-  50%      { opacity: 0.7;  transform: scale(1.08); }
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.08);
+  }
 }
 
 @keyframes m-loader-dots {
-  0%   { clip-path: inset(0 100% 0 0); }
-  33%  { clip-path: inset(0 66% 0 0); }
-  66%  { clip-path: inset(0 33% 0 0); }
-  100% { clip-path: inset(0 0 0 0); }
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  33% {
+    clip-path: inset(0 66% 0 0);
+  }
+  66% {
+    clip-path: inset(0 33% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -49,7 +78,9 @@ a {
     scroll-behavior: auto;
   }
 
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }

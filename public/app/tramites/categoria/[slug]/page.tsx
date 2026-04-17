@@ -6,19 +6,26 @@ import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shel
 import { SearchFilters } from "@/components/portal/search-filters"
 import { SubcategoriaCard } from "@/components/portal/subcategoria-card"
 import { TramiteCard } from "@/components/portal/tramite-card"
+import { JsonLd } from "@/components/seo/json-ld"
 import { getCategoriaBySlug, getSubcategorias } from "@/lib/data/categorias"
 import { getTramitesByCategoriaId } from "@/lib/data/tramites"
+import { breadcrumbListSchema } from "@/lib/seo/jsonld"
 import { getTramiteIcon } from "@/lib/ui/icon-map"
 import type { Categoria, Tramite } from "@/models/tramite.model"
 
 // Modalidad → etiqueta corta para la pill del card (figma: "Online" / "Presencial")
 function shortModalidadLabel(modalidadId: number | undefined): string | null {
   switch (modalidadId) {
-    case 1: return "Online"          // Digital de punta a punta
-    case 2: return "Mixto"           // Digital con instancia presencial
-    case 3: return "Presencial"      // Presencial con apoyo digital
-    case 4: return "Informativo"     // Informativo / derivación
-    default: return null
+    case 1:
+      return "Online" // Digital de punta a punta
+    case 2:
+      return "Mixto" // Digital con instancia presencial
+    case 3:
+      return "Presencial" // Presencial con apoyo digital
+    case 4:
+      return "Informativo" // Informativo / derivación
+    default:
+      return null
   }
 }
 
@@ -30,7 +37,10 @@ function dominantModalidad(tramites: Tramite[]): number | undefined {
   let bestId: number | undefined
   let bestCount = -1
   for (const [id, count] of counts) {
-    if (count > bestCount) { bestId = id; bestCount = count }
+    if (count > bestCount) {
+      bestId = id
+      bestCount = count
+    }
   }
   return bestId
 }
@@ -45,24 +55,44 @@ function topEtiquetas(tramites: Tramite[], limit = 3): { id: number; nombre: str
   return [...seen.entries()].slice(0, limit).map(([id, nombre]) => ({ id, nombre }))
 }
 
-function applyFilters(tramites: Tramite[], filters: {
-  search?: string
-  organismoId?: string
-  modalidadId?: number
-  destinatarioId?: number
-  localidadId?: number
-  etiquetaId?: number
-}): Tramite[] {
-  const query = filters.search?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+function applyFilters(
+  tramites: Tramite[],
+  filters: {
+    search?: string
+    organismoId?: string
+    modalidadId?: number
+    destinatarioId?: number
+    localidadId?: number
+    etiquetaId?: number
+  },
+): Tramite[] {
+  const query = filters.search
+    ?.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
   return tramites.filter((t) => {
     if (filters.organismoId && t.organismoId !== filters.organismoId) return false
     if (filters.modalidadId && t.modalidadId !== filters.modalidadId) return false
-    if (filters.destinatarioId && !(t.destinatarios ?? []).some((d) => d.id === filters.destinatarioId)) return false
-    if (filters.localidadId && !(t.localidades ?? []).some((l) => l.id === filters.localidadId)) return false
+    if (
+      filters.destinatarioId &&
+      !(t.destinatarios ?? []).some((d) => d.id === filters.destinatarioId)
+    )
+      return false
+    if (filters.localidadId && !(t.localidades ?? []).some((l) => l.id === filters.localidadId))
+      return false
     if (filters.etiquetaId && !t.etiquetas.some((e) => e.id === filters.etiquetaId)) return false
     if (query) {
-      const haystack = [t.titulo, t.resumen ?? "", t.descripcionLarga ?? "", t.organismo?.nombre ?? "",
-        ...t.etiquetas.map((e) => e.nombre)].join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      const haystack = [
+        t.titulo,
+        t.resumen ?? "",
+        t.descripcionLarga ?? "",
+        t.organismo?.nombre ?? "",
+        ...t.etiquetas.map((e) => e.nombre),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
       if (!haystack.includes(query)) return false
     }
     return true
@@ -94,8 +124,7 @@ export async function generateMetadata({
   }
 
   const description =
-    categoria.descripcion?.trim() ||
-    `Trámites provinciales de ${categoria.nombre}.`
+    categoria.descripcion?.trim() || `Trámites provinciales de ${categoria.nombre}.`
   const url = `/tramites/categoria/${categoria.slug}`
 
   return {
@@ -114,12 +143,12 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
   if (!categoria || categoria.parentId !== null) notFound()
 
   const filters = {
-    search:         sp.search,
-    organismoId:    sp.organismoId,
-    modalidadId:    sp.modalidadId    ? Number(sp.modalidadId)    : undefined,
+    search: sp.search,
+    organismoId: sp.organismoId,
+    modalidadId: sp.modalidadId ? Number(sp.modalidadId) : undefined,
     destinatarioId: sp.destinatarioId ? Number(sp.destinatarioId) : undefined,
-    localidadId:    sp.localidadId    ? Number(sp.localidadId)    : undefined,
-    etiquetaId:     sp.etiquetaId     ? Number(sp.etiquetaId)     : undefined,
+    localidadId: sp.localidadId ? Number(sp.localidadId) : undefined,
+    etiquetaId: sp.etiquetaId ? Number(sp.etiquetaId) : undefined,
   }
 
   const subcategorias = await getSubcategorias(categoria.id)
@@ -139,26 +168,44 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
     ? applyFilters(subTramitesBySubcatId.get(selectedSub.id) ?? [], filters)
     : []
 
+  const breadcrumb = breadcrumbListSchema([
+    { name: "Inicio", path: "/" },
+    { name: "Trámites", path: "/tramites" },
+    { name: categoria.nombre, path: `/tramites/categoria/${categoria.slug}` },
+    ...(selectedSub
+      ? [
+          {
+            name: selectedSub.nombre,
+            path: `/tramites/categoria/${categoria.slug}?sub=${selectedSub.slug}`,
+          },
+        ]
+      : []),
+  ])
+
   return (
     <PortalShell>
+      <JsonLd data={breadcrumb} />
       <main id="main-content" className="relative z-10">
         {/* Spacer — cataratas pure background */}
         <div className="h-[360px] md:h-[400px]" />
 
-        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
-
+        <section id="detalle" className="mx-auto max-w-[1440px] scroll-mt-8 px-4 pb-16 md:px-10">
           {/* Breadcrumb + back */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-1 text-sm text-[#555]">
-              <Link href="/" className="hover:text-[#2f6eb1]">Inicio</Link>
+              <Link href="/" className="hover:text-[#2f6eb1]">
+                Inicio
+              </Link>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
-              <Link href="/tramites" className="hover:text-[#2f6eb1]">Trámites</Link>
+              <Link href="/tramites" className="hover:text-[#2f6eb1]">
+                Trámites
+              </Link>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
-              <span className="truncate max-w-[240px] text-[#555]">{categoria.nombre}</span>
+              <span className="max-w-[240px] truncate text-[#555]">{categoria.nombre}</span>
               {selectedSub && (
                 <>
                   <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
-                  <span className="truncate max-w-[280px] text-[#555]">{selectedSub.nombre}</span>
+                  <span className="max-w-[280px] truncate text-[#555]">{selectedSub.nombre}</span>
                 </>
               )}
             </div>
@@ -172,7 +219,7 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
           </div>
 
           {/* Category title */}
-          <h1 className="mt-6 text-[24px] font-medium leading-[40px] text-[#1a1a2e]">
+          <h1 className="mt-6 text-[24px] leading-[40px] font-medium text-[#1a1a2e]">
             {categoria.nombre}
           </h1>
 
@@ -202,7 +249,9 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
                     href={`/tramites/categoria/${categoria.slug}?sub=${subcat.slug}`}
                     icon={getTramiteIcon(subcat.icono)}
                     title={subcat.nombre}
-                    description={subcat.descripcion ?? `Trámites de ${subcat.nombre.toLowerCase()}.`}
+                    description={
+                      subcat.descripcion ?? `Trámites de ${subcat.nombre.toLowerCase()}.`
+                    }
                     badge={shortModalidadLabel(dominantModalidad(subTramites))}
                     chips={topEtiquetas(subTramites, 3)}
                     selected={selectedSub?.id === subcat.id}
@@ -213,12 +262,12 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
           )}
 
           {/* Divider */}
-          {selectedSub && <div className="mt-10 h-0.5 w-full   bg-[#2F6EB1]" />}
+          {selectedSub && <div className="mt-10 h-0.5 w-full bg-[#2F6EB1]" />}
 
           {/* ── Trámites for selected subcategory ─────────────── */}
           {selectedSub && (
             <div className="mt-6">
-              <h2 className="text-[24px] font-normal leading-[40px] text-[#1a1a2e]">Trámites</h2>
+              <h2 className="text-[24px] leading-[40px] font-normal text-[#1a1a2e]">Trámites</h2>
 
               {tramites.length > 0 ? (
                 <div className="mt-5 flex flex-wrap gap-4">

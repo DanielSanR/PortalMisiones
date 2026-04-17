@@ -2,13 +2,24 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import type { Route } from "next"
 import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
-import { buildCleanUrl, buildTramiteFiltersUrl, type TramiteFilterValues } from "@/lib/url/tramite-filters"
+import {
+  buildCleanUrl,
+  buildTramiteFiltersUrl,
+  type TramiteFilterValues,
+} from "@/lib/url/tramite-filters"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NativeSelect } from "@/components/ui/select"
-import type { Destinatario, Etiqueta, Localidad, Modalidad, Organismo } from "@/models/tramite.model"
+import type {
+  Destinatario,
+  Etiqueta,
+  Localidad,
+  Modalidad,
+  Organismo,
+} from "@/models/tramite.model"
 
 export interface SearchFiltersCatalogs {
   organismos: Organismo[]
@@ -48,7 +59,14 @@ export function SearchFiltersClient({
   const router = useRouter()
   const [etiquetasOpen, setEtiquetasOpen] = useState(false)
 
-  const current: TramiteFilterValues = { search, organismoId, modalidadId, destinatarioId, localidadId, etiquetaId }
+  const current: TramiteFilterValues = {
+    search,
+    organismoId,
+    modalidadId,
+    destinatarioId,
+    localidadId,
+    etiquetaId,
+  }
   const buildUrl = (overrides: Partial<TramiteFilterValues>) =>
     buildTramiteFiltersUrl(current, overrides, { basePath, preserveParams })
 
@@ -57,7 +75,7 @@ export function SearchFiltersClient({
     function handleHeroSubmit(e: React.FormEvent<HTMLFormElement>) {
       e.preventDefault()
       const q = new FormData(e.currentTarget).get("search") as string
-      router.push(buildUrl({ search: q || undefined }) as never)
+      router.push(buildUrl({ search: q || undefined }) as Route)
     }
 
     return (
@@ -74,7 +92,10 @@ export function SearchFiltersClient({
               className="border-0 px-0 text-base text-[rgba(26,26,46,0.5)] shadow-none placeholder:text-[rgba(26,26,46,0.5)] focus-visible:ring-0"
             />
           </div>
-          <Button type="submit" className="my-2 mr-2 rounded-[10px] bg-[#3b82c4] px-5 hover:bg-[#2f6eb1]">
+          <Button
+            type="submit"
+            className="my-2 mr-2 rounded-[10px] bg-[#3b82c4] px-5 hover:bg-[#2f6eb1]"
+          >
             <Search className="h-[18px] w-[18px]" />
             Buscar
           </Button>
@@ -103,13 +124,13 @@ export function SearchFiltersClient({
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const q = new FormData(e.currentTarget).get("search") as string
-    router.push(buildUrl({ search: q || undefined }) as never, { scroll: false })
+    router.push(buildUrl({ search: q || undefined }) as Route, { scroll: false })
   }
 
   // Fires when the native × in <input type="search"> is clicked (value becomes "")
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value === "") {
-      router.push(buildUrl({ search: undefined }) as never, { scroll: false })
+      router.push(buildUrl({ search: undefined }) as Route, { scroll: false })
     }
   }
 
@@ -119,7 +140,7 @@ export function SearchFiltersClient({
     <div className="space-y-4">
       <div className={`flex items-center gap-3 ${hideHeading ? "justify-end" : "justify-between"}`}>
         {!hideHeading && (
-          <h2 className="text-[24px] font-medium leading-[40px] text-[#1a1a2e]">Categorías</h2>
+          <h2 className="text-[24px] leading-[40px] font-medium text-[#1a1a2e]">Categorías</h2>
         )}
         <Button
           type="button"
@@ -138,13 +159,17 @@ export function SearchFiltersClient({
 
       {/* Etiquetas panel */}
       {etiquetasOpen && (
-        <div className="rounded-[14px] border border-[#d0d0d0] bg-[#f9fafb] px-[21px] pb-4 pt-[21px]">
+        <div className="rounded-[14px] border border-[#d0d0d0] bg-[#f9fafb] px-[21px] pt-[21px] pb-4">
           <p className="mb-3 text-[14px] font-semibold text-[#1e2939]">Filtrar por etiquetas</p>
           <div className="flex flex-wrap gap-2">
             {etiquetas.map((etiqueta) => (
               <Link
                 key={etiqueta.id}
-                href={buildUrl({ etiquetaId: etiquetaId === etiqueta.id ? undefined : etiqueta.id }) as never}
+                href={
+                  buildUrl({
+                    etiquetaId: etiquetaId === etiqueta.id ? undefined : etiqueta.id,
+                  }) as Route
+                }
                 scroll={false}
                 className={`inline-flex h-[32px] items-center rounded-full border px-3 text-[12px] font-medium transition-colors ${
                   etiquetaId === etiqueta.id
@@ -162,7 +187,7 @@ export function SearchFiltersClient({
       {/* Modalidad pills */}
       <div className="flex flex-wrap gap-2">
         <Link
-          href={buildUrl({ modalidadId: undefined }) as never}
+          href={buildUrl({ modalidadId: undefined }) as Route}
           scroll={false}
           className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
             !modalidadId
@@ -175,7 +200,7 @@ export function SearchFiltersClient({
         {modalidades.map((item) => (
           <Link
             key={item.id}
-            href={buildUrl({ modalidadId: item.id }) as never}
+            href={buildUrl({ modalidadId: item.id }) as Route}
             scroll={false}
             className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               modalidadId === item.id
@@ -209,7 +234,12 @@ export function SearchFiltersClient({
           aria-label="Filtrar por destinatario"
           value={destinatarioId?.toString() ?? ""}
           onChange={(e) =>
-            router.push(buildUrl({ destinatarioId: e.target.value ? Number(e.target.value) : undefined }) as never, { scroll: false })
+            router.push(
+              buildUrl({
+                destinatarioId: e.target.value ? Number(e.target.value) : undefined,
+              }) as Route,
+              { scroll: false },
+            )
           }
           className="h-[43px] rounded-[10px]"
         >
@@ -225,7 +255,9 @@ export function SearchFiltersClient({
           aria-label="Filtrar por organismo"
           value={organismoId ?? ""}
           onChange={(e) =>
-            router.push(buildUrl({ organismoId: e.target.value || undefined }) as never, { scroll: false })
+            router.push(buildUrl({ organismoId: e.target.value || undefined }) as Route, {
+              scroll: false,
+            })
           }
           className="h-[43px] rounded-[10px]"
         >
@@ -241,7 +273,12 @@ export function SearchFiltersClient({
           aria-label="Filtrar por localidad"
           value={localidadId?.toString() ?? ""}
           onChange={(e) =>
-            router.push(buildUrl({ localidadId: e.target.value ? Number(e.target.value) : undefined }) as never, { scroll: false })
+            router.push(
+              buildUrl({
+                localidadId: e.target.value ? Number(e.target.value) : undefined,
+              }) as Route,
+              { scroll: false },
+            )
           }
           className="h-[43px] rounded-[10px]"
         >
@@ -254,7 +291,7 @@ export function SearchFiltersClient({
         </NativeSelect>
 
         <Link
-          href={clearHref as never}
+          href={clearHref as Route}
           scroll={false}
           className="inline-flex h-[43px] items-center justify-center rounded-[10px] border border-[#dbe2ee] bg-white px-5 text-sm font-medium text-slate-600 hover:bg-slate-50"
         >

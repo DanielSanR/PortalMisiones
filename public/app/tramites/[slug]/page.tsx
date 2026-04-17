@@ -1,14 +1,29 @@
-import type { Metadata } from "next"
+import type { Metadata, Route } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Building2, Clock, ChevronDown, ChevronRight, ExternalLink, FileText, Globe, MapPin, Phone, Tag, Users } from "lucide-react"
+import {
+  ArrowLeft,
+  Building2,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Globe,
+  MapPin,
+  Phone,
+  Tag,
+  Users,
+} from "lucide-react"
 import { notFound } from "next/navigation"
 import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
 import { LocalidadSwitcher } from "@/components/portal/localidad-switcher"
 import { OficinaMap } from "@/components/portal/oficina-map"
+import { JsonLd } from "@/components/seo/json-ld"
 import { siteAssets } from "@/lib/site-assets"
 import { getContenidoLocalidad, getTramiteBySlug } from "@/lib/data/tramites"
 import { organismoSlug } from "@/lib/data/taxonomias"
+import { breadcrumbListSchema } from "@/lib/seo/jsonld"
 import { SITE_NAME, SITE_URL } from "@/lib/seo/site"
 
 interface TramiteDetailPageProps {
@@ -59,10 +74,10 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
 
   const hasStructuredSede = Boolean(
     contenido &&
-      (contenido.direccion ||
-        contenido.telefono ||
-        contenido.horarios ||
-        (contenido.latitud != null && contenido.longitud != null)),
+    (contenido.direccion ||
+      contenido.telefono ||
+      contenido.horarios ||
+      (contenido.latitud != null && contenido.longitud != null)),
   )
 
   const contactoNode = hasStructuredSede ? (
@@ -76,7 +91,7 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
             <li className="flex items-start gap-3">
               <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-[#99a1af]">Dirección</p>
+                <p className="text-[11px] tracking-wide text-[#99a1af] uppercase">Dirección</p>
                 <p className="leading-6">{contenido.direccion}</p>
               </div>
             </li>
@@ -85,7 +100,7 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
             <li className="flex items-start gap-3">
               <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-[#99a1af]">Teléfono</p>
+                <p className="text-[11px] tracking-wide text-[#99a1af] uppercase">Teléfono</p>
                 <a
                   href={`tel:${contenido.telefono.replace(/[^+\d]/g, "")}`}
                   className="leading-6 hover:text-[#2f6eb1]"
@@ -99,8 +114,8 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
             <li className="flex items-start gap-3">
               <Clock className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-[#99a1af]">Horarios</p>
-                <p className="whitespace-pre-line leading-6">{contenido.horarios}</p>
+                <p className="text-[11px] tracking-wide text-[#99a1af] uppercase">Horarios</p>
+                <p className="leading-6 whitespace-pre-line">{contenido.horarios}</p>
               </div>
             </li>
           )}
@@ -183,13 +198,16 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
       : undefined,
   }
 
+  const breadcrumb = breadcrumbListSchema([
+    { name: "Inicio", path: "/" },
+    { name: "Trámites", path: "/tramites" },
+    { name: tramite.titulo, path: `/tramites/${tramite.slug}` },
+  ])
+
   return (
     <PortalShell>
-      <script
-        type="application/ld+json"
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumb} />
       <main id="main-content" className="relative z-10">
         {/*
           Spacer that fills the cataratas zone below the navbar.
@@ -201,18 +219,19 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
         <div className="h-[360px] md:h-[400px]" />
 
         {/* ── All content below the cataratas fold ─────────────── */}
-        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
-
+        <section id="detalle" className="mx-auto max-w-[1440px] scroll-mt-8 px-4 pb-16 md:px-10">
           {/* Breadcrumb + back link */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-1 text-sm text-[#555]">
-              <Link href="/" className="hover:text-[#2f6eb1]">Inicio</Link>
+              <Link href="/" className="hover:text-[#2f6eb1]">
+                Inicio
+              </Link>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
               <Link href="/tramites" className="hover:text-[#2f6eb1]">
                 {tramite.organismo?.nombre ?? "Trámites"}
               </Link>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
-              <span className="truncate max-w-[240px] text-[#555]">{tramite.titulo}</span>
+              <span className="max-w-[240px] truncate text-[#555]">{tramite.titulo}</span>
             </div>
             <Link
               href="/tramites"
@@ -224,11 +243,11 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
           </div>
 
           {/* Source label */}
-          <p className="px-4 mt-3 text-[16px] font-light text-[#2f6eb1] pt-8">
+          <p className="mt-3 px-4 pt-8 text-[16px] font-light text-[#2f6eb1]">
             Información otorgada por{" "}
             {tramite.organismo ? (
               <Link
-                href={`/organismos/${organismoSlug(tramite.organismo)}` as never}
+                href={`/organismos/${organismoSlug(tramite.organismo)}` as Route}
                 className="underline hover:text-[#264f82]"
               >
                 {tramite.organismo.nombre}
@@ -239,20 +258,20 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
           </p>
 
           {/* Title */}
-          <h1 className="px-4 mt-1 text-[24px] font-light leading-8 py-3 text-[rgba(0,0,0,0.87)]">
+          <h1 className="mt-1 px-4 py-3 text-[24px] leading-8 font-light text-[rgba(0,0,0,0.87)]">
             {tramite.titulo}
           </h1>
 
           {/* Resumen */}
           {tramite.resumen && (
-            <p className="px-4 mt-3 max-w-4xl text-[16px] font-light leading-6 text-[rgba(0,0,0,0.87)]">
+            <p className="mt-3 max-w-4xl px-4 text-[16px] leading-6 font-light text-[rgba(0,0,0,0.87)]">
               {tramite.resumen}
             </p>
           )}
 
           {/* Info cards */}
-          <div className="mt-8 grid gap-4 md:grid-cols-3 mx-auto max-w-fit" >
-            <div className="flex h-[73px] w-full md:w-[377px] items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px]">
+          <div className="mx-auto mt-8 grid max-w-fit gap-4 md:grid-cols-3">
+            <div className="flex h-[73px] w-full items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px] md:w-[377px]">
               <Building2 className="h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
                 <p className="text-[11px] leading-[16.5px] text-[#99a1af]">Organismo responsable</p>
@@ -262,17 +281,17 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
               </div>
             </div>
 
-            <div className="flex h-[73px] w-full md:w-[377px] items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px]">
-              <Tag className="h-5 w-5 shrink-0 text-[#2f6eb1]"  />
+            <div className="flex h-[73px] w-full items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px] md:w-[377px]">
+              <Tag className="h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
                 <p className="text-[11px] leading-[16.5px] text-[#99a1af]">Modalidad</p>
-                <p className="text-[13px] font-semibold leading-[19.5px] text-[#2f6eb1]">
+                <p className="text-[13px] leading-[19.5px] font-semibold text-[#2f6eb1]">
                   {tramite.modalidad?.nombre ?? "—"}
                 </p>
               </div>
             </div>
 
-            <div className="flex h-[73px] w-full md:w-[377px] items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px]">
+            <div className="flex h-[73px] w-full items-center gap-3 rounded-[24px] border border-[#aeb3ba] bg-[#f9fafb] pl-[17px] md:w-[377px]">
               <Users className="h-5 w-5 shrink-0 text-[#2f6eb1]" />
               <div>
                 <p className="text-[11px] leading-[16.5px] text-[#99a1af]">Destinatarios</p>
@@ -287,9 +306,7 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
           {localidades.length > 0 && selectedLocalidad && (
             <div className="mt-6 flex flex-wrap items-stretch justify-between gap-4">
               <div>
-                <p className="text-[24px] text-[#1a1a2e]">
-                  Localidad — {selectedLocalidad.nombre}
-                </p>
+                <p className="text-[24px] text-[#1a1a2e]">Localidad — {selectedLocalidad.nombre}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <span className="text-[18px] text-[#1a1a2e]">Cambiar localidad:</span>
                   <LocalidadSwitcher localidades={localidades} selectedId={selectedLocalidad.id} />
@@ -303,18 +320,17 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
               >
                 <button
                   type="button"
-                  className="rounded-[8px]  min-w-[240px] bg-[#2f6eb1] px-6 py-3 text-[14px] font-bold text-white shadow-[0px_4px_16px_rgba(0,0,0,0.25)] hover:bg-[#264f82]"
+                  className="min-w-[240px] rounded-[8px] bg-[#2f6eb1] px-6 py-3 text-[14px] font-bold text-white shadow-[0px_4px_16px_rgba(0,0,0,0.25)] hover:bg-[#264f82]"
                 >
                   Iniciar trámite
                 </button>
-
               </a>
             </div>
           )}
 
           {/* Extended description */}
           {tramite.descripcionLarga && (
-            <p className="mt-6 text-[20px] font-light leading-[40px] text-[#1a1a2e]">
+            <p className="mt-6 text-[20px] leading-[40px] font-light text-[#1a1a2e]">
               {tramite.descripcionLarga}
             </p>
           )}
@@ -348,7 +364,9 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
                       <span className="whitespace-pre-line">{section.content}</span>
                     )
                   ) : (
-                    <span className="text-slate-400">Información no disponible para este trámite.</span>
+                    <span className="text-slate-400">
+                      Información no disponible para este trámite.
+                    </span>
                   )}
                 </div>
               </details>
@@ -358,7 +376,9 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
           {/* CTA Banner */}
           <div
             className="relative mt-6 flex h-[125px] items-center justify-between overflow-hidden rounded-[24px] px-8 md:px-10"
-            style={{ background: "linear-gradient(-79.11deg, #3b82c4 0.57%, #1565bf 51.24%, #0e4d8c 100%)" }}
+            style={{
+              background: "linear-gradient(-79.11deg, #3b82c4 0.57%, #1565bf 51.24%, #0e4d8c 100%)",
+            }}
           >
             <Image
               alt=""
@@ -366,9 +386,9 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
               width={243}
               height={125}
               aria-hidden
-              className="pointer-events-none absolute -bottom-0 -right-0 h-[125px] w-auto md:h-[125px]"
+              className="pointer-events-none absolute -right-0 -bottom-0 h-[125px] w-auto md:h-[125px]"
             />
-            <div className="absolute -left-7 -top-12 h-[74px] w-[74px] rounded-full bg-white/10" />
+            <div className="absolute -top-12 -left-7 h-[74px] w-[74px] rounded-full bg-white/10" />
             <div className="absolute bottom-[-10px] left-[281px] h-[74px] w-[74px] rounded-full bg-white/10" />
 
             <div className="relative flex items-center gap-3">
@@ -380,10 +400,15 @@ export default async function TramiteDetailPage({ params, searchParams }: Tramit
               </span>
             </div>
 
-            <a href={contenido?.urlTramite ?? tramite.urlOficial ?? "#"} target="_blank" rel="noreferrer" className="relative">
+            <a
+              href={contenido?.urlTramite ?? tramite.urlOficial ?? "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="relative"
+            >
               <button
                 type="button"
-                className="flex items-center min-w-[240px]  justify-center  gap-2 rounded-[8px] bg-white px-6 py-2.5 text-[15px] font-semibold text-[#2f6eb1] shadow-[0px_4px_20px_rgba(0,0,0,0.25)] hover:bg-slate-50"
+                className="flex min-w-[240px] items-center justify-center gap-2 rounded-[8px] bg-white px-6 py-2.5 text-[15px] font-semibold text-[#2f6eb1] shadow-[0px_4px_20px_rgba(0,0,0,0.25)] hover:bg-slate-50"
               >
                 Iniciar trámite
                 <ExternalLink className="h-4 w-4" />

@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { Montserrat } from "next/font/google"
 import localFont from "next/font/local"
+import { JsonLd } from "@/components/seo/json-ld"
+import { organizationSchema } from "@/lib/seo/jsonld"
 import { SITE_DESCRIPTION, SITE_LOCALE, SITE_NAME, SITE_URL } from "@/lib/seo/site"
 import "./globals.css"
 
@@ -17,7 +19,11 @@ const oakSans = localFont({
     { path: "../public/fonts/oak-sans/OakSans-Bold.ttf", weight: "700", style: "normal" },
     { path: "../public/fonts/oak-sans/OakSans-BoldItalic.ttf", weight: "700", style: "italic" },
     { path: "../public/fonts/oak-sans/OakSans-ExtraBold.ttf", weight: "800", style: "normal" },
-    { path: "../public/fonts/oak-sans/OakSans-ExtraBoldItalic.ttf", weight: "800", style: "italic" },
+    {
+      path: "../public/fonts/oak-sans/OakSans-ExtraBoldItalic.ttf",
+      weight: "800",
+      style: "italic",
+    },
     { path: "../public/fonts/oak-sans/OakSans-Black.ttf", weight: "900", style: "normal" },
     { path: "../public/fonts/oak-sans/OakSans-BlackItalic.ttf", weight: "900", style: "italic" },
   ],
@@ -63,7 +69,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${oakSans.variable} ${montserrat.variable}`}>
-      <body className="min-h-screen bg-[#f7f8fb] font-sans antialiased">{children}</body>
+      <body className="bg-background min-h-screen font-sans antialiased">
+        <JsonLd data={organizationSchema()} />
+        {children}
+      </body>
     </html>
   )
 }

@@ -5,8 +5,10 @@ import { notFound } from "next/navigation"
 import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
 import { TramiteCard } from "@/components/portal/tramite-card"
 import { Badge } from "@/components/ui/badge"
+import { JsonLd } from "@/components/seo/json-ld"
 import { getEventoDeVidaBySlug } from "@/lib/data/taxonomias"
 import { getTramitesByEventoId } from "@/lib/data/tramites"
+import { breadcrumbListSchema } from "@/lib/seo/jsonld"
 
 interface EventoPageProps {
   params: Promise<{ slug: string }>
@@ -39,20 +41,29 @@ export default async function EventoPage({ params }: EventoPageProps) {
 
   const tramites = await getTramitesByEventoId(evento.id)
 
+  const breadcrumb = breadcrumbListSchema([
+    { name: "Inicio", path: "/" },
+    { name: "Eventos de vida", path: "/eventos" },
+    { name: evento.nombre, path: `/eventos/${slug}` },
+  ])
+
   return (
     <PortalShell>
+      <JsonLd data={breadcrumb} />
       <main id="main-content" className="relative z-10">
         <div className="h-[360px] md:h-[400px]" />
 
-        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="mx-auto max-w-[1440px] scroll-mt-8 px-4 pb-16 md:px-10">
           {/* Breadcrumb + back */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-1 text-sm text-[#555]">
-              <Link href="/" className="hover:text-[#2f6eb1]">Inicio</Link>
+              <Link href="/" className="hover:text-[#2f6eb1]">
+                Inicio
+              </Link>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
               <span className="text-[#555]">Eventos de vida</span>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
-              <span className="truncate max-w-[320px] text-[#555]">{evento.nombre}</span>
+              <span className="max-w-[320px] truncate text-[#555]">{evento.nombre}</span>
             </div>
             <Link
               href="/"
@@ -73,7 +84,7 @@ export default async function EventoPage({ params }: EventoPageProps) {
                 <Sparkles className="h-6 w-6" style={{ color: evento.color }} />
               </div>
               <div>
-                <h1 className="text-[28px] font-medium leading-9 text-[#1a1a2e]">
+                <h1 className="text-[28px] leading-9 font-medium text-[#1a1a2e]">
                   {evento.nombre}
                 </h1>
                 {evento.descripcion && (

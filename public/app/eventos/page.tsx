@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Route } from "next"
 import Link from "next/link"
 import { ChevronRight, Sparkles } from "lucide-react"
 import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
@@ -24,19 +24,19 @@ export default async function EventosPage() {
   const eventos = await getEventosDeVida()
 
   const counts = await Promise.all(eventos.map((e) => getTramitesByEventoId(e.id)))
-  const countByEventoId = new Map<number, number>(
-    eventos.map((e, i) => [e.id, counts[i].length]),
-  )
+  const countByEventoId = new Map<number, number>(eventos.map((e, i) => [e.id, counts[i].length]))
 
   return (
     <PortalShell>
       <main id="main-content" className="relative z-10">
         <div className="h-[360px] md:h-[400px]" />
 
-        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="mx-auto max-w-[1440px] scroll-mt-8 px-4 pb-16 md:px-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm text-[#555]">
-            <Link href="/" className="hover:text-[#2f6eb1]">Inicio</Link>
+            <Link href="/" className="hover:text-[#2f6eb1]">
+              Inicio
+            </Link>
             <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
             <span className="text-[#555]">Eventos de vida</span>
           </div>
@@ -64,7 +64,7 @@ export default async function EventosPage() {
               return (
                 <Link
                   key={evento.id}
-                  href={`/eventos/${slug}` as never}
+                  href={`/eventos/${slug}` as Route}
                   className="group flex min-h-[160px] flex-col justify-between rounded-[20px] border border-[#dbe2ee] bg-white p-5 shadow-[0_8px_24px_rgba(33,72,114,0.06)] transition-shadow hover:shadow-[0_16px_36px_rgba(33,72,114,0.12)]"
                 >
                   <div className="flex items-start gap-3">
@@ -75,7 +75,7 @@ export default async function EventosPage() {
                       <Sparkles className="h-5 w-5" style={{ color: evento.color }} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-[16px] font-semibold leading-6 text-[#1a1a2e] group-hover:text-[#2f6eb1]">
+                      <h2 className="text-[16px] leading-6 font-semibold text-[#1a1a2e] group-hover:text-[#2f6eb1]">
                         {evento.nombre}
                       </h2>
                       {evento.descripcion && (

@@ -11,9 +11,9 @@ export default async function HomePage() {
   const featured = await getFeaturedTramites(5)
 
   const citizenTabs = [
-    { label: "Trámites para la Ciudadanía",               destinatarioId: 1 },
-    { label: "Trámites para Organizaciones y empresas",   destinatarioId: 2 },
-    { label: "Trámites para Organismos",                  destinatarioId: 3 },
+    { label: "Trámites para la Ciudadanía", destinatarioId: 1 },
+    { label: "Trámites para Organizaciones y empresas", destinatarioId: 2 },
+    { label: "Trámites para Organismos", destinatarioId: 3 },
   ]
 
   const topicCards = [
@@ -26,7 +26,8 @@ export default async function HomePage() {
     },
     {
       title: "Denuncias",
-      description: "Denuncias ante irregularidades en servicios, en el sistema de salud o de abuso.",
+      description:
+        "Denuncias ante irregularidades en servicios, en el sistema de salud o de abuso.",
       search: "Antecedentes",
       icon: "denuncias" as const,
     },
@@ -50,7 +51,8 @@ export default async function HomePage() {
     },
     {
       title: "Vivienda",
-      description: "Gestiones sobre programas habitacionales, inscripciones y documentación de hogar.",
+      description:
+        "Gestiones sobre programas habitacionales, inscripciones y documentación de hogar.",
       search: "Vivienda",
       icon: "vivienda" as const,
     },
@@ -59,7 +61,7 @@ export default async function HomePage() {
   return (
     <PortalShell hero>
       <main id="main-content" className="relative z-10">
-        <section className="relative pb-20 pt-24 md:pb-28 md:pt-28">
+        <section className="relative pt-24 pb-20 md:pt-28 md:pb-28">
           <Image
             alt="Cataratas del Iguazú"
             src={siteAssets.heroCataratas}
@@ -74,18 +76,18 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="-mt-8 rounded-t-[32px] bg-white pb-16 pt-8 shadow-[0_-20px_60px_rgba(18,45,79,0.08)]">
+        <section className="-mt-8 rounded-t-[32px] bg-white pt-8 pb-16 shadow-[0_-20px_60px_rgba(18,45,79,0.08)]">
           <div className="mx-auto max-w-[1440px] px-4 md:px-10">
-                <div>
-          <h2 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900 pt-6">
-            Lo más buscado
-          </h2>
-          <div className="mt-5 flex flex-wrap justify-center gap-5">
-            {featured.map((tramite, index) => (
-              <FeaturedShortcutCard key={tramite.id} index={index} title={tramite.titulo} />
-            ))}
-          </div>
-        </div>
+            <div>
+              <h2 className="pt-6 text-[22px] font-bold tracking-[-0.03em] text-slate-900">
+                Lo más buscado
+              </h2>
+              <div className="mt-5 flex flex-wrap justify-center gap-5">
+                {featured.map((tramite, index) => (
+                  <FeaturedShortcutCard key={tramite.id} index={index} title={tramite.titulo} />
+                ))}
+              </div>
+            </div>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
               {citizenTabs.map((tab, index) => (
                 <Link
@@ -106,7 +108,7 @@ export default async function HomePage() {
               <SearchFilters />
             </div>
 
-            <div id="temas" className="scroll-mt-24 mt-5 flex flex-wrap gap-4">
+            <div id="temas" className="mt-5 flex scroll-mt-24 flex-wrap gap-4">
               {topicCards.map((card) => (
                 <div key={card.title} className="w-full sm:w-[calc(50%-8px)] xl:w-[328px]">
                   <HomeTopicCard {...card} />
@@ -115,7 +117,10 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-8 text-center">
-              <Link href="/tramites" className="text-sm font-medium text-[#2b5f99] hover:text-[#234e80]">
+              <Link
+                href="/tramites"
+                className="text-sm font-medium text-[#2b5f99] hover:text-[#234e80]"
+              >
                 Ver todos
               </Link>
             </div>

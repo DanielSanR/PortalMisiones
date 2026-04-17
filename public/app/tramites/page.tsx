@@ -60,11 +60,13 @@ export default async function TramitesPage({ searchParams }: TramitesPageProps) 
         <div className="h-[360px] md:h-[400px]" />
 
         {/* Content — below cataratas fold */}
-        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="mx-auto max-w-[1440px] scroll-mt-8 px-4 pb-16 md:px-10">
           {/* Breadcrumb */}
           <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-[#555]">
             <div className="flex items-center gap-1">
-              <Link href="/" className="hover:text-[#2f6eb1]">Inicio</Link>
+              <Link href="/" className="hover:text-[#2f6eb1]">
+                Inicio
+              </Link>
               <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
               <span>Trámites</span>
             </div>
@@ -77,7 +79,9 @@ export default async function TramitesPage({ searchParams }: TramitesPageProps) 
             <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-[#1a1a2e]">
               Catálogo de trámites
             </h1>
-            <Badge className="rounded-full bg-[#2f6eb1]/10 px-5 py-2 text-sm text-[#2f6eb1]">{results.length} resultados</Badge>
+            <Badge className="rounded-full bg-[#2f6eb1]/10 px-5 py-2 text-sm text-[#2f6eb1]">
+              {results.length} resultados
+            </Badge>
           </div>
 
           <div className="mt-6 rounded-[24px] bg-white p-5 shadow-[0_12px_40px_rgba(33,72,114,0.08)] md:p-6">
@@ -99,7 +103,9 @@ export default async function TramitesPage({ searchParams }: TramitesPageProps) 
             </div>
           ) : (
             <div className="mt-6 rounded-[22px] border border-[#dbe2ee] bg-white px-6 py-10 text-center shadow-[0_12px_40px_rgba(33,72,114,0.08)]">
-              <h2 className="text-2xl font-semibold text-slate-900">No encontramos trámites con esos filtros.</h2>
+              <h2 className="text-2xl font-semibold text-slate-900">
+                No encontramos trámites con esos filtros.
+              </h2>
               <p className="mt-2 text-sm text-slate-600">
                 Probá otra palabra clave o limpiá los filtros para ver el catálogo completo.
               </p>

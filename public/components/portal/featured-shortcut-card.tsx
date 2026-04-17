@@ -20,7 +20,7 @@ export function FeaturedShortcutCard({ title, index }: FeaturedShortcutCardProps
   const iconSrc = iconMap[index % iconMap.length]
 
   return (
-   <Link 
+    <Link
       href={`/tramites?search=${encodeURIComponent(title)}#detalle`}
       className="block shrink-0" // Evita que la tarjeta se encoja
     >
@@ -29,8 +29,8 @@ export function FeaturedShortcutCard({ title, index }: FeaturedShortcutCardProps
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e8f0fa]">
             <Image alt="" src={iconSrc} width={28} height={28} className="h-7 w-7" />
           </div>
-          
-          <span className="line-clamp-2 text-sm font-medium text-slate-700 leading-tight px-2">
+
+          <span className="line-clamp-2 px-2 text-sm leading-tight font-medium text-slate-700">
             {title}
           </span>
         </CardContent>

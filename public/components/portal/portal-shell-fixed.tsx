@@ -20,17 +20,17 @@ const navLinks: readonly NavLinkItem[] = [
 
 export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
   return (
-    <div className="min-h-screen bg-[#f7f8fb] text-slate-900">
+    <div className="bg-background min-h-screen text-slate-900">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#2f6eb1] focus:shadow-lg focus:outline focus:outline-2 focus:outline-[#2f6eb1]"
+        className="focus:text-brand focus:outline-brand sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg focus:outline focus:outline-2"
       >
         Saltar al contenido principal
       </a>
       <div className="relative overflow-hidden">
         {/* Background image band for non-hero pages */}
         {!hero && (
-          <div className="absolute inset-x-0 top-0 h-[480px] md:h-[520px] overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-[480px] overflow-hidden md:h-[520px]">
             <Image
               alt=""
               src={siteAssets.heroCataratas}
@@ -46,8 +46,10 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
           </div>
         )}
 
-        <header className={`${hero ? "absolute inset-x-0 top-0" : "relative"} z-20 px-4 py-7 md:px-10`}>
-          <div className="mx-auto max-w-[1440px] rounded-full bg-[#2f6eb1] px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
+        <header
+          className={`${hero ? "absolute inset-x-0 top-0" : "relative"} z-20 px-4 py-7 md:px-10`}
+        >
+          <div className="bg-brand mx-auto max-w-[1440px] rounded-full px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
             <div className="mx-auto flex max-w-[1130px] items-center justify-between">
               <Link href="/" className="flex items-center">
                 <div className="relative h-[34px] w-[208px]">
@@ -79,7 +81,7 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
                     >
                       {link.label}
                     </Link>
-                  )
+                  ),
                 )}
               </nav>
 
@@ -91,7 +93,7 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
         {children}
       </div>
 
-      <footer className="relative overflow-hidden bg-[#2f6eb1] font-[family-name:var(--font-montserrat)] text-white">
+      <footer className="bg-brand relative overflow-hidden font-[family-name:var(--font-montserrat)] text-white">
         {/* Decorative "M" — borde inferior derecho */}
         <Image
           alt=""
@@ -99,9 +101,9 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
           width={520}
           height={520}
           aria-hidden
-          className="pointer-events-none absolute -bottom-5 -right-0 h-[260px] w-auto opacity-100 md:h-[360px]"
+          className="pointer-events-none absolute -right-0 -bottom-5 h-[260px] w-auto opacity-100 md:h-[360px]"
         />
-        <div className="relative mx-auto max-w-[1440px] px-4 pb-5 pt-8 md:px-10">
+        <div className="relative mx-auto max-w-[1440px] px-4 pt-8 pb-5 md:px-10">
           <div className="mb-8 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="relative h-[51px] w-[212px]">
@@ -116,22 +118,58 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
 
               <div className="mt-5 flex items-center gap-[10px]">
                 <a href="#" aria-label="Instagram">
-                  <Image alt="Instagram" src={siteAssets.ui.socialInstagram} width={24} height={24} className="h-6 w-6" />
+                  <Image
+                    alt="Instagram"
+                    src={siteAssets.ui.socialInstagram}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                  />
                 </a>
                 <a href="#" aria-label="X (Twitter)">
-                  <Image alt="X (Twitter)" src={siteAssets.ui.socialX} width={24} height={24} className="h-6 w-6" />
+                  <Image
+                    alt="X (Twitter)"
+                    src={siteAssets.ui.socialX}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                  />
                 </a>
                 <a href="#" aria-label="YouTube">
-                  <Image alt="YouTube" src={siteAssets.ui.socialYoutube} width={24} height={24} className="h-6 w-6" />
+                  <Image
+                    alt="YouTube"
+                    src={siteAssets.ui.socialYoutube}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                  />
                 </a>
                 <a href="#" aria-label="Facebook">
-                  <Image alt="Facebook" src={siteAssets.ui.socialFacebook} width={24} height={24} className="h-6 w-6" />
+                  <Image
+                    alt="Facebook"
+                    src={siteAssets.ui.socialFacebook}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                  />
                 </a>
                 <a href="#" aria-label="WhatsApp">
-                  <Image alt="WhatsApp" src={siteAssets.ui.socialWhatsapp} width={24} height={24} className="h-6 w-6" />
+                  <Image
+                    alt="WhatsApp"
+                    src={siteAssets.ui.socialWhatsapp}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                  />
                 </a>
                 <a href="#" aria-label="LinkedIn">
-                  <Image alt="LinkedIn" src={siteAssets.ui.socialLinkedin} width={24} height={24} className="h-6 w-6" />
+                  <Image
+                    alt="LinkedIn"
+                    src={siteAssets.ui.socialLinkedin}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                  />
                 </a>
               </div>
             </div>
@@ -157,7 +195,7 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
                   src={siteAssets.logos.ciudadanoMisiones}
                   width={160}
                   height={40}
-                  className="w-[211px]  h-[55px] hrink-0"
+                  className="hrink-0 h-[55px] w-[211px]"
                 />
 
                 <div className="relative h-[42px] w-[174px] shrink-0">
@@ -173,17 +211,21 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 text-center text-md text-white/90 md:flex-row md:items-center md:justify-center md:gap-6">
+          <div className="text-md mt-4 flex flex-col gap-3 text-center text-white/90 md:flex-row md:items-center md:justify-center md:gap-6">
             <span>Gobierno de la Provincia de Misiones. © 2026</span>
-            <strong>Sugerencias</strong>
-            <strong>Soporte</strong>
+            <Link href="/contacto" className="font-semibold hover:text-white">
+              Sugerencias
+            </Link>
+            <Link href="/contacto" className="font-semibold hover:text-white">
+              Soporte
+            </Link>
             <strong>Digital Factory</strong>
           </div>
         </div>
 
         <button
           type="button"
-          className="fixed bottom-6 right-6 z-20 flex h-[55px] w-[55px] items-center justify-center rounded-full bg-white p-0 shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f6eb1]"
+          className="focus-visible:outline-brand fixed right-6 bottom-6 z-20 flex h-[55px] w-[55px] items-center justify-center rounded-full bg-white p-0 shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           aria-label="Abrir panel de accesibilidad"
           aria-haspopup="dialog"
         >

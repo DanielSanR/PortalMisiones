@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Route } from "next"
 import Link from "next/link"
 import { Building2, ChevronRight, Globe } from "lucide-react"
 import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
@@ -31,10 +31,12 @@ export default async function OrganismosPage() {
       <main id="main-content" className="relative z-10">
         <div className="h-[360px] md:h-[400px]" />
 
-        <section id="detalle" className="scroll-mt-8 mx-auto max-w-[1440px] px-4 pb-16 md:px-10">
+        <section id="detalle" className="mx-auto max-w-[1440px] scroll-mt-8 px-4 pb-16 md:px-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm text-[#555]">
-            <Link href="/" className="hover:text-[#2f6eb1]">Inicio</Link>
+            <Link href="/" className="hover:text-[#2f6eb1]">
+              Inicio
+            </Link>
             <ChevronRight className="mx-1 inline h-3 w-3 text-[#2f6eb1]" />
             <span className="text-[#555]">Organismos</span>
           </div>
@@ -62,7 +64,7 @@ export default async function OrganismosPage() {
               return (
                 <Link
                   key={organismo.id}
-                  href={`/organismos/${slug}` as never}
+                  href={`/organismos/${slug}` as Route}
                   className="group flex min-h-[140px] flex-col justify-between rounded-[20px] border border-[#dbe2ee] bg-white p-5 shadow-[0_8px_24px_rgba(33,72,114,0.06)] transition-shadow hover:shadow-[0_16px_36px_rgba(33,72,114,0.12)]"
                 >
                   <div className="flex items-start gap-3">
@@ -70,11 +72,11 @@ export default async function OrganismosPage() {
                       <Building2 className="h-5 w-5 text-[#2f6eb1]" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-[16px] font-semibold leading-6 text-[#1a1a2e] group-hover:text-[#2f6eb1]">
+                      <h2 className="text-[16px] leading-6 font-semibold text-[#1a1a2e] group-hover:text-[#2f6eb1]">
                         {organismo.nombre}
                       </h2>
                       {organismo.sigla && (
-                        <p className="mt-0.5 text-[12px] uppercase tracking-wide text-[#99a1af]">
+                        <p className="mt-0.5 text-[12px] tracking-wide text-[#99a1af] uppercase">
                           {organismo.sigla}
                         </p>
                       )}
