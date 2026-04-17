@@ -1,12 +1,7 @@
 import type { MetadataRoute } from "next"
 import { getCategorias, getSubcategorias } from "@/lib/data/categorias"
 import { getPublishedTramites } from "@/lib/data/tramites"
-import {
-  eventoSlug,
-  getEventosDeVida,
-  getOrganismos,
-  organismoSlug,
-} from "@/lib/data/taxonomias"
+import { eventoSlug, getEventosDeVida, getOrganismos, organismoSlug } from "@/lib/data/taxonomias"
 import { SITE_URL } from "@/lib/seo/site"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -24,10 +19,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ).flat()
 
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`,           lastModified: now, changeFrequency: "weekly",  priority: 1.0 },
-    { url: `${SITE_URL}/tramites`,   lastModified: now, changeFrequency: "daily",   priority: 0.9 },
-    { url: `${SITE_URL}/organismos`, lastModified: now, changeFrequency: "weekly",  priority: 0.7 },
-    { url: `${SITE_URL}/eventos`,    lastModified: now, changeFrequency: "weekly",  priority: 0.7 },
+    { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
+    { url: `${SITE_URL}/tramites`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/organismos`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${SITE_URL}/eventos`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${SITE_URL}/contacto`, lastModified: now, changeFrequency: "yearly", priority: 0.4 },
   ]
 
   const categoriaEntries: MetadataRoute.Sitemap = rootCategorias.map((c) => ({

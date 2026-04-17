@@ -20,11 +20,11 @@ export function MLoader({ fullscreen = true, label = "Cargando" }: MLoaderProps)
     >
       <div className="relative flex h-[180px] w-[180px] items-center justify-center">
         {/* Glow externo */}
-        <div className="absolute inset-0 rounded-full bg-[#2f6eb1]/25 blur-2xl animate-[m-loader-pulse_2.4s_ease-in-out_infinite]" />
+        <div className="absolute inset-0 animate-[m-loader-pulse_2.4s_ease-in-out_infinite] rounded-full bg-[#2f6eb1]/25 blur-2xl" />
 
         {/* Anillo cónico rotando */}
         <div
-          className="absolute inset-0 rounded-full animate-[m-loader-spin_1.6s_linear_infinite]"
+          className="absolute inset-0 animate-[m-loader-spin_1.6s_linear_infinite] rounded-full"
           style={{
             background:
               "conic-gradient(from 0deg, transparent 0deg, transparent 210deg, rgba(59,130,196,0.35) 280deg, #2f6eb1 360deg)",
@@ -38,7 +38,7 @@ export function MLoader({ fullscreen = true, label = "Cargando" }: MLoaderProps)
 
         {/* Círculo azul con M centrada */}
         <div
-          className="relative flex h-[130px] w-[130px] items-center justify-center overflow-hidden rounded-full shadow-[0_12px_36px_rgba(47,110,177,0.35)] animate-[m-loader-breath_2.4s_ease-in-out_infinite]"
+          className="relative flex h-[130px] w-[130px] animate-[m-loader-breath_2.4s_ease-in-out_infinite] items-center justify-center overflow-hidden rounded-full shadow-[0_12px_36px_rgba(47,110,177,0.35)]"
           style={{
             background: "linear-gradient(135deg, #3b82c4 0%, #2f6eb1 55%, #264f82 100%)",
           }}
@@ -57,7 +57,7 @@ export function MLoader({ fullscreen = true, label = "Cargando" }: MLoaderProps)
       <div className="flex items-center gap-1 text-sm font-semibold tracking-wide text-[#2f6eb1]">
         <span>{label}</span>
         <span className="relative inline-block w-5 text-left">
-          <span className="absolute left-0 top-0 overflow-hidden whitespace-nowrap animate-[m-loader-dots_1.4s_steps(4,end)_infinite]">
+          <span className="absolute top-0 left-0 animate-[m-loader-dots_1.4s_steps(4,end)_infinite] overflow-hidden whitespace-nowrap">
             ...
           </span>
         </span>

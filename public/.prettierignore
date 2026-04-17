@@ -1,0 +1,8 @@
+.next
+node_modules
+public/fonts
+public/assets
+*.md
+package-lock.json
+tsconfig.tsbuildinfo
+.env*

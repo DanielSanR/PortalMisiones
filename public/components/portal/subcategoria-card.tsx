@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { Route } from "next"
 import { type LucideIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -22,7 +23,7 @@ export function SubcategoriaCard({
   selected = false,
 }: SubcategoriaCardProps) {
   return (
-    <Link href={href as never} scroll={false} className="block">
+    <Link href={href as Route} scroll={false} className="block">
       <Card
         className={`h-[154px] w-full overflow-hidden rounded-[14px] transition-all hover:-translate-y-0.5 md:w-[328px] ${
           selected
@@ -41,7 +42,7 @@ export function SubcategoriaCard({
 
           <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="line-clamp-1 text-[16px] font-semibold leading-[22px] text-[#1a1a2e]">
+              <h3 className="line-clamp-1 text-[16px] leading-[22px] font-semibold text-[#1a1a2e]">
                 {title}
               </h3>
               {badge && (
@@ -50,7 +51,7 @@ export function SubcategoriaCard({
                 </span>
               )}
             </div>
-            <p className="line-clamp-3 text-[10px] font-light leading-[15px] text-black">
+            <p className="line-clamp-3 text-[10px] leading-[15px] font-light text-black">
               {description}
             </p>
             {chips.length > 0 && (

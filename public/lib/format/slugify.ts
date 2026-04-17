@@ -1,4 +1,4 @@
-import { normalize } from '@/lib/format/normalize';
+import { normalize } from "@/lib/format/normalize"
 
 /**
  * Convierte un nombre humano en un slug URL-safe:
@@ -11,6 +11,6 @@ import { normalize } from '@/lib/format/normalize';
  */
 export function slugify(value: string): string {
   return normalize(value)
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
 }

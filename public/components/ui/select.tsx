@@ -13,17 +13,17 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(
         <select
           ref={ref}
           className={cn(
-            "h-11 w-full appearance-none rounded-xl border border-[#dbe2ee] bg-white px-4 pr-10 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8ed2] focus-visible:ring-offset-2",
-            className
+            "h-11 w-full appearance-none rounded-xl border border-[#dbe2ee] bg-white px-4 pr-10 text-sm text-slate-700 focus-visible:ring-2 focus-visible:ring-[#4f8ed2] focus-visible:ring-offset-2 focus-visible:outline-none",
+            className,
           )}
           {...props}
         >
           {children}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
       </div>
     )
-  }
+  },
 )
 
 NativeSelect.displayName = "NativeSelect"

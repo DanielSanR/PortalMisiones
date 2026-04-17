@@ -4,8 +4,8 @@ import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shel
 export default function NotFound() {
   return (
     <PortalShell>
-      <main className="relative z-10">
-        <section className="mx-auto max-w-[1440px] px-4 pb-16 pt-6 md:px-10">
+      <main id="main-content" className="relative z-10">
+        <section className="mx-auto max-w-[1440px] px-4 pt-6 pb-16 md:px-10">
           <div className="rounded-[24px] bg-white px-6 py-16 text-center shadow-[0_12px_40px_rgba(33,72,114,0.08)]">
             <p className="text-sm font-medium text-[#4f8ed2]">Trámite no encontrado</p>
             <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.02em] text-slate-900">

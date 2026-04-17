@@ -5,7 +5,10 @@ import {
   getModalidades,
   getOrganismos,
 } from "@/lib/data/taxonomias"
-import { SearchFiltersClient, type SearchFiltersClientProps } from "@/components/portal/search-filters-client"
+import {
+  SearchFiltersClient,
+  type SearchFiltersClientProps,
+} from "@/components/portal/search-filters-client"
 
 type SearchFiltersProps = Omit<SearchFiltersClientProps, "catalogs">
 

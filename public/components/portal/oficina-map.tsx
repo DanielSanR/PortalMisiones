@@ -30,7 +30,16 @@ export function OficinaMap({ latitud, longitud, nombre, delta = 0.006 }: Oficina
       />
       <div className="flex items-center justify-between gap-3 px-4 py-2 text-[12px] text-[#555]">
         <span className="truncate">
-          © <a href="https://www.openstreetmap.org/copyright" className="hover:text-[#2f6eb1]" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors
+          ©{" "}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            className="hover:text-[#2f6eb1]"
+            target="_blank"
+            rel="noreferrer"
+          >
+            OpenStreetMap
+          </a>{" "}
+          contributors
         </span>
         <a
           href={externalUrl}

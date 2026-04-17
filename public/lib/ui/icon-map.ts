@@ -17,19 +17,19 @@ import {
 } from "lucide-react"
 
 const lucideIconMap: Record<string, LucideIcon> = {
-  card_membership:   CreditCard,
-  gavel:             Scale,
-  receipt_long:      Receipt,
-  approval:          CheckSquare,
-  directions_car:    Car,
-  school:            BookOpen,
-  payments:          Banknote,
-  security:          ShieldCheck,
-  storefront:        Building2,
-  autorenew:         RefreshCw,
+  card_membership: CreditCard,
+  gavel: Scale,
+  receipt_long: Receipt,
+  approval: CheckSquare,
+  directions_car: Car,
+  school: BookOpen,
+  payments: Banknote,
+  security: ShieldCheck,
+  storefront: Building2,
+  autorenew: RefreshCw,
   health_and_safety: HeartPulse,
-  directions_bus:    Bus,
-  badge:             IdCard,
+  directions_bus: Bus,
+  badge: IdCard,
 }
 
 export function getTramiteIcon(icono: string | null | undefined): LucideIcon {
