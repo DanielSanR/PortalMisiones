@@ -103,6 +103,10 @@ export interface TramiteContenidoLocalidad {
   horarios: string | null;
   notas: string | null;
   activo: boolean;
+  direccion: string | null;
+  telefono: string | null;
+  latitud: number | null;
+  longitud: number | null;
 }
 
 export interface EventoDeVida {

@@ -1,29 +1,50 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
-import { SearchFilters } from "@/components/search-filters"
-import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
-import { TramiteCard } from "@/components/tramite-card"
-import { searchPublicTramites } from "@/lib/public-data"
+import { SearchFilters } from "@/components/portal/search-filters"
+import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
+import { TramiteCard } from "@/components/portal/tramite-card"
+import { searchPublicTramites } from "@/lib/data/tramites"
 import { Badge } from "@/components/ui/badge"
 
+interface SearchParamsShape {
+  search?: string
+  organismoId?: string
+  modalidadId?: string
+  destinatarioId?: string
+  localidadId?: string
+  etiquetaId?: string
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParamsShape>
+}): Promise<Metadata> {
+  const sp = await searchParams
+  const query = sp.search?.trim()
+  const title = query ? `Resultados para "${query}"` : "Catálogo de trámites"
+  const description = query
+    ? `Trámites provinciales que coinciden con "${query}".`
+    : "Buscá y filtrá todos los trámites provinciales de Misiones por organismo, modalidad y etiqueta."
+
+  return {
+    title,
+    description,
+    alternates: { canonical: "/tramites" },
+    openGraph: { title, description, url: "/tramites" },
+    robots: query ? { index: false, follow: true } : undefined,
+  }
+}
+
 interface TramitesPageProps {
-  searchParams: Promise<{
-    search?: string
-    organismoId?: string
-    modalidadId?: string
-    destinatarioId?: string
-    localidadId?: string
-    etiquetaId?: string
-  }>
+  searchParams: Promise<SearchParamsShape>
 }
 
 export default async function TramitesPage({ searchParams }: TramitesPageProps) {
-  // TODO: remove — test-only delay to preview MLoader
-  await new Promise((r) => setTimeout(r, 1500))
-
   const params = await searchParams
 
-  const results = searchPublicTramites({
+  const results = await searchPublicTramites({
     search: params.search,
     organismoId: params.organismoId,
     modalidadId: params.modalidadId ? Number(params.modalidadId) : undefined,
@@ -34,7 +55,7 @@ export default async function TramitesPage({ searchParams }: TramitesPageProps) 
 
   return (
     <PortalShell>
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         {/* Spacer — cataratas is pure background for this page, same as detail */}
         <div className="h-[360px] md:h-[400px]" />
 

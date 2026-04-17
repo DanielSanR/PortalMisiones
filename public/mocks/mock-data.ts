@@ -1,7 +1,4 @@
 import { Tramite, Organismo, Modalidad, Etiqueta, EventoDeVida, Localidad, Categoria, Destinatario, TramiteContenidoLocalidad, PaginatedResponse } from '../models/tramite.model';
-import { Usuario } from '../models/usuario.model';
-import { UserRole } from '../enums/user-role.enum';
-import { DashboardMetrics, TopTramite, TopBusqueda, AuditoriaTramite, TramitesPorOrganismo, FeedbackTramite, FeedbackStats } from '../models/dashboard.model';
 
 // ── Localidades ─────────────────────────────────────────────
 export const MOCK_LOCALIDADES: Localidad[] = [
@@ -103,13 +100,17 @@ export const MOCK_DESTINATARIOS: Destinatario[] = [
 // ── Contenido por localidad (overrides) ────────────────────
 export const MOCK_CONTENIDO_LOCALIDAD: TramiteContenidoLocalidad[] = [
   // Credencial IPS — Posadas
-  { id: 1, tramiteId: 'tram-1', localidadId: 1, localidadNombre: 'Posadas', costos: 'Gratuito para afiliados activos', contacto: 'Av. Roque Pérez N°2398, Posadas\nTel: (0376) 444-7800\nHorario: Lunes a Viernes 7:00 a 13:00', sitioWeb: 'https://ips.misiones.gob.ar/posadas', urlTramite: 'https://ips.misiones.gob.ar/posadas/credencial', horarios: 'Lunes a Viernes 7:00 a 13:00', notas: null, activo: true },
+  { id: 1, tramiteId: 'tram-1', localidadId: 1, localidadNombre: 'Posadas', costos: 'Gratuito para afiliados activos', contacto: 'Av. Roque Pérez N°2398, Posadas\nTel: (0376) 444-7800\nHorario: Lunes a Viernes 7:00 a 13:00', sitioWeb: 'https://ips.misiones.gob.ar/posadas', urlTramite: 'https://ips.misiones.gob.ar/posadas/credencial', horarios: 'Lunes a Viernes 7:00 a 13:00', notas: null, activo: true, direccion: 'Av. Roque Pérez N°2398, Posadas', telefono: '(0376) 444-7800', latitud: -27.3671, longitud: -55.8961 },
   // Credencial IPS — Oberá
-  { id: 2, tramiteId: 'tram-1', localidadId: 4, localidadNombre: 'Oberá', costos: 'Gratuito para afiliados activos', contacto: 'Calle Italia N°520, Oberá\nTel: (03755) 42-1100\nHorario: Lunes a Viernes 7:00 a 12:00', sitioWeb: 'https://ips.misiones.gob.ar/obera', urlTramite: 'https://ips.misiones.gob.ar/obera/credencial', horarios: 'Lunes a Viernes 7:00 a 12:00', notas: null, activo: true },
+  { id: 2, tramiteId: 'tram-1', localidadId: 4, localidadNombre: 'Oberá', costos: 'Gratuito para afiliados activos', contacto: 'Calle Italia N°520, Oberá\nTel: (03755) 42-1100\nHorario: Lunes a Viernes 7:00 a 12:00', sitioWeb: 'https://ips.misiones.gob.ar/obera', urlTramite: 'https://ips.misiones.gob.ar/obera/credencial', horarios: 'Lunes a Viernes 7:00 a 12:00', notas: null, activo: true, direccion: 'Calle Italia N°520, Oberá', telefono: '(03755) 42-1100', latitud: -27.4875, longitud: -55.1216 },
   // Credencial IPS — Eldorado
-  { id: 3, tramiteId: 'tram-1', localidadId: 6, localidadNombre: 'Eldorado', costos: 'Gratuito para afiliados activos', contacto: 'Av. San Martín N°1850, Eldorado\nTel: (03751) 42-2000\nHorario: Lunes a Viernes 7:30 a 12:30', sitioWeb: null, urlTramite: null, horarios: 'Lunes a Viernes 7:30 a 12:30', notas: 'Atención con turno previo únicamente', activo: true },
+  { id: 3, tramiteId: 'tram-1', localidadId: 6, localidadNombre: 'Eldorado', costos: 'Gratuito para afiliados activos', contacto: 'Av. San Martín N°1850, Eldorado\nTel: (03751) 42-2000\nHorario: Lunes a Viernes 7:30 a 12:30', sitioWeb: null, urlTramite: null, horarios: 'Lunes a Viernes 7:30 a 12:30', notas: 'Atención con turno previo únicamente', activo: true, direccion: 'Av. San Martín N°1850, Eldorado', telefono: '(03751) 42-2000', latitud: -26.4081, longitud: -54.6447 },
   // Turno Registro Civil — Posadas
-  { id: 4, tramiteId: 'tram-3', localidadId: 1, localidadNombre: 'Posadas', costos: '$5.000 (partida) / $2.500 (turno DNI)', contacto: 'Av. Corrientes N°2231, Posadas\nTel: (0376) 444-3600', sitioWeb: null, urlTramite: 'https://turnos.registro.misiones.gob.ar/posadas', horarios: 'Lunes a Viernes 7:30 a 12:30', notas: null, activo: true },
+  { id: 4, tramiteId: 'tram-3', localidadId: 1, localidadNombre: 'Posadas', costos: '$5.000 (partida) / $2.500 (turno DNI)', contacto: 'Av. Corrientes N°2231, Posadas\nTel: (0376) 444-3600', sitioWeb: null, urlTramite: 'https://turnos.registro.misiones.gob.ar/posadas', horarios: 'Lunes a Viernes 7:30 a 12:30', notas: null, activo: true, direccion: 'Av. Corrientes N°2231, Posadas', telefono: '(0376) 444-3600', latitud: -27.3616, longitud: -55.9001 },
+  // Primera licencia de conducir — Posadas
+  { id: 5, tramiteId: 'tram-11', localidadId: 1, localidadNombre: 'Posadas', costos: 'Tasa municipal: $12.000', contacto: 'Av. Rademacher N°1800, Posadas\nTel: (0376) 444-9000', sitioWeb: null, urlTramite: 'https://transporte.misiones.gob.ar/turnos', horarios: 'Lunes a Viernes 7:30 a 12:30', notas: 'Reservar turno con 48h de anticipación', activo: true, direccion: 'Av. Rademacher N°1800, Posadas', telefono: '(0376) 444-9000', latitud: -27.3836, longitud: -55.9122 },
+  // Primera licencia de conducir — Puerto Iguazú
+  { id: 6, tramiteId: 'tram-11', localidadId: 8, localidadNombre: 'Puerto Iguazú', costos: 'Tasa municipal: $10.000', contacto: 'Av. Victoria Aguirre N°396, Puerto Iguazú\nTel: (03757) 42-0150', sitioWeb: null, urlTramite: null, horarios: 'Lunes a Viernes 8:00 a 12:00', notas: null, activo: true, direccion: 'Av. Victoria Aguirre N°396, Puerto Iguazú', telefono: '(03757) 42-0150', latitud: -25.5987, longitud: -54.5741 },
 ];
 
 // ── Trámites ────────────────────────────────────────────────
@@ -262,147 +263,10 @@ export const MOCK_TRAMITES: Tramite[] = [
   },
 ];
 
-// ── Usuarios ────────────────────────────────────────────────
-export const MOCK_USUARIOS: Usuario[] = [
-  { id: 'usr-1', email: 'admin@misiones.gob.ar', nombre: 'Carlos', apellido: 'Fernández', rol: UserRole.SUPERADMIN, organismoId: null, organismoNombre: '-', localidadId: null, localidadNombre: undefined, activo: true, createdAt: '2026-01-01T00:00:00Z' },
-  { id: 'usr-2', email: 'ips.admin@misiones.gob.ar', nombre: 'María', apellido: 'González', rol: UserRole.ADMIN_ORGANISMO, organismoId: 'org-1', organismoNombre: 'IPS', localidadId: null, localidadNombre: undefined, activo: true, createdAt: '2026-01-15T00:00:00Z' },
-  { id: 'usr-3', email: 'registro.admin@misiones.gob.ar', nombre: 'Juan', apellido: 'Pérez', rol: UserRole.ADMIN_ORGANISMO, organismoId: 'org-2', organismoNombre: 'Registro Provincial', localidadId: null, localidadNombre: undefined, activo: true, createdAt: '2026-01-20T00:00:00Z' },
-  { id: 'usr-4', email: 'editor.rentas@misiones.gob.ar', nombre: 'Laura', apellido: 'Martínez', rol: UserRole.EDITOR, organismoId: 'org-3', organismoNombre: 'DGR', localidadId: 1, localidadNombre: 'Posadas', activo: true, createdAt: '2026-02-01T00:00:00Z' },
-  { id: 'usr-5', email: 'editor.edu@misiones.gob.ar', nombre: 'Roberto', apellido: 'Silva', rol: UserRole.EDITOR, organismoId: 'org-4', organismoNombre: 'Min. Educación', localidadId: null, localidadNombre: undefined, activo: false, createdAt: '2026-02-15T00:00:00Z' },
-];
 
-// ── Dashboard Metrics ───────────────────────────────────────
-export const MOCK_DASHBOARD_METRICS: DashboardMetrics = {
-  totalTramites: 10,
-  tramitesPublicados: 6,
-  tramitesBorrador: 2,
-  tramitesRevision: 1,
-  tramitesDespublicados: 1,
-  totalOrganismos: 7,
-  busquedasHoy: 342,
-  busquedasSinResultado: 28,
-  satisfaccionPromedio: 4.2,
-};
 
-export const MOCK_TRAMITES_POR_ORGANISMO: TramitesPorOrganismo[] = [
-  { organismo: 'Min. Educación', sigla: 'ME', total: 2 },
-  { organismo: 'Registro Provincial', sigla: 'RPP', total: 2 },
-  { organismo: 'Dir. Gral. de Rentas', sigla: 'DGR', total: 2 },
-  { organismo: 'Inst. Prov. de Salud', sigla: 'IPS', total: 1 },
-  { organismo: 'Min. Salud Pública', sigla: 'MSP', total: 1 },
-  { organismo: 'IPRODHA', sigla: 'IPRODHA', total: 1 },
-  { organismo: 'Min. Trabajo y Empleo', sigla: 'MTE', total: 1 },
-];
 
-export const MOCK_TOP_TRAMITES: TopTramite[] = [
-  { tramiteId: 'tram-2', titulo: 'Inscribirse en el BEEG', consultas: 1250 },
-  { tramiteId: 'tram-1', titulo: 'Obtener credencial IPS', consultas: 890 },
-  { tramiteId: 'tram-3', titulo: 'Solicitar turno Registro Civil', consultas: 756 },
-  { tramiteId: 'tram-4', titulo: 'Consultar deuda IIBB', consultas: 523 },
-  { tramiteId: 'tram-7', titulo: 'Solicitar vivienda IPRODHA', consultas: 412 },
-  { tramiteId: 'tram-10', titulo: 'Solicitar beca estudiantil', consultas: 387 },
-];
 
-export const MOCK_TOP_BUSQUEDAS: TopBusqueda[] = [
-  { termino: 'boleto estudiantil', cantidad: 456, sinResultados: false },
-  { termino: 'credencial ips', cantidad: 312, sinResultados: false },
-  { termino: 'turno dni', cantidad: 289, sinResultados: false },
-  { termino: 'ingresos brutos', cantidad: 234, sinResultados: false },
-  { termino: 'becas universitarias', cantidad: 198, sinResultados: false },
-  { termino: 'certificado antecedentes', cantidad: 167, sinResultados: true },
-  { termino: 'licencia de conducir', cantidad: 145, sinResultados: true },
-  { termino: 'subsidio gas', cantidad: 89, sinResultados: true },
-];
-
-export const MOCK_AUDITORIA: AuditoriaTramite[] = [
-  {
-    id: 1, tramiteId: 'tram-6', usuarioId: 'usr-4', accion: 'crear',
-    datosAnteriores: null,
-    datosNuevos: { titulo: 'Registrar emprendimiento en el programa PyME Misiones', estado: 'borrador', modalidadId: 1, organismoId: 'org-3' },
-    fechaAccion: '2026-03-26T10:00:00Z', usuarioNombre: 'Laura Martínez', tramiteTitulo: 'Registrar emprendimiento PyME',
-  },
-  {
-    id: 2, tramiteId: 'tram-5', usuarioId: 'usr-3', accion: 'editar',
-    datosAnteriores: { resumen: 'Certificado de residencia para trámites varios.' },
-    datosNuevos: { resumen: 'Tramitación del certificado de residencia provincial para presentaciones ante organismos.' },
-    fechaAccion: '2026-03-25T08:00:00Z', usuarioNombre: 'Juan Pérez', tramiteTitulo: 'Obtener certificado de residencia',
-  },
-  {
-    id: 3, tramiteId: 'tram-5', usuarioId: 'usr-3', accion: 'enviar_revision',
-    datosAnteriores: { estado: 'borrador' },
-    datosNuevos: { estado: 'revision' },
-    fechaAccion: '2026-03-25T09:15:00Z', usuarioNombre: 'Juan Pérez', tramiteTitulo: 'Obtener certificado de residencia',
-  },
-  {
-    id: 4, tramiteId: 'tram-1', usuarioId: 'usr-2', accion: 'publicar',
-    datosAnteriores: { estado: 'revision' },
-    datosNuevos: { estado: 'publicado' },
-    fechaAccion: '2026-03-20T14:30:00Z', usuarioNombre: 'María González', tramiteTitulo: 'Obtener credencial IPS',
-  },
-  {
-    id: 5, tramiteId: 'tram-2', usuarioId: 'usr-1', accion: 'editar',
-    datosAnteriores: { titulo: 'Inscribirse en el BEEG', destacado: false },
-    datosNuevos: { titulo: 'Inscribirse en el Boleto Estudiantil Gratuito (BEEG)', destacado: true },
-    fechaAccion: '2026-03-18T09:15:00Z', usuarioNombre: 'Carlos Fernández', tramiteTitulo: 'Inscribirse en el BEEG',
-  },
-  {
-    id: 6, tramiteId: 'tram-2', usuarioId: 'usr-1', accion: 'publicar',
-    datosAnteriores: { estado: 'revision' },
-    datosNuevos: { estado: 'publicado' },
-    fechaAccion: '2026-03-18T09:30:00Z', usuarioNombre: 'Carlos Fernández', tramiteTitulo: 'Inscribirse en el BEEG',
-  },
-  {
-    id: 7, tramiteId: 'tram-9', usuarioId: 'usr-1', accion: 'despublicar',
-    datosAnteriores: { estado: 'publicado' },
-    datosNuevos: { estado: 'despublicado' },
-    fechaAccion: '2026-02-28T12:00:00Z', usuarioNombre: 'Carlos Fernández', tramiteTitulo: 'Obtener libreta sanitaria',
-  },
-  {
-    id: 8, tramiteId: 'tram-3', usuarioId: 'usr-3', accion: 'editar',
-    datosAnteriores: { urlOficial: 'https://registro.misiones.gob.ar/turnos' },
-    datosNuevos: { urlOficial: 'https://turnos.registro.misiones.gob.ar' },
-    fechaAccion: '2026-03-15T16:45:00Z', usuarioNombre: 'Juan Pérez', tramiteTitulo: 'Solicitar turno en Registro Civil',
-  },
-  {
-    id: 9, tramiteId: 'tram-8', usuarioId: 'usr-1', accion: 'crear',
-    datosAnteriores: null,
-    datosNuevos: { titulo: 'Inscribirse en capacitaciones laborales', estado: 'borrador', modalidadId: 3, organismoId: 'org-7' },
-    fechaAccion: '2026-03-22T11:00:00Z', usuarioNombre: 'Carlos Fernández', tramiteTitulo: 'Inscribirse en capacitaciones laborales',
-  },
-  {
-    id: 10, tramiteId: 'tram-4', usuarioId: 'usr-4', accion: 'editar',
-    datosAnteriores: { resumen: 'Consulta de deuda IIBB online.' },
-    datosNuevos: { resumen: 'Verificar el estado de cuenta y deuda del impuesto sobre Ingresos Brutos.' },
-    fechaAccion: '2026-03-10T11:20:00Z', usuarioNombre: 'Laura Martínez', tramiteTitulo: 'Consultar deuda de Ingresos Brutos',
-  },
-];
-
-// ── Feedback Ciudadano ───────────────────────────────────────
-export const MOCK_FEEDBACK: FeedbackTramite[] = [
-  { id: 1,  tramiteId: 'tram-2', tramiteTitulo: 'Inscribirse en el BEEG',               organismoNombre: 'Min. Educación',    esUtil: true,  comentario: 'Muy fácil de hacer, se resolvió en el día.',                          fechaFeedback: '2026-04-10T14:32:00Z' },
-  { id: 2,  tramiteId: 'tram-2', tramiteTitulo: 'Inscribirse en el BEEG',               organismoNombre: 'Min. Educación',    esUtil: true,  comentario: null,                                                                   fechaFeedback: '2026-04-09T10:15:00Z' },
-  { id: 3,  tramiteId: 'tram-2', tramiteTitulo: 'Inscribirse en el BEEG',               organismoNombre: 'Min. Educación',    esUtil: false, comentario: 'La página tardaba en cargar y no pude completar la solicitud.',         fechaFeedback: '2026-04-08T16:48:00Z' },
-  { id: 4,  tramiteId: 'tram-2', tramiteTitulo: 'Inscribirse en el BEEG',               organismoNombre: 'Min. Educación',    esUtil: true,  comentario: null,                                                                   fechaFeedback: '2026-04-07T09:20:00Z' },
-  { id: 5,  tramiteId: 'tram-1', tramiteTitulo: 'Obtener credencial IPS',               organismoNombre: 'IPS',               esUtil: true,  comentario: 'Encontré toda la información que necesitaba.',                         fechaFeedback: '2026-04-10T11:05:00Z' },
-  { id: 6,  tramiteId: 'tram-1', tramiteTitulo: 'Obtener credencial IPS',               organismoNombre: 'IPS',               esUtil: false, comentario: 'Falta indicar el horario de atención de la delegación.',               fechaFeedback: '2026-04-06T13:30:00Z' },
-  { id: 7,  tramiteId: 'tram-1', tramiteTitulo: 'Obtener credencial IPS',               organismoNombre: 'IPS',               esUtil: true,  comentario: null,                                                                   fechaFeedback: '2026-04-05T08:45:00Z' },
-  { id: 8,  tramiteId: 'tram-3', tramiteTitulo: 'Solicitar turno en Registro Civil',    organismoNombre: 'Registro Provincial', esUtil: true, comentario: 'Excelente, pude sacar turno en menos de 5 minutos.',                  fechaFeedback: '2026-04-09T17:00:00Z' },
-  { id: 9,  tramiteId: 'tram-3', tramiteTitulo: 'Solicitar turno en Registro Civil',    organismoNombre: 'Registro Provincial', esUtil: false, comentario: 'El sistema no me dejó elegir la sede que quería.',                   fechaFeedback: '2026-04-04T10:10:00Z' },
-  { id: 10, tramiteId: 'tram-4', tramiteTitulo: 'Consultar deuda de Ingresos Brutos',   organismoNombre: 'DGR',               esUtil: true,  comentario: null,                                                                   fechaFeedback: '2026-04-08T12:00:00Z' },
-  { id: 11, tramiteId: 'tram-4', tramiteTitulo: 'Consultar deuda de Ingresos Brutos',   organismoNombre: 'DGR',               esUtil: false, comentario: 'No entendí bien cómo calcular los intereses de mora.',                 fechaFeedback: '2026-04-03T15:22:00Z' },
-  { id: 12, tramiteId: 'tram-7', tramiteTitulo: 'Solicitar plan de vivienda IPRODHA',   organismoNombre: 'IPRODHA',           esUtil: true,  comentario: 'Muy completo, explica bien los requisitos.',                           fechaFeedback: '2026-04-07T14:55:00Z' },
-  { id: 13, tramiteId: 'tram-10', tramiteTitulo: 'Solicitar beca estudiantil provincial', organismoNombre: 'Min. Educación',  esUtil: true,  comentario: null,                                                                   fechaFeedback: '2026-04-06T09:30:00Z' },
-  { id: 14, tramiteId: 'tram-10', tramiteTitulo: 'Solicitar beca estudiantil provincial', organismoNombre: 'Min. Educación',  esUtil: false, comentario: 'La fecha límite no estaba clara en la ficha del trámite.',            fechaFeedback: '2026-04-02T11:40:00Z' },
-  { id: 15, tramiteId: 'tram-2', tramiteTitulo: 'Inscribirse en el BEEG',               organismoNombre: 'Min. Educación',    esUtil: true,  comentario: 'Sería útil que indiquen cuántos días tarda la respuesta.',            fechaFeedback: '2026-04-01T16:10:00Z' },
-];
-
-export const MOCK_FEEDBACK_STATS: FeedbackStats = {
-  total: 15,
-  totalUtil: 10,
-  totalNoUtil: 5,
-  totalConComentario: 10,
-  porcentajeUtil: 67,
-};
 
 // ── Eventos de Vida ─────────────────────────────────────────
 export const MOCK_EVENTOS_DE_VIDA: EventoDeVida[] = [

@@ -1,14 +1,14 @@
 import Link from "next/link"
 import Image from "next/image"
-import { FeaturedShortcutCard } from "@/components/featured-shortcut-card"
-import { HomeTopicCard } from "@/components/home-topic-card"
-import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
-import { SearchFilters } from "@/components/search-filters"
-import { getFeaturedTramites } from "@/lib/public-data"
+import { FeaturedShortcutCard } from "@/components/portal/featured-shortcut-card"
+import { HomeTopicCard } from "@/components/portal/home-topic-card"
+import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
+import { SearchFilters } from "@/components/portal/search-filters"
+import { getFeaturedTramites } from "@/lib/data/tramites"
 import { siteAssets } from "@/lib/site-assets"
 
-export default function HomePage() {
-  const featured = getFeaturedTramites(5)
+export default async function HomePage() {
+  const featured = await getFeaturedTramites(5)
 
   const citizenTabs = [
     { label: "Trámites para la Ciudadanía",               destinatarioId: 1 },
@@ -58,7 +58,7 @@ export default function HomePage() {
 
   return (
     <PortalShell hero>
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         <section className="relative pb-20 pt-24 md:pb-28 md:pt-28">
           <Image
             alt="Cataratas del Iguazú"
@@ -106,7 +106,7 @@ export default function HomePage() {
               <SearchFilters />
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-4">
+            <div id="temas" className="scroll-mt-24 mt-5 flex flex-wrap gap-4">
               {topicCards.map((card) => (
                 <div key={card.title} className="w-full sm:w-[calc(50%-8px)] xl:w-[328px]">
                   <HomeTopicCard {...card} />

@@ -1,31 +1,134 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Building2, ChevronDown, ChevronRight, ExternalLink, FileText, Globe, MapPin, Tag, Users } from "lucide-react"
+import { ArrowLeft, Building2, Clock, ChevronDown, ChevronRight, ExternalLink, FileText, Globe, MapPin, Phone, Tag, Users } from "lucide-react"
 import { notFound } from "next/navigation"
-import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
+import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
+import { LocalidadSwitcher } from "@/components/portal/localidad-switcher"
+import { OficinaMap } from "@/components/portal/oficina-map"
 import { siteAssets } from "@/lib/site-assets"
-import { getContenidoLocalidad, getTramiteBySlug } from "@/lib/public-data"
+import { getContenidoLocalidad, getTramiteBySlug } from "@/lib/data/tramites"
+import { organismoSlug } from "@/lib/data/taxonomias"
+import { SITE_NAME, SITE_URL } from "@/lib/seo/site"
 
 interface TramiteDetailPageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ localidad?: string }>
 }
 
-export default async function TramiteDetailPage({ params }: TramiteDetailPageProps) {
-  // TODO: remove — test-only delay to preview MLoader
-  await new Promise((r) => setTimeout(r, 1500))
-
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
   const { slug } = await params
-  const tramite = getTramiteBySlug(slug)
+  const tramite = await getTramiteBySlug(slug)
+  if (!tramite) return { title: "Trámite no encontrado", robots: { index: false, follow: false } }
+
+  const description =
+    tramite.resumen?.trim() ||
+    tramite.descripcionLarga?.slice(0, 160).trim() ||
+    `Información oficial sobre ${tramite.titulo}.`
+  const url = `/tramites/${tramite.slug}`
+
+  return {
+    title: tramite.titulo,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: tramite.titulo, description, url, type: "article" },
+    twitter: { card: "summary", title: tramite.titulo, description },
+  }
+}
+
+export default async function TramiteDetailPage({ params, searchParams }: TramiteDetailPageProps) {
+  const { slug } = await params
+  const sp = await searchParams
+  const tramite = await getTramiteBySlug(slug)
 
   if (!tramite) notFound()
 
   const localidades = tramite.localidades ?? []
-  const firstLocalidad = localidades.length > 0 ? localidades[0] : null
-  const contenido = firstLocalidad
-    ? getContenidoLocalidad(tramite.id, firstLocalidad.id)
+  const requestedId = sp.localidad ? Number(sp.localidad) : undefined
+  const selectedLocalidad =
+    (requestedId != null ? localidades.find((l) => l.id === requestedId) : undefined) ??
+    localidades[0] ??
+    null
+  const contenido = selectedLocalidad
+    ? await getContenidoLocalidad(tramite.id, selectedLocalidad.id)
     : undefined
 
-  const accordionSections = [
+  const hasStructuredSede = Boolean(
+    contenido &&
+      (contenido.direccion ||
+        contenido.telefono ||
+        contenido.horarios ||
+        (contenido.latitud != null && contenido.longitud != null)),
+  )
+
+  const contactoNode = hasStructuredSede ? (
+    <div className="flex flex-col gap-4">
+      <p className="text-[13px] text-[#555]">
+        Sede de atención{selectedLocalidad ? ` en ${selectedLocalidad.nombre}` : ""}.
+      </p>
+      <div className="grid w-full gap-4 md:grid-cols-[1.1fr_1fr]">
+        <ul className="flex min-w-0 flex-col gap-4 text-[14px] text-[#1e2939]">
+          {contenido?.direccion && (
+            <li className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6eb1]" />
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-[#99a1af]">Dirección</p>
+                <p className="leading-6">{contenido.direccion}</p>
+              </div>
+            </li>
+          )}
+          {contenido?.telefono && (
+            <li className="flex items-start gap-3">
+              <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6eb1]" />
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-[#99a1af]">Teléfono</p>
+                <a
+                  href={`tel:${contenido.telefono.replace(/[^+\d]/g, "")}`}
+                  className="leading-6 hover:text-[#2f6eb1]"
+                >
+                  {contenido.telefono}
+                </a>
+              </div>
+            </li>
+          )}
+          {contenido?.horarios && (
+            <li className="flex items-start gap-3">
+              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6eb1]" />
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-[#99a1af]">Horarios</p>
+                <p className="whitespace-pre-line leading-6">{contenido.horarios}</p>
+              </div>
+            </li>
+          )}
+          {contenido?.notas && (
+            <li className="rounded-[12px] bg-[#eef5ff] px-3 py-2 text-[13px] leading-5 text-[#264f82]">
+              {contenido.notas}
+            </li>
+          )}
+        </ul>
+        {contenido?.latitud != null && contenido?.longitud != null && (
+          <OficinaMap
+            latitud={contenido.latitud}
+            longitud={contenido.longitud}
+            nombre={`${tramite.organismo?.sigla ?? tramite.organismo?.nombre ?? "Sede"} — ${selectedLocalidad?.nombre ?? ""}`}
+          />
+        )}
+      </div>
+    </div>
+  ) : null
+
+  type AccordionSection = {
+    title: string
+    content: string | null
+    isUrl: boolean
+    node?: React.ReactNode
+  }
+
+  const accordionSections: AccordionSection[] = [
     {
       title: "Guía de Requisitos Generales",
       content: tramite.requisitos ?? tramite.descripcionLarga ?? null,
@@ -45,6 +148,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
       title: "Contacto",
       content: contenido?.contacto ?? tramite.contacto ?? null,
       isUrl: false,
+      node: contactoNode,
     },
     {
       title: "Sitio Web",
@@ -53,9 +157,40 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
     },
   ]
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "GovernmentService",
+    name: tramite.titulo,
+    description: tramite.resumen ?? tramite.descripcionLarga ?? undefined,
+    url: `${SITE_URL}/tramites/${tramite.slug}`,
+    serviceType: tramite.modalidad?.nombre ?? undefined,
+    inLanguage: "es-AR",
+    provider: tramite.organismo?.nombre
+      ? {
+          "@type": "GovernmentOrganization",
+          name: tramite.organismo.nombre,
+        }
+      : undefined,
+    audience: tramite.destinatarios?.length
+      ? tramite.destinatarios.map((d) => ({ "@type": "Audience", audienceType: d.nombre }))
+      : undefined,
+    areaServed: tramite.localidades?.length
+      ? tramite.localidades.map((l) => ({ "@type": "City", name: l.nombre }))
+      : { "@type": "AdministrativeArea", name: "Provincia de Misiones" },
+    isPartOf: { "@type": "WebSite", name: SITE_NAME, url: SITE_URL },
+    potentialAction: tramite.urlOficial
+      ? { "@type": "Action", target: tramite.urlOficial, name: "Iniciar trámite" }
+      : undefined,
+  }
+
   return (
     <PortalShell>
-      <main className="relative z-10">
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main id="main-content" className="relative z-10">
         {/*
           Spacer that fills the cataratas zone below the navbar.
           Cataratas band: h-[480px] md:h-[520px] (from PortalShell).
@@ -90,7 +225,17 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
 
           {/* Source label */}
           <p className="px-4 mt-3 text-[16px] font-light text-[#2f6eb1] pt-8">
-            Información otorgada por {tramite.organismo?.nombre ?? "—"}
+            Información otorgada por{" "}
+            {tramite.organismo ? (
+              <Link
+                href={`/organismos/${organismoSlug(tramite.organismo)}` as never}
+                className="underline hover:text-[#264f82]"
+              >
+                {tramite.organismo.nombre}
+              </Link>
+            ) : (
+              "—"
+            )}
           </p>
 
           {/* Title */}
@@ -139,33 +284,30 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
           </div>
 
           {/* Localidad + Iniciar trámite */}
-          {localidades.length > 0 && (
+          {localidades.length > 0 && selectedLocalidad && (
             <div className="mt-6 flex flex-wrap items-stretch justify-between gap-4">
               <div>
                 <p className="text-[24px] text-[#1a1a2e]">
-                  Localidad — {firstLocalidad?.nombre ?? ""}
+                  Localidad — {selectedLocalidad.nombre}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <span className="text-[18px] text-[#1a1a2e]">Cambiar localidad:</span>
-                  <div className="relative">
-                    <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#2f6eb1]" />
-                    <select className="h-[43px] w-[264px] appearance-none rounded-[10px] border border-[#adadad] bg-white pl-9 pr-10 text-[12px] text-[rgba(10,10,10,0.7)] focus:outline-none">
-                      {localidades.map((loc) => (
-                        <option key={loc.id} value={loc.id}>{loc.nombre}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                  </div>
+                  <LocalidadSwitcher localidades={localidades} selectedId={selectedLocalidad.id} />
                 </div>
               </div>
-              <a href={tramite.urlOficial ?? "#"} target="_blank" rel="noreferrer" className="self-end">
+              <a
+                href={contenido?.urlTramite ?? tramite.urlOficial ?? "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="self-end"
+              >
                 <button
                   type="button"
                   className="rounded-[8px]  min-w-[240px] bg-[#2f6eb1] px-6 py-3 text-[14px] font-bold text-white shadow-[0px_4px_16px_rgba(0,0,0,0.25)] hover:bg-[#264f82]"
                 >
                   Iniciar trámite
                 </button>
-                
+
               </a>
             </div>
           )}
@@ -189,7 +331,9 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
                   <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="mt-4 text-sm leading-7 text-slate-600">
-                  {section.content ? (
+                  {section.node ? (
+                    section.node
+                  ) : section.content ? (
                     section.isUrl ? (
                       <a
                         href={section.content}
@@ -236,7 +380,7 @@ export default async function TramiteDetailPage({ params }: TramiteDetailPagePro
               </span>
             </div>
 
-            <a href={tramite.urlOficial ?? "#"} target="_blank" rel="noreferrer" className="relative">
+            <a href={contenido?.urlTramite ?? tramite.urlOficial ?? "#"} target="_blank" rel="noreferrer" className="relative">
               <button
                 type="button"
                 className="flex items-center min-w-[240px]  justify-center  gap-2 rounded-[8px] bg-white px-6 py-2.5 text-[15px] font-semibold text-[#2f6eb1] shadow-[0px_4px_20px_rgba(0,0,0,0.25)] hover:bg-slate-50"

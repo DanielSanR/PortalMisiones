@@ -4,18 +4,21 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
-import { getDestinatarios, getEtiquetas, getLocalidades, getModalidades, getOrganismos } from "@/lib/public-data"
+import { buildCleanUrl, buildTramiteFiltersUrl, type TramiteFilterValues } from "@/lib/url/tramite-filters"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NativeSelect } from "@/components/ui/select"
+import type { Destinatario, Etiqueta, Localidad, Modalidad, Organismo } from "@/models/tramite.model"
 
-interface SearchFiltersProps {
-  search?: string
-  organismoId?: string
-  modalidadId?: number
-  destinatarioId?: number
-  localidadId?: number
-  etiquetaId?: number
+export interface SearchFiltersCatalogs {
+  organismos: Organismo[]
+  modalidades: Modalidad[]
+  destinatarios: Destinatario[]
+  localidades: Localidad[]
+  etiquetas: Etiqueta[]
+}
+
+export interface SearchFiltersClientProps extends TramiteFilterValues {
   hero?: boolean
   /** URL base para construir filtros. Default: /tramites */
   basePath?: string
@@ -23,17 +26,13 @@ interface SearchFiltersProps {
   preserveParams?: Record<string, string | undefined>
   /** Oculta el título "Categorías" (útil cuando ya hay un h1 arriba) */
   hideHeading?: boolean
+  /** Catálogos provistos por el server wrapper. En modo hero se puede omitir. */
+  catalogs?: SearchFiltersCatalogs
 }
 
 const quickActions = ["Licencia de conducir", "Partida de nacimiento", "Antecedentes"]
 
-const organismos = getOrganismos()
-const modalidades = getModalidades()
-const destinatarios = getDestinatarios()
-const localidades = getLocalidades()
-const etiquetas = getEtiquetas()
-
-export function SearchFilters({
+export function SearchFiltersClient({
   search,
   organismoId,
   modalidadId,
@@ -44,43 +43,14 @@ export function SearchFilters({
   basePath = "/tramites",
   preserveParams,
   hideHeading = false,
-}: SearchFiltersProps) {
+  catalogs,
+}: SearchFiltersClientProps) {
   const router = useRouter()
   const [etiquetasOpen, setEtiquetasOpen] = useState(false)
 
-  // Builds /tramites URL merging current filters with any overrides.
-  // Pass undefined for a key to remove that filter.
-  function buildUrl(overrides: {
-    search?: string | undefined
-    modalidadId?: number | undefined
-    destinatarioId?: number | undefined
-    organismoId?: string | undefined
-    localidadId?: number | undefined
-    etiquetaId?: number | undefined
-  }) {
-    const merged = {
-      search:        "search"        in overrides ? overrides.search        : search,
-      modalidadId:   "modalidadId"   in overrides ? overrides.modalidadId   : modalidadId,
-      destinatarioId:"destinatarioId"in overrides ? overrides.destinatarioId: destinatarioId,
-      organismoId:   "organismoId"   in overrides ? overrides.organismoId   : organismoId,
-      localidadId:   "localidadId"   in overrides ? overrides.localidadId   : localidadId,
-      etiquetaId:    "etiquetaId"    in overrides ? overrides.etiquetaId    : etiquetaId,
-    }
-    const params = new URLSearchParams()
-    if (preserveParams) {
-      for (const [key, value] of Object.entries(preserveParams)) {
-        if (value) params.set(key, value)
-      }
-    }
-    if (merged.search)         params.set("search",         merged.search)
-    if (merged.modalidadId)    params.set("modalidadId",    String(merged.modalidadId))
-    if (merged.destinatarioId) params.set("destinatarioId", String(merged.destinatarioId))
-    if (merged.organismoId)    params.set("organismoId",    merged.organismoId)
-    if (merged.localidadId)    params.set("localidadId",    String(merged.localidadId))
-    if (merged.etiquetaId)     params.set("etiquetaId",     String(merged.etiquetaId))
-    const qs = params.toString()
-    return `${basePath}${qs ? `?${qs}` : ""}`
-  }
+  const current: TramiteFilterValues = { search, organismoId, modalidadId, destinatarioId, localidadId, etiquetaId }
+  const buildUrl = (overrides: Partial<TramiteFilterValues>) =>
+    buildTramiteFiltersUrl(current, overrides, { basePath, preserveParams })
 
   // ── Hero mode ──────────────────────────────────────────────
   if (hero) {
@@ -125,6 +95,10 @@ export function SearchFilters({
   }
 
   // ── Catalogue mode ─────────────────────────────────────────
+  if (!catalogs) {
+    throw new Error("SearchFiltersClient: catalogs prop is required when hero=false")
+  }
+  const { organismos, modalidades, destinatarios, localidades, etiquetas } = catalogs
 
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -139,15 +113,7 @@ export function SearchFilters({
     }
   }
 
-  // URL para "Limpiar": preserva sólo basePath + preserveParams (sin filtros)
-  const cleanParams = new URLSearchParams()
-  if (preserveParams) {
-    for (const [key, value] of Object.entries(preserveParams)) {
-      if (value) cleanParams.set(key, value)
-    }
-  }
-  const cleanQs = cleanParams.toString()
-  const clearHref = `${basePath}${cleanQs ? `?${cleanQs}` : ""}`
+  const clearHref = buildCleanUrl({ basePath, preserveParams })
 
   return (
     <div className="space-y-4">
@@ -194,7 +160,7 @@ export function SearchFilters({
       )}
 
       {/* Modalidad pills */}
-      <div className="flex flex-wrap gap-2" id="temas">
+      <div className="flex flex-wrap gap-2">
         <Link
           href={buildUrl({ modalidadId: undefined }) as never}
           scroll={false}
@@ -240,6 +206,7 @@ export function SearchFilters({
         </form>
 
         <NativeSelect
+          aria-label="Filtrar por destinatario"
           value={destinatarioId?.toString() ?? ""}
           onChange={(e) =>
             router.push(buildUrl({ destinatarioId: e.target.value ? Number(e.target.value) : undefined }) as never, { scroll: false })
@@ -255,6 +222,7 @@ export function SearchFilters({
         </NativeSelect>
 
         <NativeSelect
+          aria-label="Filtrar por organismo"
           value={organismoId ?? ""}
           onChange={(e) =>
             router.push(buildUrl({ organismoId: e.target.value || undefined }) as never, { scroll: false })
@@ -270,6 +238,7 @@ export function SearchFilters({
         </NativeSelect>
 
         <NativeSelect
+          aria-label="Filtrar por localidad"
           value={localidadId?.toString() ?? ""}
           onChange={(e) =>
             router.push(buildUrl({ localidadId: e.target.value ? Number(e.target.value) : undefined }) as never, { scroll: false })

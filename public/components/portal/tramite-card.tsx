@@ -1,50 +1,14 @@
 import Link from "next/link"
-import {
-  CreditCard,
-  Scale,
-  Receipt,
-  CheckSquare,
-  Car,
-  BookOpen,
-  Banknote,
-  ShieldCheck,
-  FileText,
-  Building2,
-  RefreshCw,
-  HeartPulse,
-  Bus,
-  IdCard,
-  type LucideIcon,
-} from "lucide-react"
 import type { Tramite } from "@/models/tramite.model"
 import { Card, CardContent } from "@/components/ui/card"
-
-const lucideIconMap: Record<string, LucideIcon> = {
-  card_membership:    CreditCard,
-  gavel:              Scale,
-  receipt_long:       Receipt,
-  approval:           CheckSquare,
-  directions_car:     Car,
-  school:             BookOpen,
-  payments:           Banknote,
-  security:           ShieldCheck,
-  storefront:         Building2,
-  autorenew:          RefreshCw,
-  health_and_safety:  HeartPulse,
-  directions_bus:     Bus,
-  badge:              IdCard,
-}
-
-function getIcon(icono: string | null): LucideIcon {
-  return (icono ? lucideIconMap[icono] : undefined) ?? FileText
-}
+import { getTramiteIcon } from "@/lib/ui/icon-map"
 
 interface TramiteCardProps {
   tramite: Tramite
 }
 
 export function TramiteCard({ tramite }: TramiteCardProps) {
-  const Icon = getIcon(tramite.icono)
+  const Icon = getTramiteIcon(tramite.icono)
 
   return (
     <Link href={`/tramites/${tramite.slug}#detalle` as never} className="block">

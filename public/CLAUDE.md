@@ -41,7 +41,7 @@ All data functions in `lib/public-data.ts` are synchronous, filtering `MOCK_TRAM
 
 ### Path Aliases
 
-`@/*` maps to the project root (e.g., `@/lib/public-data`, `@/models/tramite.model`).
+`@/*` maps to the project root (e.g., `@/lib/data/tramites`, `@/models/tramite.model`).
 
 ## Conventions
 

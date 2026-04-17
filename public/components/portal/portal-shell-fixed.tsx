@@ -1,29 +1,32 @@
-"use client"
-
-import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { MapPin, Menu, Smartphone, X } from "lucide-react"
+import { MapPin, Smartphone } from "lucide-react"
 import { siteAssets } from "@/lib/site-assets"
+import { MobileMenu, type NavLinkItem } from "@/components/portal/mobile-menu"
 
 interface PortalShellProps {
   children: React.ReactNode
   hero?: boolean
 }
 
-const navLinks = [
+const navLinks: readonly NavLinkItem[] = [
   { label: "Inicio", href: "/", isExternal: false },
   { label: "Trámites", href: "/tramites", isExternal: false },
-  { label: "Temas", href: "/tramites#temas", isExternal: true },
-  { label: "Organismos", href: "/tramites", isExternal: false },
-  { label: "Mi Portal", href: "/tramites", isExternal: false },
+  { label: "Temas", href: "/#temas", isExternal: true },
+  { label: "Eventos de vida", href: "/eventos", isExternal: false },
+  { label: "Organismos", href: "/organismos", isExternal: false },
+  { label: "Mi Portal", href: "#", isExternal: true },
 ] as const
 
 export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-
   return (
     <div className="min-h-screen bg-[#f7f8fb] text-slate-900">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#2f6eb1] focus:shadow-lg focus:outline focus:outline-2 focus:outline-[#2f6eb1]"
+      >
+        Saltar al contenido principal
+      </a>
       <div className="relative overflow-hidden">
         {/* Background image band for non-hero pages */}
         {!hero && (
@@ -46,80 +49,43 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
         <header className={`${hero ? "absolute inset-x-0 top-0" : "relative"} z-20 px-4 py-7 md:px-10`}>
           <div className="mx-auto max-w-[1440px] rounded-full bg-[#2f6eb1] px-6 py-6 shadow-[0_18px_40px_rgba(38,92,151,0.28)]">
             <div className="mx-auto flex max-w-[1130px] items-center justify-between">
-            <Link href="/" className="flex items-center">
-              <div className="relative h-[34px] w-[208px]">
-                <Image
-                  alt="Misiones Gobierno"
-                  src={siteAssets.logos.misionesMain}
-                  fill
-                  className="object-contain object-left"
-                  sizes="208px"
-                />
-              </div>
-            </Link>
+              <Link href="/" className="flex items-center">
+                <div className="relative h-[34px] w-[208px]">
+                  <Image
+                    alt="Misiones Gobierno"
+                    src={siteAssets.logos.misionesMain}
+                    fill
+                    className="object-contain object-left"
+                    sizes="208px"
+                  />
+                </div>
+              </Link>
 
-            <nav className="hidden items-center gap-6 text-sm font-medium text-white md:flex">
-              {navLinks.map((link) =>
-                link.isExternal ? (
-                  <a
-                    key={link.label}
-                    className="transition-colors hover:text-white/80"
-                    href={link.href}
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.label}
-                    className="transition-colors hover:text-white/80"
-                    href={link.href as "/tramites" | "/"}
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
-            </nav>
+              <nav className="hidden items-center gap-6 text-sm font-medium text-white md:flex">
+                {navLinks.map((link) =>
+                  link.isExternal ? (
+                    <a
+                      key={link.label}
+                      className="transition-colors hover:text-white/80"
+                      href={link.href}
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={link.label}
+                      className="transition-colors hover:text-white/80"
+                      href={link.href as "/tramites" | "/" | "/organismos" | "/eventos"}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                )}
+              </nav>
 
-            {/* Mobile hamburger */}
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-white md:hidden"
-              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+              <MobileMenu links={navLinks} />
+            </div>
           </div>
-          </div>
-
-          {/* Mobile dropdown menu */}
-          {menuOpen && (
-            <nav className="mt-2 rounded-2xl bg-[#2f6eb1] px-6 py-4 shadow-lg md:hidden">
-              <ul className="flex flex-col gap-3">
-                {navLinks.map((link) => (
-                  <li key={link.label}>
-                    {link.isExternal ? (
-                      <a
-                        href={link.href}
-                        className="block rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        href={link.href as "/tramites" | "/"}
-                        className="block rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        {link.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
         </header>
 
         {children}
@@ -217,11 +183,13 @@ export function PortalShellFixed({ children, hero = false }: PortalShellProps) {
 
         <button
           type="button"
-          className="fixed bottom-6 right-6 z-20 flex h-[55px] w-[55px] items-center justify-center rounded-full bg-white p-0 shadow-lg"
-          aria-label="Accesibilidad"
+          className="fixed bottom-6 right-6 z-20 flex h-[55px] w-[55px] items-center justify-center rounded-full bg-white p-0 shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f6eb1]"
+          aria-label="Abrir panel de accesibilidad"
+          aria-haspopup="dialog"
         >
           <Image
             alt=""
+            aria-hidden
             src={siteAssets.ui.accessibility}
             width={55}
             height={55}

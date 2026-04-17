@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
+import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
 
 export default function NotFound() {
   return (

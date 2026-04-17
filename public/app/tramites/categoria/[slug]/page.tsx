@@ -1,49 +1,15 @@
+import type { Metadata } from "next"
 import Link from "next/link"
-import {
-  ArrowLeft,
-  ChevronRight,
-  CreditCard,
-  Scale,
-  Receipt,
-  CheckSquare,
-  Car,
-  BookOpen,
-  Banknote,
-  ShieldCheck,
-  FileText,
-  Building2,
-  RefreshCw,
-  type LucideIcon,
-} from "lucide-react"
+import { ArrowLeft, ChevronRight } from "lucide-react"
 import { notFound } from "next/navigation"
-import { PortalShellFixed as PortalShell } from "@/components/portal-shell-fixed"
-import { SearchFilters } from "@/components/search-filters"
-import { SubcategoriaCard } from "@/components/subcategoria-card"
-import { TramiteCard } from "@/components/tramite-card"
-import {
-  getCategoriaBySlug,
-  getSubcategorias,
-  getTramitesByCategoriaId,
-} from "@/lib/public-data"
+import { PortalShellFixed as PortalShell } from "@/components/portal/portal-shell-fixed"
+import { SearchFilters } from "@/components/portal/search-filters"
+import { SubcategoriaCard } from "@/components/portal/subcategoria-card"
+import { TramiteCard } from "@/components/portal/tramite-card"
+import { getCategoriaBySlug, getSubcategorias } from "@/lib/data/categorias"
+import { getTramitesByCategoriaId } from "@/lib/data/tramites"
+import { getTramiteIcon } from "@/lib/ui/icon-map"
 import type { Categoria, Tramite } from "@/models/tramite.model"
-
-// Map Material icon names → lucide-react
-const lucideIconMap: Record<string, LucideIcon> = {
-  card_membership: CreditCard,
-  gavel:           Scale,
-  receipt_long:    Receipt,
-  approval:        CheckSquare,
-  directions_car:  Car,
-  school:          BookOpen,
-  payments:        Banknote,
-  security:        ShieldCheck,
-  storefront:      Building2,
-  autorenew:       RefreshCw,
-}
-
-function getIcon(icono: string | null): LucideIcon {
-  return (icono ? lucideIconMap[icono] : undefined) ?? FileText
-}
 
 // Modalidad → etiqueta corta para la pill del card (figma: "Online" / "Presencial")
 function shortModalidadLabel(modalidadId: number | undefined): string | null {
@@ -116,14 +82,35 @@ interface CategoriaPageProps {
   }>
 }
 
-export default async function CategoriaPage({ params, searchParams }: CategoriaPageProps) {
-  // TODO: remove — test-only delay to preview MLoader
-  await new Promise((r) => setTimeout(r, 1500))
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const categoria = await getCategoriaBySlug(slug)
+  if (!categoria || categoria.parentId !== null) {
+    return { title: "Categoría no encontrada", robots: { index: false, follow: false } }
+  }
 
+  const description =
+    categoria.descripcion?.trim() ||
+    `Trámites provinciales de ${categoria.nombre}.`
+  const url = `/tramites/categoria/${categoria.slug}`
+
+  return {
+    title: categoria.nombre,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: categoria.nombre, description, url, type: "website" },
+  }
+}
+
+export default async function CategoriaPage({ params, searchParams }: CategoriaPageProps) {
   const { slug } = await params
   const sp = await searchParams
 
-  const categoria = getCategoriaBySlug(slug)
+  const categoria = await getCategoriaBySlug(slug)
   if (!categoria || categoria.parentId !== null) notFound()
 
   const filters = {
@@ -135,18 +122,26 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
     etiquetaId:     sp.etiquetaId     ? Number(sp.etiquetaId)     : undefined,
   }
 
-  const subcategorias = getSubcategorias(categoria.id)
+  const subcategorias = await getSubcategorias(categoria.id)
   const selectedSub: Categoria | undefined = sp.sub
     ? (subcategorias.find((s) => s.slug === sp.sub) ?? subcategorias[0])
     : subcategorias[0]
 
+  // Resolve all subcategory tramites + selected tramites in parallel
+  const subTramitesBySubcatId = new Map<number, Tramite[]>()
+  await Promise.all(
+    subcategorias.map(async (s) => {
+      subTramitesBySubcatId.set(s.id, await getTramitesByCategoriaId(s.id))
+    }),
+  )
+
   const tramites = selectedSub
-    ? applyFilters(getTramitesByCategoriaId(selectedSub.id), filters)
+    ? applyFilters(subTramitesBySubcatId.get(selectedSub.id) ?? [], filters)
     : []
 
   return (
     <PortalShell>
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         {/* Spacer — cataratas pure background */}
         <div className="h-[360px] md:h-[400px]" />
 
@@ -200,12 +195,12 @@ export default async function CategoriaPage({ params, searchParams }: CategoriaP
           {subcategorias.length > 0 && (
             <div className="mt-8 flex flex-wrap gap-4">
               {subcategorias.map((subcat) => {
-                const subTramites = getTramitesByCategoriaId(subcat.id)
+                const subTramites = subTramitesBySubcatId.get(subcat.id) ?? []
                 return (
                   <SubcategoriaCard
                     key={subcat.id}
                     href={`/tramites/categoria/${categoria.slug}?sub=${subcat.slug}`}
-                    icon={getIcon(subcat.icono)}
+                    icon={getTramiteIcon(subcat.icono)}
                     title={subcat.nombre}
                     description={subcat.descripcion ?? `Trámites de ${subcat.nombre.toLowerCase()}.`}
                     badge={shortModalidadLabel(dominantModalidad(subTramites))}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Montserrat } from "next/font/google"
 import localFont from "next/font/local"
+import { SITE_DESCRIPTION, SITE_LOCALE, SITE_NAME, SITE_URL } from "@/lib/seo/site"
 import "./globals.css"
 
 const oakSans = localFont({
@@ -32,8 +33,27 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: "Portal de Trámites de Misiones",
-  description: "Punto único de acceso digital a trámites y servicios provinciales.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: SITE_LOCALE,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
 }
 
 export default function RootLayout({

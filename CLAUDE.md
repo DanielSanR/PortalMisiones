@@ -7,7 +7,7 @@ Dos aplicaciones frontend independientes consumiendo la misma API REST.
 ## Architecture
 - **backoffice/** — Angular 17+ (standalone components) — Panel de administración
 - **portal/** — Next.js 14 (App Router) — Portal público ciudadano (otro desarrollador)
-- **shared/types/** — TypeScript interfaces compartidas entre ambos proyectos
+- **models** —Cada proyecto tiene su propio model en /models
 
 ## Backoffice Architecture (Angular 17)
 Follows same architecture as JNR project (C:\JNR\jnr-frontend):
