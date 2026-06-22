@@ -78,13 +78,14 @@
                     <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
                     <span matListItemTitle>{{ item.label }}</span>
                 </a>
-                <div class="test-roles" *ngIf="!isCollapsed">
+                <!-- <div class="test-roles" *ngIf="!isCollapsed">
                     <h2>Roles del Usuario</h2>
                     <button mat-raised-button color="secondary" (click)="changeRoleUser('SUPERADMIN')">SUPERADMIN</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('ADMIN_ORGANISMO')">ADMIN_ORGANISMO</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('EDITOR')">EDITOR</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('EDITOR_LOCAL')">EDITOR_LOCAL(no priv)</button>
-                </div>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('ADMIN_BACKOFFICE')">ADMIN_BACKOFFICE</button>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('ADMIN_ORGANIZATION')">ADMIN_ORGANIZATION</button>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('AGENT')">AGENT</button>
+                    <button mat-raised-button color="secondary" (click)="changeRoleUser('MANAGER')">MANAGER</button>
+                </div> -->
             </mat-nav-list>
         </mat-sidenav>
 

@@ -3,6 +3,65 @@
     @include form-card();
 }
 
+// Layout común de formularios (definido una sola vez; consumido por las pantallas form)
+.section-header {
+    font-size: var(--theme-font-size-xs);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: var(--theme-space-lg) 0 var(--theme-space-sm);
+    border-bottom: 1px solid var(--theme-border-primary);
+    margin-bottom: var(--theme-space-md);
+
+    &:first-of-type {
+        padding-top: 0;
+    }
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--theme-space-md);
+    margin-bottom: var(--theme-space-sm);
+
+    mat-form-field {
+        width: 100%;
+    }
+
+    &--full {
+        grid-template-columns: 1fr;
+    }
+
+    @include responsive(mobile) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-actions {
+    @include form-actions();
+}
+
+// Error de envío del formulario (inline, cuando la pantalla maneja el error y no el diálogo global).
+.form-error {
+    color: var(--theme-error);
+    font-size: var(--theme-font-size-sm);
+    margin: var(--theme-space-md) 0 0;
+    padding: var(--theme-space-sm) var(--theme-space-md);
+    background: var(--theme-error-bg);
+    border: 1px solid rgba(211, 47, 47, 0.12);
+    border-radius: var(--theme-radius-md);
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
 //tablas
 
 .table-container {
@@ -21,6 +80,164 @@
     @include FormInput(100%, 1.75rem, 1px solid var(--theme-border-primary), 8px, 0.875rem, 0 1px 2px rgba(0, 0, 0, 0.05), #969696);
 
 } */
+
+// ==========================================================================
+// Auth layout — compartido entre login, forgot-password y reset-password
+// ==========================================================================
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(
+    160deg,
+    var(--theme-primary-darker) 0%,
+    var(--theme-primary-dark)   30%,
+    var(--theme-primary)        70%,
+    var(--theme-primary-light)  100%
+  );
+  padding: var(--theme-space-md);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 40%);
+    pointer-events: none;
+  }
+}
+
+.auth-card {
+  background: var(--theme-bg-card);
+  border-radius: var(--theme-radius-2xl);
+  box-shadow: var(--theme-shadow-xl);
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  &__header {
+    text-align: center;
+    margin-bottom: 36px;
+
+    h1 {
+      font-size: var(--theme-font-size-2xl);
+      font-weight: var(--theme-font-weight-bold);
+      color: var(--theme-text-primary);
+      margin: 20px 0 6px;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      color: var(--theme-text-secondary);
+      font-size: var(--theme-font-size-base);
+      font-weight: var(--theme-font-weight-normal);
+    }
+  }
+
+  &__logo {
+    max-width: 140px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__error {
+    color: var(--theme-error);
+    font-size: var(--theme-font-size-sm);
+    text-align: center;
+    margin: 0;
+    padding: 8px 12px;
+    background: var(--theme-error-bg);
+    border-radius: var(--theme-radius-md);
+    border: 1px solid rgba(211, 47, 47, 0.12);
+  }
+
+  &__success {
+    color: var(--theme-success);
+    font-size: var(--theme-font-size-sm);
+    text-align: center;
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--theme-success-bg);
+    border-radius: var(--theme-radius-md);
+    border: 1px solid rgba(22, 163, 74, 0.18);
+    line-height: var(--theme-line-height-normal);
+  }
+
+  &__submit {
+    margin-top: 12px;
+    height: 48px;
+    font-size: var(--theme-font-size-md) !important;
+    font-weight: var(--theme-font-weight-semibold);
+    border-radius: var(--theme-radius-md) !important;
+    letter-spacing: 0.02em;
+    transition: all var(--theme-transition-fast);
+
+    &:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: var(--theme-shadow-md);
+    }
+
+    &[disabled] {
+      opacity: 0.7;
+    }
+  }
+
+  &__footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--theme-border-secondary);
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-tertiary);
+  }
+
+  &__link {
+    display: block;
+    text-align: center;
+    margin-top: var(--theme-space-md);
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-link);
+    text-decoration: none;
+    font-weight: var(--theme-font-weight-medium);
+    transition: opacity var(--theme-transition-fast);
+
+    &:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+      border-radius: var(--theme-radius-sm);
+    }
+
+    mat-icon {
+      font-size: var(--theme-font-size-sm);
+      width: var(--theme-font-size-sm);
+      height: var(--theme-font-size-sm);
+      vertical-align: middle;
+      margin-right: var(--theme-space-xs);
+    }
+  }
+
+  @include responsive(mobile) {
+    padding: 32px 24px;
+    border-radius: var(--theme-radius-xl);
+  }
+}
 
 // Preview dialog — sin padding ni bordes del dialog
 .preview-dialog-panel {

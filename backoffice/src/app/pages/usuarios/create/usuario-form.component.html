@@ -75,8 +75,8 @@
             }
         </div>
 
-        <!-- ── Rol y organismo ── -->
-        <div class="section-header">Rol y organismo</div>
+        <!-- ── Rol, localidad y organismo ── -->
+        <div class="section-header">Rol y ubicación</div>
         <div class="form-grid">
             <mat-form-field appearance="outline">
                 <mat-label>Rol</mat-label>
@@ -88,6 +88,16 @@
                 @if (fieldError('rol', 'required')) {
                   <mat-error>Seleccioná un rol</mat-error>
                 }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Localidad</mat-label>
+                <mat-select formControlName="localidadId">
+                    <mat-option [value]="null">— Sin localidad —</mat-option>
+                    @for (m of (municipios$ | async) ?? []; track m.id) {
+                      <mat-option [value]="m.id">{{ m.nombre }}</mat-option>
+                    }
+                </mat-select>
             </mat-form-field>
 
             @if (requiresOrganismo) {
@@ -105,6 +115,19 @@
               </mat-form-field>
             }
         </div>
+
+        @if (!isEdit) {
+          <div class="section-header">Estado</div>
+          <div class="form-grid form-grid--full">
+            <mat-slide-toggle formControlName="activo" color="primary">
+              Activar la cuenta al crear
+            </mat-slide-toggle>
+          </div>
+        }
+
+        @if (errorMessage) {
+          <p class="form-error" role="alert">{{ errorMessage }}</p>
+        }
 
         <!-- ── Acciones ── -->
         <div class="form-actions">

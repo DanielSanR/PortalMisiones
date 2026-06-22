@@ -45,10 +45,27 @@ backoffice/src/app/
 - **CSS Variables theming**: `shared-styles/_themes.scss` — Misiones green (#1B5E20)
 - **RBAC**: roleGuard with route data `{ allowedRoles: [...], redirectTo: '...' }`
 
-## Roles
-- SUPERADMIN: Full access (organismos, usuarios, all trámites)
-- ADMIN_ORGANISMO: Manage trámites and users within their organismo
-- EDITOR: Create and edit trámites only
+## Arquitectura de capas (en migración — ver `migracion_arquitectura.md`)
+Modelo objetivo, **por feature (vertical slice)** en `core/features/<feature>/` con subcarpetas por capa:
+```
+Componente → Facade → Repository → DataSource(interface) → {HttpDataSource | MockDataSource}
+mappers + models/view = hojas · barrel index.ts = superficie pública · <feature>.providers.ts = wiring
+```
+- **Adaptador mock/real**: `environment.dataSource` ('mock'|'local'|'prod') + `featureOverrides`; `provideDataSource` + `InjectionToken` por feature. El DataSource es el único que conoce la fuente.
+- **REGLA DURA — RxJS, NUNCA signals**: facades exponen Observables (`async` pipe); one-shot con `firstValueFrom`; `subscribe` manual solo con `takeUntilDestroyed`.
+- **Vistas separadas**: `templateUrl` + `styleUrl` siempre (sin inline).
+- **Dirección estricta**: 0 deps circulares, 0 deps misma-capa (prohibido `facade→facade`). Cross-feature solo vía barrel `@features/<x>`.
+- **Path aliases**: `@core/*`, `@features/*`, `@shared/*`, `@env/*` (tsconfig).
+- Detalle accionable en `.claude/rules/` (arquitectura-capas, componentes-angular, scss-bem) y skills `nueva-feature` / `migrar-pantalla`.
+
+## Tooling agéntico del proyecto (`.claude/`)
+- **rules/**: constraints path-scoped (arquitectura, componentes Angular, SCSS/BEM).
+- **skills/**: `nueva-feature` (scaffolder), `migrar-pantalla`.
+- **agents/**: `angular-ssr-reviewer`, `arquitecto-capas`, `front-design`. Derivar la revisión/diseño al agente correspondiente.
+
+## Roles (códigos reales del backend — ver BACKEND_API_SPEC.md §4.2)
+- SUPERADMIN, ADMIN_BACKOFFICE, ADMIN_ORGANIZATION, AGENT, MANAGER, USER
+- El claim `roles` del JWT mezcla roles (`ROLE_*`) y permisos atómicos, coma-separados (ver `core/utils/role.utils.ts`).
 
 ## Workflow de Trámites
 borrador → revisión → publicado ↔ despublicado
@@ -56,6 +73,8 @@ borrador → revisión → publicado ↔ despublicado
 ## Commands
 - `cd backoffice && npx ng serve` — Dev server (port 4200)
 - `cd backoffice && npx ng build` — Production build
+- `cd backoffice && npm run check:circular` — madge: 0 dependencias circulares
+- `cd backoffice && npm run lint` — ESLint + boundaries (dirección de capas) sobre `core/features`
 - Node version: 20.11.0 (use `nvm use 20.11.0`)
 
 ## Conventions

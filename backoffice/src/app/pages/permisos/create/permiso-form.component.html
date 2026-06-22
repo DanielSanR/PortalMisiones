@@ -1,0 +1,53 @@
+<app-page-header
+    [title]="isEdit ? 'Editar permiso' : 'Nuevo permiso'"
+    [showBack]="true"
+    (back)="goBack()">
+</app-page-header>
+
+<app-loading [loading]="loading" message="Cargando..."></app-loading>
+
+@if (!loading) {
+  <div class="form-card">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="section-header">Datos del permiso</div>
+      <div class="form-grid">
+
+        <mat-form-field appearance="outline">
+          <mat-label>Código</mat-label>
+          <input matInput formControlName="codigo" placeholder="Ej: TRAMITE_CREAR">
+          <mat-hint>Formato ACCION_RECURSO (en mayúsculas)</mat-hint>
+          @if (fieldError('codigo', 'required')) {
+            <mat-error>El código es obligatorio</mat-error>
+          }
+          @if (fieldError('codigo', 'maxlength')) {
+            <mat-error>Máximo 100 caracteres</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Descripción</mat-label>
+          <input matInput formControlName="descripcion" placeholder="Ej: Permite crear trámites">
+          @if (fieldError('descripcion', 'required')) {
+            <mat-error>La descripción es obligatoria</mat-error>
+          }
+          @if (fieldError('descripcion', 'maxlength')) {
+            <mat-error>Máximo 255 caracteres</mat-error>
+          }
+        </mat-form-field>
+
+      </div>
+
+      <div class="form-actions">
+        <button mat-stroked-button type="button" (click)="goBack()">Cancelar</button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+          @if (saving) {
+            <mat-icon class="spin">sync</mat-icon>
+          }
+          {{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear permiso') }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+}

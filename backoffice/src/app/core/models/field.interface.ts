@@ -19,8 +19,8 @@ export interface FieldConfig {
   hint?: string;
   cssClass?: 'colspan-full' | 'colspan-half' | 'colspan-third';
   disabled?: boolean;
-  value?: any;
-  options?: { id: any; name: string }[];
+  value?: unknown;
+  options?: { id: string | number; name: string }[];
   validations?: FieldValidations;
 }
  

@@ -1,11 +1,11 @@
 <app-page-header title="Etiquetas" subtitle="Gestión de etiquetas para clasificar trámites">
-  <button mat-raised-button color="primary" (click)="onCreate()">
+  <button *appHasPermission="'CREATE_TAXONOMIA'" mat-raised-button color="primary" (click)="onCreate()">
     <mat-icon>add</mat-icon> Nueva etiqueta
   </button>
 </app-page-header>
 
 <app-shared-table
-    [data]="etiquetas"
+    [data]="(etiquetas$ | async) ?? []"
     [columns]="columns"
     [loading]="loading"
     emptyMessage="No hay etiquetas registradas"
@@ -27,10 +27,10 @@
             <mat-icon>more_vert</mat-icon>
         </button>
         <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="onEdit(row)">
+            <button *appHasPermission="'UPDATE_TAXONOMIA'" mat-menu-item (click)="onEdit(row)">
                 <mat-icon>edit</mat-icon> Editar
             </button>
-            <button mat-menu-item class="delete-action" (click)="onDelete(row)">
+            <button *appHasPermission="'DELETE_TAXONOMIA'" mat-menu-item class="delete-action" (click)="onDelete(row)">
                 <mat-icon>delete</mat-icon> Eliminar
             </button>
         </mat-menu>

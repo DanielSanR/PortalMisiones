@@ -1,0 +1,47 @@
+.scope-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--theme-space-2xs) var(--theme-space-sm);
+  border-radius: var(--theme-radius-full);
+  font-size: var(--theme-font-size-xs);
+  font-weight: var(--theme-font-weight-medium);
+
+  &--global {
+    background: var(--theme-info-bg);
+    color: var(--theme-info);
+  }
+
+  &--organismo {
+    background: var(--theme-warning-bg);
+    color: var(--theme-warning);
+  }
+}
+
+.bool-icon {
+  font-size: 20px;
+  line-height: 20px;
+  width: 20px;
+  height: 20px;
+
+  &--yes {
+    color: var(--theme-success);
+  }
+
+  &--no {
+    color: var(--theme-neutral-400);
+  }
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 var(--theme-space-xs);
+  border-radius: var(--theme-radius-full);
+  background: var(--theme-primary-50);
+  color: var(--theme-primary-700);
+  font-size: var(--theme-font-size-xs);
+  font-weight: var(--theme-font-weight-semibold);
+}

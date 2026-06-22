@@ -73,29 +73,29 @@ function extractId(url: string): string {
   return parts[parts.length - 1];
 }
 
+/**
+ * Rutas YA implementadas en el backend real (BACKEND_API_SPEC.md). El mock NO las toca:
+ * deja pasar la request al backend (http://localhost:8080). Las rutas mock heredadas usan
+ * nombres en español plural (/api/usuarios, /api/tramites, ...) que no colisionan con éstas.
+ */
+const REAL_BACKEND_ROUTES = [
+  '/api/auth/',
+  '/api/user', // singular (mock usa /api/usuarios)
+  '/api/role',
+  '/api/permission',
+  '/api/municipality',
+  '/api/email/',
+  '/api/storage/',
+  '/api/recaptcha/',
+];
+
 export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
   const url = req.url;
   const method = req.method;
 
-  if (matchUrl(url, '/auth/login') && method === 'POST') {
-    return jsonResponse({
-      code: 200,
-      message: 'Login exitoso',
-      data: {
-        token: 'eyJhbGciOiJIUzI1NiJ9.' +
-          btoa(JSON.stringify({
-            sub: 'admin@misiones.gob.ar',
-            roles: 'ROLE_SUPERADMIN',
-            userId: 'usr-1',
-            nombre: 'Carlos',
-            apellido: 'Fernández',
-            organismoId: null,
-            exp: Math.floor(Date.now() / 1000) + 86400,
-            iat: Math.floor(Date.now() / 1000),
-          })) +
-          '.mock-signature',
-      },
-    });
+  // Passthrough: las rutas reales van directo al backend.
+  if (REAL_BACKEND_ROUTES.some((route) => url.includes(route))) {
+    return next(req);
   }
 
   if (matchUrl(url, '/api/tramites/') && matchUrl(url, '/localidades')) {

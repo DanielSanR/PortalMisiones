@@ -1,31 +1,35 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { firstValueFrom, of, switchMap, map } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
-import { UsuarioService } from '../../../core/services/usuario.service';
-import { OrganismoService } from '../../../core/services/organismo.service';
-import { AuthTokenService } from '../../../core/services/auth-token.service';
-import { UserRole, ROLE_TO_SPANISH } from '../../../core/enums/user-role.enum';
-import { Organismo } from '../../../core/models/tramite.model';
+import { UsuariosFacade, UsuarioFormValue } from '@features/usuarios';
+import { OrganismoOption } from '@features/organismos';
+import { MunicipiosFacade } from '@features/municipios';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { UserRole, ROLE_TO_SPANISH } from '@core/enums/user-role.enum';
 
 @Component({
   selector: 'app-usuario-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AsyncPipe,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatSlideToggleModule,
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
@@ -38,24 +42,32 @@ import { Organismo } from '../../../core/models/tramite.model';
 export class UsuarioFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly municipiosFacade = inject(MunicipiosFacade);
 
   form!: FormGroup;
   isEdit = false;
   saving = false;
   loading = true;
   hidePassword = true;
-  organismos: Organismo[] = [];
+  errorMessage = '';
+  organismos: OrganismoOption[] = [];
+
+  /** Localidades (datos de referencia cacheados; reales vía /api/municipality). */
+  readonly municipios$ = this.municipiosFacade.municipios$;
 
   readonly isSuperAdmin: boolean;
   readonly currentOrganismoId: string | null;
-  readonly rolesDisponibles: { value: UserRole; label: string }[];
+  /** Opciones del select de rol. En CREATE → roles reales (value = UUID); en EDIT → enum (mock). */
+  rolesDisponibles: { value: string; label: string }[] = [];
+
+  // Roles para EDICIÓN (mock, por código de rol).
+  private readonly rolesEdicion: { value: string; label: string }[];
 
   private editId: string | null = null;
 
   constructor(
     private fb: FormBuilder,
-    private usuarioService: UsuarioService,
-    private organismoService: OrganismoService,
+    private facade: UsuariosFacade,
     private authTokenService: AuthTokenService,
     private route: ActivatedRoute,
     private router: Router,
@@ -64,63 +76,53 @@ export class UsuarioFormComponent implements OnInit {
     this.isSuperAdmin = this.authTokenService.getUserRole() === UserRole.SUPERADMIN;
     this.currentOrganismoId = this.authTokenService.getUserOrganismoId();
 
-    this.rolesDisponibles = this.isSuperAdmin
+    this.rolesEdicion = this.isSuperAdmin
       ? [
-          { value: UserRole.SUPERADMIN,      label: ROLE_TO_SPANISH[UserRole.SUPERADMIN] },
-          { value: UserRole.ADMIN_ORGANISMO,  label: ROLE_TO_SPANISH[UserRole.ADMIN_ORGANISMO] },
-          { value: UserRole.EDITOR,           label: ROLE_TO_SPANISH[UserRole.EDITOR] },
+          { value: UserRole.SUPERADMIN,         label: ROLE_TO_SPANISH[UserRole.SUPERADMIN] },
+          { value: UserRole.ADMIN_ORGANIZATION, label: ROLE_TO_SPANISH[UserRole.ADMIN_ORGANIZATION] },
+          { value: UserRole.AGENT,              label: ROLE_TO_SPANISH[UserRole.AGENT] },
         ]
-      : [{ value: UserRole.EDITOR, label: ROLE_TO_SPANISH[UserRole.EDITOR] }];
+      : [{ value: UserRole.AGENT, label: ROLE_TO_SPANISH[UserRole.AGENT] }];
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.editId = this.route.snapshot.params['id'] ?? null;
     this.isEdit = !!this.editId;
 
     this.buildForm();
     this.watchRolChanges();
 
-    const organismos$ = this.isSuperAdmin
-      ? this.organismoService.getAll()
-      : of({ data: [] as Organismo[] });
+    try {
+      const { organismos, rolesAllowed, usuario } = await firstValueFrom(this.facade.getFormData(this.editId));
+      this.organismos = organismos;
 
-    const editData$ = this.isEdit && this.editId
-      ? this.usuarioService.getById(this.editId)
-      : of(null);
+      // CREATE → roles reales del backend (value = UUID). EDIT → roles por código (mock).
+      this.rolesDisponibles = this.isEdit
+        ? this.rolesEdicion
+        : rolesAllowed.map((r) => ({ value: r.id, label: r.descripcion || r.codigo }));
 
-    forkJoin({ organismos: organismos$, editData: editData$ })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: ({ organismos, editData }) => {
-          this.organismos = organismos.data;
-
-          if (editData) {
-            this.form.patchValue({
-              nombre:      editData.nombre,
-              apellido:    editData.apellido,
-              email:       editData.email,
-              rol:         editData.rol,
-              organismoId: editData.organismoId,
-            });
-          } else if (!this.isSuperAdmin && this.currentOrganismoId) {
-            this.form.patchValue({ rol: UserRole.EDITOR, organismoId: this.currentOrganismoId });
-            this.form.get('rol')?.disable();
-            this.form.get('organismoId')?.disable();
-          }
-
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
-      });
+      if (usuario) {
+        this.form.patchValue({
+          nombre:      usuario.nombre,
+          apellido:    usuario.apellido,
+          email:       usuario.email,
+          rol:         usuario.rol,
+          organismoId: usuario.organismoId,
+          localidadId: usuario.localidadId ?? null,
+        });
+      } else if (!this.isSuperAdmin && this.currentOrganismoId) {
+        this.form.patchValue({ organismoId: this.currentOrganismoId });
+        this.form.get('organismoId')?.disable();
+      }
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
   }
 
   get requiresOrganismo(): boolean {
     const rol = this.form?.get('rol')?.value;
-    return rol === UserRole.ADMIN_ORGANISMO || rol === UserRole.EDITOR;
+    return rol === UserRole.ADMIN_ORGANIZATION || rol === UserRole.AGENT;
   }
 
   private buildForm(): void {
@@ -132,8 +134,10 @@ export class UsuarioFormComponent implements OnInit {
         { value: '', disabled: this.isEdit },
         this.isEdit ? [] : [Validators.required, Validators.minLength(8)],
       ],
-      rol:         [UserRole.EDITOR, Validators.required],
+      rol:         ['', Validators.required],
       organismoId: [null],
+      localidadId: [null],
+      activo:      [false],
     }, { validators: this.organismoValidator() });
   }
 
@@ -141,7 +145,7 @@ export class UsuarioFormComponent implements OnInit {
     return (group: AbstractControl): ValidationErrors | null => {
       const rol = group.get('rol')?.value;
       const organismoId = group.get('organismoId')?.value;
-      const needsOrg = rol === UserRole.ADMIN_ORGANISMO || rol === UserRole.EDITOR;
+      const needsOrg = rol === UserRole.ADMIN_ORGANIZATION || rol === UserRole.AGENT;
       if (needsOrg && !organismoId) {
         return { organismoRequerido: true };
       }
@@ -167,30 +171,37 @@ export class UsuarioFormComponent implements OnInit {
     }
 
     this.saving = true;
+    this.errorMessage = '';
     const raw = this.form.getRawValue();
+    const formValue: UsuarioFormValue = {
+      nombre:      raw.nombre,
+      apellido:    raw.apellido,
+      email:       raw.email,
+      password:    raw.password,
+      rol:         raw.rol,
+      organismoId: raw.organismoId ?? null,
+      localidadId: raw.localidadId ?? null,
+    };
 
     const request$ = this.isEdit
-      ? this.usuarioService.update(this.editId!, {
-          nombre:      raw.nombre,
-          apellido:    raw.apellido,
-          rol:         raw.rol,
-          organismoId: raw.organismoId ?? null,
-        })
-      : this.usuarioService.create({
-          nombre:      raw.nombre,
-          apellido:    raw.apellido,
-          email:       raw.email,
-          password:    raw.password,
-          rol:         raw.rol,
-          organismoId: raw.organismoId ?? undefined,
-        });
+      ? this.facade.update(this.editId!, formValue)
+      // Crea y, si el toggle está activo, activa la cuenta (PUT status-account) en cadena.
+      : this.facade.create(formValue).pipe(
+          switchMap((created) =>
+            raw.activo
+              ? this.facade.setAccountStatus(created.id, true).pipe(map(() => created))
+              : of(created)
+          )
+        );
 
     request$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.onSuccess(this.isEdit ? 'Usuario actualizado' : 'Usuario creado'),
-        error: () => {
+        error: (err) => {
           this.saving = false;
+          this.errorMessage =
+            err.error?.message || err.error?.details || 'No se pudo guardar el usuario.';
           this.cdr.markForCheck();
         },
       });

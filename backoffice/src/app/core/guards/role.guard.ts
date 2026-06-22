@@ -1,29 +1,28 @@
-import { CanActivateFn } from '@angular/router';
+import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { AuthTokenService } from '../services/auth-token.service';
 import { getRouteData } from '../utils/route-access.utils';
+import { environment } from '../../../environments/environment';
 
-export const roleGuard: CanActivateFn = (route, _state) => {
-  const authService = inject(AuthTokenService);
+/**
+ * RBAC por ruta: bloquea de verdad si el usuario no tiene ninguno de los `allowedRoles`
+ * declarados en `route.data`. Soporta multi-rol. En dev, `bypassAuthGuards` lo desactiva.
+ */
+export const roleGuard: CanActivateFn = (route) => {
+  if (environment.bypassAuthGuards) {
+    return true;
+  }
+
+  const tokenService = inject(AuthTokenService);
   const router = inject(Router);
 
-  const user = authService.getCurrentUser();
-
-  if (!user) {
-    router.navigate(['/auth/login']);
-    return true;
-    /* return false; */
+  if (!tokenService.hasValidSession()) {
+    return router.createUrlTree(['/auth/login']);
   }
 
-  const data = getRouteData(route);
-  const hasAccess = data.allowedRoles?.includes(user.role) ?? true;
+  const { allowedRoles, redirectTo } = getRouteData(route);
+  // Sin restricción declarada → ruta autenticada sin RBAC específico.
+  const hasAccess = !allowedRoles || allowedRoles.length === 0 || tokenService.hasAnyRole(allowedRoles);
 
-  if (!hasAccess) {
-    router.navigate([data.redirectTo || '/dashboard/home']);
-    /* return false; */
-    return true;
-  }
-
-  return true;
+  return hasAccess ? true : router.createUrlTree([redirectTo || '/dashboard/home']);
 };

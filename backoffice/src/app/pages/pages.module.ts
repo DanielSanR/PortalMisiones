@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
-import { roleGuard } from '../core/guards';
+import { roleGuard, permissionGuard } from '../core/guards';
 import { UserRole } from '../core/enums/user-role.enum';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -22,6 +22,10 @@ import { FeedbackComponent } from './feedback/feedback.component';
 import { UsuarioFormComponent } from './usuarios/create/usuario-form.component';
 import { CategoriasListComponent } from './categorias/list/categorias-list.component';
 import { CategoriaFormComponent } from './categorias/create/categoria-form.component';
+import { RolesListComponent } from './roles/list/roles-list.component';
+import { RoleFormComponent } from './roles/create/role-form.component';
+import { PermisosListComponent } from './permisos/list/permisos-list.component';
+import { PermisoFormComponent } from './permisos/create/permiso-form.component';
 
 const routes: Routes = [
   {
@@ -30,7 +34,7 @@ const routes: Routes = [
     children: [
       { path: 'home', component: DashboardComponent },
 
-      // Trámites
+      // Trámites : queda definir aca que roles tienen permitidos los tramites
       { path: 'tramites/lista', component: TramitesListComponent },
       { path: 'tramites/nuevo', component: TramiteFormComponent },
       { path: 'tramites/editar/:id', component: TramiteFormComponent },
@@ -88,20 +92,20 @@ const routes: Routes = [
       {
         path: 'etiquetas/lista',
         component: EtiquetasListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['READ_TAXONOMIA'], redirectTo: '/dashboard/home' },
       },
       {
         path: 'etiquetas/nuevo',
         component: EtiquetaFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['CREATE_TAXONOMIA'], redirectTo: '/dashboard/home' },
       },
       {
         path: 'etiquetas/editar/:id',
         component: EtiquetaFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['UPDATE_TAXONOMIA'], redirectTo: '/dashboard/home' },
       },
 
       // Categorías (solo superadmin)
@@ -130,7 +134,7 @@ const routes: Routes = [
         component: FeedbackComponent,
         canActivate: [roleGuard],
         data: {
-          allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
+          allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION],
           redirectTo: '/dashboard/home',
         },
       },
@@ -159,20 +163,62 @@ const routes: Routes = [
       {
         path: 'usuarios/lista',
         component: UsuariosListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO], redirectTo: '/dashboard/home' },
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION], permissions: ['READ_USUARIO'], redirectTo: '/dashboard/home' },
       },
       {
         path: 'usuarios/nuevo',
         component: UsuarioFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO], redirectTo: '/dashboard/home' },
+        canActivate: [roleGuard, permissionGuard],
+        // Política: crear usuarios SOLO SUPERADMIN (más estricto que el permiso CREATE_USUARIO,
+        // que el seed también da a ADMIN_ORGANIZATION). El roleGuard [SUPERADMIN] es el que manda.
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['CREATE_USUARIO'], redirectTo: '/dashboard/home' },
       },
       {
         path: 'usuarios/editar/:id',
         component: UsuarioFormComponent,
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION], permissions: ['UPDATE_USUARIO'], redirectTo: '/dashboard/home' },
+      },
+
+      // Roles (solo superadmin) — gating por rol + por permiso atómico (defense-in-depth)
+      {
+        path: 'roles/lista',
+        component: RolesListComponent,
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['READ_ROL'], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'roles/nuevo',
+        component: RoleFormComponent,
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['CREATE_ROL'], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'roles/editar/:id',
+        component: RoleFormComponent,
+        canActivate: [roleGuard, permissionGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['UPDATE_ROL'], redirectTo: '/dashboard/home' },
+      },
+
+      // Permisos (solo superadmin)
+      {
+        path: 'permisos/lista',
+        component: PermisosListComponent,
         canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO], redirectTo: '/dashboard/home' },
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'permisos/nuevo',
+        component: PermisoFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
+      },
+      {
+        path: 'permisos/editar/:id',
+        component: PermisoFormComponent,
+        canActivate: [roleGuard],
+        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
       },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },

@@ -5,7 +5,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig } from '../../../shared/components/dynamic-form/dynamic-form.config';
-import { EtiquetaService } from '../../../core/services/etiqueta.service';
+import { EtiquetasFacade, EtiquetaFormValue } from '@features/etiquetas';
 import { FormConfig } from '../../../core/models/field.interface';
 
 @Component({
@@ -30,7 +30,7 @@ export class EtiquetaFormComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
-    private etiquetaService: EtiquetaService,
+    private facade: EtiquetasFacade,
     private route: ActivatedRoute,
     private router: Router,
     private snackBar: MatSnackBar,
@@ -41,7 +41,7 @@ export class EtiquetaFormComponent implements OnInit {
     if (rawId) {
       this.isEdit = true;
       this.editId = Number(rawId);
-      this.etiquetaService.getById(this.editId)
+      this.facade.getById(this.editId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (etiqueta) => {
@@ -56,12 +56,12 @@ export class EtiquetaFormComponent implements OnInit {
     }
   }
 
-  onSubmit(data: any): void {
+  onSubmit(data: EtiquetaFormValue): void {
     this.saving = true;
 
     const request$ = this.isEdit
-      ? this.etiquetaService.update(this.editId!, data)
-      : this.etiquetaService.create(data);
+      ? this.facade.update(this.editId!, data)
+      : this.facade.create(data);
 
     request$
       .pipe(takeUntilDestroyed(this.destroyRef))

@@ -1,11 +1,11 @@
 <app-page-header title="Usuarios" subtitle="Gestion de usuarios del backoffice">
-    <button mat-raised-button color="primary" (click)="onCreate()">
+    <button *appHasRole="'SUPERADMIN'" mat-raised-button color="primary" (click)="onCreate()">
         <mat-icon>person_add</mat-icon> Nuevo usuario
     </button>
 </app-page-header>
 
 <app-shared-table
-    [data]="usuarios"
+    [data]="(usuarios$ | async) ?? []"
     [columns]="columns"
     [loading]="loading"
     emptyMessage="No se encontraron usuarios">
@@ -36,7 +36,7 @@
 
     <!-- Columna: Acciones -->
     <ng-template appTableCell="acciones" let-row>
-        <button mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
+        <button *appHasPermission="'UPDATE_USUARIO'" mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
             <mat-icon>edit</mat-icon>
         </button>
     </ng-template>

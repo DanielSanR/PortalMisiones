@@ -1,0 +1,14 @@
+// Layout específico de este form. Las clases comunes (.form-card, .section-header, .form-grid,
+// .form-actions, .spin) viven en shared-styles/_components.scss (DRY).
+.form-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+  justify-content: center;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+  }
+}

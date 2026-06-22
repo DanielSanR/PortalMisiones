@@ -1,0 +1,62 @@
+<h2 mat-dialog-title>
+  <mat-icon class="title-icon">{{ accionIcon }}</mat-icon>
+  Detalle de {{ data.accion | titlecase }}
+</h2>
+
+<mat-dialog-content>
+  <div class="meta-row">
+    <div class="meta-item">
+      <span class="meta-label">Trámite</span>
+      <span class="meta-value">{{ data.tramiteTitulo }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Usuario</span>
+      <span class="meta-value">{{ data.usuarioNombre }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Fecha</span>
+      <span class="meta-value">{{ data.fechaAccion | date:'dd/MM/yyyy HH:mm' }}</span>
+    </div>
+  </div>
+
+  @if (data.datosAnteriores || data.datosNuevos) {
+    <div class="diff-container">
+      @if (data.datosAnteriores) {
+        <div class="diff-panel diff-old">
+          <h4><mat-icon>remove_circle_outline</mat-icon> Antes</h4>
+          <div class="diff-content">
+            @for (item of data.datosAnteriores | keyvalue; track item.key) {
+              <div class="diff-row">
+                <span class="diff-key">{{ item.key }}</span>
+                <span class="diff-value diff-removed">{{ item.value }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (data.datosNuevos) {
+        <div class="diff-panel diff-new">
+          <h4><mat-icon>add_circle_outline</mat-icon> Después</h4>
+          <div class="diff-content">
+            @for (item of data.datosNuevos | keyvalue; track item.key) {
+              <div class="diff-row">
+                <span class="diff-key">{{ item.key }}</span>
+                <span class="diff-value diff-added">{{ item.value }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="no-diff">
+      <mat-icon>info_outline</mat-icon>
+      <p>No se registraron cambios de datos para esta acción.</p>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cerrar</button>
+</mat-dialog-actions>

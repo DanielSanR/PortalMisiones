@@ -3,6 +3,8 @@ import { UserRole } from '../enums/user-role.enum';
 
 export interface RouteData {
   allowedRoles?: UserRole[];
+  /** Permisos atómicos requeridos por la ruta (any-of), para `permissionGuard`. */
+  permissions?: string[];
   redirectTo?: string;
 }
 

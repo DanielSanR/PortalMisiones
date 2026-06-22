@@ -4,12 +4,18 @@ import { authGuard } from './core/guards';
 export const routes: Routes = [
   {
     path: 'auth',
-    loadChildren: () => import('./auth/auth.module').then((m) => m.AuthModule),
+    loadChildren: () => import('./auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
   {
     path: 'dashboard',
     loadChildren: () => import('./pages/pages.module').then((m) => m.PagesModule),
-    /* canActivate: [authGuard], */
+    canActivate: [authGuard]
+  },
+  {
+    // Enlace del email de recuperación (el backend arma /change-password/<token> en la raíz).
+    path: 'change-password/:token',
+    loadComponent: () =>
+      import('./auth/reset-password/reset-password.component').then((m) => m.ResetPasswordComponent),
   },
   {
     path: '',

@@ -15,7 +15,9 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error) => {
       const isBlobRequest = req.responseType === 'blob';
-      if (!isBlobRequest) {
+      // Los 401 los gestiona el auth.interceptor (refresh/rotación o re-login),
+      // así que no mostramos diálogo de error para ellos.
+      if (!isBlobRequest && error?.status !== 401) {
         errorService.handleHttpError(error);
       }
       return throwError(() => error);

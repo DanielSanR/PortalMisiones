@@ -9,5 +9,37 @@
       "Read(coverage/**)",
       "Read(*.lock)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-typecheck.sh\"",
+            "async": true,
+            "timeout": 120,
+            "statusMessage": "Typecheck backoffice (tsc)"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-gate.sh\"",
+            "timeout": 300,
+            "statusMessage": "Gate: madge + ng build"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
   }
 }

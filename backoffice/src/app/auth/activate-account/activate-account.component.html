@@ -1,0 +1,31 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <img src="assets/images/logo-misiones.png" alt="Misiones" class="auth-card__logo" />
+      <h1>Activación de cuenta</h1>
+    </div>
+
+    @switch (estado) {
+      @case ('activando') {
+        <div class="activate-state" role="status">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Activando tu cuenta…</p>
+        </div>
+      }
+      @case ('ok') {
+        <p class="auth-card__success" role="status">
+          <mat-icon>check_circle</mat-icon>
+          ¡Cuenta activada! Te estamos redirigiendo al panel…
+        </p>
+        <a routerLink="/dashboard/home" class="auth-card__link">Ir al panel ahora</a>
+      }
+      @case ('error') {
+        <p class="auth-card__error" role="alert">{{ errorMessage }}</p>
+        <a routerLink="/auth/login" class="auth-card__link">
+          <mat-icon>arrow_back</mat-icon>
+          Volver al login
+        </a>
+      }
+    }
+  </div>
+</div>

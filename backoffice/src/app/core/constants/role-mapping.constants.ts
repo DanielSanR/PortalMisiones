@@ -13,13 +13,13 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Dashboard',
     icon: 'dashboard',
     route: '/dashboard/home',
-    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO, UserRole.EDITOR],
+    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION, UserRole.AGENT, UserRole.MANAGER],
   },
   {
     label: 'Trámites',
     icon: 'description',
     route: '/dashboard/tramites/lista',
-    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO, UserRole.EDITOR],
+    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION, UserRole.AGENT],
   },
   {
     label: 'Organismos',
@@ -49,7 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Usuarios',
     icon: 'people',
     route: '/dashboard/usuarios/lista',
-    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
+    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION],
   },
   {
     label: 'Eventos de Vida',
@@ -61,7 +61,19 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Feedback Ciudadano',
     icon: 'forum',
     route: '/dashboard/feedback',
-    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
+    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION],
+  },
+  {
+    label: 'Roles',
+    icon: 'admin_panel_settings',
+    route: '/dashboard/roles/lista',
+    roles: [UserRole.SUPERADMIN],
+  },
+  {
+    label: 'Permisos',
+    icon: 'key',
+    route: '/dashboard/permisos/lista',
+    roles: [UserRole.SUPERADMIN],
   },
   {
     label: 'Auditoría',
@@ -73,6 +85,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Reportes',
     icon: 'bar_chart',
     route: '/dashboard/reportes',
-    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_ORGANISMO],
+    roles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION],
   },
 ];

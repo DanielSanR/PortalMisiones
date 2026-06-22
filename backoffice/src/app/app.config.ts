@@ -11,6 +11,13 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { mockApiInterceptor } from './core/mocks/mock-api.interceptor';
+import { provideUsuariosFeature } from './core/features/usuarios';
+import { provideOrganismosFeature } from './core/features/organismos';
+import { provideRolesFeature } from './core/features/roles';
+import { providePermisosFeature } from './core/features/permisos';
+import { provideMunicipiosFeature } from './core/features/municipios';
+import { provideCuentaFeature } from './core/features/cuenta';
+import { provideEtiquetasFeature } from './core/features/etiquetas';
 
 registerLocaleData(localeEsAr, 'es-AR');
 
@@ -18,10 +25,21 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideAnimationsAsync(),
+    // Orden: en la RESPUESTA los interceptores corren en orden inverso, por lo que
+    // authInterceptor (último) procesa el 401 ANTES que httpErrorInterceptor muestre diálogo.
     provideHttpClient(
-      withInterceptors([mockApiInterceptor, authInterceptor, httpErrorInterceptor])
+      withInterceptors([mockApiInterceptor, httpErrorInterceptor, authInterceptor])
     ),
     { provide: LOCALE_ID, useValue: 'es-AR' },
     provideCharts(withDefaultRegisterables()),
+
+    // ── Wiring por feature (cada feature provee sus DataSources; la fuente la resuelve environment) ──
+    ...provideUsuariosFeature(),
+    ...provideOrganismosFeature(),
+    ...provideRolesFeature(),
+    ...providePermisosFeature(),
+    ...provideMunicipiosFeature(),
+    ...provideCuentaFeature(),
+    ...provideEtiquetasFeature(),
   ],
 };

@@ -78,7 +78,7 @@ export class AdminLayoutComponent implements OnInit {
     const user = this.authTokenService.getCurrentUser();
     if (!user) return;
 
-    const updatedUser: AuthUser = { ...user, role: role as UserRole };
+    const updatedUser: AuthUser = { ...user, role: role as UserRole, roles: [role as UserRole] };
     localStorage.setItem('user_data', JSON.stringify(updatedUser));
     this.authTokenService.updateUserFromToken();
 

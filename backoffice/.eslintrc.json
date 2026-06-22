@@ -1,0 +1,80 @@
+{
+  "root": true,
+  "ignorePatterns": ["dist/**", ".angular/**", "node_modules/**"],
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@angular-eslint/recommended"
+      ],
+      "plugins": ["boundaries"],
+      "settings": {
+        "import/resolver": {
+          "typescript": { "alwaysTryTypes": true, "project": "tsconfig.json" }
+        },
+        "boundaries/include": ["src/app/core/features/**/*"],
+        "boundaries/elements": [
+          { "type": "feature-model",      "mode": "file", "pattern": "src/app/core/features/*/models/*",       "capture": ["feature", "file"] },
+          { "type": "feature-mapper",     "mode": "file", "pattern": "src/app/core/features/*/mappers/*",      "capture": ["feature", "file"] },
+          { "type": "feature-datasource", "mode": "file", "pattern": "src/app/core/features/*/datasources/*",  "capture": ["feature", "file"] },
+          { "type": "feature-repository", "mode": "file", "pattern": "src/app/core/features/*/repositories/*", "capture": ["feature", "file"] },
+          { "type": "feature-facade",     "mode": "file", "pattern": "src/app/core/features/*/facades/*",      "capture": ["feature", "file"] },
+          { "type": "feature-public",     "mode": "file", "pattern": "src/app/core/features/*/index.ts",       "capture": ["feature"] },
+          { "type": "feature-providers",  "mode": "file", "pattern": "src/app/core/features/*/*.providers.ts", "capture": ["feature", "file"] }
+        ]
+      },
+      "rules": {
+        "@angular-eslint/directive-selector": "off",
+        "@angular-eslint/component-selector": "off",
+        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+        "boundaries/no-unknown": "off",
+        "boundaries/no-unknown-files": "off",
+        "boundaries/element-types": [
+          "error",
+          {
+            "default": "disallow",
+            "message": "Violación de capas: ${file.type} no puede depender de ${dependency.type} (ver .claude/rules/arquitectura-capas.md)",
+            "rules": [
+              { "from": "feature-facade", "allow": [
+                ["feature-repository", { "feature": "${from.feature}" }],
+                ["feature-model", { "feature": "${from.feature}" }],
+                "feature-public"
+              ] },
+              { "from": "feature-repository", "allow": [
+                ["feature-datasource", { "feature": "${from.feature}" }],
+                ["feature-mapper", { "feature": "${from.feature}" }],
+                ["feature-model", { "feature": "${from.feature}" }]
+              ] },
+              { "from": "feature-datasource", "allow": [
+                ["feature-datasource", { "feature": "${from.feature}" }],
+                ["feature-mapper", { "feature": "${from.feature}" }],
+                ["feature-model", { "feature": "${from.feature}" }]
+              ] },
+              { "from": "feature-mapper", "allow": [
+                ["feature-model", { "feature": "${from.feature}" }],
+                "feature-public"
+              ] },
+              { "from": "feature-model", "allow": [
+                ["feature-model", { "feature": "${from.feature}" }],
+                "feature-public"
+              ] },
+              { "from": "feature-providers", "allow": [
+                ["feature-datasource", { "feature": "${from.feature}" }],
+                "feature-public"
+              ] },
+              { "from": "feature-public", "allow": [
+                ["feature-facade", { "feature": "${from.feature}" }],
+                ["feature-repository", { "feature": "${from.feature}" }],
+                ["feature-model", { "feature": "${from.feature}" }],
+                ["feature-providers", { "feature": "${from.feature}" }]
+              ] }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

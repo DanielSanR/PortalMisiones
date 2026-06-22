@@ -1,0 +1,28 @@
+<app-page-header title="Permisos" subtitle="Gestión de permisos atómicos del sistema">
+  <button mat-raised-button color="primary" (click)="onCreate()">
+    <mat-icon>add</mat-icon> Nuevo permiso
+  </button>
+</app-page-header>
+
+<app-shared-table
+    [data]="(permisos$ | async) ?? []"
+    [columns]="columns"
+    [loading]="loading"
+    emptyMessage="No hay permisos registrados"
+    emptyIcon="key_off">
+
+  <ng-template appTableCell="acciones" let-row>
+    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del permiso">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="onEdit(row)">
+        <mat-icon>edit</mat-icon> Editar
+      </button>
+      <button mat-menu-item class="delete-action" (click)="onDelete(row)">
+        <mat-icon>delete</mat-icon> Eliminar
+      </button>
+    </mat-menu>
+  </ng-template>
+
+</app-shared-table>

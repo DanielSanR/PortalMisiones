@@ -41,3 +41,7 @@ yarn-error.log*
 # Miscellaneous
 *.gz
 *.tgz
+
+# Credenciales / notas locales (NO subir)
+backoffice/login.data.md
+**/login.data.md

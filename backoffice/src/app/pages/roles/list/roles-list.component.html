@@ -1,0 +1,51 @@
+<app-page-header title="Roles" subtitle="Gestión de roles del sistema">
+  <button *appHasPermission="'CREATE_ROL'" mat-raised-button color="primary" (click)="onCreate()">
+    <mat-icon>add</mat-icon> Nuevo rol
+  </button>
+</app-page-header>
+
+<app-shared-table
+    [data]="(roles$ | async) ?? []"
+    [columns]="columns"
+    [loading]="loading"
+    emptyMessage="No hay roles registrados"
+    emptyIcon="admin_panel_settings">
+
+  <!-- Columna: Scope -->
+  <ng-template appTableCell="scopeTipo" let-row>
+    <span class="scope-badge" [class.scope-badge--global]="row.scopeTipo === 'global'"
+                              [class.scope-badge--organismo]="row.scopeTipo === 'organismo'">
+      {{ row.scopeTipo === 'global' ? 'Global' : 'Organismo' }}
+    </span>
+  </ng-template>
+
+  <!-- Columna: Asignable por Org Admin -->
+  <ng-template appTableCell="asignable" let-row>
+    <mat-icon class="bool-icon" [class.bool-icon--yes]="row.asignablePorOrgAdmin"
+                                [class.bool-icon--no]="!row.asignablePorOrgAdmin"
+              [attr.aria-label]="row.asignablePorOrgAdmin ? 'Sí' : 'No'">
+      {{ row.asignablePorOrgAdmin ? 'check_circle' : 'cancel' }}
+    </mat-icon>
+  </ng-template>
+
+  <!-- Columna: Número de permisos -->
+  <ng-template appTableCell="permisos" let-row>
+    <strong class="count-badge">{{ row.permisos.length }}</strong>
+  </ng-template>
+
+  <!-- Columna: Acciones -->
+  <ng-template appTableCell="acciones" let-row>
+    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del rol">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button *appHasPermission="'UPDATE_ROL'" mat-menu-item (click)="onEdit(row)">
+        <mat-icon>edit</mat-icon> Editar
+      </button>
+      <button *appHasPermission="'DELETE_ROL'" mat-menu-item class="delete-action" (click)="onDelete(row)">
+        <mat-icon>delete</mat-icon> Eliminar
+      </button>
+    </mat-menu>
+  </ng-template>
+
+</app-shared-table>
