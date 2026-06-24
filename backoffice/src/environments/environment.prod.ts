@@ -1,8 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.portalmisiones.gob.ar/api',
-  // Backend real. En prod normalmente mismo host detrás de gateway; ajustar según deploy.
-  apiBaseUrl: 'https://api.portalmisiones.gob.ar',
+  // Base de las rutas mockeadas.
+  apiUrl: 'https://tramitesmisiones.api.dev.stagemnes.net.ar/api',
+  apiBaseUrl: 'https://tramitesmisiones.api.dev.stagemnes.net.ar',
 
   // En prod los guards SIEMPRE validan (sin bypass).
   bypassAuthGuards: false,

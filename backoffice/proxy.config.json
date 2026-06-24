@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://tramitesmisiones.api.dev.stagemnes.net.ar",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
