@@ -1,13 +1,14 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { OrganismoOption } from '../models/organismo.vm';
+import { OrganismoFormValue, OrganismoVM } from '../models/organismo.vm';
 
-/**
- * Fuente de datos de organismos (para selects). El backend NO expone organismos todavía
- * (API spec §7), así que hoy sólo existe la implementación mock.
- */
+/** Fuente de datos de Organismos. TODO requiere SUPERADMIN (§5.2). */
 export abstract class OrganismosDataSource {
-  abstract getOptions(): Observable<OrganismoOption[]>;
+  abstract list(): Observable<OrganismoVM[]>;
+  abstract getById(id: string): Observable<OrganismoVM>;
+  abstract create(form: OrganismoFormValue): Observable<OrganismoVM>;
+  abstract update(id: string, form: OrganismoFormValue): Observable<OrganismoVM>;
+  abstract delete(id: string): Observable<void>;
 }
 
 export const ORGANISMOS_DS = new InjectionToken<OrganismosDataSource>('ORGANISMOS_DS');

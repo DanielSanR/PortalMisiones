@@ -1,0 +1,40 @@
+<app-page-header title="Tipos de Organismo" subtitle="Catálogo de tipos para clasificar organismos">
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_ORGANISM_TYPE'">
+    <mat-icon>add</mat-icon> Nuevo tipo
+  </button>
+</app-page-header>
+
+<app-shared-table
+    [data]="(tipos$ | async) ?? []"
+    [columns]="columns"
+    [loading]="loading"
+    emptyMessage="No hay tipos de organismo registrados"
+    emptyIcon="category">
+
+    <ng-template appTableCell="nombre" let-row>
+        <strong>{{ row.nombre }}</strong>
+    </ng-template>
+
+    <ng-template appTableCell="descripcion" let-row>
+        <span class="text-secondary">{{ row.descripcion || '—' }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="activo" let-row>
+        <span class="text-secondary">{{ row.activo ? 'Sí' : 'No' }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="acciones" let-row>
+        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="onEdit(row)" *appHasPermission="'UPDATE_ORGANISM_TYPE'">
+                <mat-icon>edit</mat-icon> Editar
+            </button>
+            <button mat-menu-item class="delete-action" (click)="onDelete(row)" *appHasPermission="'DELETE_ORGANISM_TYPE'">
+                <mat-icon>delete</mat-icon> Eliminar
+            </button>
+        </mat-menu>
+    </ng-template>
+
+</app-shared-table>

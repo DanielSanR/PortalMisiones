@@ -26,7 +26,12 @@ export class UsuariosFacade {
     return this.usuarios.list().pipe(tap((list) => this._usuarios$.next(list)));
   }
 
-  /** Resuelve en una sola llamada todo lo que necesita el formulario (organismos + usuario en edición). */
+  /**
+   * Resuelve en una sola llamada lo que necesita el formulario (organismos + roles + usuario en edición).
+   * Solo lo consumen las rutas usuarios/nuevo y usuarios/editar, gateadas a SUPERADMIN (ver pages.module):
+   * es el único rol que puede leer `/api/organism` y `/api/role/allowed` (SUPERADMIN-gated), así que no
+   * hace falta degradar nada.
+   */
   getFormData(id: string | null): Observable<UsuarioFormData> {
     return forkJoin({
       organismos: this.organismos.getOptions(),

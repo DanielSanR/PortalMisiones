@@ -30,7 +30,6 @@ export class UsuariosMockDataSource extends UsuariosDataSource {
         password: form.password,
         rol: form.rol as UserRole,
         organismoId: form.organismoId ?? undefined,
-        localidadId: form.localidadId ?? undefined,
       })
       .pipe(map(mockUsuarioToVM));
   }
@@ -42,7 +41,6 @@ export class UsuariosMockDataSource extends UsuariosDataSource {
         apellido: form.apellido,
         rol: form.rol as UserRole,
         organismoId: form.organismoId ?? undefined,
-        localidadId: form.localidadId ?? undefined,
       })
       .pipe(map(mockUsuarioToVM));
   }

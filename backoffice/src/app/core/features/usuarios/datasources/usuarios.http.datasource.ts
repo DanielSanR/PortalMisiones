@@ -60,7 +60,6 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
         apellido: form.apellido,
         rol: form.rol as UserRole,
         organismoId: form.organismoId ?? undefined,
-        localidadId: form.localidadId ?? undefined,
       })
       .pipe(map(mockUsuarioToVM));
   }

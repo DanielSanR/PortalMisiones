@@ -10,7 +10,6 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { RolLabelPipe } from '../../../shared/pipes/rol-label.pipe';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { HasRoleDirective } from '../../../shared/directives/has-role.directive';
 import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
 
 @Component({
@@ -28,7 +27,6 @@ import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
     TableCellDirective,
     RolLabelPipe,
     HasPermissionDirective,
-    HasRoleDirective,
   ],
   templateUrl: './usuarios-list.component.html',
 })

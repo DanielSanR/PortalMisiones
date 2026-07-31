@@ -1,10 +1,9 @@
 import { ActivatedRouteSnapshot } from '@angular/router';
-import { UserRole } from '../enums/user-role.enum';
+import { AccessRule } from '../models/access-rule.model';
 
 export interface RouteData {
-  allowedRoles?: UserRole[];
-  /** Permisos atómicos requeridos por la ruta (any-of), para `permissionGuard`. */
-  permissions?: string[];
+  /** Regla de acceso (permisos + excepciones de política), evaluada por `accessGuard`. */
+  access?: AccessRule;
   redirectTo?: string;
 }
 

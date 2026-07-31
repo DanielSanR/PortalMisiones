@@ -6,11 +6,13 @@ export interface AuthUser {
   /** El backend NO incluye nombre/apellido en el JWT; vienen del perfil (endpoint aparte). */
   nombre: string;
   apellido: string;
-  /** Rol de mayor privilegio derivado del claim `roles`. */
-  role: UserRole;
-  /** Todos los roles del claim `roles` (para RBAC multi-rol en guards). */
+  /** Rol canónico de mayor privilegio, o `null` si el usuario solo tiene rol(es) custom. */
+  role: UserRole | null;
+  /** Roles canónicos reconocidos del claim `roles` (para excepciones de política / multi-rol). */
   roles: UserRole[];
-  /** Permisos atómicos del claim `roles` (sin prefijo ROLE_), para gating fino en la UI. */
+  /** TODOS los códigos de rol (canónicos + custom, sin prefijo ROLE_), para display. */
+  roleCodes: string[];
+  /** Permisos atómicos del claim `roles` (sin prefijo ROLE_) — fuente primaria de autorización. */
   permissions: string[];
   organismoId?: string | null;
 }
@@ -27,7 +29,14 @@ export interface RefreshTokenRequest {
 /** Claims reales del access/refresh token (BACKEND_API_SPEC.md §1.2). */
 export interface JwtPayload {
   sub: string; // email
-  roles: string; // autoridades separadas por coma, p. ej. "ROLE_SUPERADMIN,ROLE_AGENT"
+  /**
+   * Autoridades. Dos formatos tolerados (ver `parseAuthorities`):
+   *  - viejo: string coma-separado que mezcla `ROLE_*` y permisos ("ROLE_SUPERADMIN,READ_USUARIO");
+   *  - nuevo: array de `ROLE_*` (con `permissions` en claim aparte).
+   */
+  roles: string | string[];
+  /** Formato nuevo: permisos atómicos en un claim separado. */
+  permissions?: string[];
   userId: string; // UUID
   iat: number;
   exp: number;

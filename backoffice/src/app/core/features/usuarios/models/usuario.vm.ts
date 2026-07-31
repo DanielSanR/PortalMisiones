@@ -11,7 +11,6 @@ export interface UsuarioVM {
   rol: UserRole;
   organismoId: string | null;
   organismoNombre?: string;
-  localidadId?: number | null;
   activo: boolean;
 }
 
@@ -23,7 +22,6 @@ export interface UsuarioFormValue {
   password: string;
   rol: string;
   organismoId: string | null;
-  localidadId: number | null;
 }
 
 /** Datos que necesita el formulario, resueltos en una sola llamada (orquestación del facade). */

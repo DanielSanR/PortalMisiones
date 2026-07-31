@@ -5,8 +5,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig } from '../../../shared/components/dynamic-form/dynamic-form.config';
-import { ModalidadService } from '../../../core/services/modalidad.service';
 import { FormConfig } from '../../../core/models/field.interface';
+import { ModalidadesFacade, ModalidadFormValue } from '@features/modalidades';
 
 @Component({
   selector: 'app-modalidad-form',
@@ -18,19 +18,20 @@ import { FormConfig } from '../../../core/models/field.interface';
     DynamicFormComponent,
   ],
   templateUrl: './modalidad-form.component.html',
+  styleUrls: ['./modalidad-form.component.scss'],
 })
 export class ModalidadFormComponent implements OnInit {
   config: FormConfig = getFormConfig('MODALIDAD');
   isEdit = false;
   saving = false;
-  initialData: Record<string, any> | null = null;
+  initialData: Record<string, unknown> | null = null;
 
-  private editId: number | null = null;
+  private editId: string | null = null;
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
-    private modalidadService: ModalidadService,
+    private facade: ModalidadesFacade,
     private route: ActivatedRoute,
     private router: Router,
     private snackBar: MatSnackBar,
@@ -40,29 +41,25 @@ export class ModalidadFormComponent implements OnInit {
     const rawId = this.route.snapshot.params['id'];
     if (rawId) {
       this.isEdit = true;
-      this.editId = Number(rawId);
-      this.modalidadService.getById(this.editId)
+      this.editId = rawId;
+      this.facade.getById(rawId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (modalidad) => {
-            this.initialData = {
-              nombre: modalidad.nombre,
-              descripcion: modalidad.descripcion,
-              icono: modalidad.icono,
-              color: modalidad.color,
-            };
+            this.initialData = { nombre: modalidad.nombre };
             this.cdr.markForCheck();
           },
         });
     }
   }
 
-  onSubmit(data: any): void {
+  onSubmit(data: Record<string, unknown>): void {
     this.saving = true;
+    const form: ModalidadFormValue = { nombre: String(data['nombre'] ?? '') };
 
     const request$ = this.isEdit
-      ? this.modalidadService.update(this.editId!, data)
-      : this.modalidadService.create(data);
+      ? this.facade.update(this.editId!, form)
+      : this.facade.create(form);
 
     request$
       .pipe(takeUntilDestroyed(this.destroyRef))

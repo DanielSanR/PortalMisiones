@@ -9,8 +9,8 @@ import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
  * por eso quedan vacíos hasta que se complete con esos datos. Absorbe el `role` anidado.
  */
 export function toUsuarioVM(dto: UserResponseDTO): UsuarioVM {
-  const rol = dto.role?.codigo
-    ? BACKEND_TO_ENUM[`ROLE_${dto.role.codigo}`] ?? UserRole.AGENT
+  const rol = dto.role?.code
+    ? BACKEND_TO_ENUM[`ROLE_${dto.role.code}`] ?? UserRole.AGENT
     : UserRole.AGENT;
 
   return {
@@ -34,7 +34,6 @@ export function mockUsuarioToVM(u: Usuario): UsuarioVM {
     rol: u.rol,
     organismoId: u.organismoId,
     organismoNombre: u.organismoNombre,
-    localidadId: u.localidadId,
     activo: u.activo,
   };
 }

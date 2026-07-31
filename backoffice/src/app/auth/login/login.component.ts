@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 // Excepción documentada: auth es infra (token + rotación); queda fuera del patrón de features
 // por ahora (ver migracion_arquitectura.md). AuthTokenService ya cumple rol de facade de sesión.
 import { AuthService } from '../../core/services/auth.service';
+import { NoBackofficeAccessError } from '../../core/errors/no-backoffice-access.error';
 
 @Component({
   selector: 'app-login',
@@ -59,10 +60,14 @@ export class LoginComponent {
       await firstValueFrom(this.authService.login(email, password));
       this.router.navigateByUrl('/dashboard/home');
     } catch (err: unknown) {
-      const e = err as { error?: { message?: string; details?: string } };
       this.loading = false;
-      this.errorMessage =
-        e.error?.message || e.error?.details || 'Credenciales inválidas';
+      if (err instanceof NoBackofficeAccessError) {
+        // Login OK pero sin autoridad para el backoffice (ej. rol USER/visitante).
+        this.errorMessage = err.message;
+      } else {
+        const e = err as { error?: { message?: string; details?: string } };
+        this.errorMessage = e.error?.message || e.error?.details || 'Credenciales inválidas';
+      }
       this.cdr.markForCheck();
     }
   }

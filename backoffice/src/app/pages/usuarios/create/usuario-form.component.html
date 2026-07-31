@@ -90,16 +90,6 @@
                 }
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-                <mat-label>Localidad</mat-label>
-                <mat-select formControlName="localidadId">
-                    <mat-option [value]="null">— Sin localidad —</mat-option>
-                    @for (m of (municipios$ | async) ?? []; track m.id) {
-                      <mat-option [value]="m.id">{{ m.nombre }}</mat-option>
-                    }
-                </mat-select>
-            </mat-form-field>
-
             @if (requiresOrganismo) {
               <mat-form-field appearance="outline">
                   <mat-label>Organismo</mat-label>

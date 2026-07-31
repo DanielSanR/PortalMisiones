@@ -1,5 +1,5 @@
 <app-page-header title="Usuarios" subtitle="Gestion de usuarios del backoffice">
-    <button *appHasRole="'SUPERADMIN'" mat-raised-button color="primary" (click)="onCreate()">
+    <button *appHasPermission="'CREATE_USER'" mat-raised-button color="primary" (click)="onCreate()">
         <mat-icon>person_add</mat-icon> Nuevo usuario
     </button>
 </app-page-header>
@@ -25,9 +25,10 @@
         {{ row.organismoNombre || '-' }}
     </ng-template>
 
-    <!-- Columna: Activo (toggle) -->
+    <!-- Columna: Activo (toggle). Gestión de usuarios = SUPERADMIN (UPDATE_USER vía policy override). -->
     <ng-template appTableCell="activo" let-row>
         <mat-slide-toggle
+            *appHasPermission="'UPDATE_USER'"
             [checked]="row.activo"
             (change)="onToggleActive(row)"
             aria-label="Activar o desactivar usuario">
@@ -36,7 +37,7 @@
 
     <!-- Columna: Acciones -->
     <ng-template appTableCell="acciones" let-row>
-        <button *appHasPermission="'UPDATE_USUARIO'" mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
+        <button *appHasPermission="'UPDATE_USER'" mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
             <mat-icon>edit</mat-icon>
         </button>
     </ng-template>

@@ -8,12 +8,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { UserRole } from '@core/enums/user-role.enum';
 import { RolesFacade, RolVM } from '@features/roles';
 
 @Component({
@@ -26,11 +28,11 @@ import { RolesFacade, RolVM } from '@features/roles';
     MatIconModule,
     MatMenuModule,
     MatChipsModule,
+    MatTooltipModule,
     MatSnackBarModule,
     PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
-    HasPermissionDirective,
   ],
   templateUrl: './roles-list.component.html',
   styleUrl: './roles-list.component.scss',
@@ -38,9 +40,26 @@ import { RolesFacade, RolVM } from '@features/roles';
 export class RolesListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly authTokenService = inject(AuthTokenService);
 
   readonly roles$ = this.facade.roles$;
   loading = true;
+
+  /**
+   * `/api/role` se autoriza por ROL (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE), no por permiso: quien llega
+   * a esta pantalla puede gestionar roles, así que los botones no se gatean por permiso. Única salvedad:
+   * el rol `SUPERADMIN` solo lo puede editar/eliminar un SUPERADMIN (backend corta con 403 `4029`, §4.4).
+   *
+   * Se recalcula reactivamente ante cada emisión de `getCurrentUser$()` (no se cachea en un field
+   * initializer) para no quedar stale si cambia la sesión —p. ej. el switcher de rol de dev—, siguiendo la
+   * misma convención que `admin-layout` y `*appHasPermission`.
+   */
+  private isSuperAdmin = false;
+
+  /** ¿Puede el usuario logueado modificar esta fila? (protege el rol SUPERADMIN). */
+  canModify(rol: RolVM): boolean {
+    return this.isSuperAdmin || rol.codigo.toUpperCase() !== UserRole.SUPERADMIN;
+  }
 
   columns: TableColumn<RolVM>[] = [
     { key: 'codigo',               label: 'Código',              width: '20%' },
@@ -59,6 +78,14 @@ export class RolesListComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
+    // Rol reactivo: mantiene `canModify()` alineado con la sesión actual (switcher de rol dev, refresh).
+    this.authTokenService.getCurrentUser$()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((user) => {
+        this.isSuperAdmin = user?.role === UserRole.SUPERADMIN;
+        this.cdr.markForCheck();
+      });
+
     this.loading = true;
     try {
       await firstValueFrom(this.facade.loadRoles());

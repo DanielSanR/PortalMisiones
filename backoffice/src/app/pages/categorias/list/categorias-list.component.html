@@ -1,80 +1,84 @@
 <app-page-header title="Categorías" subtitle="Estructura de navegación del portal (categorías y sub-categorías)">
-  <button mat-raised-button color="primary" (click)="onCreate()">
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
     <mat-icon>add</mat-icon> Nueva categoría
   </button>
 </app-page-header>
 
-@if (loading) {
-  <div class="loading-container">
-    <mat-spinner diameter="40"></mat-spinner>
-  </div>
-} @else if (categorias.length === 0) {
-  <div class="empty-state">
-    <mat-icon>folder_off</mat-icon>
-    <p>No hay categorías registradas</p>
-  </div>
-} @else {
-  <div class="categorias-tree">
-    <mat-accordion multi>
-      @for (cat of categorias; track cat.id) {
-        <mat-expansion-panel>
-          <mat-expansion-panel-header class="header">
-            <mat-panel-title class="header-title">
-              <div class="cat-header">
-                <span class="color-dot" [style.background]="cat.color"></span>
-                <mat-icon class="cat-icon" [style.color]="cat.color">{{ cat.icono }}</mat-icon>
-                <strong>{{ cat.nombre }}</strong>
-                <span class="count-badge">{{ cat.tramitesCount || 0 }} trámites</span>
-              </div>
-            </mat-panel-title>
-            <mat-panel-description class="header-actions">
-              <button mat-icon-button (click)="$event.stopPropagation(); onEdit(cat)" aria-label="Editar">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button (click)="$event.stopPropagation(); onDelete(cat)" aria-label="Eliminar" class="delete-btn">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </mat-panel-description>
-          </mat-expansion-panel-header>
-
-          @if (cat.descripcion) {
-            <p class="cat-description">{{ cat.descripcion }}</p>
-          }
-
-          <div class="subcategorias">
-            <div class="subcat-header">
-              <span class="subcat-title">Sub-categorías</span>
-              <button mat-stroked-button color="primary" (click)="onCreate(cat.id)">
-                <mat-icon>add</mat-icon> Agregar sub-categoría
-              </button>
-            </div>
-
-            @if (cat.children && cat.children.length > 0) {
-              <div class="subcat-list">
-                @for (sub of cat.children; track sub.id) {
-                  <div class="subcat-item">
-                    <div class="subcat-info">
-                      <mat-icon [style.color]="sub.color">{{ sub.icono }}</mat-icon>
-                      <span class="subcat-name">{{ sub.nombre }}</span>
-                      <span class="count-badge small">{{ sub.tramitesCount || 0 }}</span>
-                    </div>
-                    <div class="subcat-actions">
-                      <button mat-icon-button (click)="onEdit(sub)" aria-label="Editar">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button (click)="onDelete(sub)" aria-label="Eliminar" class="delete-btn">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else {
-              <p class="empty-subcat">Sin sub-categorías. Agregue una para organizar los trámites de esta categoría.</p>
-            }
+<div class="cat-table">
+  @if (loading) {
+    <div class="cat-table__loading"><mat-spinner diameter="40"></mat-spinner></div>
+  } @else {
+    @if ((arbol$ | async) ?? []; as rows) {
+      @if (rows.length === 0) {
+        <div class="cat-table__empty">
+          <mat-icon class="cat-table__empty-icon">account_tree</mat-icon>
+          <p class="cat-table__empty-title">Todavía no hay categorías</p>
+          <p class="cat-table__empty-text">Creá la primera categoría raíz para armar la navegación del portal.</p>
+          <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
+            <mat-icon>add</mat-icon> Nueva categoría
+          </button>
+        </div>
+      } @else {
+        <div class="cat-table__grid" role="tree">
+          <div class="cat-table__head">
+            <span>Nombre</span>
+            <span>Slug</span>
+            <span class="cat-table__col-center">Sub-cat.</span>
+            <span class="cat-table__col-right">Acciones</span>
           </div>
-        </mat-expansion-panel>
+          @for (root of rows; track root.id) {
+            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: root, depth: 0 }"></ng-container>
+          }
+        </div>
       }
-    </mat-accordion>
+    }
+  }
+</div>
+
+<!-- Fila recursiva: se renderiza a sí misma para los hijos (si el nodo está expandido) → profundidad arbitraria. -->
+<ng-template #rowTpl let-node let-depth="depth">
+  <div class="cat-table__row" role="treeitem" [attr.aria-expanded]="node.children.length ? isExpanded(node.id) : null">
+    <div class="cat-table__cell cat-table__cell--name" [style.padding-left.px]="12 + depth * 22">
+      @if (node.children.length > 0) {
+        <button type="button" class="cat-table__toggle" (click)="toggle(node.id)"
+                [attr.aria-label]="isExpanded(node.id) ? 'Colapsar' : 'Expandir'">
+          <mat-icon>{{ isExpanded(node.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+        </button>
+      } @else if (depth > 0) {
+        <mat-icon class="cat-table__elbow">subdirectory_arrow_right</mat-icon>
+      } @else {
+        <span class="cat-table__toggle--spacer"></span>
+      }
+      <span class="cat-table__name" [matTooltip]="node.nombre">{{ node.nombre }}</span>
+    </div>
+
+    <div class="cat-table__cell cat-table__cell--slug">/{{ node.slug }}</div>
+
+    <div class="cat-table__cell cat-table__col-center">
+      <span class="cat-table__badge" [class.cat-table__badge--zero]="node.children.length === 0">
+        {{ node.children.length }}
+      </span>
+    </div>
+
+    <div class="cat-table__cell cat-table__cell--actions">
+      <button type="button" class="cat-table__action" (click)="onCreate(node.id)" matTooltip="Agregar sub-categoría"
+              aria-label="Agregar sub-categoría" *appHasPermission="'CREATE_CATEGORY'">
+        <mat-icon>add</mat-icon>
+      </button>
+      <button type="button" class="cat-table__action" (click)="onEdit(node)" matTooltip="Editar"
+              aria-label="Editar categoría" *appHasPermission="'UPDATE_CATEGORY'">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button type="button" class="cat-table__action cat-table__action--danger" (click)="onDelete(node, node.children.length > 0)"
+              matTooltip="Eliminar" aria-label="Eliminar categoría" *appHasPermission="'DELETE_CATEGORY'">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
   </div>
-}
+
+  @if (node.children.length > 0 && isExpanded(node.id)) {
+    @for (child of node.children; track child.id) {
+      <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: child, depth: depth + 1 }"></ng-container>
+    }
+  }
+</ng-template>

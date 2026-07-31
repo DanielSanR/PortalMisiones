@@ -182,6 +182,8 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
     cancelButtonText: 'Cancelar',
   },
 
+  // Backend real (§5.2): Organism = typeId (req) + parentId? + baseLocationId? + name + acronym? + active.
+  // Sin sitioWeb/logoUrl (no existen en el backend).
   ORGANISMO: {
     fields: [
       {
@@ -194,45 +196,87 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         label: 'Nombre',
         type: 'text',
         placeholder: 'Nombre del organismo',
+        cssClass: 'colspan-half',
         validations: {
           required: true,
           maxLength: 255,
         },
       },
       {
-        name: 'sigla',
-        label: 'Sigla',
+        name: 'acronym',
+        label: 'Acrónimo',
         type: 'text',
         placeholder: 'Ej: IPS',
         cssClass: 'colspan-half',
       },
       {
-        name: 'sitioWeb',
-        label: 'Sitio web',
-        type: 'url',
-        placeholder: 'https://...',
+        name: 'typeId',
+        label: 'Tipo de organismo',
+        type: 'select',
+        placeholder: 'Seleccione un tipo',
         cssClass: 'colspan-half',
-      },
-      {
-        name: '_section_web',
-        label: 'Presencia web',
-        type: 'section-header',
-      },
-      {
-        name: 'logoUrl',
-        label: 'URL del logo',
-        type: 'url',
-        placeholder: 'https://...',
+        validations: { required: true },
+        options: [],
       },
       {
         name: 'parentId',
         label: 'Organismo padre',
         type: 'select',
         placeholder: 'Ninguno (raíz)',
+        cssClass: 'colspan-half',
         options: [],
+      },
+      {
+        name: 'baseLocationId',
+        label: 'Localidad base',
+        type: 'select',
+        placeholder: 'Sin localidad',
+        hint: 'Localidad de referencia del organismo (opcional)',
+        cssClass: 'colspan-half',
+        options: [],
+      },
+      {
+        name: 'activo',
+        label: 'Organismo activo',
+        type: 'checkbox',
+        value: true,
       },
     ],
     submitButtonText: 'Crear organismo',
+    cancelButtonText: 'Cancelar',
+  },
+
+  // Backend real (§5.2): OrganismType = name (req) + description? + active.
+  TIPO_ORGANISMO: {
+    fields: [
+      {
+        name: '_section_datos',
+        label: 'Datos del tipo de organismo',
+        type: 'section-header',
+      },
+      {
+        name: 'nombre',
+        label: 'Nombre',
+        type: 'text',
+        placeholder: 'Ej: Ministerio, Secretaría',
+        cssClass: 'colspan-full',
+        validations: { required: true, maxLength: 100 },
+      },
+      {
+        name: 'descripcion',
+        label: 'Descripción',
+        type: 'textarea',
+        placeholder: 'Descripción breve del tipo de organismo',
+        cssClass: 'colspan-full',
+      },
+      {
+        name: 'activo',
+        label: 'Tipo activo',
+        type: 'checkbox',
+        value: true,
+      },
+    ],
+    submitButtonText: 'Crear tipo',
     cancelButtonText: 'Cancelar',
   },
   ETIQUETA: {
@@ -278,6 +322,7 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
     cancelButtonText: 'Cancelar',
   },
 
+  // Backend real (post-pull): LifeEvent request = solo `name`; el `slug` lo genera el backend.
   EVENTO_DE_VIDA: {
     fields: [
       {
@@ -290,56 +335,20 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         label: 'Nombre',
         type: 'text',
         placeholder: 'Ej: Nacimiento de un hijo, Iniciar un emprendimiento',
+        hint: 'El identificador (slug) se genera automáticamente desde el nombre.',
         cssClass: 'colspan-full',
         validations: {
           required: true,
-          maxLength: 150,
+          minLength: 3,
+          maxLength: 100,
         },
-      },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'textarea',
-        placeholder: 'Breve descripción del evento y los trámites que agrupa',
-      },
-      {
-        name: '_section_visual',
-        label: 'Apariencia',
-        type: 'section-header',
-      },
-      {
-        name: 'icono',
-        label: 'Ícono',
-        type: 'icon-picker',
-        placeholder: 'Seleccione un ícono representativo del evento',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'color',
-        label: 'Color',
-        type: 'text',
-        placeholder: '#4CAF50',
-        hint: 'Color hexadecimal para identificar el evento',
-        cssClass: 'colspan-half',
-      },
-      {
-        name: '_section_tramites',
-        label: 'Trámites asociados',
-        type: 'section-header',
-      },
-      {
-        name: 'tramiteIds',
-        label: 'Trámites',
-        type: 'select-multiple',
-        placeholder: 'Seleccione los trámites que pertenecen a este evento',
-        cssClass: 'colspan-full',
-        options: [],
       },
     ],
     submitButtonText: 'Crear evento de vida',
     cancelButtonText: 'Cancelar',
   },
 
+  // Backend real (§5.3): Category persiste `parentId?` + `slug` + `name`. Sin descripción/orden/ícono/color.
   CATEGORIA: {
     fields: [
       { name: '_section_datos', label: 'Datos de la categoría', type: 'section-header' },
@@ -349,7 +358,22 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'text',
         placeholder: 'Ej: Automotor, transporte y tránsito',
         cssClass: 'colspan-half',
-        validations: { required: true, maxLength: 100 },
+        validations: { required: true, minLength: 3, maxLength: 100 },
+      },
+      {
+        name: 'slug',
+        label: 'Slug',
+        type: 'text',
+        placeholder: 'Ej: automotor-transporte',
+        hint: 'Identificador URL único (minúsculas, números y guiones)',
+        cssClass: 'colspan-half',
+        validations: {
+          required: true,
+          minLength: 3,
+          maxLength: 100,
+          pattern: '^[a-z0-9-]+$',
+          patternErrorMessage: 'Solo minúsculas, números y guiones',
+        },
       },
       {
         name: 'parentId',
@@ -360,42 +384,37 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         hint: 'Dejar vacío para crear una categoría raíz (nivel 1)',
         options: [],
       },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'textarea',
-        placeholder: 'Descripción breve de la categoría',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'orden',
-        label: 'Orden',
-        type: 'number',
-        placeholder: '1',
-        cssClass: 'colspan-half',
-        hint: 'Orden de aparición (menor = primero)',
-      },
-      { name: '_section_visual', label: 'Apariencia', type: 'section-header' },
-      {
-        name: 'icono',
-        label: 'Ícono',
-        type: 'icon-picker',
-        placeholder: 'Seleccione un ícono',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'color',
-        label: 'Color',
-        type: 'text',
-        placeholder: '#1565C0',
-        hint: 'Color hexadecimal',
-        cssClass: 'colspan-half',
-      },
     ],
     submitButtonText: 'Crear categoría',
     cancelButtonText: 'Cancelar',
   },
 
+  // Backend real (§5.4): Recipient solo persiste `name`.
+  DESTINATARIO: {
+    fields: [
+      {
+        name: '_section_datos',
+        label: 'Datos del destinatario',
+        type: 'section-header',
+      },
+      {
+        name: 'nombre',
+        label: 'Nombre',
+        type: 'text',
+        placeholder: 'Ej: persona_humana, empresa, extranjero',
+        cssClass: 'colspan-full',
+        validations: {
+          required: true,
+          minLength: 3,
+          maxLength: 100,
+        },
+      },
+    ],
+    submitButtonText: 'Crear destinatario',
+    cancelButtonText: 'Cancelar',
+  },
+
+  // Backend real (§5.3): Modality solo persiste `name`. Sin descripción/ícono/color.
   MODALIDAD: {
     fields: [
       {
@@ -411,34 +430,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         cssClass: 'colspan-full',
         validations: {
           required: true,
+          minLength: 3,
           maxLength: 100,
         },
-      },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'textarea',
-        placeholder: 'Descripción breve de esta modalidad de trámite',
-      },
-      {
-        name: '_section_visual',
-        label: 'Apariencia',
-        type: 'section-header',
-      },
-      {
-        name: 'icono',
-        label: 'Ícono',
-        type: 'icon-picker',
-        placeholder: 'Seleccione un ícono',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'color',
-        label: 'Color',
-        type: 'text',
-        placeholder: '#4CAF50',
-        hint: 'Color hexadecimal para identificar la modalidad',
-        cssClass: 'colspan-half',
       },
     ],
     submitButtonText: 'Crear modalidad',

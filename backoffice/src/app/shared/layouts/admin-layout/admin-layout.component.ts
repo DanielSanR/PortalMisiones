@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
@@ -17,6 +17,7 @@ import { AuthUser } from '../../../core/models/auth.model';
 import { Router } from '@angular/router';
 import { NAV_ITEMS, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
+import { evaluateAccess } from '../../../core/utils/authorization.utils';
 
 @Component({
   selector: 'app-admin-layout',
@@ -35,6 +36,7 @@ import { UserRole } from '../../../core/enums/user-role.enum';
   ],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
@@ -47,6 +49,7 @@ export class AdminLayoutComponent implements OnInit {
   filteredNavItems: NavItem[] = [];
 
   private destroyRef = inject(DestroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     private breakpointObserver: BreakpointObserver,
@@ -61,32 +64,41 @@ export class AdminLayoutComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         this.isMobile = result.matches;
+        this.cdr.markForCheck();
       });
 
-    const user = this.authTokenService.getCurrentUser();
-    if (user) {
-      this.userName = `${user.nombre} ${user.apellido}`;
-      this.userInitials = `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase();
-      this.userRoleSpanish = this.authTokenService.getUserRoleSpanish() || '';
-      this.filteredNavItems = NAV_ITEMS.filter((item) =>
-        item.roles.includes(user.role as UserRole)
-      );
-    }
+    // Reactivo a la sesión: el nav se refiltra si cambian usuario/permisos.
+    this.authTokenService.getCurrentUser$()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((user) => this.applyUser(user));
   }
 
+  private applyUser(user: AuthUser | null): void {
+    if (!user) {
+      this.userName = '';
+      this.userInitials = '';
+      this.userRoleSpanish = '';
+      this.filteredNavItems = [];
+      this.cdr.markForCheck();
+      return;
+    }
+    this.userName = `${user.nombre} ${user.apellido}`.trim();
+    this.userInitials = `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase();
+    this.userRoleSpanish = this.authTokenService.getUserRoleLabel();
+    const ctx = { permissions: user.permissions ?? [], roles: user.roles ?? [] };
+    this.filteredNavItems = NAV_ITEMS.filter((item) => evaluateAccess(ctx, item.rule));
+    this.cdr.markForCheck();
+  }
+
+  /** Switcher de rol para dev. Nota: la nav ahora es por PERMISO; cambiar el rol solo afecta
+   *  ítems gateados por rol (Permisos/Auditoría). Los permisos del token no se alteran. */
   changeRoleUser(role: string): void {
     const user = this.authTokenService.getCurrentUser();
     if (!user) return;
 
-    const updatedUser: AuthUser = { ...user, role: role as UserRole, roles: [role as UserRole] };
+    const updatedUser: AuthUser = { ...user, role: role as UserRole, roles: [role as UserRole], roleCodes: [role] };
     localStorage.setItem('user_data', JSON.stringify(updatedUser));
     this.authTokenService.updateUserFromToken();
-
-    this.userName = `${updatedUser.nombre} ${updatedUser.apellido}`;
-    this.userRoleSpanish = this.authTokenService.getUserRoleSpanish() || '';
-    this.filteredNavItems = NAV_ITEMS.filter((item) =>
-      item.roles.includes(updatedUser.role)
-    );
   }
 
   toggleCollapse(): void {

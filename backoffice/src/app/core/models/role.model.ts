@@ -5,29 +5,29 @@ export type RoleScopeType = 'global' | 'organismo';
 
 export interface PermissionResponseDTO {
   id: string;
-  codigo: string; // formato ACCION_RECURSO
-  descripcion: string;
+  code: string; // formato ACCION_RECURSO
+  description: string;
 }
 
 export interface PermissionRequestDTO {
-  codigo: string;
-  descripcion: string;
+  code: string;
+  description: string;
 }
 
 export interface RoleResponseDTO {
   id: string;
-  codigo: string; // sin prefijo ROLE_
+  code: string; // sin prefijo ROLE_
   description: string;
-  scopeTipo: RoleScopeType;
-  asignablePorOrgAdmin: boolean;
+  scopeType: RoleScopeType;
+  assignableByOrgAdmin: boolean;
   permissions: PermissionResponseDTO[];
 }
 
 export interface RoleRequestDTO {
-  codigo: string;
+  code: string;
   description?: string;
-  scopeTipo: RoleScopeType;
-  asignablePorOrgAdmin: boolean;
+  scopeType: RoleScopeType;
+  assignableByOrgAdmin: boolean;
   active: boolean;
   permissionsIds: string[];
 }

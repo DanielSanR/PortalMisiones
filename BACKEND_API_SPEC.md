@@ -7,7 +7,27 @@
 > sirven para derivar las interfaces TypeScript (`core/models` en Angular, `models/` en cada proyecto).
 >
 > **Fuente:** generado leyendo el código del backend (controllers, DTOs, entities, `SecurityConfig`,
-> `GlobalExceptionHandler`, migraciones SQL). Última actualización: 2026-06-16.
+> `GlobalExceptionHandler`, migraciones SQL). **Sincronizado con el commit `d800be0` (dev, 2026-07-29).**
+> Última actualización: 2026-07-29.
+>
+> **🔥 Novedades de esta revisión (`0ecd14e` → `d800be0`) — CAMBIO ESTRUCTURAL DE AUTORIZACIÓN:**
+> 1. **💥 Migración de RBAC por ROL a RBAC por PERMISO.** La mayoría de los `@PreAuthorize` pasaron de
+>    `hasAnyRole('SUPERADMIN','ADMIN_BACKOFFICE')` a `hasAuthority('<PERMISO>')` (§4.2, §5, §6.2).
+> 2. **💥 Catálogo de permisos normalizado a inglés y ampliado** (migración `V2.9`): `CREATE_ORGANISMO`→`CREATE_ORGANISM`,
+>    `CREATE_USUARIO`→`CREATE_USER`, `CREATE_ROL`→`CREATE_ROLE`, `CREATE_TRAMITE`→`CREATE_PROCEDURE`, etc.
+>    **Si el front tenía hardcodeados los códigos viejos en español, dejan de existir** (§4.2).
+> 3. **💥 El JWT ahora emite `roles` y `permissions` como dos claims separados (arrays)** en lugar de un único string
+>    de authorities separado por comas. El refresh token **ya no lleva claim de authorities** (§1.2).
+> 4. **🆕 `GET /api/auth/me`** — devuelve `{ userId, email, roles[], permissions[] }` del usuario autenticado (§2).
+>    Es la fuente recomendada para armar el RBAC del front (no decodificar el JWT a mano).
+> 5. **🆕 `ADMIN_BACKOFFICE` puede gestionar roles y permisos** (`/api/role`, `/api/permission`), salvo tocar el rol
+>    `SUPERADMIN` (403 `4029`). `RoleResponseDTO` ahora expone `active`, y `active` es **obligatorio en el PUT** (§4).
+> 6. **Organismo:** el acrónimo ahora es único **globalmente** (antes solo entre activos) → 409 `4069` (§5.2).
+> 7. **Tag rediseñada** (`V2.8`): `{ id, organism, slug, local }` — sigue **sin controller** (§5.5).
+>
+> **Novedades de la revisión previa (`ea65b92` → `0ecd14e`):** nuevo catálogo **Recipients** (`/api/recipient`, §5.4);
+> **LifeEvent pasó a soft-delete** (§5.3); el **bug 403→500 fue corregido** (§7); los usuarios creados por admin
+> quedan **activos al instante** (§3); nuevo código de error `4076`.
 
 ---
 
@@ -33,7 +53,12 @@
 - [2. Autenticación](#2-autenticación)
 - [3. Usuarios](#3-usuarios)
 - [4. Roles y Permisos](#4-roles-y-permisos)
-- [5. Localidades y Dominio de Trámites](#5-localidades-y-dominio-de-trámites)
+- [5. Dominio de Negocio (Geografía · Organismos · Taxonomía · Trámites)](#5-dominio-de-negocio-geografía--organismos--taxonomía--trámites)
+  - 5.1 Departamentos y Localidades (reemplaza Municipios)
+  - 5.2 Organismos y Tipos de Organismo
+  - 5.3 Taxonomía: Categorías, Modalidades y Eventos de Vida
+  - 5.4 Destinatarios (Recipients)
+  - 5.5 Trámites (Procedure / Variant) y Tag — pendiente
 - [6. Email, Almacenamiento y reCAPTCHA](#6-email-almacenamiento-y-recaptcha)
 - [7. Discrepancias y pendientes (LEER)](#7-discrepancias-y-pendientes-leer)
 - [8. Checklist de integración frontend](#8-checklist-de-integración-frontend)
@@ -48,10 +73,44 @@
 - **Actuator health**: `GET /actuator/health` (con detalles; incluye `db`, `mail`, `ssl`, `diskSpace`).
 
 ### 1.2 Modelo de autenticación (JWT)
+
+> 💥 **CAMBIO `d800be0`:** el claim único de authorities (string separado por comas, configurado por
+> `jwt.authorities.key`) **fue eliminado**. Ahora hay **dos claims, ambos arrays de strings**: `roles` y `permissions`.
+> La property `jwt.authorities.key` ya no existe en `application-*.properties`.
+
 - **Emisión** (en `POST /api/auth/login` y `POST /api/auth/activate-account`):
-  - **Access token**: JWT firmado **HS512**. Claims: `sub`=email, `roles`=authorities separadas por coma
-    (clave `roles`), `userId`=UUID, `iat`, `exp`.
-  - **Refresh token**: JWT HS512 con `jti` (UUID aleatorio), `sub`, `roles`, `userId`, `iat`, `exp`.
+  - **Access token**: JWT firmado **HS512**. Claims:
+    - `sub` = email
+    - **`roles`**: `string[]` con las autoridades que empiezan con `ROLE_` — ej. `["ROLE_SUPERADMIN"]`
+    - **`permissions`**: `string[]` con el resto de autoridades (los códigos de permiso) — ej. `["CREATE_USER","READ_USER"]`
+    - `userId` = UUID · `iat` · `exp`
+  - **Refresh token**: JWT HS512 con `jti` (UUID aleatorio), `sub`, `userId`, `iat`, `exp`.
+    **Ya NO lleva claims de roles/permisos.**
+
+```json
+// payload del access token (decodificado)
+{
+  "sub": "admin@mail.com",
+  "roles": ["ROLE_SUPERADMIN"],
+  "permissions": ["CREATE_USER", "READ_USER", "UPDATE_USER", "DELETE_USER", "READ_ORGANISM", "..."],
+  "userId": "3f2a...-uuid",
+  "iat": 1753800000,
+  "exp": 1753803600
+}
+```
+
+> ⚠️ **El backend NO autoriza usando los claims del token.** En cada request el `JWTAuthenticationFilter` valida
+> la firma y **recarga las authorities desde la base** (`CustomeUserDetails.buildAuthorities`), filtrando
+> asignaciones de rol vigentes (`effectiveFrom`/`effectiveTo`), roles activos y permisos activos.
+> Consecuencia para el front: **cambiar los permisos de un rol impacta de inmediato**, sin re-login, aunque el JWT
+> viejo siga mostrando la lista anterior. Por eso conviene leer el estado real desde **`GET /api/auth/me`** (§2)
+> en vez de decodificar el token.
+
+**Cómo se arman las authorities** (referencia): por cada asignación de rol vigente y con `role.active=true` se agrega
+`ROLE_<code>` (el code se normaliza a mayúsculas y se le quita el prefijo `ROLE_` si ya lo trae), y además **el `code`
+de cada permiso activo de ese rol, tal cual** (sin prefijo). De ahí que `hasRole('X')` mire `ROLE_X` y
+`hasAuthority('CREATE_USER')` mire el permiso literal.
+
 - **Header de autorización**: `Authorization: Bearer <accessToken>`. (`Authorization` está expuesto en CORS.)
 - **Expiraciones**:
   - Access: env `JWT_EXPIRATION` (ms).
@@ -71,32 +130,50 @@
 ### 1.3 Endpoints públicos vs autenticados (matchers exactos de `SecurityConfig`)
 `OPTIONS *` → `permitAll` (preflight CORS).
 
-**PÚBLICOS (`permitAll`)**:
+**PÚBLICOS (`permitAll`)** — sin cambios en `d800be0`:
 ```
-/api-docs.yml  /api-docs/**  /actuator  /actuator/**
+/api-docs.yml  /api-docs/**  /actuator/health
 /configuration/ui  /configuration/**  /swagger-resources/**  /swagger-ui/**  /webjars/**
 /api/auth/**  /api/auth/register
 /api/email/activate-account/{token}  /api/email/**
 /api/recaptcha/**
 /projects/**  /drafts/**
-/api/municipality/**  /api/organization-type/**
-/api/storage/**  /api/document/**
+/api/location/**        /api/department/**
+/api/category/**        /api/modality/**     /api/life-event/**
+/api/recipient/**       (NUEVO en 0ecd14e)
+/api/organization-type/**  /api/document/**
 ```
+> **Cambios de visibilidad vs versión anterior:**
+> - ❌ `/api/municipality/**` — eliminado (Municipality ya no existe; ahora Location).
+> - ❌ `/api/storage/**` — **ya NO es público**: ahora requiere autenticación (cae en `anyRequest().authenticated()`).
+> - ❌ `/actuator/**` → restringido a **solo** `/actuator/health`.
+> - `/api/organism/**` y `/api/organism-type/**` **NO** son públicos: requieren auth (además llevan `@PreAuthorize`,
+>   ahora **por permiso**: `READ_ORGANISM`, `CREATE_ORGANISM`, …).
+> - `/api/auth/**` es `permitAll` a nivel matcher, **pero `GET /api/auth/me` lleva `@PreAuthorize("isAuthenticated()")`**:
+>   sin token responde **401** (`JwtEntryPoint`, code `4025`).
 
-**RESTRICCIONES POR ROL (en orden del filter chain)**:
+**RESTRICCIONES POR ROL (en orden del filter chain)** — 💥 **simplificadas en `d800be0`**:
 ```
-POST /api/user                -> hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE, ADMIN_ORGANIZATION)
      /api/user/update-profile -> authenticated()
 ADMIN_URLS                    -> hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)
 USER_URLS                     -> hasRole(USER)
 anyRequest()                  -> authenticated()
 ```
-- `ADMIN_URLS` = `/admin/**`, `/roles/**`, `/api/user/**`, `/api/role/**`, `/api/users/**`, `/api/roles/**`
+- `ADMIN_URLS` = `/admin/**`, `/roles/**`, `/api/role/**`, `/api/roles/**`
+  > ❌ **Se quitaron `/api/user/**` y `/api/users/**`** del matcher, y **se eliminó el matcher
+  > `POST /api/user -> hasAnyRole(...)`**. Todo `/api/user/**` cae ahora en `anyRequest().authenticated()`
+  > y **la autorización real la deciden los `@PreAuthorize` por permiso** de `UserController` (§3.2).
+  > `/api/permission/**` **nunca estuvo** en `ADMIN_URLS`: también se resuelve solo por `@PreAuthorize`.
 - `USER_URLS` = `/user/**`, `/profile/**`
-- Hay `@EnableMethodSecurity(prePostEnabled=true)`: además de los matchers, cada endpoint puede llevar
+- Hay `@EnableMethodSecurity(prePostEnabled=true)`: además de los matchers, cada endpoint lleva su
   `@PreAuthorize` propio (documentado por endpoint en cada sección).
-- `hasRole('X')` ⇒ la autoridad en el JWT debe venir como `ROLE_X`.
+- `hasRole('X')` ⇒ la autoridad debe ser `ROLE_X` · `hasAuthority('Y')` ⇒ la autoridad debe ser **exactamente** `Y`
+  (así se chequean los permisos).
 - **Stateless** (sin sesión HTTP), **CSRF deshabilitado**.
+
+> 🧠 **Regla mental para el front:** un endpoint es accesible si el usuario **(a)** pasa el matcher de `SecurityConfig`
+> **y (b)** cumple el `@PreAuthorize` del método. Como casi todos los `@PreAuthorize` pasaron a permisos, el guard del
+> backoffice debe **chequear permisos, no roles** (salvo `/api/role/**` y `/api/permission/**`, que siguen por rol).
 
 ### 1.4 CORS
 - Origins: `cors.allowed-origins` = `front.url.backoffice, front.url.portal` (default `http://localhost:4200`).
@@ -171,10 +248,32 @@ anyRequest()                  -> authenticated()
 4060 = Permiso no encontrado.
 4061 = El rol ya existe.
 4062 = El permiso ya existe.
+4063 = El tipo de organización ya existe.
 4064 = El refresh token es inválido o expiró.
+4065 = No se puede eliminar la categoría porque tiene subcategorías asociadas.
+4066 = No se puede desactivar el tipo de organismo porque tiene organismos activos asociados.
+4067 = No se puede eliminar el organismo porque tiene organismos hijos asociados.
+4068 = No se puede asignar un descendiente como padre del organismo.
+4069 = El acrónimo del organismo ya está en uso.
+4070 = Un organismo no puede ser su propio padre.
+4071 = La entidad relacionada no se encuentra activa.
+4072 = El objeto %s con el identificador %s existe.  (conflicto unicidad: slug/name duplicado)
+4073 = El objeto %s con el identificador %s no existe.  (not found → HTTP 404)
+4074 = Una categoría no puede ser su propia categoría padre.
+4075 = No se puede asignar una subcategoría descendiente como padre de la categoría.
+4076 = No se puede renombrar el evento de vida porque está asignado.
 5000 = Ocurrió un error inesperado. Contacte al administrador.
-5001 = Error al buscar en la base de datos.
 ```
+> Nota: `4053` = Tipo de organización no encontrada · `4055` = "Uno o más municipios no existen." (texto legacy sin
+> actualizar a "localidades"; usado internamente al validar variantes) · `4058` = Organización no encontrada. El código
+> `5001` ya **no existe** en `messages.properties`.
+> Los códigos genéricos `4072` (existe) y `4073` (no existe) llevan el **nombre de la entidad** interpolado en el
+> mensaje (`El objeto <Entidad> con el identificador <id> ...`), p.ej. `Categoría`, `Destinatario`, `Ubicación`,
+> `Evento de Vida`, `Etiqueta`.
+> 🆕 **`d800be0` no agrega códigos nuevos**, pero reutiliza `4029` ("El usuario no tiene permisos para realizar esta
+> acción") con **HTTP 403** cuando un `ADMIN_BACKOFFICE` intenta **actualizar o eliminar el rol `SUPERADMIN`** (§4.4).
+> Ojo: ese 403 viene del *service* → cuerpo **`MessageDTO`**, mientras que el 403 del `CustomAccessDeniedHandler`
+> (falta de rol/permiso) viene como **`ErrorDTO`**. Contemplar ambas formas en el `http-error.service`.
 
 ### 1.7 reCAPTCHA
 - **No es un interceptor global.** Solo lo usa el endpoint dedicado `POST /api/recaptcha/verify-recaptcha`
@@ -185,7 +284,8 @@ anyRequest()                  -> authenticated()
 
 ## 2. Autenticación
 
-Controller `AuthController` — prefijo `/api/auth`. **Todas las rutas son públicas** (sin Bearer token).
+Controller `AuthController` — prefijo `/api/auth`. Las rutas de `login`/`register`/`activate-account`/`refresh` son
+**públicas** (sin Bearer token); **`GET /api/auth/me` requiere token** (§2.5).
 Validación de body (`@Valid`) fallida → `400` (handler global, code `4012`).
 
 ### POST `/api/auth/login`
@@ -247,6 +347,41 @@ Rota el refresh token. **Request `RefreshTokenRequestDTO`** `{ "refreshToken": "
 **Errores:** `401` (4064) refresh nulo/inválido/expirado/revocado, o usuario inexistente/inactivo · `400` parseo.
 **Side effects:** invalida la sesión anterior y crea una nueva (rotación). El refresh previo deja de servir.
 
+### 🆕 GET `/api/auth/me`  *(nuevo en `d800be0`)*
+
+Devuelve el **contexto de autorización efectivo** del usuario del token. `@PreAuthorize("isAuthenticated()")` —
+requiere `Authorization: Bearer <accessToken>`. Sin body.
+
+**200 OK** — `ResponseDTO<AuthMeResponseDTO>` (code `2013`):
+```json
+{
+  "details": "Consulta realizada con éxito.",
+  "code": 2013,
+  "data": {
+    "userId": "3f2a1b8c-...-uuid",
+    "email": "admin@mail.com",
+    "roles": ["ROLE_SUPERADMIN"],
+    "permissions": ["CREATE_USER", "READ_USER", "UPDATE_USER", "DELETE_USER", "READ_ORGANISM", "..."]
+  }
+}
+```
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `userId` | UUID | id del `User` autenticado |
+| `email` | string | = `sub` del token |
+| `roles` | `string[]` | autoridades **con** prefijo `ROLE_` (ej. `ROLE_ADMIN_BACKOFFICE`). Puede venir `[]`. |
+| `permissions` | `string[]` | códigos de permiso **sin** prefijo (ej. `CREATE_CATEGORY`). Puede venir `[]`. |
+
+**Errores:** `401` (4025) sin token / token inválido · `401` (4019) si el principal no es un `CustomeUserDetails`.
+
+> **Por qué usarlo (en vez de decodificar el JWT):** las authorities se recalculan desde la base en cada request
+> (§1.2). Si un admin cambia los permisos de tu rol, el JWT en el `localStorage` queda desactualizado pero el backend
+> ya aplica lo nuevo. **Recomendación:** llamar a `/api/auth/me` justo después del login y del refresh, y guardar
+> `roles`/`permissions` de ahí para alimentar guards, directivas `*hasPermission` y armado de menú.
+> ⚠️ Los `roles` vienen **con** `ROLE_`: si el front compara contra `'SUPERADMIN'`, hay que normalizar
+> (`r.replace(/^ROLE_/, '')`). Los `permissions` vienen sin prefijo.
+
 ---
 
 ## 3. Usuarios
@@ -295,16 +430,27 @@ Controller `UserController` — prefijo `/api/user`.
 
 ### 3.2 Endpoints
 
-| # | Método + Ruta | Auth (`@PreAuthorize`) | Propósito |
-|---|---|---|---|
-| 1 | `POST /api/user` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE, ADMIN_ORGANIZATION)` | Crear usuario administrativo |
-| 2 | `GET /api/user/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | Obtener usuario por ID |
-| 3 | `PUT /api/user/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | Borrado **lógico** (desactivar) |
-| 4 | `DELETE /api/user/{id}/admin` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | Borrado **definitivo** |
-| 5 | `PUT /api/user/{id}/change-password` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | Cambiar contraseña de un usuario |
-| 6 | `PATCH /api/user/{id}/change-email` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | Actualizar email |
-| 7 | `PUT /api/user/{id}/status-account` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | Activar/desactivar cuenta |
-| 8 | `PUT /api/user/update-profile` | `isAuthenticated()` | Completar/actualizar perfil propio |
+> 💥 **CAMBIO `d800be0`:** todos los `@PreAuthorize` de `UserController` pasaron **de rol a permiso**, y se quitó
+> `/api/user/**` de `ADMIN_URLS` en `SecurityConfig` (§1.3). La columna "Auth" de abajo es ahora **la única** regla.
+
+| # | Método + Ruta | Auth (`@PreAuthorize`) | Roles que lo cumplen hoy (seed) | Propósito |
+|---|---|---|---|---|
+| 1 | `POST /api/user` | `hasAuthority('CREATE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE · ADMIN_ORGANIZATION | Crear usuario administrativo |
+| 2 | `GET /api/user/{id}` | `hasAuthority('READ_USER')` | SUPERADMIN · ADMIN_BACKOFFICE · **ADMIN_ORGANIZATION** 🆕 | Obtener usuario por ID |
+| 3 | `PUT /api/user/{id}` | `hasAuthority('DELETE_USER')` ⚠️ | SUPERADMIN · ADMIN_BACKOFFICE | Borrado **lógico** (desactivar) |
+| 4 | `DELETE /api/user/{id}/admin` | `hasAuthority('DELETE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE | Borrado **definitivo** |
+| 5 | `PUT /api/user/{id}/change-password` | `hasAuthority('UPDATE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE | Cambiar contraseña de un usuario |
+| 6 | `PATCH /api/user/{id}/change-email` | `hasAuthority('UPDATE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE | Actualizar email |
+| 7 | `PUT /api/user/{id}/status-account` | `hasAuthority('UPDATE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE | Activar/desactivar cuenta |
+| 8 | `PUT /api/user/update-profile` | `isAuthenticated()` | cualquiera logueado | Completar/actualizar perfil propio |
+
+> ⚠️ **Ojo con el #3:** el borrado lógico es un `PUT` pero exige **`DELETE_USER`**, no `UPDATE_USER`. No es un typo del
+> spec — está así en el código. Si el botón "desactivar" del backoffice se habilita con `UPDATE_USER`, el usuario verá
+> el botón y comerá un 403.
+>
+> 🆕 **`ADMIN_ORGANIZATION` ahora puede leer usuarios** (`GET /api/user/{id}`): tiene `READ_USER` en el seed y ya no lo
+> frena el matcher `ADMIN_URLS`. Antes recibía 403. **No** puede editar, desactivar ni borrar (le falta
+> `UPDATE_USER`/`DELETE_USER`).
 
 **1. `POST /api/user`** — body `CreateUserRequest`:
 ```json
@@ -322,14 +468,16 @@ Controller `UserController` — prefijo `/api/user`.
   "id":"uuid", "email":"string", "cuit":"string|null", "cuil":"string|null",
   "accountActive":true, "accountNonLocked":true, "failedAttempts":0,
   "lockeTime":"2026-06-16T10:00:00|null",
-  "role": { "id":"uuid","codigo":"string","description":"string","scopeTipo":"string",
-            "asignablePorOrgAdmin":true, "permissions":[ /* PermissionResponseDTO */ ] },
+  "role": { "id":"uuid","code":"string","description":"string","scopeType":"string",
+            "assignableByOrgAdmin":true, "permissions":[ /* PermissionResponseDTO */ ] },
   "activeAssignments": [ /* RoleResponseDTO, puede venir null */ ],
   "profileComplete": false
 }
 ```
 > ⚠️ El campo timestamp se serializa literal como **`lockeTime`** (typo del backend). `cuit`/`cuil`/
 > `activeAssignments` pueden venir `null` (no siempre se pueblan).
+> 🆕 Desde `0ecd14e` el usuario creado por admin queda **`accountActive=true`** de una (sin email de activación):
+> puede loguearse inmediatamente con el password provisto.
 > **Errores:** `409` (4002) email duplicado · `404` (4018) rol inexistente / (4058) org inexistente ·
 > `403` (4029) el rol autenticado no puede crear ese rol · `400` validación.
 
@@ -368,18 +516,24 @@ acotadas a una `Organization`. Wrapper de respuesta: `ResponseDTO<T>` (`{ code, 
 ### 4.1 Modelo
 - Un `User` recibe roles vía filas en `UserRoleAssignment`. Cada asignación puede acotarse a una
   `Organization` (`organization_id` nullable) y a una ventana temporal (`effectiveFrom`/`effectiveTo`).
-- Un `Role` agrupa `Permission` vía `role_permissions`. La autorización en endpoints se hace por
-  **código de rol** (`@PreAuthorize`), no por permiso individual.
-- Scope: solo por **Organización** (no por Municipio). `Role.scopeTipo` declara `global` u `organismo`.
+- Un `Role` agrupa `Permission` vía `role_permissions`. 💥 **Desde `d800be0` la autorización en endpoints se hace
+  mayoritariamente por PERMISO** (`@PreAuthorize("hasAuthority('CODIGO')")`), no por código de rol.
+  Siguen siendo por rol: `/api/role/**`, `/api/permission/**` y `GET /api/role/allowed`.
+- Scope: solo por **Organización** (no por Municipio). `Role.scopeType` declara `global` u `organismo`.
+
+> 💥 **BREAKING CHANGE (desde `ea65b92`):** los campos de los DTOs de Role/Permission se **renombraron a inglés**.
+> Si ya implementaste el RBAC con la versión anterior, actualizá las interfaces:
+> `codigo`→**`code`**, `scopeTipo`→**`scopeType`**, `asignablePorOrgAdmin`→**`assignableByOrgAdmin`**,
+> `descripcion`→**`description`**. Los **valores** de rol (`SUPERADMIN`, etc.) NO cambiaron.
 
 **Enum `RoleScopeType`** (columna `roles.scope_tipo`, CHECK `IN ('global','organismo')`):
 `GLOBAL` → `"global"` · `ORGANISMO` → `"organismo"`.
 
-**Role** (tabla `roles`): `id` UUID PK · `codigo` String UNIQUE · `description` · `scopeTipo`
-RoleScopeType · `asignablePorOrgAdmin` Boolean · `permissions` Set\<Permission\> (ManyToMany EAGER) · `active` Boolean (col `activo`).
+**Role** (tabla `roles`): `id` UUID PK · `code` String UNIQUE · `description` · `scopeType`
+RoleScopeType · `assignableByOrgAdmin` Boolean · `permissions` Set\<Permission\> (ManyToMany EAGER) · `active` Boolean (col `activo`).
 
-**Permission** (tabla `permissions`): `id` UUID PK · `codigo` String NOT NULL UNIQUE (formato `ACCION_RECURSO`) ·
-`descripcion` · `active` Boolean (col `activo`).
+**Permission** (tabla `permissions`): `id` UUID PK · `code` String NOT NULL UNIQUE (formato `ACCION_RECURSO`) ·
+`description` · `active` Boolean (col `activo`).
 
 **UserRoleAssignment** (tabla `user_role_assignments`): `id` UUID PK · `user` (FK `user_id`, NOT NULL) ·
 `role` (FK `role_id`, NOT NULL) · `organization` (FK `organization_id`, **nullable**) ·
@@ -388,9 +542,9 @@ por `(user, role, organization)`; solo una asignación activa por combinación.
 
 ### 4.2 Catálogo (strings exactos para RBAC del frontend)
 
-**Roles** (`codigo` final, SIN prefijo `ROLE_`; Spring `hasRole('X')` ⇒ autoridad `ROLE_X`):
+**Roles** (valor de `code`, SIN prefijo `ROLE_`; Spring `hasRole('X')` ⇒ autoridad `ROLE_X`):
 
-| `codigo` | Descripción |
+| `code` | Descripción |
 |---|---|
 | `SUPERADMIN` | Superusuario (todos los permisos) |
 | `ADMIN_BACKOFFICE` | Admin de backoffice (catálogo + taxonomía global) |
@@ -399,101 +553,318 @@ por `(user, role, organization)`; solo una asignación activa por combinación.
 | `MANAGER` | Visualizador de estadísticas |
 | `USER` | Usuario final |
 
-**Permisos** (`codigo`, formato `ACCION_RECURSO`):
-- ORGANISMO: `CREATE_ORGANISMO` `READ_ORGANISMO` `UPDATE_ORGANISMO` `DELETE_ORGANISMO`
-- USUARIO: `CREATE_USUARIO` `READ_USUARIO` `UPDATE_USUARIO` `DELETE_USUARIO`
-- ROL: `CREATE_ROL` `READ_ROL` `UPDATE_ROL` `DELETE_ROL`
-- TRAMITE: `CREATE_TRAMITE` `READ_TRAMITE` `UPDATE_TRAMITE` `DELETE_TRAMITE`
-- VARIANTE: `CREATE_VARIANTE` `READ_VARIANTE` `UPDATE_VARIANTE` `DELETE_VARIANTE` `PUBLISH_VARIANTE`
-- TAXONOMIA: `CREATE_TAXONOMIA` `READ_TAXONOMIA` `UPDATE_TAXONOMIA` `DELETE_TAXONOMIA`
-- CONTACTO: `CREATE_CONTACTO` `READ_CONTACTO` `UPDATE_CONTACTO` `DELETE_CONTACTO`
-- INTELIGENCIA: `VIEW_ANALYTICS_INTELIGENCIA`
+**Permisos** (valor de `code`, formato `ACCION_RECURSO`) — 💥 **catálogo reescrito por la migración `V2.9`**:
 
-**Mapeo rol → permisos (seed):** `SUPERADMIN`=todos · `ADMIN_BACKOFFICE`=CREATE/READ/UPDATE_TRAMITE,
-CREATE/READ/UPDATE_TAXONOMIA, VIEW_ANALYTICS_INTELIGENCIA · `ADMIN_ORGANIZATION`=CREATE/READ/UPDATE/PUBLISH_VARIANTE,
-CREATE/READ/UPDATE_CONTACTO, CREATE/READ_USUARIO, VIEW_ANALYTICS_INTELIGENCIA · `AGENT`=READ/UPDATE_VARIANTE,
-CREATE/READ/UPDATE_CONTACTO · `MANAGER`=READ_TRAMITE, READ_VARIANTE, VIEW_ANALYTICS_INTELIGENCIA · `USER`=ninguno.
+> **Todos los códigos en español fueron RENOMBRADOS a inglés** (`UPDATE permissions SET code = ...`): el `id` del
+> permiso **no cambió**, pero el `code` sí. Cualquier constante hardcodeada del front con el nombre viejo
+> (`CREATE_ORGANISMO`, `READ_USUARIO`, `VIEW_ANALYTICS_INTELIGENCIA`, …) **ya no matchea nada**.
 
-### 4.3 DTOs
-`RoleRequestDTO`: `codigo` (@NotBlank) · `description` · `scopeTipo` (@NotBlank, `"global"`|`"organismo"`) ·
-`asignablePorOrgAdmin` bool · `active` bool · `permissionsIds` Set\<UUID\>.
-`RoleResponseDTO`: `{ id, codigo, description, scopeTipo, asignablePorOrgAdmin, permissions: PermissionResponseDTO[] }`.
-`PermissionRequestDTO`: `codigo` (@NotBlank) · `descripcion` (@NotBlank).
-`PermissionResponseDTO`: `{ id, codigo, descripcion }`.
+| Recurso | Códigos vigentes | Antes (español, ya no existe) |
+|---|---|---|
+| Organismo | `CREATE_ORGANISM` `READ_ORGANISM` `UPDATE_ORGANISM` `DELETE_ORGANISM` | `*_ORGANISMO` |
+| Tipo de organismo 🆕 | `CREATE_ORGANISM_TYPE` `READ_ORGANISM_TYPE` `UPDATE_ORGANISM_TYPE` `DELETE_ORGANISM_TYPE` | — (nuevos) |
+| Usuario | `CREATE_USER` `READ_USER` `UPDATE_USER` `DELETE_USER` | `*_USUARIO` |
+| Rol | `CREATE_ROLE` `READ_ROLE` `UPDATE_ROLE` `DELETE_ROLE` | `*_ROL` |
+| Trámite | `CREATE_PROCEDURE` `READ_PROCEDURE` `UPDATE_PROCEDURE` `DELETE_PROCEDURE` | `*_TRAMITE` |
+| Variante | `CREATE_VARIANT` `READ_VARIANT` `UPDATE_VARIANT` `DELETE_VARIANT` `PUBLISH_VARIANT` | `*_VARIANTE` |
+| Taxonomía | `CREATE_TAXONOMY` `READ_TAXONOMY` `UPDATE_TAXONOMY` `DELETE_TAXONOMY` | `*_TAXONOMIA` |
+| Contacto | `CREATE_CONTACT` `READ_CONTACT` `UPDATE_CONTACT` `DELETE_CONTACT` | `*_CONTACTO` |
+| Categoría 🆕 | `CREATE_CATEGORY` `UPDATE_CATEGORY` `DELETE_CATEGORY` | — (nuevos; **no hay `READ_CATEGORY`**, los GET son públicos) |
+| Modalidad 🆕 | `CREATE_MODALITY` `UPDATE_MODALITY` `DELETE_MODALITY` | — (nuevos; sin `READ_*`) |
+| Evento de vida 🆕 | `CREATE_LIFE_EVENT` `UPDATE_LIFE_EVENT` `DELETE_LIFE_EVENT` | — (nuevos; sin `READ_*`) |
+| Destinatario 🆕 | `CREATE_RECIPIENT` `UPDATE_RECIPIENT` `DELETE_RECIPIENT` | — (nuevos; sin `READ_*`) |
+| Almacenamiento 🆕 | `READ_STORAGE` | — (nuevo) |
+| Analítica | `VIEW_ANALYTICS` | `VIEW_ANALYTICS_INTELIGENCIA` |
+
+**Mapeo rol → permisos (seed `V0.1` + `V2.9`)** — esto es lo que determina qué ve cada usuario:
+
+| Rol | Permisos efectivos |
+|---|---|
+| `SUPERADMIN` | **TODOS** (el seed hace `INSERT ... SELECT id FROM permissions`, se re-ejecuta en `V2.9`) |
+| `ADMIN_BACKOFFICE` | `CREATE/READ/UPDATE_PROCEDURE` · `CREATE/READ/UPDATE_TAXONOMY` · `VIEW_ANALYTICS` · 🆕 `CREATE/READ/UPDATE/DELETE_USER` · 🆕 `CREATE/UPDATE/DELETE_CATEGORY` · 🆕 `CREATE/UPDATE/DELETE_MODALITY` · 🆕 `CREATE/UPDATE/DELETE_LIFE_EVENT` · 🆕 `CREATE/UPDATE/DELETE_RECIPIENT` · 🆕 `READ_STORAGE` |
+| `ADMIN_ORGANIZATION` | `CREATE/READ/UPDATE/PUBLISH_VARIANT` · `CREATE/READ/UPDATE_CONTACT` · `CREATE/READ_USER` · `VIEW_ANALYTICS` |
+| `AGENT` | `READ/UPDATE_VARIANT` · `CREATE/READ/UPDATE_CONTACT` |
+| `MANAGER` | `READ_PROCEDURE` · `READ_VARIANT` · `VIEW_ANALYTICS` |
+| `USER` | ninguno |
+
+> 🚨 **Gap importante para el backoffice:** **`ADMIN_BACKOFFICE` NO recibe ningún permiso de Organismo ni de Tipo de
+> Organismo** en el seed. Como esos endpoints ahora exigen `READ_ORGANISM` / `CREATE_ORGANISM` / `READ_ORGANISM_TYPE` /
+> etc., el módulo **Organismos y Tipos de Organismo sigue siendo de facto SOLO `SUPERADMIN`** (§5.2).
+> Funcionalmente equivale al comportamiento anterior (`hasRole('SUPERADMIN')`), así que **no es una regresión**, pero
+> ahora se puede arreglar sin tocar código: basta asignarle esos permisos al rol desde `PUT /api/role/{id}`.
+>
+> 🚨 **Segundo gap:** roles como `AGENT`, `MANAGER` y `USER` no tienen **ningún** permiso de los que usan los endpoints
+> del backoffice → todo ABM les devuelve **403**. El menú debe construirse desde `permissions` (`/api/auth/me`), no
+> desde el rol, o van a ver ítems que no pueden usar.
+
+### 4.3 DTOs (campos en inglés desde `ea65b92`)
+
+**`RoleRequestDTO`** — 💥 **`active` cambió de semántica en `d800be0`**:
+
+| Campo | Tipo | POST (crear) | PUT (actualizar) |
+|---|---|---|---|
+| `code` | string | **@NotBlank** | **@NotBlank** |
+| `description` | string | opcional | opcional |
+| `scopeType` | string | **@NotBlank** (`"global"`\|`"organismo"`) | **@NotBlank** |
+| `assignableByOrgAdmin` | boolean | opcional (default `false`) | opcional |
+| `active` | **`Boolean`** (nullable, ya no `boolean`) | **se IGNORA** — el rol siempre se crea `active=true` | **@NotNull → OBLIGATORIO**; si falta → 400 `4012` |
+| `permissionsIds` | `UUID[]` | opcional | opcional (**reemplaza** el set completo) |
+
+> ⚠️ **El PUT es un reemplazo total, no un patch.** `permissionsIds` pisa la lista entera de permisos del rol
+> (`role.setPermissions(...)`), y `active` es obligatorio. El form de edición debe **precargar el rol completo**
+> (`GET /api/role/{id}`) y reenviar todo, incluido `active` y todos los `permissionsIds` que se quieran conservar.
+> Mandar `permissionsIds: []` o `null` **deja el rol sin permisos**.
+> Técnicamente: el controller valida con los grupos `{Default, RoleRequestDTO.OnUpdate}` y `@NotNull(groups=OnUpdate)`
+> está solo sobre `active`.
+
+**`RoleResponseDTO`**: `{ id, code, description, scopeType, assignableByOrgAdmin, active, permissions: PermissionResponseDTO[] }`
+🆕 **ahora SÍ incluye `active`** (antes no se exponía y el front no podía saber si un rol estaba dado de baja).
+Sigue exponiendo `permissions` completos anidados, **no** `permissionsIds`.
+
+`PermissionRequestDTO`: `code` (@NotBlank) · `description` (@NotBlank).
+`PermissionResponseDTO`: `{ id, code, description }`.
 
 ### 4.4 Endpoints — `RoleController` (`/api/role`)
 
+💥 **`ADMIN_BACKOFFICE` ya puede gestionar roles** (antes todo era `hasRole(SUPERADMIN)`):
+
 | Método + Ruta | Auth | Respuesta |
 |---|---|---|
-| `GET /api/role` | `hasRole(SUPERADMIN)` | 200 `ResponseDTO<RoleResponseDTO[]>` (2013) |
-| `GET /api/role/{id}` | `hasRole(SUPERADMIN)` | 200 `ResponseDTO<RoleResponseDTO>` (2013) · 404 si no existe |
-| `POST /api/role` | `hasRole(SUPERADMIN)` | 201 `ResponseDTO<RoleResponseDTO>` (2001) · body `RoleRequestDTO` |
-| `PUT /api/role/{id}` | `hasRole(SUPERADMIN)` | 200 (2002) · body `RoleRequestDTO` |
-| `DELETE /api/role/{id}` | `hasRole(SUPERADMIN)` | 200 `ResponseDTO<Void>` (2003, baja lógica) |
-| `GET /api/role/allowed` | `hasRole(SUPERADMIN) or ADMIN_BACKOFFICE or ADMIN_ORGANIZATION` | 200 lista de roles asignables (excluye SUPERADMIN y ADMIN_BACKOFFICE) |
+| `GET /api/role` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 `ResponseDTO<RoleResponseDTO[]>` (2013) |
+| `GET /api/role/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 `ResponseDTO<RoleResponseDTO>` (2013) · 404 `4059` si no existe |
+| `POST /api/role` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 201 `ResponseDTO<RoleResponseDTO>` (2001) · body `RoleRequestDTO` · 409 `4061` code duplicado |
+| `PUT /api/role/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 (2002) · body `RoleRequestDTO` (`active` **obligatorio**) · 404 `4059` · 409 `4061` · **403 `4029`** ⬇ |
+| `DELETE /api/role/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 `ResponseDTO<Void>` (2003, baja lógica) · 404 `4059` · **403 `4029`** ⬇ |
+| `GET /api/role/allowed` | `hasRole(SUPERADMIN) or ADMIN_BACKOFFICE or ADMIN_ORGANIZATION` | 200 lista de roles asignables (**context-aware**, ver nota) |
+
+> 🔒 **Protección del rol `SUPERADMIN` (nuevo):** en `PUT` y `DELETE`, si el rol destino tiene `code` = `SUPERADMIN`
+> (comparación case-insensitive) y el caller **no** tiene la autoridad `ROLE_SUPERADMIN`, el service corta con
+> **403 code `4029`** ("El usuario no tiene permisos para realizar esta acción"), cuerpo `MessageDTO`.
+> Es decir: `ADMIN_BACKOFFICE` puede tocar todos los roles **menos** `SUPERADMIN`.
+> **En la UI:** deshabilitar editar/eliminar sobre la fila `SUPERADMIN` cuando el usuario logueado no sea SUPERADMIN.
+
+> **`GET /api/role/allowed` — comportamiento actual (context-aware por rol del caller):** si el caller es
+> `SUPERADMIN` devuelve **todos** los roles sin filtrar. Si es cualquier otro (ADMIN_BACKOFFICE / ADMIN_ORGANIZATION),
+> **excluye** los roles con `code` `SUPERADMIN` y `ADMIN_BACKOFFICE` (deja ADMIN_ORGANIZATION, AGENT, MANAGER, USER).
+> Útil para poblar el select de rol al crear usuarios.
 
 ### 4.5 Endpoints — `PermissionController` (`/api/permission`)
 
+💥 **También abierto a `ADMIN_BACKOFFICE`** (antes todo `hasRole(SUPERADMIN)`):
+
 | Método + Ruta | Auth | Respuesta |
 |---|---|---|
-| `GET /api/permission` | `hasRole(SUPERADMIN)` | 200 `ResponseDTO<PermissionResponseDTO[]>` (2013) |
-| `GET /api/permission/{id}` | `hasRole(SUPERADMIN)` | 200 `ResponseDTO<PermissionResponseDTO>` (2013) · 404 |
-| `POST /api/permission` | `hasRole(SUPERADMIN)` | 201 (2001) · body `PermissionRequestDTO` |
-| `PUT /api/permission/{id}` | `hasRole(SUPERADMIN)` | 200 (2002) |
-| `DELETE /api/permission/{id}` | `hasRole(SUPERADMIN)` | 200 `ResponseDTO<Void>` (2003) |
+| `GET /api/permission` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 `ResponseDTO<PermissionResponseDTO[]>` (2013) |
+| `GET /api/permission/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 `ResponseDTO<PermissionResponseDTO>` (2013) · 404 `4060` |
+| `POST /api/permission` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 201 (2001) · body `PermissionRequestDTO` · 409 `4062` code duplicado |
+| `PUT /api/permission/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 (2002) · 404 `4060` |
+| `DELETE /api/permission/{id}` | `hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)` | 200 `ResponseDTO<Void>` (2003) · 404 `4060` |
 
-> Salvo `GET /api/role/allowed`, **todo requiere `SUPERADMIN`**. Sin token → 401; con token sin rol → 403.
+> Estos dos controllers (`/api/role`, `/api/permission`) son **los únicos que siguen autorizando por ROL**; todo el
+> resto del backoffice pasó a permisos. Sin token → 401 (`4025`); con token sin el rol → 403 (`ErrorDTO`).
+> `GET /api/permission` es el endpoint que alimenta el **selector de permisos** al crear/editar un rol — ahora
+> ADMIN_BACKOFFICE puede consumirlo sin ser SUPERADMIN.
 
 ---
 
-## 5. Localidades y Dominio de Trámites
+## 5. Dominio de Negocio (Geografía · Organismos · Taxonomía · Trámites)
 
-> ⚠️ **Estado actual: casi todo el dominio de trámites NO tiene API.** El único endpoint expuesto es
-> `GET /api/municipality`. Las entidades existen en la BD pero **sin controllers** (ver §5.3 y §7).
+> **Novedad `ea65b92`:** gran parte de lo que antes figuraba como "pendiente de exponer" **ya tiene API**.
+> Se pueden cablear los servicios `localidad`, `organismo`, `categoria`, `modalidad`, `evento-de-vida`.
+> Sigue pendiente el CRUD de **Trámites/Variantes** y **Tag** (§5.5).
+>
+> Todos los endpoints usan el envelope `ResponseDTO<T>` = `{ code, details, data }` (`code` de negocio 2001/2002/2003/2013,
+> no el HTTP status). Los códigos de error de este dominio (4053, 4055, 4065–4075) están en §1.6 y en cada subsección.
 
-### 5.1 Endpoint disponible
+### 5.1 Departamentos y Localidades (reemplaza Municipios)
 
-**`GET /api/municipality`** — Obtener todos los municipios. **Público** (en `PUBLIC_URLS`). Sin params/body.
-→ **200** `ResponseDTO<MunicipalityResponseDTO[]>` (2013):
-```json
-{ "details":"...", "code":2013, "data":[ { "id":0, "name":"string", "postalCode":"string" } ] }
-```
-`MunicipalityResponseDTO` = `{ id: Long, name: String, postalCode: String }` (**no** incluye `active`).
-No hay GET por id, POST, PUT ni DELETE de municipios.
+> 💥 **BREAKING CHANGE:** `Municipality` y `MunicipalityController` **fueron eliminados**. `GET /api/municipality`
+> **ya no existe (404)**. Migrá `localidad.service` al recurso **Location**. El modelo pasó de plano
+> (`Municipality {id, name, postalCode}`) a jerárquico: **`Department` (1) → `Location` (N)**.
+> `LocationResponseDTO` ya trae `departmentId` + `departmentName` desnormalizados (no hace falta 2º request).
 
-### 5.2 Entidades del dominio (schemas para derivar modelos)
+**Entidades** (ambas PK **UUID**):
+- **Department** (`departments`): `id` UUID PK · `name` String NOT NULL.
+- **Location** (`locations`): `id` UUID PK · `department` (FK `department_id`, NOT NULL) · `name` String NOT NULL
+  (único por `(department_id, name)`).
 
-**Municipality** (`municipalities`, extiende `Auditable`): `id` Long PK (IDENTITY) · `name` String ·
-`active` Boolean (no expuesto) · `postalCode` String (`postal_code`) · `createdAt`/`updatedAt` Instant.
+**Endpoints — públicos (sin token), 200 OK, code 2013:**
 
-**Procedure** (`procedures`): `id` UUID PK · `name` String UNIQUE NOT NULL · `description` String (TEXT) ·
-`tagIds` UUID[] (`tag_ids`, array sin FK real → `Tag`) · `lifeEventIds` UUID[] (`life_event_ids`, array sin FK → `LifeEvent`).
-**No tiene estado de workflow propio** — el estado vive en `ProcedureVariant.status`.
+| Método + Ruta | Propósito | Response `data` |
+|---|---|---|
+| `GET /api/department` | Todos los departamentos (orden por `name`) | `DepartmentResponseDTO[]` = `{ id, name }[]` |
+| `GET /api/location` | Todas las localidades (orden por `name`) | `LocationResponseDTO[]` |
+| `GET /api/location/department/{departmentId}` | Localidades de un departamento (`departmentId`: UUID) | `LocationResponseDTO[]` |
 
-**ProcedureVariant** (`procedure_variants`): `id` UUID PK · `procedure` (FK `procedure_id`, NOT NULL) ·
-`organization` (FK `organization_id`, NOT NULL) · `municipality` (FK `municipality_id`, **nullable** = fallback provincial) ·
-`modality` (FK `modality_id`, nullable) · `requirements` TEXT · `paymentMethod` TEXT (`payment_method`) ·
-`steps` TEXT · `procedureUrl` String (`procedure_url`) · `active` boolean (`is_active`) ·
-`status` String(50) — **workflow**: valores `BORRADOR`, `PUBLICADO` (string libre, no enum; conceptualmente también "revisión").
+`LocationResponseDTO` = `{ id: UUID, departmentId: UUID, departmentName: String, name: String }`.
+`GET /location/department/{id}` con departamento inexistente devuelve **200 + `data: []`** (no 404); `departmentId` no-UUID → 400.
 
-**ProcedureVisitLog** (`procedure_visit_logs`): `id` UUID PK · `procedureId` UUID (sin FK) · `timestamp` LocalDateTime ·
-`userId` UUID (sin FK) · `ipAddress` String · `userAgent` String(512).
+### 5.2 Organismos y Tipos de Organismo
 
-**Modality** (`modalities`): `id` UUID PK · `name` String UNIQUE · `active` boolean (`is_active`).
+Modelo jerárquico: un `Organism` tiene un `OrganismType` (obligatorio) y opcionalmente un `parent` (auto-referencia).
+La jerarquía ancestro/descendiente se materializa en una **closure table** interna (`organisms_closure`), usada para
+validar ciclos; **no se expone**. El campo antes `sigla` ahora es **`acronym`**.
 
-**LifeEvent** (`life_events`): `id` UUID PK · `name` String UNIQUE · `description` String · `active` boolean (`is_active`).
+**Entidades:**
+- **OrganismType** (`organism_types`): `id` UUID PK · `code` String (autogenerado desde `name`, único; **no se envía**) ·
+  `name` String NOT NULL · `description` String? · `active` Boolean (col `activo`).
+- **Organism** (`organisms`): `id` UUID PK · `parent` (FK `parent_id`, nullable = raíz) · `type` (FK `type_id`, NOT NULL) ·
+  `baseLocationId` UUID? · `name` String NOT NULL · `acronym` String? · `active` Boolean · `createdAt`/`updatedAt`.
 
-**Tag** (`tags`): `id` UUID PK · `name` String UNIQUE · `description` String · `active` boolean (`is_active`).
+💥 **Auth `d800be0`: pasó de `hasRole('SUPERADMIN')` a permisos.** Cada endpoint exige ahora su permiso:
 
-**SearchLog** (`search_logs`): `id` UUID PK · `searchTerm` String NOT NULL · `timestamp` LocalDateTime ·
-`userId` UUID (sin FK) · `ipAddress` String · `userAgent` String(512).
+| Operación | Organismo | Tipo de organismo |
+|---|---|---|
+| Listar / ver por id | `READ_ORGANISM` | `READ_ORGANISM_TYPE` |
+| Crear | `CREATE_ORGANISM` | `CREATE_ORGANISM_TYPE` |
+| Actualizar | `UPDATE_ORGANISM` | `UPDATE_ORGANISM_TYPE` |
+| Eliminar (soft) | `DELETE_ORGANISM` | `DELETE_ORGANISM_TYPE` |
 
-> Nota de tipos: todo el dominio de trámites usa PK **UUID**; solo `Municipality` usa PK **Long**.
+> 🚨 **En la práctica sigue siendo solo `SUPERADMIN`:** ningún otro rol del seed tiene permisos de organismo (§4.2).
+> Sin token → 401 (`4025`); con token sin el permiso → 403 (`ErrorDTO`).
+> **La diferencia es que ahora es configurable**: para habilitar el módulo a `ADMIN_BACKOFFICE` alcanza con agregarle
+> esos 8 permisos al rol vía `PUT /api/role/{id}` — **sin deploy**. El front debería mostrar/ocultar el módulo
+> mirando `permissions` de `/api/auth/me`, no el rol.
 
-### 5.3 Pendiente de exponer (sin controller/endpoint REST)
-`Procedure`, `ProcedureVariant`, `ProcedureVisitLog`, `Modality`, `LifeEvent`, `Tag`, `SearchLog`.
-**Todo el CRUD de trámites, variantes, modalidades, eventos de vida, tags y la lectura de logs requiere
-trabajo de API en el backend antes de que el frontend pueda integrarlos.**
+**Tipos de organismo — `/api/organism-type`**  · body `OrganismTypeRequestDTO` = `{ name (@NotBlank), description?, active? }` ·
+response `OrganismTypeResponseDTO` = `{ id, code, name, description, active }`:
+
+| Método + Ruta | Éxito | Errores |
+|---|---|---|
+| `GET /api/organism-type` | 200 lista (2013) | — |
+| `GET /api/organism-type/{id}` | 200 (2013) | 404 `4053` no existe |
+| `POST /api/organism-type` | 201 (2001) | 400 validación · 409 `4063` code duplicado |
+| `PUT /api/organism-type/{id}` | 200 (2002) | 404 `4053` · 409 `4063` · 409 `4066` desactivar con organismos activos |
+| `DELETE /api/organism-type/{id}` | 200 (2003, soft-delete) | 404 `4053` · 409 `4066` tiene organismos activos |
+
+**Organismos — `/api/organism`**  · body `OrganismRequestDTO` = `{ typeId (@NotNull), parentId?, baseLocationId?, name (@NotBlank), acronym?, active? }` ·
+response `OrganismResponseDTO` = `{ id, typeId, parentId, baseLocationId, name, acronym, active, createdAt, updatedAt }`:
+
+| Método + Ruta | Éxito | Errores |
+|---|---|---|
+| `GET /api/organism` | 200 lista (2013) | — |
+| `GET /api/organism/{id}` | 200 (2013) | 404 `4058` no existe |
+| `POST /api/organism` | 201 (2001) | 400 validación · 404 `4053` type / `4058` parent / `4073` baseLocation inexistente · 409 `4071` type/parent inactivo · 409 `4069` acronym duplicado |
+| `PUT /api/organism/{id}` | 200 (2002) | 404 `4058`/`4053`/`4073` baseLocation · 409 `4070` self-parent · 409 `4068` padre descendiente (ciclo) · 409 `4071` inactivo · 409 `4069` acronym dup |
+| `DELETE /api/organism/{id}` | 200 (2003, soft-delete) | 404 `4058` · 409 `4067` tiene hijos activos |
+
+> **`baseLocationId`** (opcional): sigue siendo un `UUID` plano en el DTO (no objeto anidado), pero desde `0ecd14e`
+> se **valida su existencia** contra `locations` (si se envía y no existe → **404 `4073`** "…Ubicación…"). A nivel DB hay
+> FK `fk_organisms_base_location` → `locations(id)` `ON DELETE SET NULL`.
+>
+> 💥 **`acronym`: la unicidad cambió en `d800be0`.** Antes se validaba **solo contra organismos activos**
+> (`existsByAcronymAndActiveTrue`); ahora es **global, incluyendo los dados de baja** (`existsByAcronym`).
+> Consecuencia práctica: **un acrónimo liberado por un soft-delete YA NO se puede reutilizar** → **409 `4069`**
+> ("El acrónimo del organismo ya está en uso"). Además el `save` pasó a `saveAndFlush` dentro de un `try/catch` de
+> `DataIntegrityViolationException`, así que un choque a nivel índice único también sale como **409 `4069`**
+> (antes se escapaba como 500). El form debe mostrar el error sobre el campo `acronym`, no como error genérico.
+
+### 5.3 Taxonomía: Categorías, Modalidades y Eventos de Vida
+
+Convención: **reads (`GET`) públicos**; 💥 **escrituras ahora por PERMISO** (antes `hasAnyRole('SUPERADMIN','ADMIN_BACKOFFICE')`):
+
+| Recurso | POST | PUT | DELETE |
+|---|---|---|---|
+| `/api/category` | `CREATE_CATEGORY` | `UPDATE_CATEGORY` | `DELETE_CATEGORY` |
+| `/api/modality` | `CREATE_MODALITY` | `UPDATE_MODALITY` | `DELETE_MODALITY` |
+| `/api/life-event` | `CREATE_LIFE_EVENT` | `UPDATE_LIFE_EVENT` | `DELETE_LIFE_EVENT` |
+
+> ✅ **Sin cambio funcional:** `SUPERADMIN` y `ADMIN_BACKOFFICE` son los únicos roles del seed con estos permisos,
+> así que quién puede escribir es exactamente el mismo conjunto que antes. Lo que cambia es **cómo** chequearlo en el front.
+> No existen permisos `READ_*` para estos catálogos porque los GET son públicos.
+
+Códigos: `4072` duplicado/conflicto, `4073` not found (404), `4074`/`4075` ciclo categoría, `4065` categoría con hijos.
+
+**Categorías — `/api/category`** (jerárquica vía closure + `slug`). Entidad `Category`: `id` UUID · `parent` (FK `parent_id`, nullable=raíz) ·
+`slug` String UNIQUE (len 100) · `name` String (len 100, no único). Closure interna `categories_closure` (no expuesta).
+Body `CategoryRequestDTO` = `{ parentId?, slug (@NotBlank @Size 3-100), name (@NotBlank @Size 3-100) }` ·
+response `CategoryResponseDTO` = `{ id, parentId|null, slug, name }`:
+
+| Método + Ruta | Auth | Éxito | Errores |
+|---|---|---|---|
+| `GET /api/category` | público | 200 lista (2013) | — |
+| `GET /api/category/{id}` | público | 200 (2013) | 404 `4073` |
+| `GET /api/category/slug/{slug}` | público | 200 (2013) | 404 `4073` |
+| `POST /api/category` | `CREATE_CATEGORY` | 201 (2001) | 400 `4072` slug dup · 404 `4073` parent inexistente · 400 validación |
+| `PUT /api/category/{id}` | `UPDATE_CATEGORY` | 200 (2002) | 404 `4073` · 400 `4072` · 400 `4074` self-parent · 400 `4075` padre descendiente (ciclo) |
+| `DELETE /api/category/{id}` | `DELETE_CATEGORY` | 200 (2003, **hard-delete**) | 404 `4073` · 400 `4065` tiene subcategorías |
+
+**Modalidades — `/api/modality`**. Entidad `Modality`: `id` UUID · `name` String UNIQUE · `active` boolean (`is_active`, soft-delete).
+Body `ModalityRequestDTO` = `{ name (@NotBlank @Size 3-100) }` · response `ModalityResponseDTO` = `{ id, name, active }`.
+Los GET solo devuelven **activas**:
+
+| Método + Ruta | Auth | Éxito | Errores |
+|---|---|---|---|
+| `GET /api/modality` · `GET /api/modality/{id}` | público | 200 (2013) | 404 `4073` (get by id inexistente/inactiva) |
+| `POST /api/modality` | `CREATE_MODALITY` | 201 (2001) | 400 `4072` nombre dup (case-insensitive) · 400 validación |
+| `PUT /api/modality/{id}` | `UPDATE_MODALITY` | 200 (2002) | 404 `4073` · 400 `4072` |
+| `DELETE /api/modality/{id}` | `DELETE_MODALITY` | 200 (2003, **soft-delete**) | 404 `4073` |
+
+**Eventos de Vida — `/api/life-event`**. Entidad `LifeEvent`: `id` UUID · `slug` String UNIQUE · `name` String ·
+`active` boolean (`is_active`, **NUEVO en `0ecd14e`** — soft-delete). Body `LifeEventRequestDTO` = `{ slug (@NotBlank @Size 3-100), name (@NotBlank @Size 3-100) }` ·
+response `LifeEventResponseDTO` = `{ id, slug, name }` (el `active` **no** se expone en el response). Los GET solo devuelven **activos**:
+
+| Método + Ruta | Auth | Éxito | Errores |
+|---|---|---|---|
+| `GET /api/life-event` · `GET /api/life-event/{id}` | público | 200 (2013) | 404 `4073` (inexistente/inactivo) |
+| `POST /api/life-event` | `CREATE_LIFE_EVENT` | 201 (2001) | 400 `4072` slug dup · 400 validación |
+| `PUT /api/life-event/{id}` | `UPDATE_LIFE_EVENT` | 200 (2002) | 404 `4073` · 400 `4072` · **409 `4076`** si se renombra un evento **asignado a un trámite** |
+| `DELETE /api/life-event/{id}` | `DELETE_LIFE_EVENT` | 200 (2003, **soft-delete** desde `0ecd14e`) | 404 `4073` |
+
+### 5.4 Destinatarios (Recipients)
+
+Catálogo simple que clasifica el **tipo de destinatario** de un trámite (quién puede solicitarlo). Controller `/api/recipient`.
+**Entidad autónoma sin FK** a otras entidades. Seed inicial (`V2.7`): `persona_humana`, `empresa`, `extranjero`.
+
+**Entidad** `Recipient` (`recipients`): `id` UUID PK · `name` String(100) NOT NULL **UNIQUE** (unicidad case-insensitive en el service). Sin `active` → **borrado físico (hard-delete)**.
+Body `RecipientRequestDTO` = `{ name (@NotBlank @Size 3-100) }` · response `RecipientResponseDTO` = `{ id, name }`.
+Convención: **reads públicos**; 💥 **escrituras por PERMISO** (antes `hasAnyRole('SUPERADMIN','ADMIN_BACKOFFICE')`).
+
+| Método + Ruta | Auth | Éxito | Errores |
+|---|---|---|---|
+| `GET /api/recipient` | público | 200 lista (2013), orden por `name` | — |
+| `GET /api/recipient/{id}` | público | 200 (2013) | 404 `4073` no existe |
+| `POST /api/recipient` | `CREATE_RECIPIENT` | 201 (2001) | 400 `4072` nombre dup (case-insensitive) · 400 `4012` validación · 403 sin permiso |
+| `PUT /api/recipient/{id}` | `UPDATE_RECIPIENT` | 200 (2002) | 404 `4073` · 400 `4072` nombre dup en otro · 400 `4012` |
+| `DELETE /api/recipient/{id}` | `DELETE_RECIPIENT` | 200 (2003, **hard-delete**) | 404 `4073` |
+
+> Igual que en taxonomía: los roles que cumplen esos permisos son `SUPERADMIN` y `ADMIN_BACKOFFICE`, así que el
+> comportamiento observable no cambia.
+
+### 5.5 Trámites (Procedure / Variant) y Tag — pendiente de exponer
+
+Estas entidades existen pero **NO tienen controller/endpoint REST todavía** (siguen bloqueadas por backend):
+
+- **Procedure** (`procedures`): `id` UUID · `name` String UNIQUE NOT NULL · `description` TEXT ·
+  `tagIds` UUID[] (`tag_ids`) · `lifeEventIds` UUID[] (`life_event_ids`). Sin estado propio (vive en la variante).
+- **ProcedureVariant** (`procedure_variants`): `id` UUID · `procedure` (FK `procedure_id`) ·
+  `organism` (FK **`organization_id`** — nombre de columna legacy, apunta a `organisms`) · `location` (FK `location_id`) ·
+  `modality` (FK `modality_id`) · `requirements`/`paymentMethod`/`steps` TEXT · `procedureUrl` · `active` (`is_active`) ·
+  `status` String(50) = workflow `BORRADOR`/`PUBLICADO`.
+- **Tag** (`tags`) — 💥 **REDISEÑADA en `d800be0`** (migración `V2.8__create_tags.sql`, alineación con el DER):
+
+  | Antes (`0ecd14e`) | Ahora (`d800be0`) |
+  |---|---|
+  | `id` UUID · `name` String UNIQUE · `description` String? · `active` bool (`is_active`) | `id` UUID · `organism` FK `organism_id` **nullable** · `slug` String NOT NULL · `local` bool (`is_local`, NOT NULL) |
+
+  Las columnas `name`, `description` e `is_active` **fueron eliminadas** de la tabla; `slug` se generó por migración
+  a partir del `name` viejo (minúsculas, sin tildes, no-alfanumérico → `-`).
+  **Reglas de integridad** (constraints en DB + `@Check`/`@UniqueConstraint` en la entidad):
+  - `uk_tags_slug_organism` UNIQUE `(slug, organism_id)` + índice único parcial `uk_tags_slug_global` sobre `slug`
+    donde `organism_id IS NULL` (garantiza un solo tag global por slug).
+  - `chk_tags_scope_consistency`: `(organism_id IS NULL AND is_local = false)` **OR** `(organism_id IS NOT NULL AND is_local = true)`.
+    O sea: **tag global ⇔ sin organismo**; **tag local ⇔ con organismo**. No hay combinación mixta válida.
+
+  Ya existe `TagService.createTag(slug, organismId)` (canonicaliza el slug: NFD, sin diacríticos, minúsculas,
+  `[^a-z0-9]+`→`-`, sin guiones al borde) con errores `4072` (slug ya existe en ese scope, 400) y `4073`
+  (organismo inexistente, 404, entidad `Etiqueta`). **Pero sigue SIN `TagController` ni DTOs → no hay endpoint REST.**
+- Logs internos (`ProcedureVisitLog`, `SearchLog`): sin endpoints.
+
+**Todo el CRUD de trámites, variantes y tags requiere trabajo de API en el backend antes de integrarlo.**
+
+> 📌 **Para el front:** cuando se exponga el ABM de etiquetas, el modelo ya **no** es `{ id, name, description, active }`
+> sino `{ id, slug, organismId|null, local }`. Conviene ir adaptando el mock de `etiqueta.service` a esa forma:
+> el "nombre" visible es el `slug`, y el toggle "activo" **ya no existe** (se reemplazó por el scope global/local).
 
 ---
 
@@ -542,6 +913,11 @@ persiste una `Notification` (`SENT`/`FAILED`).
 
 ### 6.2 Almacenamiento (MinIO) — `MinIOController` (`/api/storage/`)
 
+> 💥 **CAMBIO `ea65b92`:** `/api/storage/**` **ya NO es público** — ahora requiere **autenticación**
+> (`Authorization: Bearer <token>`). Sin token → 401.
+> 💥 **CAMBIO `d800be0`:** además de autenticación, ambos endpoints exigen el permiso **`READ_STORAGE`**
+> (`@PreAuthorize("hasAuthority('READ_STORAGE')")`, antes `hasAnyRole('SUPERADMIN','ADMIN_BACKOFFICE')`).
+> Roles con ese permiso en el seed: `SUPERADMIN` y `ADMIN_BACKOFFICE` → **sin cambio funcional**. Sin el permiso → 403.
 > ⚠️ El prefijo de clase termina en `/`. Spring normaliza la doble barra; usar `/api/storage/exist/...`
 > y `/api/storage/download/...` y **verificar contra el backend en ejecución**.
 
@@ -574,33 +950,78 @@ si falta token · `400` `{ "success": false, "message": "Error al verificar el r
 
 Diferencias entre lo que asume el frontend (`CLAUDE.md`, servicios con mocks) y lo que el backend expone hoy:
 
-1. **Códigos de rol distintos.** El `CLAUDE.md` del backoffice lista `SUPERADMIN`, `ADMIN_ORGANISMO`, `EDITOR`.
-   El backend real usa: `SUPERADMIN`, `ADMIN_BACKOFFICE`, `ADMIN_ORGANIZATION`, `AGENT`, `MANAGER`, `USER`.
-   → **Actualizar el enum `UserRole` y los `roleGuard`/constants del frontend** a los códigos reales (§4.2).
-   Recordar: `@PreAuthorize("hasRole('X')")` ⇒ autoridad `ROLE_X` en el JWT (claim `roles`).
+### 🔥 Cambios introducidos en `d800be0` — ACCIÓN REQUERIDA EN EL FRONT
 
-2. **Todo el CRUD de trámites no existe en el backend.** Los servicios `tramite.service`, `modalidad.service`,
-   `etiqueta.service`, `evento-de-vida.service`, `categoria.service`, `organismo.service` no tienen endpoints
-   reales detrás (solo `GET /api/municipality`). → Estos quedan **bloqueados por backend**; mantener mocks o
-   coordinar la creación de los controllers. Schemas de entidad en §5.2 para ir armando los modelos.
+| # | Cambio | Impacto | Qué hacer |
+|---|---|---|---|
+| **A** | **RBAC pasó de rol a permiso** en User, Organism, OrganismType, Category, Modality, LifeEvent, Recipient y Storage | Guards y directivas que chequean `hasRole('ADMIN_BACKOFFICE')` **dejan de reflejar** lo que el backend permite | Migrar guards/directivas a **chequeo de permiso**. Mantener chequeo por rol solo en `/api/role` y `/api/permission` |
+| **B** | **Códigos de permiso renombrados a inglés** (`V2.9`) | Constantes hardcodeadas en español (`CREATE_ORGANISMO`, `READ_USUARIO`, `VIEW_ANALYTICS_INTELIGENCIA`) **no matchean nada** | Actualizar el enum/constantes de permisos a la tabla de §4.2 |
+| **C** | **JWT: claims `roles[]` + `permissions[]`** (arrays), ya no un string separado por comas | El parser del token que hacía `.split(',')` sobre un claim único **rompe** | Dejar de parsear el JWT a mano → usar **`GET /api/auth/me`** (§2). Si igual se decodifica, leer los dos arrays |
+| **D** | **`GET /api/auth/me`** nuevo | — | Llamarlo post-login y post-refresh; alimentar el store de sesión con `roles`+`permissions` |
+| **E** | **`ADMIN_BACKOFFICE` gestiona roles y permisos** | Se puede habilitar la pantalla de Roles/Permisos a ese rol | Ajustar guard de la ruta; **deshabilitar editar/eliminar el rol `SUPERADMIN`** si el usuario no es SUPERADMIN (403 `4029`) |
+| **F** | **`RoleRequestDTO.active` obligatorio en el PUT** y **ignorado en el POST** | Un PUT sin `active` devuelve **400 `4012`**; un POST con `active:false` igual crea el rol **activo** | En el form de edición mandar siempre `active`; en el de creación, no ofrecer el toggle (o avisar que se crea activo) |
+| **G** | **`RoleResponseDTO` ahora trae `active`** | — | Agregar el campo al modelo y mostrar el estado del rol en la grilla |
+| **H** | **`PUT /api/role/{id}` reemplaza el set completo de permisos** | Mandar `permissionsIds` parcial **borra** el resto | Precargar con `GET /api/role/{id}` y reenviar la lista completa |
+| **I** | **`acronym` de organismo: unicidad global** (incluye inactivos) | Reutilizar el acrónimo de un organismo dado de baja ahora falla con **409 `4069`** | Mapear 409 `4069` al campo `acronym` del form |
+| **J** | **`PUT /api/user/{id}` (baja lógica) exige `DELETE_USER`**, no `UPDATE_USER` | Botón "desactivar" habilitado con el permiso equivocado → 403 | Condicionar ese botón a `DELETE_USER` |
+| **K** | **`ADMIN_ORGANIZATION` ya puede leer usuarios** (`READ_USER`) | Antes 403, ahora 200 | Habilitar la vista de detalle de usuario para ese rol (solo lectura) |
+| **L** | **Entidad `Tag` rediseñada** → `{ id, slug, organismId?, local }` | El mock viejo `{ name, description, active }` quedó obsoleto | Adaptar el modelo de `etiqueta.service` (sigue sin endpoint, §5.5) |
 
-3. **No hay listado/paginado de usuarios** (`GET /api/user`). El backoffice (`usuarios/list`) no puede listar
-   usuarios desde la API todavía. Solo hay GET por id. → Falta endpoint en backend.
+> ⚠️ **Nota sobre el orden de migración del front:** A y B van juntas. Si se migra el guard a permisos pero se dejan
+> los códigos en español, **todo devuelve "sin permiso"** y el menú queda vacío.
 
-4. **No hay endpoint de subida de archivos** (`/api/storage/upload` comentado) ni presigned URLs.
-   Archivos solo por clave + `GET /download/{fileName}` (binario). → Si el backoffice sube imágenes/PDFs,
-   falta reactivar/implementar el upload.
+### Cambios introducidos en `ea65b92` (revisar si venías de una versión anterior)
 
-5. **Dos formatos de respuesta** (`ResponseDTO` con `details` vs `MessageDTO` con `message`) y **dos formatos de
-   error** (`MessageDTO` de negocio vs `ErrorDTO` de seguridad). El `http-error.service`/interceptor del frontend
-   debe normalizar ambos. `code` es de negocio, NO el HTTP status.
+A. **💥 DTOs Role/Permission renombrados a inglés** (§4.3): `codigo`→`code`, `scopeTipo`→`scopeType`,
+   `asignablePorOrgAdmin`→`assignableByOrgAdmin`, `descripcion`→`description`. Actualizar interfaces y `roleGuard`.
+B. **💥 `Municipality` eliminado → `Location`** (§5.1): `GET /api/municipality` ya no existe (404). Migrar
+   `localidad.service` a `GET /api/location` / `GET /api/location/department/{id}`. Modelo ahora jerárquico Department→Location.
+C. **💥 `/api/storage/**` ya no es público** (§6.2): ahora requiere Bearer token. `/actuator/**` restringido a `/actuator/health`.
+D. **🆕 Nuevos ABMs disponibles** (§5.2, §5.3): Organism/OrganismType (SUPERADMIN), Category/Modality/LifeEvent
+   (reads públicos, escritura SUPERADMIN+ADMIN_BACKOFFICE). Cablear `organismo`, `categoria`, `modalidad`, `evento-de-vida`.
+E. **🆕 Nuevos códigos de error** 4053, 4055, 4063, 4065–4075 (§1.6) — sobre todo los de jerarquía (ciclos, hijos activos)
+   y `4072`/`4073` genéricos de conflicto/not-found en taxonomía.
 
-6. **`refresh` devuelve objeto plano** (sin `ResponseDTO`), a diferencia de `login`/`activate-account`. Parsear distinto.
+### Discrepancias / pendientes vigentes
 
-7. **`clientApp` obligatorio** en `register` y `email/recovery`. El backoffice debe enviar `BACKOFFICE`; el portal, `PORTAL`.
+1. **Códigos de rol distintos del `CLAUDE.md`.** El `CLAUDE.md` lista `SUPERADMIN`, `ADMIN_ORGANISMO`, `EDITOR`.
+   El backend usa: `SUPERADMIN`, `ADMIN_BACKOFFICE`, `ADMIN_ORGANIZATION`, `AGENT`, `MANAGER`, `USER` (§4.2).
+   Recordar: `hasRole('X')` ⇒ autoridad `ROLE_X`; en el claim `roles` y en `/api/auth/me` vienen **con** el prefijo.
 
-8. **Detalles a consumir tal cual:** la clave `lockeTime` (typo) en `UserResponseDTO`; rutas de storage con
-   posible doble barra; `cuit`/`cuil`/`activeAssignments` pueden venir `null`.
+2. **Trámites/Variantes y Tag siguen sin API** (§5.5): `tramite.service` y `etiqueta.service` siguen **bloqueados
+   por backend**. El resto de la taxonomía y organismos **ya se puede integrar**.
+   El backend prioriza hoy el **core nuevo de procedimientos del DER** (`procedure_templates`, `organism_procedures`,
+   `organism_procedure_locations`, `otl_versions`, `attention_points`) — todos `pending` según
+   `docs/tasks/issues_pendientes.md` (corte 2026-07-28). **No esperar API de trámites en el corto plazo.**
+
+2-bis. **🚨 El menú del backoffice debe construirse desde `permissions`, no desde el rol.** Con el modelo nuevo,
+   `AGENT`, `MANAGER` y `USER` no tienen **ningún** permiso de los ABMs del backoffice: si el menú se arma por rol,
+   ven ítems que devuelven 403 al entrar. Y al revés: `ADMIN_BACKOFFICE` **no** tiene permisos de Organismo/Tipo de
+   Organismo en el seed (§4.2), así que ese módulo le va a dar 403 aunque el rol "suene" a que puede.
+
+3. **No hay listado/paginado de usuarios** (`GET /api/user`). Solo GET por id. → Falta endpoint en backend.
+
+4. **No hay endpoint de subida de archivos** (`/api/storage/upload` comentado) ni presigned URLs; además storage
+   ahora exige auth. Archivos solo por clave + `GET /download/{fileName}` (binario, con token).
+
+5. **Dos formatos de respuesta** (`ResponseDTO`.`details` vs `MessageDTO`.`message`) y **dos de error**
+   (`MessageDTO` de negocio vs `ErrorDTO` de seguridad). Normalizar en `http-error.service`. `code` es de negocio, NO el HTTP status.
+
+6. **`refresh` devuelve objeto plano** (sin `ResponseDTO`), distinto de `login`/`activate-account`.
+
+7. **`clientApp` obligatorio** en `register` y `email/recovery` (`BACKOFFICE` para Angular).
+
+8. **✅ Bug 403→500 CORREGIDO** (en `0ecd14e`): un usuario autenticado sin el rol requerido ahora recibe **403**
+   correctamente (anónimo → **401** `4025`), vía `ErrorDTO` (`{code, message, date, path, details}`). Ya no hay 500 espurio.
+   El `http-error.service` puede mapear 403 = "sin permiso" y 401 = "re-login" de forma confiable.
+
+9. **Usuarios creados por admin quedan activos al instante** (§3): `POST /api/user` crea el usuario con
+   `accountActive=true` y **sin** email de activación; puede loguearse de inmediato con el password provisto.
+   (El auto-registro `POST /api/auth/register` sigue requiriendo activación por email.)
+
+10. **Detalles a consumir tal cual:** clave `lockeTime` (typo) en `UserResponseDTO`; rutas de storage con posible
+    doble barra; `cuit`/`cuil`/`activeAssignments` pueden venir `null`; el password de **register** exige complejidad
+    (mayúscula+número+símbolo, ej. `Password123!`) o devuelve 406 (`4034`).
 
 ---
 
@@ -615,13 +1036,38 @@ Orden sugerido (lo desbloqueado por backend primero):
 - [X] **RBAC** (§4.2): actualizar enum de roles y `roleGuard` a los códigos reales; recordar prefijo `ROLE_`.
 - [X] **Usuarios** (§3): crear, get por id, cambiar password/email, status, borrado lógico/físico, update-profile propio. (Listado: bloqueado por backend.)
 - [X] **Roles y Permisos** (§4): ABM completo (solo SUPERADMIN); `GET /api/role/allowed` para selects de creación de usuarios.
-- [X] **Municipios** (§5.1): `GET /api/municipality` (público) para selects de localidad.
+- [X] **⚠️ Migrar Municipios → Localidades** (§5.1): reemplazar `GET /api/municipality` por `GET /api/location` /
+  `GET /api/location/department/{id}` en `localidad.service`; modelo Department→Location. *(Feature `localidades` con `/api/department` + `/api/location`; feature `municipios` eliminado. El usuario NO tiene localidad en el backend real → se quitó el select vestigial.)*
 - [X] **Recuperación de contraseña** (§6.1): `email/recovery` + `email/change-pass` (con `clientApp`).
-- [ ] **Storage** (§6.2): descarga por clave; (upload bloqueado por backend).
+- [X] **⚠️ Actualizar RBAC a DTOs en inglés** (§4.3): `code`/`scopeType`/`assignableByOrgAdmin`/`description`. *(DTOs en inglés; VMs internos siguen en español.)*
+- [X] **🆕 Departamentos y Localidades** (§5.1): feature `localidades` (facade `departamentos$`/`localidades$`/`localidadesPorDepartamento`). Consumidores UI reales llegan en Tramo 2 (organismos `baseLocation`, trámites).
+- [X] **🆕 Taxonomía** (§5.3): features `categorias` (`/api/category`), `modalidades` (`/api/modality`), `eventos-de-vida` (`/api/life-event`) migrados a capas y cableados al backend real. *(UI alineada al contrato real: se removieron campos que el backend no persiste —ícono/color/descripción/orden/toggle-activo/trámites—; se agregó `slug` requerido en categoría/evento.)*
+- [X] **🆕 Organismos** (§5.2): features `organismos` (`/api/organism`) + `tipos-organismo` (`/api/organism-type`), ABM completo SUPERADMIN, migrados a capas. *(Contrato real: se removieron sitioWeb/logoUrl; el form de organismo resuelve tipo/padre/localidad-base vía `facade.getFormData()`. Nuevo ítem de nav "Tipos de Organismo".)*
+- [X] **🆕 Destinatarios** (§5.4): feature `destinatarios` → `/api/recipient` (reads públicos, escritura SUPERADMIN/ADMIN_BACKOFFICE), migrado a capas, ABM completo + ítem de nav. Catálogo simple `{ id, name }`, seed `persona_humana`/`empresa`/`extranjero`. *(Usuarios creados por admin quedan activos al instante §3 → el form desactiva en cadena si el toggle está en OFF.)*
+- [ ] **🔥 Migrar el RBAC de ROL a PERMISO** (§4.2, §7-A/B): reemplazar el enum de permisos por los códigos en inglés;
+  pasar `roleGuard`/`hasPermission` a chequear `permissions`. Mantener chequeo por rol solo en `/api/role` y `/api/permission`.
+- [ ] **🆕 Cablear `GET /api/auth/me`** (§2): llamarlo después de `login`, `activate-account` y `refresh`; guardar
+  `roles`+`permissions` en el store de sesión y usarlos como **única** fuente del RBAC (no decodificar el JWT).
+  Normalizar `roles` quitando el prefijo `ROLE_` si el front compara contra `'SUPERADMIN'`.
+- [ ] **🆕 Menú y guards por permiso** (§7-2bis): ocultar cada ítem del backoffice según su permiso concreto
+  (`CREATE_CATEGORY`, `READ_ORGANISM`, …) en vez de por rol.
+- [ ] **🆕 Roles y Permisos — ajustes** (§4.3, §4.4): habilitar la pantalla a `ADMIN_BACKOFFICE`; bloquear editar/eliminar
+  el rol `SUPERADMIN` para no-SUPERADMIN (403 `4029`); mandar `active` **obligatorio** en el PUT; agregar `active` al
+  modelo de respuesta; recordar que el PUT **reemplaza** todo el set de `permissionsIds`.
+- [ ] **🆕 Usuarios — ajustes de permisos** (§3.2): botón "desactivar" (`PUT /api/user/{id}`) requiere **`DELETE_USER`**;
+  habilitar lectura de usuario a `ADMIN_ORGANIZATION` (`READ_USER`).
+- [ ] **🆕 Organismos — acrónimo** (§5.2): mapear **409 `4069`** al campo `acronym` (unicidad ahora global, incluye bajas).
+- [ ] **Storage** (§6.2): descarga por clave **con token + permiso `READ_STORAGE`**; upload bloqueado por backend.
 - [ ] **reCAPTCHA** (§6.3): integrar `verify-recaptcha` donde se requiera (necesita claves reales).
-- [ ] **Bloqueado por backend** (§7): trámites/variantes/modalidades/etiquetas/eventos/organismos CRUD, listado de usuarios, upload. Coordinar con backend o mantener mocks.
+- [ ] **Bloqueado por backend** (§5.5, §7): CRUD de **trámites/variantes** y **tags** (modelo de Tag ya cambió a
+  `{ slug, organismId, local }`), listado de usuarios, upload. Coordinar con backend o mantener mocks.
 
 ---
 
-*Generado a partir del código de `D:/proyectos/PortalMisiones-backend/backend`. Ante dudas, contrastar con
-Swagger en vivo (`/swagger-ui.html`) y la colección Postman del backend (`docs/Portal_Tramite_Misiones.postman_collection.json`).*
+*Generado a partir del código de `D:/proyectos/PortalMisiones-backend/backend` @ commit `d800be0` (dev, 2026-07-29).
+Ante dudas, contrastar con Swagger en vivo (`/swagger-ui.html`) y la colección Postman del backend
+(`docs/Portal_Tramite_Misiones.postman_collection.json`, actualizada en `PPDT-20` con los permisos por endpoint).*
+
+*Nota de infraestructura: el backend **no usa Flyway/Liquibase** sino un runner propio (`MigrationQueryRunner`) que
+ejecuta `src/main/resources/db/V*.sql` ordenados por versión y registra el **nombre de archivo** en `_migration_history`.
+Por eso conviven dos archivos `V2.8__*` (`create_tags` y `soft_delete_life_events`): ambos se aplican.*

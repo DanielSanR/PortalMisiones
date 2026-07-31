@@ -1,5 +1,41 @@
-/** Opción de organismo para selects (ViewModel del feature organismos). */
+/** Opción de organismo para selects (consumida cross-feature por usuarios). */
 export interface OrganismoOption {
   id: string;
   nombre: string;
+}
+
+/** ViewModel de Organismo (BACKEND_API_SPEC.md §5.2). `tipoNombre` lo resuelve el facade. */
+export interface OrganismoVM {
+  id: string;
+  typeId: string;
+  tipoNombre?: string;
+  parentId: string | null;
+  baseLocationId: string | null;
+  nombre: string;
+  acronym: string;
+  activo: boolean;
+}
+
+/** Valor del formulario de organismo. `typeId` requerido; `parentId`/`baseLocationId` opcionales. */
+export interface OrganismoFormValue {
+  typeId: string;
+  parentId: string | null;
+  baseLocationId: string | null;
+  nombre: string;
+  acronym: string;
+  activo: boolean;
+}
+
+/** Opción genérica para selects del form (id + etiqueta). */
+export interface SelectOption {
+  id: string;
+  nombre: string;
+}
+
+/** Datos del formulario de organismo, resueltos en una sola llamada (orquestación del facade). */
+export interface OrganismoFormData {
+  tipos: SelectOption[];
+  localidades: SelectOption[];
+  organismos: OrganismoOption[];
+  organismo: OrganismoVM | null;
 }

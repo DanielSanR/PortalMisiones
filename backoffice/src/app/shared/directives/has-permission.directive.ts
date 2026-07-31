@@ -5,9 +5,9 @@ import { AuthTokenService } from '../../core/services/auth-token.service';
 /**
  * Directiva estructural de gating por PERMISO atómico (no por rol).
  *
- *   <button *appHasPermission="'CREATE_USUARIO'">Nuevo</button>
- *   <div *appHasPermission="['UPDATE_ROL','DELETE_ROL']">…</div>            (any por defecto)
- *   <div *appHasPermission="['READ_ROL','READ_USUARIO']; mode:'all'">…</div> (todos)
+ *   <button *appHasPermission="'CREATE_USER'">Nuevo</button>
+ *   <div *appHasPermission="['UPDATE_CATEGORY','DELETE_CATEGORY']">…</div>       (any por defecto)
+ *   <div *appHasPermission="['CREATE_MODALITY','UPDATE_MODALITY']; mode:'all'">…</div> (todos)
  *
  * Reactiva al usuario actual (re-evalúa si cambia la sesión, p. ej. el switcher de rol dev).
  */
@@ -53,9 +53,11 @@ export class HasPermissionDirective implements OnInit {
 
   private evaluate(): boolean {
     if (this.permissions.length === 0) return false;
-    if (this.permissions.length === 1) return this.auth.hasPermission(this.permissions[0]);
+    // `can*` aplica las excepciones de política (ej. CREATE/UPDATE/DELETE_USER → SUPERADMIN),
+    // así el botón queda alineado con la ruta y el nav sin hardcodear el rol en el template.
+    if (this.permissions.length === 1) return this.auth.can(this.permissions[0]);
     return this.mode === 'all'
-      ? this.auth.hasAllPermissions(...this.permissions)
-      : this.auth.hasAnyPermission(...this.permissions);
+      ? this.auth.canAll(...this.permissions)
+      : this.auth.canAny(...this.permissions);
   }
 }

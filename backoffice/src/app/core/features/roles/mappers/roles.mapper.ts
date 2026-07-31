@@ -6,12 +6,12 @@ import { RolFormValue, RolVM } from '../models/role.vm';
 export function toRolVM(dto: RoleResponseDTO): RolVM {
   return {
     id: dto.id,
-    codigo: dto.codigo,
+    codigo: dto.code,
     descripcion: dto.description ?? '',
-    scopeTipo: dto.scopeTipo,
-    asignablePorOrgAdmin: dto.asignablePorOrgAdmin,
+    scopeTipo: dto.scopeType,
+    asignablePorOrgAdmin: dto.assignableByOrgAdmin,
     permisos: (dto.permissions ?? []).map(
-      (p): PermisoVM => ({ id: p.id, codigo: p.codigo, descripcion: p.descripcion })
+      (p): PermisoVM => ({ id: p.id, codigo: p.code, descripcion: p.description })
     ),
   };
 }
@@ -19,10 +19,10 @@ export function toRolVM(dto: RoleResponseDTO): RolVM {
 /** Form → request de creación/edición. */
 export function toRoleRequest(form: RolFormValue): RoleRequestDTO {
   return {
-    codigo: form.codigo,
+    code: form.codigo,
     description: form.descripcion,
-    scopeTipo: form.scopeTipo,
-    asignablePorOrgAdmin: form.asignablePorOrgAdmin,
+    scopeType: form.scopeTipo,
+    assignableByOrgAdmin: form.asignablePorOrgAdmin,
     active: form.active,
     permissionsIds: form.permissionsIds,
   };

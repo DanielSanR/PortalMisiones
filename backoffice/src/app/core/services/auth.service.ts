@@ -16,7 +16,8 @@ import {
 } from '../models/api-response.model';
 import { AuthTokenService } from './auth-token.service';
 import { parseAuthorities, pickHighestRole } from '../utils/role.utils';
-import { InvalidRoleError } from '../errors/invalid-role.error';
+import { UserRole } from '../enums/user-role.enum';
+import { NoBackofficeAccessError } from '../errors/no-backoffice-access.error';
 import { SKIP_ERROR_INTERCEPTOR } from '../interceptors/http-error.interceptor';
 
 /** Payload de registro administrativo público (`UserRequestDTO`). */
@@ -101,36 +102,37 @@ export class AuthService {
 
   /**
    * Persiste el par de tokens y reconstruye la sesión decodificando el access token.
-   * Lanza (y desloguea) si el JWT no trae un rol reconocido.
+   * La autorización es POR PERMISO: un usuario sin rol canónico (solo rol custom) es una sesión
+   * VÁLIDA — `role` queda `null` y el acceso se resuelve por sus permisos. Solo propaga error si
+   * el token no se puede decodificar (token corrupto → el LoginComponent muestra el error inline).
    */
   private saveSession(tokens: JwtDTO | RefreshTokenResponseDTO): AuthUser {
-    try {
-      const payload = this.decodeToken(tokens.accessToken);
-      // back devuelve roles con los claim disponibles(acciones), parseamos
+    const payload = this.decodeToken(tokens.accessToken);
+    // Separa roles y permisos del token (tolera el claim viejo mezclado y el nuevo con arrays aparte).
+    const { roles, roleCodes, permissions } = parseAuthorities(payload);
 
-      const { roles, permissions } = parseAuthorities(payload.roles);
-      const role = pickHighestRole(roles);
-      if (!role) throw new InvalidRoleError(payload.roles);
-      const user: AuthUser = {
-        id: payload.userId,
-        email: payload.sub,
-        nombre: payload.nombre ?? '',
-        apellido: payload.apellido ?? '',
-        role,
-        roles,
-        permissions,
-        organismoId: payload.organismoId ?? null,
-      };
+    // Gate de acceso al backoffice: entra CUALQUIER rol excepto el visitante del portal (`USER`).
+    // Un usuario cuyo único rol es USER (rol por defecto del registro) queda afuera; cualquier otro
+    // rol —canónico o custom, con o sin permisos— entra (el nav luego se arma por permiso).
+    // El `|| permissions.length` es una red por si llegara un token con permisos y sin rol.
+    const hasBackofficeAccess = roleCodes.some((c) => c !== UserRole.USER) || permissions.length > 0;
+    if (!hasBackofficeAccess) throw new NoBackofficeAccessError();
 
-      this.authTokenService.setTokens(tokens.accessToken, tokens.refreshToken);
-      this.authTokenService.setUserData(user);
-      return user;
-    } catch (error) {
-      if (error instanceof InvalidRoleError) {
-        this.logout();
-      }
-      throw error;
-    }
+    const user: AuthUser = {
+      id: payload.userId,
+      email: payload.sub,
+      nombre: payload.nombre ?? '',
+      apellido: payload.apellido ?? '',
+      role: pickHighestRole(roles), // rol canónico de mayor privilegio o null (custom-only)
+      roles,
+      roleCodes,
+      permissions,
+      organismoId: payload.organismoId ?? null,
+    };
+
+    this.authTokenService.setTokens(tokens.accessToken, tokens.refreshToken);
+    this.authTokenService.setUserData(user);
+    return user;
   }
 
   private decodeToken(token: string): JwtPayload {

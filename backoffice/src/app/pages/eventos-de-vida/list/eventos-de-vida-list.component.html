@@ -1,40 +1,22 @@
 <app-page-header title="Eventos de Vida" subtitle="Agrupaciones temáticas de trámites por situación del ciudadano">
-  <button mat-raised-button color="primary" (click)="onCreate()">
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_LIFE_EVENT'">
     <mat-icon>add</mat-icon> Nuevo evento
   </button>
 </app-page-header>
 
 <app-shared-table
-    [data]="eventos"
+    [data]="(eventos$ | async) ?? []"
     [columns]="columns"
     [loading]="loading"
     emptyMessage="No hay eventos de vida registrados"
     emptyIcon="event_busy">
 
-    <ng-template appTableCell="icono" let-row>
-        <div class="evento-badge" [style.background-color]="row.color + '20'" [style.color]="row.color">
-            <mat-icon>{{ row.icono }}</mat-icon>
-        </div>
-    </ng-template>
-
     <ng-template appTableCell="nombre" let-row>
         <strong class="evento-nombre">{{ row.nombre }}</strong>
     </ng-template>
 
-    <ng-template appTableCell="descripcion" let-row>
-        <span class="descripcion-text">{{ row.descripcion || '—' }}</span>
-    </ng-template>
-
-    <ng-template appTableCell="tramitesCount" let-row>
-        <span class="count-badge">{{ row.tramitesCount || 0 }}</span>
-    </ng-template>
-
-    <ng-template appTableCell="activo" let-row>
-        <mat-slide-toggle
-            [checked]="row.activo"
-            color="primary"
-            (change)="onToggleActive(row)">
-        </mat-slide-toggle>
+    <ng-template appTableCell="slug" let-row>
+        <span class="text-secondary">{{ row.slug }}</span>
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
@@ -42,10 +24,10 @@
             <mat-icon>more_vert</mat-icon>
         </button>
         <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="onEdit(row)">
+            <button mat-menu-item (click)="onEdit(row)" *appHasPermission="'UPDATE_LIFE_EVENT'">
                 <mat-icon>edit</mat-icon> Editar
             </button>
-            <button mat-menu-item class="delete-action" (click)="onDelete(row)">
+            <button mat-menu-item class="delete-action" (click)="onDelete(row)" *appHasPermission="'DELETE_LIFE_EVENT'">
                 <mat-icon>delete</mat-icon> Eliminar
             </button>
         </mat-menu>

@@ -5,10 +5,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
-import { CategoriaService } from '../../../core/services/categoria.service';
-import { CategoriaCreate } from '../../../core/models/tramite.model';
-import { FormConfig } from '../../../core/models/field.interface';
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
+import { FormConfig } from '../../../core/models/field.interface';
+import { CategoriasFacade, CategoriaFormValue } from '@features/categorias';
 
 @Component({
   selector: 'app-categoria-form',
@@ -20,53 +19,51 @@ import { getFormConfig, updateFormConfigOptions } from '../../../shared/componen
     DynamicFormComponent,
   ],
   templateUrl: './categoria-form.component.html',
+  styleUrls: ['./categoria-form.component.scss'],
 })
 export class CategoriaFormComponent implements OnInit {
   config: FormConfig = getFormConfig('CATEGORIA');
   isEdit = false;
   saving = false;
-  initialData: Record<string, any> | null = null;
+  initialData: Record<string, unknown> | null = null;
 
-  private editId: number | null = null;
-  private parentId: number | null = null;
+  private editId: string | null = null;
+  private parentId: string | null = null;
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
-    private categoriaService: CategoriaService,
+    private facade: CategoriasFacade,
     private route: ActivatedRoute,
     private router: Router,
     private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
-    this.parentId = Number(this.route.snapshot.queryParams['parentId']) || null;
-    const rawId = this.route.snapshot.params['id'];
-    this.isEdit = !!rawId;
-    this.editId = rawId ? Number(rawId) : null;
+    this.parentId = this.route.snapshot.queryParams['parentId'] ?? null;
+    this.editId = this.route.snapshot.params['id'] ?? null;
+    this.isEdit = !!this.editId;
 
-    const categorias$ = this.categoriaService.getAll();
-    const editData$ = this.editId ? this.categoriaService.getById(this.editId) : of(null);
-    // aca usamos fork por que etiquetas necesita datos padre ( cat raiz o cat nivel 1) 
-    // entonces necesitamos cargar ambos datos antes de mostrar el formulario
-    forkJoin({ categorias: categorias$, editData: editData$ })
+    const editData$ = this.editId ? this.facade.getById(this.editId) : of(null);
+
+    // Se cargan las categorías (opciones de padre) + la categoría en edición antes de mostrar el form.
+    forkJoin({ categorias: this.facade.loadCategorias(), editData: editData$ })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ categorias, editData }) => {
           const padreOptions = [
             { id: '', name: '— Ninguno (categoría raíz) —' },
-            ...categorias.data.map(c => ({ id: c.id, name: c.nombre })),
+            ...categorias
+              .filter((c) => c.id !== this.editId) // evita auto-referencia como padre
+              .map((c) => ({ id: c.id, name: c.nombre })),
           ];
           this.config = updateFormConfigOptions(this.config, 'parentId', padreOptions);
 
           if (editData) {
             this.initialData = {
               nombre: editData.nombre,
-              descripcion: editData.descripcion,
-              parentId: editData.parentId || '',
-              icono: editData.icono,
-              color: editData.color,
-              orden: editData.orden,
+              slug: editData.slug,
+              parentId: editData.parentId ?? '',
             };
           } else if (this.parentId) {
             this.initialData = { parentId: this.parentId };
@@ -75,20 +72,18 @@ export class CategoriaFormComponent implements OnInit {
         },
       });
   }
-  onSubmit(data: any): void {
+
+  onSubmit(data: Record<string, unknown>): void {
     this.saving = true;
-    const payload: CategoriaCreate = {
-      nombre: data.nombre,
-      descripcion: data.descripcion || undefined,
-      parentId: data.parentId || undefined,
-      icono: data.icono || undefined,
-      color: data.color || undefined,
-      orden: data.orden ? Number(data.orden) : undefined,
+    const form: CategoriaFormValue = {
+      nombre: String(data['nombre'] ?? ''),
+      slug: String(data['slug'] ?? ''),
+      parentId: (data['parentId'] as string) || null,
     };
 
     const request$ = this.isEdit
-      ? this.categoriaService.update(this.editId!, payload)
-      : this.categoriaService.create(payload);
+      ? this.facade.update(this.editId!, form)
+      : this.facade.create(form);
 
     request$
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -101,7 +96,10 @@ export class CategoriaFormComponent implements OnInit {
           );
           this.router.navigate(['/dashboard/categorias/lista']);
         },
-        error: () => { this.saving = false; },
+        error: () => {
+          this.saving = false;
+          this.cdr.markForCheck();
+        },
       });
   }
 

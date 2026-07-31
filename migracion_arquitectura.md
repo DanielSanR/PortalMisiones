@@ -253,12 +253,17 @@ export class UsuariosFacade {
 | Feature | Fuente real | Estado |
 |---|---|---|
 | `usuarios` | parcial (backend sin listado/update genérico) | corre en **mock**; HttpDataSource listo |
-| `organismos` | sin endpoint | mock (solo opciones para selects) |
+| `organismos` | ✅ `/api/organism` | **real** (local, SUPERADMIN) + mock. ABM completo (typeId/parent/baseLocation/acronym/active). Facade resuelve `tipoNombre` y orquesta `getFormData()` cross-feature (tipos + localidades + padre). Sigue exponiendo `getOptions()` para usuarios. |
+| `tipos-organismo` | ✅ `/api/organism-type` | **real** (local, SUPERADMIN) + mock. ABM completo (name/description/active). `getOptions()` consumido cross-feature por el form de organismos. |
 | `roles` | ✅ `/api/role` | **real** (local) + mock dev |
 | `permisos` | ✅ `/api/permission` | **real** (local) + mock dev |
-| `municipios` | ✅ `/api/municipality` | **real** (local) + mock; facade **cacheado** (shareReplay) |
+| `localidades` | ✅ `/api/department` + `/api/location` | **real** (Department→Location, UUID) + mock; facade **cacheado** (shareReplay). Reemplaza a `municipios` (endpoint `/api/municipality` eliminado). |
 | `cuenta` | ✅ `/api/email` | **real** (local) — recuperación de contraseña |
-| `etiquetas` | sin endpoint | mock (molde de feature bloqueada) |
+| `modalidades` | ✅ `/api/modality` | **real** (local) + mock. Alineado al contrato real (solo `name`+`active`). |
+| `eventos-de-vida` | ✅ `/api/life-event` | **real** (local) + mock. Alineado al contrato real (`slug`+`name`). |
+| `categorias` | ✅ `/api/category` | **real** (local) + mock. Jerárquico (`parentId`); árbol derivado en el facade. Alineado al contrato real (`slug`+`name`+`parent`). |
+| `destinatarios` | ✅ `/api/recipient` | **real** (local) + mock. Catálogo `{id,name}`, hard-delete (Recipients, `0ecd14e`). ABM completo + nav. |
+| `etiquetas` | sin endpoint | mock (molde de feature bloqueada; Tag sigue sin `TagController`) |
 
 Servicios reales inlineados y eliminados: `UserAdminService`, `RoleService`, `PermissionService`,
 `MunicipalityService`, `AccountService` (su HTTP vive en el `*.http.datasource` de cada feature).
@@ -270,8 +275,11 @@ Servicios reales inlineados y eliminados: `UserAdminService`, `RoleService`, `Pe
 
 ### Deuda pendiente (Fase 5 diferida — sin ganancia funcional hasta que el backend exponga endpoints)
 Pantallas que aún consumen mock services directo (migrar cuando llegue su endpoint, construyendo el
-HttpDataSource directo, o replicando el molde `etiquetas`): **trámites, organismos, categorías,
-modalidades, eventos-de-vida, dashboard, auditoría, feedback**, y el **listado de usuarios**.
+HttpDataSource directo, o replicando el molde `etiquetas`): **trámites, dashboard, auditoría, feedback**,
+y el **listado de usuarios**. (Taxonomía —categorías/modalidades/eventos-de-vida— y **organismos + tipos de
+organismo** ya migrados y cableados al backend real, alineados al contrato real: se removieron los campos que
+el backend no persiste —ícono/color/descripción/orden/toggle-activo/trámites en taxonomía; sitioWeb/logoUrl en
+organismos—. El `OrganismoService`/`CategoriaService`/etc. mock se conservan porque **trámites** aún los usa.)
 
 ### Guardarraíles activos
 - `npm run check:circular` (madge) → **0 ciclos**.
@@ -298,23 +306,72 @@ La auditoría (0 ciclos, 0 facade→facade/repo→repo, sin signals, barrels OK)
 
 ---
 
-## 13. Guards de auth y RBAC (endurecidos)
-- **`authGuard`**: exige sesión con access token vigente (`hasValidSession` decodifica `exp`); redirige a
-  `/auth/login` con `returnUrl` vía `createUrlTree`. Enchufado en la ruta `dashboard`.
-- **`roleGuard`**: RBAC real — bloquea (UrlTree al `redirectTo`) si el usuario no tiene ninguno de
-  `data.allowedRoles`; soporta **multi-rol** (`AuthUser.roles` + `hasAnyRole`).
-- **Bypass dev**: `environment.bypassAuthGuards` (`true` en dev, `false` en prod) cortocircuita ambos
-  guards para testear sin sesión real. Se eliminó el debug (`console.log`/`setTimeout`).
+## 13. Guards de auth y RBAC — **autorización POR PERMISO** (refactor)
+El RBAC dejó de ser por rol canónico y pasó a ser **por permiso (acción)**. El rol es una autoridad
+secundaria (display + un puñado de excepciones de política). Motivación: el backend permite roles custom
+y decide por permisos; el modelo viejo (por rol) rechazaba en login a cualquier usuario sin rol canónico.
 
-### Gating fino por permiso (no solo por rol)
-- **`permissionGuard`** (`core/guards`): gatea ruta por permiso atómico (`data.permissions`, any-of vía
-  `hasAnyPermission`). Aplicado (junto a `roleGuard`, defense-in-depth) en rutas de **roles** (`READ/CREATE/UPDATE_ROL`),
-  **usuarios** (`READ/CREATE/UPDATE_USUARIO`) y **etiquetas** (`READ/CREATE/UPDATE_TAXONOMIA`).
-  `permisos` queda solo en `roleGuard` SUPERADMIN (no hay permiso atómico de "permiso" en el catálogo §4.2).
-- **Directiva `*appHasPermission`** (`shared/directives`): gating en templates (`'CREATE_USUARIO'` o
-  `['A','B']; mode:'all'`). Reactiva al usuario. Consume `hasPermission/hasAnyPermission/hasAllPermissions`.
-  Cableada en TODOS los botones de acción de usuarios (CREATE/UPDATE_USUARIO), roles (CREATE/UPDATE/DELETE_ROL)
-  y etiquetas (CREATE/UPDATE/DELETE_TAXONOMIA).
+### Fuente única de verdad
+- **`core/utils/authorization.utils.ts`**: `canPerform(ctx, permission)` = tiene el permiso Y —si hay
+  excepción— alguno de los roles requeridos. `evaluateAccess(ctx, rule)` evalúa una `AccessRule`. Es la
+  ÚNICA función de autorización; la consumen nav, guard y la directiva → consistencia por construcción.
+- **`core/constants/policy-overrides.constants.ts`**: `PERMISSION_POLICY_ROLES` = excepciones declarativas
+  (más estrictas que el seed). Hoy: `CREATE_USUARIO`/`DELETE_USUARIO` → `[SUPERADMIN]`. Declarar acá aplica
+  en ruta, nav y botón a la vez.
+- **`core/models/access-rule.model.ts`**: `AccessRule = { permissions?, mode?, requireRoles? }`. Sin regla =
+  visible/accesible para todo autenticado (Dashboard). `requireRoles` para secciones sin permiso atómico
+  (Auditoría, Permisos).
+
+### Sesión y login
+- **`AuthUser.role` es nullable** (rol canónico de mayor privilegio o `null` si solo tiene rol custom);
+  se agregó `roleCodes[]` (todos los códigos, para display vía `resolveRoleLabel`).
+- **Login NO rechaza por rol custom** (se eliminó `InvalidRoleError`). `saveSession` solo propaga error si
+  el token no decodifica.
+- **Gate de acceso al backoffice**: entra cualquier rol EXCEPTO el visitante `USER` (rol por defecto del
+  registro/portal). Regla: `roleCodes.some(c => c !== 'USER') || permissions.length > 0`. Un `USER` puro
+  → `NoBackofficeAccessError` → el login muestra "Tu usuario no tiene acceso al panel de administración".
+
+### Guard, nav y botones (mismo motor)
+- **`accessGuard`** (`core/guards/access.guard.ts`): guard único (reemplaza `roleGuard`+`permissionGuard`,
+  eliminados). Lee `data.access: AccessRule` y evalúa con `evaluateAccess`. `bypassAuthGuards` (dev) lo
+  cortocircuita. Todas las rutas de `pages.module.ts` migradas a `{ access: {...}, redirectTo }`.
+- **Nav** (`role-mapping.constants.ts`): `NavItem.rule: AccessRule`. `admin-layout` filtra con `evaluateAccess`
+  **reactivo** a `getCurrentUser$` (takeUntilDestroyed). Usuarios se muestra con `READ/UPDATE_USUARIO`
+  (crear/eliminar son SUPERADMIN-only y NO dan visibilidad).
+- **Directiva `*appHasPermission`**: consume `AuthTokenService.can/canAny/canAll` (aplican las excepciones).
+  El botón "Nuevo usuario" quedó SUPERADMIN-only vía `CREATE_USUARIO` sin hardcodear el rol.
+- **`authGuard`** (sesión válida) sin cambios; sigue en la ruta `dashboard`.
+- Eliminados por muertos: `role.guard`, `permission.guard`, `has-role.directive`, `invalid-role.error`,
+  y los métodos `hasPermission*`/`getUserRoleSpanish/Display` de `AuthTokenService`.
+
+> **Nota dev**: el gate de login y el filtrado del nav funcionan con `bypassAuthGuards=true` (no dependen
+> del guard). Para probar el bloqueo de rutas por deep-link, poné `bypassAuthGuards=false`.
+
+### Flip a PERMISO (listo para cuando el backend pase a `hasAuthority`)
+Validado con `arquitecto-capas` + `angular-ssr-reviewer`: la infra ya es permission-first (`AccessRule`,
+`canPerform`/`evaluateAccess`, `accessGuard`, `*appHasPermission`). El pase es **cambio de config**:
+reemplazar `requireRoles` por `permissions` en `role-mapping.constants.ts` (nav) y `pages.module.ts` (rutas),
+según este mapeo (= el estado previo al pivot por rol):
+
+| Módulo | `requireRoles` (hoy) | `permissions` (flip) |
+|---|---|---|
+| Organismos / Tipos | `[SUPERADMIN]` | lista `['READ_ORGANISMO']` · nuevo `['CREATE_ORGANISMO']` · editar `['UPDATE_ORGANISMO']` |
+| Taxonomía (cat/mod/evento/etiq/dest) | `[SUPERADMIN, ADMIN_BACKOFFICE]` | lista `['READ_TAXONOMIA']` · nuevo `['CREATE_TAXONOMIA']` · editar `['UPDATE_TAXONOMIA']` |
+| Usuarios | lista `[SA,AB,AO]` · nuevo/editar `[SUPERADMIN]` | lista `['READ_USUARIO','UPDATE_USUARIO']` · nuevo `['CREATE_USUARIO']` · editar `['UPDATE_USUARIO']` |
+| Roles | `[SUPERADMIN]` | lista `['READ_ROL']` · nuevo `['CREATE_ROL']` · editar `['UPDATE_ROL']` |
+| Trámites | `[SA,AB,AO,AGENT]` | `['READ_TRAMITE']` / `['CREATE_TRAMITE']` / `['UPDATE_TRAMITE']` |
+| Feedback / Reportes | `[SA,AB,AO]` | `['VIEW_ANALYTICS_INTELIGENCIA']` |
+| Permisos / Auditoría | `[SUPERADMIN]` | **queda `requireRoles`** (no hay permiso atómico en el catálogo §4.2) |
+
+Además: revisar si `PERMISSION_POLICY_ROLES` (excepción `CREATE/DELETE_USUARIO → SUPERADMIN`) sigue haciendo
+falta o si el backend ya lo exige. **Cero cambios** en guard/directiva/store/`authorization.utils`.
+
+**Decisiones de diseño (debate arquitecto + angular-ssr):** NO crear clases `AuthStore`/`PermissionService`
+(la separación estado-vs-decisión ya existe: estado en `AuthTokenService`, decisión en funciones puras
+`canPerform`/`evaluateAccess`). NO usar `Set<string>` (rompe `JSON.stringify` en localStorage; sin beneficio
+a esta escala; se perdería la distinción tipada `roles`/`permissions` que la política necesita). `can*`
+síncronos (no Observable): una sola fuente reactiva `getCurrentUser$` + recómputo síncrono. Split opcional a
+futuro: extraer `TokenStorageService` (tokens/decode) — NO un servicio de permisos.
 
 ---
 

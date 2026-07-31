@@ -15,9 +15,14 @@ import { provideUsuariosFeature } from './core/features/usuarios';
 import { provideOrganismosFeature } from './core/features/organismos';
 import { provideRolesFeature } from './core/features/roles';
 import { providePermisosFeature } from './core/features/permisos';
-import { provideMunicipiosFeature } from './core/features/municipios';
+import { provideLocalidadesFeature } from './core/features/localidades';
 import { provideCuentaFeature } from './core/features/cuenta';
 import { provideEtiquetasFeature } from './core/features/etiquetas';
+import { provideModalidadesFeature } from './core/features/modalidades';
+import { provideEventosDeVidaFeature } from './core/features/eventos-de-vida';
+import { provideCategoriasFeature } from './core/features/categorias';
+import { provideTiposOrganismoFeature } from './core/features/tipos-organismo';
+import { provideDestinatariosFeature } from './core/features/destinatarios';
 
 registerLocaleData(localeEsAr, 'es-AR');
 
@@ -38,8 +43,13 @@ export const appConfig: ApplicationConfig = {
     ...provideOrganismosFeature(),
     ...provideRolesFeature(),
     ...providePermisosFeature(),
-    ...provideMunicipiosFeature(),
+    ...provideLocalidadesFeature(),
     ...provideCuentaFeature(),
     ...provideEtiquetasFeature(),
+    ...provideModalidadesFeature(),
+    ...provideEventosDeVidaFeature(),
+    ...provideCategoriasFeature(),
+    ...provideTiposOrganismoFeature(),
+    ...provideDestinatariosFeature(),
   ],
 };

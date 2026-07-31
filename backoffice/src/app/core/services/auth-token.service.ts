@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
 import { AuthUser } from '../models/auth.model';
-import { UserRole, ROLE_TO_DISPLAY, ROLE_TO_SPANISH, UserRoleDisplay } from '../enums/user-role.enum';
+import { UserRole } from '../enums/user-role.enum';
+import { AuthzContext, canPerform, resolveRoleLabel } from '../utils/authorization.utils';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -95,16 +96,6 @@ export class AuthTokenService {
     return this.isAuthenticated() && !this.isAccessTokenExpired();
   }
 
-  getUserRoleDisplay(): UserRoleDisplay | null {
-    const role = this.getUserRole();
-    return role ? ROLE_TO_DISPLAY[role] : null;
-  }
-
-  getUserRoleSpanish(): string | null {
-    const role = this.getUserRole();
-    return role ? ROLE_TO_SPANISH[role] : null;
-  }
-
   getUserOrganismoId(): string | null {
     return this.currentUser.getValue()?.organismoId ?? null;
   }
@@ -114,18 +105,38 @@ export class AuthTokenService {
     return this.currentUser.getValue()?.permissions ?? [];
   }
 
-  hasPermission(permission: string): boolean {
-    return this.getPermissions().includes(permission);
+  // ── Autorización con política (permiso + excepciones SUPERADMIN-only) ─────────
+  // Aplican las excepciones de política (PERMISSION_POLICY_ROLES) de forma consistente.
+  // ⚠️ Son síncronos (leen el snapshot de sesión). NO cachear su resultado en un campo del
+  // componente calculado UNA vez en ngOnInit: no reaccionaría a un cambio de sesión (refresh de
+  // token con otros permisos, switcher de rol). Para gating reactivo, suscribirse a `getCurrentUser$()`
+  // y recalcular con `can*` en cada emisión (así lo hacen `*appHasPermission` y el nav).
+  private authzContext(): AuthzContext {
+    return { permissions: this.getPermissions(), roles: this.getUserRoles() };
   }
 
-  hasAnyPermission(...permissions: string[]): boolean {
-    const owned = this.getPermissions();
-    return permissions.some((p) => owned.includes(p));
+  can(permission: string): boolean {
+    return canPerform(this.authzContext(), permission);
   }
 
-  hasAllPermissions(...permissions: string[]): boolean {
-    const owned = this.getPermissions();
-    return permissions.every((p) => owned.includes(p));
+  canAny(...permissions: string[]): boolean {
+    const ctx = this.authzContext();
+    return permissions.some((p) => canPerform(ctx, p));
+  }
+
+  canAll(...permissions: string[]): boolean {
+    const ctx = this.authzContext();
+    return permissions.every((p) => canPerform(ctx, p));
+  }
+
+  /** Códigos de rol crudos (canónicos + custom) para display. */
+  getRoleCodes(): string[] {
+    return this.currentUser.getValue()?.roleCodes ?? [];
+  }
+
+  /** Etiqueta de rol para la UI: canónico traducido, custom prettified, o "Sin rol asignado". */
+  getUserRoleLabel(): string {
+    return resolveRoleLabel(this.getRoleCodes(), this.getUserRole());
   }
 
   updateUserFromToken(): void {

@@ -83,7 +83,12 @@ const REAL_BACKEND_ROUTES = [
   '/api/user', // singular (mock usa /api/usuarios)
   '/api/role',
   '/api/permission',
-  '/api/municipality',
+  '/api/department', // geografía real (reemplaza /api/municipality)
+  '/api/location',
+  '/api/modality', // taxonomía real (mock usa /api/modalidades)
+  '/api/life-event', // taxonomía real (mock usa /api/eventos-de-vida)
+  '/api/category', // taxonomía real (mock usa /api/categorias)
+  '/api/recipient', // destinatarios real (mock usa /api/destinatarios)
   '/api/email/',
   '/api/storage/',
   '/api/recaptcha/',

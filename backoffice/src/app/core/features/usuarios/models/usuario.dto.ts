@@ -27,10 +27,10 @@ export interface CreateUserRequest {
 /** Rol embebido dentro de UserResponseDTO. */
 export interface UserRoleSummary {
   id: string;
-  codigo: string;
+  code: string;
   description: string;
-  scopeTipo: RoleScopeType;
-  asignablePorOrgAdmin: boolean;
+  scopeType: RoleScopeType;
+  assignableByOrgAdmin: boolean;
   permissions: PermissionResponseDTO[];
 }
 

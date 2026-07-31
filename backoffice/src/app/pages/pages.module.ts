@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
-import { roleGuard, permissionGuard } from '../core/guards';
+import { accessGuard } from '../core/guards';
 import { UserRole } from '../core/enums/user-role.enum';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -10,6 +10,8 @@ import { TramiteFormComponent } from './tramites/create/tramite-form.component';
 import { TramiteDetailComponent } from './tramites/detail/tramite-detail.component';
 import { OrganismosListComponent } from './organismos/list/organismos-list.component';
 import { OrganismoFormComponent } from './organismos/create/organismo-form.component';
+import { TiposOrganismoListComponent } from './tipos-organismo/list/tipos-organismo-list.component';
+import { TipoOrganismoFormComponent } from './tipos-organismo/create/tipo-organismo-form.component';
 import { UsuariosListComponent } from './usuarios/list/usuarios-list.component';
 import { EtiquetasListComponent } from './etiquetas/list/etiquetas-list.component';
 import { EtiquetaFormComponent } from './etiquetas/create/etiqueta-form.component';
@@ -22,11 +24,29 @@ import { FeedbackComponent } from './feedback/feedback.component';
 import { UsuarioFormComponent } from './usuarios/create/usuario-form.component';
 import { CategoriasListComponent } from './categorias/list/categorias-list.component';
 import { CategoriaFormComponent } from './categorias/create/categoria-form.component';
+import { DestinatariosListComponent } from './destinatarios/list/destinatarios-list.component';
+import { DestinatarioFormComponent } from './destinatarios/create/destinatario-form.component';
 import { RolesListComponent } from './roles/list/roles-list.component';
 import { RoleFormComponent } from './roles/create/role-form.component';
 import { PermisosListComponent } from './permisos/list/permisos-list.component';
 import { PermisoFormComponent } from './permisos/create/permiso-form.component';
 
+const HOME = '/dashboard/home';
+
+// Roles canónicos, solo para las secciones que el backend sigue autorizando por ROL (escape):
+// `/api/role` y `/api/permission` (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5) y las secciones
+// sin backend real (Auditoría, Feedback). El resto va por permiso, igual que el nav.
+const SUPER = [UserRole.SUPERADMIN];
+const SUPER_AB = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE];
+const SUPER_AB_AO = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION];
+
+/**
+ * Autorización de ruta vía `accessGuard` + `data.access` (AccessRule). Se gatea por **permiso** para
+ * espejar el `@PreAuthorize hasAuthority(...)` del backend (§4.1/§5); las excepciones que el backend
+ * autoriza por rol (Roles/Permisos) y las sin backend (Auditoría/Feedback) usan `requireRoles`. La
+ * MISMA regla filtra el nav → nav y ruta nunca se desalinean. Usuarios: listar es lectura (READ_USER),
+ * pero crear/editar quedan en SUPERADMIN por policy override (el form usa `/api/organism`, READ_ORGANISM).
+ */
 const routes: Routes = [
   {
     path: '',
@@ -34,194 +54,62 @@ const routes: Routes = [
     children: [
       { path: 'home', component: DashboardComponent },
 
-      // Trámites : queda definir aca que roles tienen permitidos los tramites
-      { path: 'tramites/lista', component: TramitesListComponent },
-      { path: 'tramites/nuevo', component: TramiteFormComponent },
-      { path: 'tramites/editar/:id', component: TramiteFormComponent },
-      { path: 'tramites/detalle/:id', component: TramiteDetailComponent },
+      // Trámites (backend aún bloqueado; gating provisional por los permisos que aplicarán)
+      { path: 'tramites/lista', component: TramitesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME } },
+      { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME } },
+      { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME } },
+      { path: 'tramites/detalle/:id', component: TramiteDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME } },
 
-      // Organismos (solo superadmin)
-      {
-        path: 'organismos/lista',
-        component: OrganismosListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'organismos/nuevo',
-        component: OrganismoFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'organismos/editar/:id',
-        component: OrganismoFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
+      // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
+      { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME } },
+      { path: 'organismos/nuevo', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM'] }, redirectTo: HOME } },
+      { path: 'organismos/editar/:id', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME } },
+      { path: 'tipos-organismo/lista', component: TiposOrganismoListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM_TYPE'] }, redirectTo: HOME } },
+      { path: 'tipos-organismo/nuevo', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM_TYPE'] }, redirectTo: HOME } },
+      { path: 'tipos-organismo/editar/:id', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME } },
 
-      // Auditoría (solo superadmin)
-      {
-        path: 'auditoria',
-        component: AuditoriaListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
+      // Auditoría → sin backend real → escape por rol
+      { path: 'auditoria', component: AuditoriaListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER }, redirectTo: HOME } },
 
-      // Modalidades (solo superadmin)
-      {
-        path: 'modalidades/lista',
-        component: ModalidadesListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'modalidades/nuevo',
-        component: ModalidadFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'modalidades/editar/:id',
-        component: ModalidadFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
+      // Taxonomía → escrituras por permiso del catálogo (reads públicos; lista visible si tiene alguna escritura)
+      { path: 'modalidades/lista', component: ModalidadesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] }, redirectTo: HOME } },
+      { path: 'modalidades/nuevo', component: ModalidadFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_MODALITY'] }, redirectTo: HOME } },
+      { path: 'modalidades/editar/:id', component: ModalidadFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_MODALITY'] }, redirectTo: HOME } },
+      // Etiquetas: sin controller en backend (mock) → permiso genérico de taxonomía como aproximación.
+      { path: 'etiquetas/lista', component: EtiquetasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY', 'UPDATE_TAXONOMY', 'DELETE_TAXONOMY'] }, redirectTo: HOME } },
+      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY'] }, redirectTo: HOME } },
+      { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_TAXONOMY'] }, redirectTo: HOME } },
+      { path: 'categorias/lista', component: CategoriasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] }, redirectTo: HOME } },
+      { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME } },
+      { path: 'categorias/editar/:id', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_CATEGORY'] }, redirectTo: HOME } },
+      { path: 'destinatarios/lista', component: DestinatariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT', 'UPDATE_RECIPIENT', 'DELETE_RECIPIENT'] }, redirectTo: HOME } },
+      { path: 'destinatarios/nuevo', component: DestinatarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT'] }, redirectTo: HOME } },
+      { path: 'destinatarios/editar/:id', component: DestinatarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_RECIPIENT'] }, redirectTo: HOME } },
+      { path: 'eventos-de-vida/lista', component: EventosDeVidaListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] }, redirectTo: HOME } },
+      { path: 'eventos-de-vida/nuevo', component: EventoDeVidaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_LIFE_EVENT'] }, redirectTo: HOME } },
+      { path: 'eventos-de-vida/editar/:id', component: EventoDeVidaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_LIFE_EVENT'] }, redirectTo: HOME } },
 
-      // Etiquetas (solo superadmin)
-      {
-        path: 'etiquetas/lista',
-        component: EtiquetasListComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['READ_TAXONOMIA'], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'etiquetas/nuevo',
-        component: EtiquetaFormComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['CREATE_TAXONOMIA'], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'etiquetas/editar/:id',
-        component: EtiquetaFormComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['UPDATE_TAXONOMIA'], redirectTo: '/dashboard/home' },
-      },
+      // Feedback Ciudadano → sin backend real → escape por rol
+      { path: 'feedback', component: FeedbackComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME } },
 
-      // Categorías (solo superadmin)
-      {
-        path: 'categorias/lista',
-        component: CategoriasListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'categorias/nuevo',
-        component: CategoriaFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'categorias/editar/:id',
-        component: CategoriaFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
+      // Usuarios: listar = lectura (READ_USER: SA/AB/AO); crear/editar = SUPERADMIN por policy override
+      // (el form carga /api/organism → READ_ORGANISM, solo SUPERADMIN en el seed).
+      { path: 'usuarios/lista', component: UsuariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_USER'] }, redirectTo: HOME } },
+      { path: 'usuarios/nuevo', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME } },
+      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_USER'] }, redirectTo: HOME } },
 
-      // Feedback Ciudadano (superadmin + admin_organismo)
-      {
-        path: 'feedback',
-        component: FeedbackComponent,
-        canActivate: [roleGuard],
-        data: {
-          allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION],
-          redirectTo: '/dashboard/home',
-        },
-      },
-
-      // Eventos de Vida (solo superadmin)
-      {
-        path: 'eventos-de-vida/lista',
-        component: EventosDeVidaListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'eventos-de-vida/nuevo',
-        component: EventoDeVidaFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'eventos-de-vida/editar/:id',
-        component: EventoDeVidaFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-
-      // Usuarios (superadmin + admin_organismo)
-      {
-        path: 'usuarios/lista',
-        component: UsuariosListComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION], permissions: ['READ_USUARIO'], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'usuarios/nuevo',
-        component: UsuarioFormComponent,
-        canActivate: [roleGuard, permissionGuard],
-        // Política: crear usuarios SOLO SUPERADMIN (más estricto que el permiso CREATE_USUARIO,
-        // que el seed también da a ADMIN_ORGANIZATION). El roleGuard [SUPERADMIN] es el que manda.
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['CREATE_USUARIO'], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'usuarios/editar/:id',
-        component: UsuarioFormComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION], permissions: ['UPDATE_USUARIO'], redirectTo: '/dashboard/home' },
-      },
-
-      // Roles (solo superadmin) — gating por rol + por permiso atómico (defense-in-depth)
-      {
-        path: 'roles/lista',
-        component: RolesListComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['READ_ROL'], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'roles/nuevo',
-        component: RoleFormComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['CREATE_ROL'], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'roles/editar/:id',
-        component: RoleFormComponent,
-        canActivate: [roleGuard, permissionGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], permissions: ['UPDATE_ROL'], redirectTo: '/dashboard/home' },
-      },
-
-      // Permisos (solo superadmin)
-      {
-        path: 'permisos/lista',
-        component: PermisosListComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'permisos/nuevo',
-        component: PermisoFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
-      {
-        path: 'permisos/editar/:id',
-        component: PermisoFormComponent,
-        canActivate: [roleGuard],
-        data: { allowedRoles: [UserRole.SUPERADMIN], redirectTo: '/dashboard/home' },
-      },
+      // Roles y Permisos → backend autoriza por ROL (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5)
+      { path: 'roles/lista', component: RolesListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
+      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
+      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
+      { path: 'permisos/lista', component: PermisosListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
+      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
+      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
+      // Cualquier /dashboard/* sin match (rutas "bare" tipo /organismos, typos, secciones aún sin
+      // pantalla) → home. Evita caer al `**` global que manda a /auth/login estando ya logueado.
+      { path: '**', redirectTo: 'home' },
     ],
   },
 ];

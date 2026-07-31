@@ -1,13 +1,12 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
-import { OrganismoService } from '../../../core/services/organismo.service';
 import { FormConfig } from '../../../core/models/field.interface';
+import { OrganismosFacade, OrganismoFormValue } from '@features/organismos';
 
 @Component({
   selector: 'app-organismo-form',
@@ -19,48 +18,54 @@ import { FormConfig } from '../../../core/models/field.interface';
     DynamicFormComponent,
   ],
   templateUrl: './organismo-form.component.html',
+  styleUrls: ['./organismo-form.component.scss'],
 })
 export class OrganismoFormComponent implements OnInit {
   config: FormConfig = getFormConfig('ORGANISMO');
   isEdit = false;
   saving = false;
-  initialData: Record<string, any> | null = null;
+  initialData: Record<string, unknown> | null = null;
 
   private editId: string | null = null;
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
-    private organismoService: OrganismoService,
+    private facade: OrganismosFacade,
     private route: ActivatedRoute,
     private router: Router,
     private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
-    const rawId = this.route.snapshot.params['id'];
-    this.isEdit = !!rawId;
-    this.editId = rawId ?? null;
+    this.editId = this.route.snapshot.params['id'] ?? null;
+    this.isEdit = !!this.editId;
 
-    const organismos$ = this.organismoService.getAll();
-    const editData$ = this.editId ? this.organismoService.getById(this.editId) : of(null);
-
-    forkJoin({ organismos: organismos$, editData: editData$ })
+    this.facade.getFormData(this.editId ?? undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ organismos, editData }) => {
+        next: ({ tipos, localidades, organismos, organismo }) => {
+          this.config = updateFormConfigOptions(this.config, 'typeId',
+            tipos.map((t) => ({ id: t.id, name: t.nombre })));
           this.config = updateFormConfigOptions(this.config, 'parentId', [
             { id: '', name: 'Ninguno (raíz)' },
-            ...organismos.data.map(o => ({ id: o.id, name: o.nombre })),
+            ...organismos
+              .filter((o) => o.id !== this.editId) // evita auto-referencia como padre
+              .map((o) => ({ id: o.id, name: o.nombre })),
+          ]);
+          this.config = updateFormConfigOptions(this.config, 'baseLocationId', [
+            { id: '', name: 'Sin localidad' },
+            ...localidades.map((l) => ({ id: l.id, name: l.nombre })),
           ]);
 
-          if (editData) {
+          if (organismo) {
             this.initialData = {
-              nombre: editData.nombre,
-              sigla: editData.sigla,
-              sitioWeb: editData.sitioWeb,
-              logoUrl: editData.logoUrl,
-              parentId: editData.parentId || '',
+              nombre: organismo.nombre,
+              acronym: organismo.acronym,
+              typeId: organismo.typeId,
+              parentId: organismo.parentId ?? '',
+              baseLocationId: organismo.baseLocationId ?? '',
+              activo: organismo.activo,
             };
           }
           this.cdr.markForCheck();
@@ -68,12 +73,20 @@ export class OrganismoFormComponent implements OnInit {
       });
   }
 
-  onSubmit(data: any): void {
+  onSubmit(data: Record<string, unknown>): void {
     this.saving = true;
+    const form: OrganismoFormValue = {
+      typeId: String(data['typeId'] ?? ''),
+      parentId: (data['parentId'] as string) || null,
+      baseLocationId: (data['baseLocationId'] as string) || null,
+      nombre: String(data['nombre'] ?? ''),
+      acronym: String(data['acronym'] ?? ''),
+      activo: data['activo'] !== false,
+    };
 
     const request$ = this.isEdit
-      ? this.organismoService.update(this.editId!, data)
-      : this.organismoService.create(data);
+      ? this.facade.update(this.editId!, form)
+      : this.facade.create(form);
 
     request$
       .pipe(takeUntilDestroyed(this.destroyRef))

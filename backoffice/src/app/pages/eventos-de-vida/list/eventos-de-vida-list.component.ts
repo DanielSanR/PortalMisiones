@@ -1,54 +1,52 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { filter, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
-import { EventoDeVidaService } from '../../../core/services/evento-de-vida.service';
-import { EventoDeVida } from '../../../core/models/tramite.model';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { EventosDeVidaFacade, EventoDeVidaVM } from '@features/eventos-de-vida';
 
 @Component({
   selector: 'app-eventos-de-vida-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AsyncPipe,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    MatSlideToggleModule,
     MatSnackBarModule,
     PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    HasPermissionDirective,
   ],
   templateUrl: './eventos-de-vida-list.component.html',
   styleUrls: ['./eventos-de-vida-list.component.scss'],
 })
 export class EventosDeVidaListComponent implements OnInit {
-  eventos: EventoDeVida[] = [];
+  private readonly facade = inject(EventosDeVidaFacade);
+  readonly eventos$ = this.facade.eventos$;
   loading = true;
 
-  columns: TableColumn<EventoDeVida>[] = [
-    { key: 'icono',        label: '',            width: '56px' },
-    { key: 'nombre',       label: 'Evento de Vida' },
-    { key: 'descripcion',  label: 'Descripción', hideOnMobile: true },
-    { key: 'tramitesCount', label: 'Trámites',   width: '90px' },
-    { key: 'activo',       label: 'Activo',      width: '80px' },
-    { key: 'acciones',     label: 'Acciones',    width: '60px' },
+  columns: TableColumn<EventoDeVidaVM>[] = [
+    { key: 'nombre',   label: 'Evento de Vida' },
+    { key: 'slug',     label: 'Slug', hideOnMobile: true },
+    { key: 'acciones', label: 'Acciones', width: '80px' },
   ];
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
-    private eventoService: EventoDeVidaService,
     private router: Router,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
@@ -58,20 +56,13 @@ export class EventosDeVidaListComponent implements OnInit {
     this.load();
   }
 
-  load(): void {
+  private load(): void {
     this.loading = true;
-    this.eventoService.getAll()
+    this.facade.loadEventos()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          this.eventos = response.data;
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
+        next: () => { this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.loading = false; this.cdr.markForCheck(); },
       });
   }
 
@@ -79,35 +70,15 @@ export class EventosDeVidaListComponent implements OnInit {
     this.router.navigate(['/dashboard/eventos-de-vida/nuevo']);
   }
 
-  onEdit(evento: EventoDeVida): void {
+  onEdit(evento: EventoDeVidaVM): void {
     this.router.navigate(['/dashboard/eventos-de-vida/editar', evento.id]);
   }
 
-  onToggleActive(evento: EventoDeVida): void {
-    this.eventoService.toggleActive(evento.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (updated) => {
-          // Nueva referencia de array para que OnPush propague el cambio a la tabla hija
-          this.eventos = this.eventos.map(e => e.id === updated.id ? updated : e);
-          this.snackBar.open(
-            updated.activo ? 'Evento activado' : 'Evento desactivado',
-            'OK', { duration: 3000 },
-          );
-          this.cdr.markForCheck();
-        },
-      });
-  }
-
-  onDelete(evento: EventoDeVida): void {
+  onDelete(evento: EventoDeVidaVM): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Eliminar evento de vida',
-        message: `¿Está seguro de eliminar "${evento.nombre}"?${
-          evento.tramitesCount
-            ? ` Este evento agrupa ${evento.tramitesCount} trámite(s).`
-            : ''
-        }`,
+        message: `¿Está seguro de eliminar "${evento.nombre}"?`,
         confirmText: 'Eliminar',
       },
       panelClass: 'custom-modal-panel',
@@ -116,14 +87,11 @@ export class EventosDeVidaListComponent implements OnInit {
     dialogRef.afterClosed()
       .pipe(
         filter(Boolean),
-        switchMap(() => this.eventoService.delete(evento.id)),
+        switchMap(() => this.facade.delete(evento.id)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => {
-          this.snackBar.open('Evento eliminado', 'OK', { duration: 3000 });
-          this.load();
-        },
+        next: () => this.snackBar.open('Evento eliminado', 'OK', { duration: 3000 }),
       });
   }
 }

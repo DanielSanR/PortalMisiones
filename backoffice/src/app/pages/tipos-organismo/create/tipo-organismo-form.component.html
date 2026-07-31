@@ -1,0 +1,9 @@
+<app-page-header [title]="isEdit ? 'Editar tipo de organismo' : 'Nuevo tipo de organismo'" [showBack]="true"
+    (back)="goBack()"></app-page-header>
+
+<div class="form-card">
+    <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear tipo'"
+        cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
+        (formCancel)="goBack()">
+    </app-dynamic-form>
+</div>

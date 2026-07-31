@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { filter, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,14 +11,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
-import { ModalidadService } from '../../../core/services/modalidad.service';
-import { Modalidad } from '../../../core/models/tramite.model';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ModalidadesFacade, ModalidadVM } from '@features/modalidades';
 
 @Component({
   selector: 'app-modalidades-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AsyncPipe,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -25,50 +27,41 @@ import { Modalidad } from '../../../core/models/tramite.model';
     PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    HasPermissionDirective,
   ],
   templateUrl: './modalidades-list.component.html',
   styleUrls: ['./modalidades-list.component.scss'],
 })
 export class ModalidadesListComponent implements OnInit {
-  modalidades: Modalidad[] = [];
+  private readonly facade = inject(ModalidadesFacade);
+  readonly modalidades$ = this.facade.modalidades$;
   loading = true;
 
-  columns: TableColumn<Modalidad>[] = [
-    { key: 'color',        label: '',            width: '48px' },
-    { key: 'nombre',       label: 'Nombre' },
-    { key: 'descripcion',  label: 'Descripción', hideOnMobile: true },
-    { key: 'tramitesCount', label: 'Trámites',   width: '100px' },
-    { key: 'acciones',     label: 'Acciones',    width: '80px' },
+  columns: TableColumn<ModalidadVM>[] = [
+    { key: 'nombre',   label: 'Nombre' },
+    { key: 'acciones', label: 'Acciones', width: '80px' },
   ];
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
-    private modalidadService: ModalidadService,
     private router: Router,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
-    this.loadModalidades();
+    this.load();
   }
 
-  loadModalidades(): void {
+  private load(): void {
     this.loading = true;
-    this.modalidadService.getAll()
+    this.facade.loadModalidades()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          this.modalidades = response.data;
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
+        next: () => { this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.loading = false; this.cdr.markForCheck(); },
       });
   }
 
@@ -76,19 +69,15 @@ export class ModalidadesListComponent implements OnInit {
     this.router.navigate(['/dashboard/modalidades/nuevo']);
   }
 
-  onEdit(modalidad: Modalidad): void {
+  onEdit(modalidad: ModalidadVM): void {
     this.router.navigate(['/dashboard/modalidades/editar', modalidad.id]);
   }
 
-  onDelete(modalidad: Modalidad): void {
+  onDelete(modalidad: ModalidadVM): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Eliminar modalidad',
-        message: `¿Está seguro de eliminar "${modalidad.nombre}"?${
-          modalidad.tramitesCount
-            ? ` Esta modalidad está asociada a ${modalidad.tramitesCount} trámite(s).`
-            : ''
-        }`,
+        message: `¿Está seguro de eliminar "${modalidad.nombre}"?`,
         confirmText: 'Eliminar',
       },
       panelClass: 'custom-modal-panel',
@@ -97,14 +86,11 @@ export class ModalidadesListComponent implements OnInit {
     dialogRef.afterClosed()
       .pipe(
         filter(Boolean),
-        switchMap(() => this.modalidadService.delete(modalidad.id)),
+        switchMap(() => this.facade.delete(modalidad.id)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => {
-          this.snackBar.open('Modalidad eliminada', 'OK', { duration: 3000 });
-          this.loadModalidades();
-        },
+        next: () => this.snackBar.open('Modalidad eliminada', 'OK', { duration: 3000 }),
       });
   }
 }
