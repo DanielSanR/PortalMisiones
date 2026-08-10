@@ -1,0 +1,39 @@
+<section class="dashboard-panel">
+  <header class="dashboard-panel-header">
+    <span class="dashboard-panel-header-icon" aria-hidden="true">
+      <i class="ph ph-{{ icon }}"></i>
+    </span>
+
+    <div class="dashboard-panel-header-text">
+      <h3 class="dashboard-panel-header-title">{{ title }}</h3>
+      @if (subtitle) {
+        <p class="dashboard-panel-header-subtitle">{{ subtitle }}</p>
+      }
+    </div>
+
+    @if (badgeCount !== undefined) {
+      <span class="dashboard-panel-header-badge" [class.dashboard-panel-header-badge--info]="badgeVariant === 'info'">
+        {{ badgeCount }}
+      </span>
+    }
+
+    @if (actionLabel) {
+      <button type="button"
+          class="dashboard-panel-header-action"
+          disabled
+          aria-disabled="true"
+          title="Se habilita cuando el módulo esté disponible">
+        {{ actionLabel }}
+        <i class="ph ph-arrow-right" aria-hidden="true"></i>
+      </button>
+    }
+  </header>
+
+  <div class="dashboard-panel-body">
+    <ng-content></ng-content>
+  </div>
+
+  <footer class="dashboard-panel-footer">
+    <app-gate-label [source]="gateSource" [permission]="gatePermission"></app-gate-label>
+  </footer>
+</section>

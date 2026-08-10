@@ -1,168 +1,330 @@
-<app-page-header title="Dashboard" subtitle="Resumen general del portal"></app-page-header>
-
-@if (loading) {
-  <div class="loading-container">
-    <mat-spinner diameter="40"></mat-spinner>
+<!-- ── Saludo + contexto (base compartida, real) ─────────────────────────── -->
+<section class="dashboard-greeting">
+  <div class="dashboard-greeting-text">
+    <h1 class="dashboard-greeting-title">Hola, {{ userName }}</h1>
+    <p class="dashboard-greeting-subtitle">{{ roleLabel }}</p>
   </div>
-} @else {
+  <div class="dashboard-greeting-date">
+    <i class="ph ph-calendar-blank" aria-hidden="true"></i>
+    {{ today | date: 'EEEE d \'de\' MMMM, y' }}
+  </div>
+</section>
 
-  <!-- ── KPI Cards ──────────────────────────────────────── -->
-  <div class="metrics-grid">
-    @for (card of metricCards; track card.label) {
-      <mat-card class="metric-card">
-        <mat-card-content>
-          <div class="metric-card__icon" [style.background-color]="card.color + '18'" [style.color]="card.color">
-            <mat-icon>{{ card.icon }}</mat-icon>
-          </div>
-          <div class="metric-card__info">
-            <span class="metric-card__value">
-              {{ card.value }}@if (card.suffix) {<span class="metric-card__suffix"> {{ card.suffix }}</span>}
-            </span>
-            <span class="metric-card__label">{{ card.label }}</span>
-          </div>
-        </mat-card-content>
-      </mat-card>
+<!-- ── P2 — Accesos rápidos (real, gateado por CREATE_*) ─────────────────── -->
+@if (hasAnyQuickAction) {
+  <section class="dashboard-quick">
+    <h2 class="dashboard-section-title">Accesos rápidos</h2>
+    <div class="dashboard-quick-grid">
+      @for (action of quickActions; track action.route) {
+        <a class="dashboard-quick-item"
+            [routerLink]="action.route"
+            *appHasPermission="action.permissions">
+          <span class="dashboard-quick-item-icon" aria-hidden="true"><i class="ph ph-{{ action.icon }}"></i></span>
+          <span class="dashboard-quick-item-label">{{ action.label }}</span>
+        </a>
+      }
+    </div>
+  </section>
+}
+
+<!-- ── P3 — Tira de configuración (conteos reales por catálogo) ──────────── -->
+<section class="dashboard-config">
+  <h2 class="dashboard-section-title">Catálogos del sistema</h2>
+  <div class="dashboard-config-grid">
+    @for (card of configCards; track card.key) {
+      @if (card.permission) {
+        <a class="dashboard-config-card" [routerLink]="card.route" *appHasPermission="card.permission">
+          <i class="ph ph-{{ card.icon }} dashboard-config-card-icon" aria-hidden="true"></i>
+          <span class="dashboard-config-card-value">{{ (counts$ | async)?.[card.key] ?? '—' }}</span>
+          <span class="dashboard-config-card-label">{{ card.label }}</span>
+        </a>
+      } @else {
+        <a class="dashboard-config-card" [routerLink]="card.route">
+          <i class="ph ph-{{ card.icon }} dashboard-config-card-icon" aria-hidden="true"></i>
+          <span class="dashboard-config-card-value">{{ (counts$ | async)?.[card.key] ?? '—' }}</span>
+          <span class="dashboard-config-card-label">{{ card.label }}</span>
+        </a>
+      }
+    }
+    @if (canSeeRolesPermisos) {
+      <a class="dashboard-config-card" routerLink="/dashboard/roles/lista">
+        <i class="ph ph-shield-star dashboard-config-card-icon" aria-hidden="true"></i>
+        <span class="dashboard-config-card-value">{{ (counts$ | async)?.roles ?? '—' }}</span>
+        <span class="dashboard-config-card-label">Roles</span>
+      </a>
+      <a class="dashboard-config-card" routerLink="/dashboard/permisos/lista">
+        <i class="ph ph-key dashboard-config-card-icon" aria-hidden="true"></i>
+        <span class="dashboard-config-card-value">{{ (counts$ | async)?.permisos ?? '—' }}</span>
+        <span class="dashboard-config-card-label">Permisos</span>
+      </a>
     }
   </div>
+</section>
 
-  <!-- ── Gráficos ───────────────────────────────────────── -->
-  <div class="charts-grid">
+<!-- ── Banda A — Núcleo operativo (placeholder honesto, role-aware) ──────── -->
+@if (widgets.queue || widgets.myQueue || widgets.pipeline || widgets.mine) {
+  <section class="dashboard-band">
+    <div class="dashboard-band-header">
+      <h2 class="dashboard-band-title">Núcleo operativo</h2>
+      <app-example-data-pill></app-example-data-pill>
+    </div>
 
-    <!-- Donut: distribución por estado -->
-    <mat-card class="chart-card">
-      <mat-card-header>
-        <mat-card-title>Distribución por estado</mat-card-title>
-        <mat-card-subtitle>{{ metrics.totalTramites }} trámites en total</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content class="chart-card__body">
-        <div class="donut-wrapper">
-          <canvas baseChart
-            [data]="doughnutData"
-            [options]="doughnutOptions"
-            type="doughnut">
-          </canvas>
-          <div class="donut-center">
-            <span class="donut-center__value">{{ metrics.totalTramites }}</span>
-            <span class="donut-center__label">Total</span>
-          </div>
-        </div>
-        <div class="donut-legend">
-          <div class="donut-legend__item">
-            <span class="donut-legend__dot" style="background:#16A34A"></span>
-            <span>Publicados</span>
-            <strong>{{ metrics.tramitesPublicados }}</strong>
-          </div>
-          <div class="donut-legend__item">
-            <span class="donut-legend__dot" style="background:#F59E0B"></span>
-            <span>Borrador</span>
-            <strong>{{ metrics.tramitesBorrador }}</strong>
-          </div>
-          <div class="donut-legend__item">
-            <span class="donut-legend__dot" style="background:#3B82F6"></span>
-            <span>Revisión</span>
-            <strong>{{ metrics.tramitesRevision }}</strong>
-          </div>
-          <div class="donut-legend__item">
-            <span class="donut-legend__dot" style="background:#9CA3AF"></span>
-            <span>Despublicados</span>
-            <strong>{{ metrics.tramitesDespublicados }}</strong>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Bar: trámites por organismo -->
-    <mat-card class="chart-card">
-      <mat-card-header>
-        <mat-card-title>Trámites por organismo</mat-card-title>
-        <mat-card-subtitle>{{ metrics.totalOrganismos }} organismos activos</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content class="chart-card__body chart-card__body--bar">
-        <canvas baseChart
-          [data]="barData"
-          [options]="barOptions"
-          type="bar">
-        </canvas>
-      </mat-card-content>
-    </mat-card>
-
-  </div>
-
-  <!-- ── Tablas ─────────────────────────────────────────── -->
-  <div class="tables-grid">
-
-    <!-- Top Trámites -->
-    <mat-card class="data-card">
-      <mat-card-header>
-        <mat-card-title>Trámites más consultados</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="data-card__table">
-        <app-shared-table
-          [data]="topTramites"
-          [columns]="topTramitesColumns"
-          emptyMessage="Sin datos"
-          emptyIcon="file-text">
-          <ng-template appTableCell="consultas" let-row>
-            <strong>{{ row.consultas | number }}</strong>
-          </ng-template>
-        </app-shared-table>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Top Búsquedas -->
-    <mat-card class="data-card">
-      <mat-card-header>
-        <mat-card-title>Búsquedas frecuentes</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="data-card__table">
-        <app-shared-table
-          [data]="topBusquedas"
-          [columns]="topBusquedasColumns"
-          emptyMessage="Sin datos"
-          emptyIcon="magnifying-glass">
-          <ng-template appTableCell="cantidad" let-row>
-            {{ row.cantidad | number }}
-          </ng-template>
-          <ng-template appTableCell="sinResultados" let-row>
-            @if (row.sinResultados) {
-              <mat-icon class="warning-icon">warning</mat-icon>
-            }
-          </ng-template>
-        </app-shared-table>
-      </mat-card-content>
-    </mat-card>
-
-  </div>
-
-  <!-- ── Actividad reciente ─────────────────────────────── -->
-  @if (actividadReciente.length) {
-    <mat-card class="activity-card">
-      <mat-card-header>
-        <mat-card-title>Actividad reciente</mat-card-title>
-        <mat-card-subtitle>Últimas acciones registradas en el sistema</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <ul class="activity-list">
-          @for (item of actividadReciente; track item.id) {
-            <li class="activity-item">
-              <span class="activity-item__icon"
-                [style.background-color]="getAccionBgColor(item.accion)"
-                [style.color]="item.accion | accionLabel:'color'">
-                <mat-icon>{{ item.accion | accionLabel:'icon' }}</mat-icon>
-              </span>
-              <div class="activity-item__body">
-                <p class="activity-item__text">
-                  <strong>{{ item.usuarioNombre }}</strong>
-                  realizó la acción <em>{{ item.accion | accionLabel }}</em> en
-                  <strong>{{ item.tramiteTitulo }}</strong>
-                </p>
-                <span class="activity-item__date">{{ item.fechaAccion | date:'dd/MM/yyyy HH:mm' }}</span>
+    @if (widgets.queue) {
+      <app-dashboard-panel
+          icon="tray"
+          title="Cola de revisión"
+          [badgeCount]="queueItems.length"
+          actionLabel="Abrir bandeja"
+          gateSource="Trámites · sin controller"
+          gatePermission="READ_PROCEDURE">
+        <div class="dashboard-queue">
+          @for (item of queueItems; track item.titulo) {
+            <div class="dashboard-queue-row">
+              <div class="dashboard-queue-row-info">
+                <strong>{{ item.titulo }}</strong>
+                <span>{{ item.organismo }} · {{ item.tiempo }}</span>
               </div>
-            </li>
+              <span class="dashboard-sla" [attr.data-level]="item.slaLevel">{{ item.slaLabel }}</span>
+              <button type="button" class="dashboard-row-btn" disabled aria-disabled="true"
+                  title="Se habilita cuando el módulo de trámites esté activo">Revisar</button>
+            </div>
           }
-        </ul>
-      </mat-card-content>
-    </mat-card>
-  }
+        </div>
+      </app-dashboard-panel>
+    }
 
+    @if (widgets.myQueue) {
+      <app-dashboard-panel
+          icon="clipboard-text"
+          title="Pendientes de completar"
+          [badgeCount]="myQueueItems.length"
+          actionLabel="Ver todas"
+          gateSource="Variantes · sin API"
+          gatePermission="READ_VARIANT · scope organismo">
+        <div class="dashboard-queue">
+          @for (item of myQueueItems; track item.titulo) {
+            <div class="dashboard-myqueue-row">
+              <div class="dashboard-queue-row-info">
+                <strong>{{ item.titulo }}</strong>
+                <span>{{ item.organismo }}</span>
+              </div>
+              <div class="dashboard-myqueue-row-chips">
+                @for (f of item.faltantes; track f) {
+                  <span class="dashboard-chip-warning">falta {{ f }}</span>
+                }
+              </div>
+              <button type="button" class="dashboard-row-btn" disabled aria-disabled="true"
+                  title="Se habilita cuando el módulo de variantes esté activo">Completar</button>
+            </div>
+          }
+        </div>
+      </app-dashboard-panel>
+    }
+
+    @if (widgets.pipeline || widgets.mine) {
+      <div class="dashboard-band-row">
+        @if (widgets.pipeline) {
+          <app-dashboard-panel
+              [icon]="pipelineScope.icon"
+              [title]="pipelineScope.title"
+              [subtitle]="pipelineScope.subtitle"
+              gateSource="Trámites"
+              [gatePermission]="pipelineScope.gatePermission">
+            <div class="dashboard-pipeline">
+              <div class="dashboard-pipeline-bar">
+                @for (seg of pipelineSegments; track seg.label) {
+                  <span class="dashboard-pipeline-bar-segment" [attr.data-color]="seg.color" [style.width.%]="seg.percent"></span>
+                }
+              </div>
+              <ul class="dashboard-pipeline-list">
+                @for (seg of pipelineSegments; track seg.label) {
+                  <li>
+                    <span class="dashboard-pipeline-list-dot" [attr.data-color]="seg.color" aria-hidden="true"></span>
+                    <span class="dashboard-pipeline-list-label">{{ seg.label }}</span>
+                    <span class="dashboard-pipeline-list-percent">{{ seg.percent }}%</span>
+                    <strong class="dashboard-pipeline-list-value">{{ seg.value }}</strong>
+                  </li>
+                }
+              </ul>
+            </div>
+          </app-dashboard-panel>
+        }
+
+        @if (widgets.mine) {
+          <app-dashboard-panel
+              icon="user-focus"
+              title="Mis variantes y contactos"
+              gateSource="Variant · Contact"
+              gatePermission="READ_VARIANT · READ_CONTACT">
+            <ul class="dashboard-mine-list">
+              @for (item of mineItems; track item.label) {
+                <li>
+                  <span class="dashboard-mine-list-dot" [attr.data-color]="item.color" aria-hidden="true"></span>
+                  <span class="dashboard-mine-list-label">{{ item.label }}</span>
+                  <strong class="dashboard-mine-list-value">{{ item.value }}</strong>
+                </li>
+              }
+            </ul>
+          </app-dashboard-panel>
+        }
+      </div>
+    }
+  </section>
+}
+
+<!-- ── Banda B — Analítica del portal (placeholder honesto, role-aware) ──── -->
+@if (widgets.analytics || widgets.procedures) {
+  <section class="dashboard-band">
+    <div class="dashboard-band-header">
+      <h2 class="dashboard-band-title">Analítica del portal</h2>
+      <app-example-data-pill></app-example-data-pill>
+    </div>
+
+    <div class="dashboard-band-row">
+      @if (widgets.analytics) {
+        <app-dashboard-panel
+            icon="trend-up"
+            title="Consultas del portal"
+            gateSource="VisitLog · sin endpoint"
+            gatePermission="VIEW_ANALYTICS">
+          <div class="dashboard-visits">
+            <div class="dashboard-visits-kpi">
+              <span class="dashboard-visits-kpi-value">{{ visitsTotal | number }}</span>
+              <span class="dashboard-visits-kpi-avg">{{ visitsAvgPerDay | number }}/día promedio</span>
+              <span class="dashboard-visits-kpi-trend"><i class="ph ph-trend-up" aria-hidden="true"></i> +12,4% vs. junio</span>
+            </div>
+            <div class="dashboard-barchart" role="img" aria-label="Consultas diarias del último mes, tendencia ascendente">
+              @for (bar of visitsDaily; track $index) {
+                <span class="dashboard-barchart-bar" [class.dashboard-barchart-bar--recent]="$index >= visitsDaily.length - 3" [style.height.%]="bar"></span>
+              }
+            </div>
+            <div class="dashboard-barchart-axis">
+              <span>1 jul</span><span>10 jul</span><span>20 jul</span><span>31 jul</span>
+            </div>
+          </div>
+        </app-dashboard-panel>
+      }
+
+      @if (widgets.procedures) {
+        <app-dashboard-panel
+            icon="chart-bar"
+            title="Trámites por organismo"
+            actionLabel="Ver los 68"
+            gateSource="Trámites · sin controller"
+            gatePermission="READ_PROCEDURE">
+          <div class="dashboard-orgbars">
+            <div class="dashboard-orgbars-legend">
+              <span><i class="dashboard-orgbars-legend-dot" data-color="info" aria-hidden="true"></i> Publicados</span>
+              <span><i class="dashboard-orgbars-legend-dot" data-color="muted" aria-hidden="true"></i> Borrador / revisión</span>
+            </div>
+            @for (org of orgBars; track org.organismo) {
+              <div class="dashboard-orgbars-row">
+                <span class="dashboard-orgbars-row-label">{{ org.organismo }}</span>
+                <span class="dashboard-orgbars-row-bar">
+                  <span class="dashboard-orgbars-row-bar-published" [style.width.%]="org.publicadosPercent"></span>
+                  <span class="dashboard-orgbars-row-bar-other" [style.width.%]="org.otrosPercent"></span>
+                </span>
+                <span class="dashboard-orgbars-row-total">{{ org.total }}</span>
+              </div>
+            }
+          </div>
+        </app-dashboard-panel>
+      }
+    </div>
+
+    @if (widgets.analytics) {
+      <div class="dashboard-band-row">
+        <app-dashboard-panel
+            icon="magnifying-glass"
+            title="Búsquedas sin resultados"
+            gateSource="SearchLog"
+            gatePermission="VIEW_ANALYTICS">
+          <p class="dashboard-panel-hint">Lo que la ciudadanía busca y el portal no tiene.</p>
+          <ul class="dashboard-searchlist">
+            @for (item of searchesWithoutResults; track item.termino) {
+              <li>
+                <span>"{{ item.termino }}"</span>
+                <strong>{{ item.cantidad | number }}</strong>
+              </li>
+            }
+          </ul>
+        </app-dashboard-panel>
+
+        <app-dashboard-panel
+            icon="file-text"
+            title="Trámites más consultados"
+            gateSource="VisitLog"
+            gatePermission="VIEW_ANALYTICS">
+          <ul class="dashboard-toplist">
+            @for (item of topTramites; track item.titulo) {
+              <li>
+                <div class="dashboard-toplist-row">
+                  <span>{{ item.titulo }}</span>
+                  <strong>{{ item.consultas | number }}</strong>
+                </div>
+                <div class="dashboard-toplist-bar"><span [style.width.%]="item.percent"></span></div>
+              </li>
+            }
+          </ul>
+        </app-dashboard-panel>
+      </div>
+    }
+  </section>
+}
+
+<!-- ── Banda C — Seguimiento (placeholder honesto, role-aware) ───────────── -->
+@if (widgets.feedback || widgets.audit) {
+  <section class="dashboard-band">
+    <div class="dashboard-band-header">
+      <h2 class="dashboard-band-title">Seguimiento</h2>
+      <app-example-data-pill></app-example-data-pill>
+    </div>
+
+    <div class="dashboard-band-row">
+      @if (widgets.feedback) {
+        <app-dashboard-panel
+            icon="chats-circle"
+            title="Feedback pendiente"
+            [badgeCount]="feedbackItems.length"
+            badgeVariant="info"
+            gateSource="Feedback"
+            gatePermission="VIEW_ANALYTICS · scope">
+          <ul class="dashboard-feedback">
+            @for (item of feedbackItems; track item.texto) {
+              <li>
+                <i class="ph dashboard-feedback-icon"
+                    [class.ph-smiley-sad]="item.sentimiento === 'negativo'"
+                    [class.ph-smiley-meh]="item.sentimiento === 'neutral'"
+                    [class.ph-smiley]="item.sentimiento === 'positivo'"
+                    [attr.data-sentiment]="item.sentimiento"
+                    aria-hidden="true"></i>
+                <div class="dashboard-feedback-body">
+                  <p>{{ item.texto }}</p>
+                  <span>{{ item.meta }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        </app-dashboard-panel>
+      }
+
+      @if (widgets.audit) {
+        <app-dashboard-panel
+            icon="clock-counter-clockwise"
+            title="Actividad reciente"
+            gateSource="Audit"
+            gatePermission="por rol">
+          <ol class="dashboard-timeline">
+            @for (item of activityItems; track item.fecha + item.objeto) {
+              <li>
+                <span class="dashboard-timeline-dot" aria-hidden="true"></span>
+                <p><strong>{{ item.actor }}</strong> {{ item.accion }} <strong>{{ item.objeto }}</strong></p>
+                <span class="dashboard-timeline-date">{{ item.fecha }}</span>
+              </li>
+            }
+          </ol>
+        </app-dashboard-panel>
+      }
+    </div>
+  </section>
 }

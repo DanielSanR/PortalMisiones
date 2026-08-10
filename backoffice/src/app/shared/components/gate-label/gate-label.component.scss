@@ -1,0 +1,28 @@
+// ==========================================================================
+// GateLabelComponent — mono 11px, tertiary. Firma del dashboard: fuente del
+// dato + permiso que lo habilitará (design-delta.md #1).
+// ==========================================================================
+
+:host {
+  display: block;
+}
+
+.gate-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-family: var(--theme-font-mono);
+  font-size: var(--theme-font-size-2xs);
+  color: var(--theme-text-tertiary);
+  letter-spacing: 0.02em;
+
+  i.ph {
+    font-size: 12px;
+    flex: none;
+  }
+
+  &__perm {
+    color: var(--theme-text-tertiary);
+  }
+}

@@ -1,0 +1,27 @@
+// ==========================================================================
+// ExampleDataPillComponent — "Datos de ejemplo" (placeholder honesto)
+// bg warning-50 / texto warning-text + ícono reloj (design-delta.md #1).
+// ==========================================================================
+
+:host {
+  display: inline-flex;
+}
+
+.example-data-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--theme-radius-full);
+  background: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+  font-size: var(--theme-font-size-2xs);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+  line-height: 1;
+
+  i.ph {
+    font-size: 12px;
+  }
+}
