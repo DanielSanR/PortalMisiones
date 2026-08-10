@@ -22,7 +22,7 @@
 
   &-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--theme-space-sm);
     padding: 14px var(--theme-space-lg) var(--theme-space-sm);
   }
@@ -44,7 +44,9 @@
   }
 
   &-header-text {
-    flex: 1;
+    // No crece: se queda pegado al ícono/badge. `min-width: 0` habilita el truncado del título
+    // cuando el header no tiene espacio (el resto de los elementos son `flex: none`).
+    flex: 0 1 auto;
     min-width: 0;
   }
 
@@ -54,6 +56,7 @@
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
     line-height: 1.3;
+    @include truncate;
   }
 
   &-header-subtitle {
@@ -80,6 +83,21 @@
     &--info {
       background: var(--theme-info-bg);
       color: var(--theme-primary-800);
+    }
+  }
+
+  // Agrupa acción/leyenda/KPI proyectados a la derecha del header; `margin-left: auto` es el
+  // "spacer" real que separa el grupo izquierdo (ícono+título+badge) del contenido a la derecha
+  // (evita que el badge quede pegado al borde del panel — bug corregido de "Cola de revisión").
+  &-header-extra {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-md);
+    margin-left: auto;
+
+    &:empty {
+      display: none;
     }
   }
 
@@ -118,9 +136,23 @@
   }
 
   &-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--theme-space-sm);
     padding: 10px var(--theme-space-lg);
     border-top: 1px solid var(--theme-border-subtle);
     background: var(--theme-surface-sunken);
+  }
+
+  &-footer-extra {
+    flex: none;
+    display: flex;
+    align-items: center;
+
+    &:empty {
+      display: none;
+    }
   }
 
   @include responsive(mobile) {

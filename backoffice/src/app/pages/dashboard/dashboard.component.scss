@@ -1,8 +1,8 @@
 // ==========================================================================
-// DashboardComponent — Home role-aware (screens-spec.md §4, HOME_REDISENO.md)
-// Bandas: saludo/accesos/config (reales) + Núcleo operativo / Analítica del
-// portal / Seguimiento (placeholders honestos, `app-dashboard-panel` da el
-// chrome común; ver `dashboard-panel.component.scss`).
+// DashboardComponent — Home role-aware (screens-spec.md §4)
+// Bandas: Núcleo operativo / Analítica del portal / Seguimiento (placeholders
+// honestos, `app-dashboard-panel` da el chrome común; ver
+// `dashboard-panel.component.scss`).
 // ==========================================================================
 
 @use '../../../shared-styles/mixins' as *;
@@ -11,163 +11,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--theme-space-xl);
-}
-
-// ── Saludo + contexto ───────────────────────────────────────────────────
-.dashboard-greeting {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--theme-space-md);
-  flex-wrap: wrap;
-
-  &-title {
-    margin: 0;
-    font-size: var(--theme-font-display-size);
-    font-weight: var(--theme-font-display-weight);
-    line-height: var(--theme-font-display-line-height);
-    letter-spacing: var(--theme-font-display-tracking);
-    color: var(--theme-text-primary);
-  }
-
-  &-subtitle {
-    margin: 4px 0 0;
-    font-size: var(--theme-font-subtitle-size);
-    color: var(--theme-text-secondary);
-  }
-
-  &-date {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 32px;
-    padding: 0 var(--theme-space-md);
-    border: 1px solid var(--theme-border-primary);
-    border-radius: var(--theme-radius-md);
-    background: var(--theme-surface-card);
-    font-size: var(--theme-font-size-sm);
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-text-primary);
-    white-space: nowrap;
-
-    &::first-letter {
-      text-transform: uppercase;
-    }
-
-    i.ph {
-      font-size: 16px;
-      color: var(--theme-text-secondary);
-    }
-  }
-}
-
-// ── Título de sección (Accesos rápidos / Catálogos del sistema) ───────────
-.dashboard-section-title {
-  margin: 0 0 var(--theme-space-sm);
-  font-size: var(--theme-font-size-md);
-  font-weight: var(--theme-font-weight-semibold);
-  color: var(--theme-text-primary);
-}
-
-// ── P2 — Accesos rápidos ───────────────────────────────────────────────
-.dashboard-quick-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--theme-space-sm);
-}
-
-.dashboard-quick-item {
-  display: flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  padding: 12px 14px;
-  background: var(--theme-surface-card);
-  border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-panel);
-  color: var(--theme-text-primary);
-  text-decoration: none;
-  transition: border-color var(--theme-transition-fast), background var(--theme-transition-fast);
-  @include focus-ring;
-
-  &:hover {
-    border-color: var(--theme-primary-300);
-    background: var(--theme-btn-secondary-hover-bg);
-    text-decoration: none;
-  }
-
-  &-icon {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--theme-radius-md);
-    background: var(--theme-info-bg);
-    color: var(--theme-primary);
-
-    i.ph {
-      font-size: 16px;
-    }
-  }
-
-  &-label {
-    font-size: var(--theme-font-size-sm);
-    font-weight: var(--theme-font-weight-medium);
-  }
-}
-
-// ── P3 — Tira de configuración (conteos reales) ────────────────────────
-.dashboard-config-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--theme-space-sm);
-}
-
-.dashboard-config-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: var(--theme-space-md);
-  background: var(--theme-surface-card);
-  border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-panel);
-  color: inherit;
-  text-decoration: none;
-  transition: box-shadow var(--theme-transition-normal), transform var(--theme-transition-normal), border-color var(--theme-transition-fast);
-  @include focus-ring;
-
-  &:hover {
-    border-color: var(--theme-border-strong);
-    box-shadow: var(--theme-shadow-card-hover);
-    transform: translateY(-1px);
-    text-decoration: none;
-  }
-
-  &-icon {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    font-size: 18px;
-    color: var(--theme-border-strong);
-  }
-
-  &-value {
-    font-size: var(--theme-font-size-2xl);
-    font-weight: var(--theme-font-weight-bold);
-    color: var(--theme-text-primary);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-  }
-
-  &-label {
-    font-size: var(--theme-font-overline-size);
-    font-weight: var(--theme-font-overline-weight);
-    text-transform: uppercase;
-    letter-spacing: var(--theme-font-overline-track);
-    color: var(--theme-text-tertiary);
-  }
 }
 
 // ── Bandas (Núcleo operativo / Analítica del portal / Seguimiento) ────────
@@ -202,6 +45,27 @@
   margin: 0 0 var(--theme-space-sm);
   font-size: var(--theme-font-size-xs);
   color: var(--theme-text-tertiary);
+}
+
+// Acción de footer estilo link (ej. "Ver los 68" en Trámites por organismo,
+// proyectada vía `[panelFooterExtra]`). Deshabilitada: el módulo aún no existe.
+.dashboard-panel-footer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--theme-text-disabled);
+  font-family: inherit;
+  font-size: var(--theme-font-size-xs);
+  font-weight: var(--theme-font-weight-semibold);
+  cursor: not-allowed;
+  white-space: nowrap;
+
+  i.ph {
+    font-size: 13px;
+  }
 }
 
 // ── Cola de revisión / Pendientes de completar ─────────────────────────
@@ -395,16 +259,19 @@
   grid-template-columns: 8px 1fr auto;
 }
 
-// ── Consultas del portal (KPI + sparkbar punteado) ─────────────────────
-.dashboard-visits-kpi {
+// ── Consultas del portal (KPI en el header + sparkbar) ──────────────────
+// El valor total + promedio diario se proyectan en `[panelHeaderBody]` (debajo
+// del título, mismo bloque de texto) y la tendencia en `[panelHeaderExtra]`
+// (misma línea del título, alineada a la derecha — ver dashboard-panel).
+.dashboard-visits-kpi-inline {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--theme-space-sm);
-  margin-bottom: var(--theme-space-md);
+  margin-top: 4px;
 
   &-value {
-    font-size: var(--theme-font-size-3xl);
+    font-size: var(--theme-font-size-2xl);
     font-weight: var(--theme-font-weight-bold);
     color: var(--theme-text-primary);
     font-variant-numeric: tabular-nums;
@@ -415,22 +282,28 @@
     font-size: var(--theme-font-size-xs);
     color: var(--theme-text-tertiary);
   }
+}
 
-  &-trend {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: var(--theme-radius-full);
-    background: var(--theme-success-bg);
-    color: var(--theme-success);
-    font-size: var(--theme-font-size-2xs);
-    font-weight: var(--theme-font-weight-semibold);
+.dashboard-visits-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--theme-radius-full);
+  background: var(--theme-success-bg);
+  color: var(--theme-success);
+  font-size: var(--theme-font-size-2xs);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
 
-    i.ph {
-      font-size: 12px;
-    }
+  i.ph {
+    font-size: 12px;
   }
+}
+
+.dashboard-visits {
+  padding-top: var(--theme-space-sm);
 }
 
 .dashboard-barchart {
@@ -443,10 +316,10 @@
     flex: 1 1 0;
     min-width: 3px;
     border-radius: 2px 2px 0 0;
-    @include dotted-fill(var(--theme-primary-500), var(--theme-primary-200));
+    background: var(--theme-primary-300);
 
     &--recent {
-      @include dotted-fill(var(--theme-primary-300), var(--theme-primary-600));
+      background: var(--theme-primary-600);
     }
   }
 
@@ -459,12 +332,14 @@
   }
 }
 
-// ── Trámites por organismo (barras apiladas) ───────────────────────────
+// ── Trámites por organismo (barras apiladas) ────────────────────────────
+// Leyenda proyectada en `[panelHeaderExtra]` (misma línea que título/subtítulo)
+// y acción "Ver los N" proyectada en `[panelFooterExtra]` (ver dashboard-panel).
 .dashboard-orgbars {
   &-legend {
     display: flex;
     gap: var(--theme-space-md);
-    margin-bottom: var(--theme-space-sm);
+    flex-wrap: wrap;
 
     span {
       display: inline-flex;
@@ -472,6 +347,7 @@
       gap: 6px;
       font-size: var(--theme-font-size-xs);
       color: var(--theme-text-secondary);
+      white-space: nowrap;
     }
   }
 
@@ -695,11 +571,6 @@
 
 // ── Responsive ───────────────────────────────────────────────────────────
 @include responsive(mobile) {
-  .dashboard-greeting {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .dashboard-queue-row,
   .dashboard-myqueue-row {
     grid-template-columns: 1fr;

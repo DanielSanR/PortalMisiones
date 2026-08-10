@@ -1,14 +1,17 @@
 <section class="dashboard-panel">
   <header class="dashboard-panel-header">
-    <span class="dashboard-panel-header-icon" aria-hidden="true">
-      <i class="ph ph-{{ icon }}"></i>
-    </span>
+    @if (icon) {
+      <span class="dashboard-panel-header-icon" aria-hidden="true">
+        <i class="ph ph-{{ icon }}"></i>
+      </span>
+    }
 
     <div class="dashboard-panel-header-text">
       <h3 class="dashboard-panel-header-title">{{ title }}</h3>
       @if (subtitle) {
         <p class="dashboard-panel-header-subtitle">{{ subtitle }}</p>
       }
+      <ng-content select="[panelHeaderBody]"></ng-content>
     </div>
 
     @if (badgeCount !== undefined) {
@@ -17,16 +20,19 @@
       </span>
     }
 
-    @if (actionLabel) {
-      <button type="button"
-          class="dashboard-panel-header-action"
-          disabled
-          aria-disabled="true"
-          title="Se habilita cuando el módulo esté disponible">
-        {{ actionLabel }}
-        <i class="ph ph-arrow-right" aria-hidden="true"></i>
-      </button>
-    }
+    <div class="dashboard-panel-header-extra">
+      <ng-content select="[panelHeaderExtra]"></ng-content>
+      @if (actionLabel) {
+        <button type="button"
+            class="dashboard-panel-header-action"
+            disabled
+            aria-disabled="true"
+            title="Se habilita cuando el módulo esté disponible">
+          {{ actionLabel }}
+          <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </button>
+      }
+    </div>
   </header>
 
   <div class="dashboard-panel-body">
@@ -35,5 +41,8 @@
 
   <footer class="dashboard-panel-footer">
     <app-gate-label [source]="gateSource" [permission]="gatePermission"></app-gate-label>
+    <div class="dashboard-panel-footer-extra">
+      <ng-content select="[panelFooterExtra]"></ng-content>
+    </div>
   </footer>
 </section>

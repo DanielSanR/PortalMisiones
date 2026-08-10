@@ -369,18 +369,6 @@ $breakpoint-2xl: 1440px;
 }
 
 // ---------------------------------------------------------------------------
-// Dotted fill — textura de puntos para barras/áreas de chart placeholder
-// (patrón "chart de relleno punteado", design-delta.md #1: usado en el
-// sparkbar de "Consultas del portal" del Home). `radial-gradient` de puntos
-// 1.1px sobre un `background-size` de 5px, apoyado en un color base sólido.
-// ---------------------------------------------------------------------------
-@mixin dotted-fill($dot-color, $base-color: transparent) {
-  background-color: $base-color;
-  background-image: radial-gradient(circle, $dot-color 1.1px, transparent 1.3px);
-  background-size: 5px 5px;
-}
-
-// ---------------------------------------------------------------------------
 // Scrollbar styling
 // ---------------------------------------------------------------------------
 @mixin custom-scrollbar {

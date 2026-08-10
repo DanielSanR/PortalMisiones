@@ -1,66 +1,3 @@
-<!-- ── Saludo + contexto (base compartida, real) ─────────────────────────── -->
-<section class="dashboard-greeting">
-  <div class="dashboard-greeting-text">
-    <h1 class="dashboard-greeting-title">Hola, {{ userName }}</h1>
-    <p class="dashboard-greeting-subtitle">{{ roleLabel }}</p>
-  </div>
-  <div class="dashboard-greeting-date">
-    <i class="ph ph-calendar-blank" aria-hidden="true"></i>
-    {{ today | date: 'EEEE d \'de\' MMMM, y' }}
-  </div>
-</section>
-
-<!-- ── P2 — Accesos rápidos (real, gateado por CREATE_*) ─────────────────── -->
-@if (hasAnyQuickAction) {
-  <section class="dashboard-quick">
-    <h2 class="dashboard-section-title">Accesos rápidos</h2>
-    <div class="dashboard-quick-grid">
-      @for (action of quickActions; track action.route) {
-        <a class="dashboard-quick-item"
-            [routerLink]="action.route"
-            *appHasPermission="action.permissions">
-          <span class="dashboard-quick-item-icon" aria-hidden="true"><i class="ph ph-{{ action.icon }}"></i></span>
-          <span class="dashboard-quick-item-label">{{ action.label }}</span>
-        </a>
-      }
-    </div>
-  </section>
-}
-
-<!-- ── P3 — Tira de configuración (conteos reales por catálogo) ──────────── -->
-<section class="dashboard-config">
-  <h2 class="dashboard-section-title">Catálogos del sistema</h2>
-  <div class="dashboard-config-grid">
-    @for (card of configCards; track card.key) {
-      @if (card.permission) {
-        <a class="dashboard-config-card" [routerLink]="card.route" *appHasPermission="card.permission">
-          <i class="ph ph-{{ card.icon }} dashboard-config-card-icon" aria-hidden="true"></i>
-          <span class="dashboard-config-card-value">{{ (counts$ | async)?.[card.key] ?? '—' }}</span>
-          <span class="dashboard-config-card-label">{{ card.label }}</span>
-        </a>
-      } @else {
-        <a class="dashboard-config-card" [routerLink]="card.route">
-          <i class="ph ph-{{ card.icon }} dashboard-config-card-icon" aria-hidden="true"></i>
-          <span class="dashboard-config-card-value">{{ (counts$ | async)?.[card.key] ?? '—' }}</span>
-          <span class="dashboard-config-card-label">{{ card.label }}</span>
-        </a>
-      }
-    }
-    @if (canSeeRolesPermisos) {
-      <a class="dashboard-config-card" routerLink="/dashboard/roles/lista">
-        <i class="ph ph-shield-star dashboard-config-card-icon" aria-hidden="true"></i>
-        <span class="dashboard-config-card-value">{{ (counts$ | async)?.roles ?? '—' }}</span>
-        <span class="dashboard-config-card-label">Roles</span>
-      </a>
-      <a class="dashboard-config-card" routerLink="/dashboard/permisos/lista">
-        <i class="ph ph-key dashboard-config-card-icon" aria-hidden="true"></i>
-        <span class="dashboard-config-card-value">{{ (counts$ | async)?.permisos ?? '—' }}</span>
-        <span class="dashboard-config-card-label">Permisos</span>
-      </a>
-    }
-  </div>
-</section>
-
 <!-- ── Banda A — Núcleo operativo (placeholder honesto, role-aware) ──────── -->
 @if (widgets.queue || widgets.myQueue || widgets.pipeline || widgets.mine) {
   <section class="dashboard-band">
@@ -95,7 +32,7 @@
 
     @if (widgets.myQueue) {
       <app-dashboard-panel
-          icon="clipboard-text"
+          icon="tray"
           title="Pendientes de completar"
           [badgeCount]="myQueueItems.length"
           actionLabel="Ver todas"
@@ -152,7 +89,7 @@
 
         @if (widgets.mine) {
           <app-dashboard-panel
-              icon="user-focus"
+              icon="squares-four"
               title="Mis variantes y contactos"
               gateSource="Variant · Contact"
               gatePermission="READ_VARIANT · READ_CONTACT">
@@ -183,16 +120,17 @@
     <div class="dashboard-band-row">
       @if (widgets.analytics) {
         <app-dashboard-panel
-            icon="trend-up"
             title="Consultas del portal"
             gateSource="VisitLog · sin endpoint"
             gatePermission="VIEW_ANALYTICS">
+          <div panelHeaderBody class="dashboard-visits-kpi-inline">
+            <span class="dashboard-visits-kpi-inline-value">{{ visitsTotal | number }}</span>
+            <span class="dashboard-visits-kpi-inline-avg">{{ visitsAvgPerDay | number }}/día promedio</span>
+          </div>
+          <span panelHeaderExtra class="dashboard-visits-kpi-trend">
+            <i class="ph ph-trend-up" aria-hidden="true"></i> +12,4% vs. junio
+          </span>
           <div class="dashboard-visits">
-            <div class="dashboard-visits-kpi">
-              <span class="dashboard-visits-kpi-value">{{ visitsTotal | number }}</span>
-              <span class="dashboard-visits-kpi-avg">{{ visitsAvgPerDay | number }}/día promedio</span>
-              <span class="dashboard-visits-kpi-trend"><i class="ph ph-trend-up" aria-hidden="true"></i> +12,4% vs. junio</span>
-            </div>
             <div class="dashboard-barchart" role="img" aria-label="Consultas diarias del último mes, tendencia ascendente">
               @for (bar of visitsDaily; track $index) {
                 <span class="dashboard-barchart-bar" [class.dashboard-barchart-bar--recent]="$index >= visitsDaily.length - 3" [style.height.%]="bar"></span>
@@ -207,16 +145,21 @@
 
       @if (widgets.procedures) {
         <app-dashboard-panel
-            icon="chart-bar"
             title="Trámites por organismo"
-            actionLabel="Ver los 68"
+            subtitle="529 trámites cargados · top 8 de 68 organismos"
             gateSource="Trámites · sin controller"
             gatePermission="READ_PROCEDURE">
+          <div panelHeaderExtra class="dashboard-orgbars-legend">
+            <span><i class="dashboard-orgbars-legend-dot" data-color="info" aria-hidden="true"></i> Publicados</span>
+            <span><i class="dashboard-orgbars-legend-dot" data-color="muted" aria-hidden="true"></i> Borrador / revisión</span>
+          </div>
+          <div panelFooterExtra>
+            <button type="button" class="dashboard-panel-footer-action" disabled aria-disabled="true"
+                title="Se habilita cuando el módulo de trámites esté activo">
+              Ver los 68 <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
           <div class="dashboard-orgbars">
-            <div class="dashboard-orgbars-legend">
-              <span><i class="dashboard-orgbars-legend-dot" data-color="info" aria-hidden="true"></i> Publicados</span>
-              <span><i class="dashboard-orgbars-legend-dot" data-color="muted" aria-hidden="true"></i> Borrador / revisión</span>
-            </div>
             @for (org of orgBars; track org.organismo) {
               <div class="dashboard-orgbars-row">
                 <span class="dashboard-orgbars-row-label">{{ org.organismo }}</span>
@@ -251,7 +194,7 @@
         </app-dashboard-panel>
 
         <app-dashboard-panel
-            icon="file-text"
+            icon="trend-up"
             title="Trámites más consultados"
             gateSource="VisitLog"
             gatePermission="VIEW_ANALYTICS">
