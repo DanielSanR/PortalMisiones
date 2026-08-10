@@ -4,7 +4,6 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, combineLatest, filter, firstValueFrom, map, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
@@ -26,7 +25,6 @@ import { PermisoVM } from '@features/permisos';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatMenuModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
@@ -73,11 +71,21 @@ export class RolesListComponent implements OnInit {
     return this.isSuperAdmin || rol.codigo.toUpperCase() !== UserRole.SUPERADMIN;
   }
 
+  /**
+   * ¿Es el rol SUPERADMIN? A diferencia de `canModify()` (que depende de QUIÉN mira la pantalla), esto es
+   * un hecho estructural del rol: el tag "Protegido" y la nota del detalle deben verse siempre para
+   * SUPERADMIN, sea cual sea el usuario logueado (incluido otro SUPERADMIN).
+   */
+  readonly isSuperAdminRole = (rol: RolVM): boolean => rol.codigo.toUpperCase() === UserRole.SUPERADMIN;
+
   columns: TableColumn<RolVM>[] = [
-    { key: 'rol',       label: 'Rol',      width: '42%' },
-    { key: 'scopeTipo', label: 'Scope',    width: '16%', hideOnMobile: true },
-    { key: 'permisos',  label: 'Permisos', width: '18%' },
-    { key: 'acciones',  label: 'Acciones', width: '24%' },
+    { key: 'rol',      label: 'Rol' },
+    { key: 'permisos', label: 'Permisos', width: '110px' },
+    // El backend no expone la cantidad de usuarios por rol (no hay `GET /api/user` ni un join role→users,
+    // ver BACKEND_API_SPEC.md §4.2) → columna placeholder honesto ('—'), sin inventar un número. Cuando el
+    // backend agregue el dato (p. ej. `RolVM.usuariosCount`), reemplazar la celda por el valor real.
+    { key: 'usuarios', label: 'Usuarios', width: '110px' },
+    { key: 'acciones', label: 'Acciones', width: '150px' },
   ];
 
   // ── Master-detail: rol seleccionado + su editor de permisos (visualización read-friendly). ──

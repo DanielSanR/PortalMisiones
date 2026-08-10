@@ -30,11 +30,13 @@
             <div class="admin-layout__search">
                 <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
                 <input type="search"
+                    #searchInput
                     class="admin-layout__search-input"
                     placeholder="Buscar…"
                     aria-label="Buscar en el menú de navegación"
                     [value]="searchQuery"
                     (input)="onSearchInput($any($event.target).value)" />
+                <kbd class="admin-layout__search-kbd" aria-hidden="true">/</kbd>
             </div>
 
             <nav class="admin-layout__nav" aria-label="Secciones del backoffice">
@@ -141,6 +143,7 @@
                 </button>
 
                 <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación">
+                    <i class="ph ph-{{ sectionIcon }} admin-layout__breadcrumb-icon" aria-hidden="true"></i>
                     <a routerLink="/dashboard/home" class="admin-layout__breadcrumb-home">Inicio</a>
                     <ng-container *ngFor="let crumb of breadcrumbTrail; let last = last">
                         <i class="ph ph-caret-right admin-layout__breadcrumb-sep" aria-hidden="true"></i>

@@ -224,6 +224,24 @@
 
         // El navegador agrega un botón "x" nativo a type=search; se deja, es accesible.
     }
+
+    &-kbd {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        border: 1px solid var(--theme-border-primary);
+        border-radius: var(--theme-radius-sm);
+        background-color: var(--theme-surface-sunken);
+        color: var(--theme-text-tertiary);
+        font-family: inherit;
+        font-size: var(--theme-font-overline-size);
+        font-weight: var(--theme-font-weight-semibold);
+        line-height: 1;
+    }
 }
 
 // ==========================================================================
@@ -511,6 +529,12 @@
 
     @include responsive(mobile) {
         display: none;
+    }
+
+    &-icon {
+        flex: none;
+        font-size: 16px;
+        color: var(--theme-text-tertiary);
     }
 
     &-home {

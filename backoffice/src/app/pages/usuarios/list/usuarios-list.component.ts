@@ -3,8 +3,6 @@ import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, firstValueFrom, map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RolLabelPipe } from '../../../shared/pipes/rol-label.pipe';
@@ -20,8 +18,6 @@ import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatSlideToggleModule,
-    MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
@@ -51,14 +47,12 @@ export class UsuariosListComponent implements OnInit {
     { key: 'email',     label: 'Email',     width: '25%', hideOnMobile: true },
     { key: 'rol',       label: 'Rol',       width: '140px' },
     { key: 'organismo', label: 'Organismo', hideOnMobile: true },
-    { key: 'activo',    label: 'Activo',    width: '100px' },
-    { key: 'acciones',  label: 'Acciones',  width: '80px' },
+    { key: 'acciones',  label: 'Acciones',  width: '110px' },
   ];
 
   constructor(
     private facade: UsuariosFacade,
     private router: Router,
-    private snackBar: MatSnackBar,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -77,17 +71,5 @@ export class UsuariosListComponent implements OnInit {
 
   onEdit(usuario: UsuarioVM): void {
     this.router.navigate(['/dashboard/usuarios/editar', usuario.id]);
-  }
-
-  async onToggleActive(usuario: UsuarioVM): Promise<void> {
-    const eraActivo = usuario.activo;
-    try {
-      await firstValueFrom(this.facade.toggleActive(usuario.id));
-      this.snackBar.open(eraActivo ? 'Usuario desactivado' : 'Usuario activado', 'OK', { duration: 3000 });
-    } catch {
-      this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 });
-    } finally {
-      this.cdr.markForCheck();
-    }
   }
 }

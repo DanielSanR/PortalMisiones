@@ -30,21 +30,13 @@
         {{ row.organismoNombre || '-' }}
     </ng-template>
 
-    <!-- Columna: Activo (toggle). Gestión de usuarios = SUPERADMIN (UPDATE_USER vía policy override). -->
-    <ng-template appTableCell="activo" let-row>
-        <mat-slide-toggle
-            *appHasPermission="'UPDATE_USER'"
-            [checked]="row.activo"
-            (change)="onToggleActive(row)"
-            aria-label="Activar o desactivar usuario">
-        </mat-slide-toggle>
-    </ng-template>
-
     <!-- Columna: Acciones -->
     <ng-template appTableCell="acciones" let-row>
-        <button *appHasPermission="'UPDATE_USER'" mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
-            <i class="ph ph-pencil-simple" aria-hidden="true"></i>
-        </button>
+        <div class="row-actions">
+            <button *appHasPermission="'UPDATE_USER'" type="button" class="row-action" (click)="onEdit(row)">
+                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+            </button>
+        </div>
     </ng-template>
 
 </app-shared-table>

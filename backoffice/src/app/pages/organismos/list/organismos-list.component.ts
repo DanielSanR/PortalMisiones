@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -22,7 +22,7 @@ import { OrganismosFacade, OrganismoVM } from '@features/organismos';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatMenuModule,
+    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
@@ -47,10 +47,9 @@ export class OrganismosListComponent implements OnInit {
 
   columns: TableColumn<OrganismoVM>[] = [
     { key: 'nombre',     label: 'Nombre' },
-    { key: 'acronym',    label: 'Acrónimo', width: '120px' },
     { key: 'tipoNombre', label: 'Tipo', hideOnMobile: true },
-    { key: 'activo',     label: 'Activo', width: '90px' },
-    { key: 'acciones',   label: 'Acciones', width: '80px' },
+    { key: 'activo',     label: 'Activo', width: '110px' },
+    { key: 'acciones',   label: 'Acciones', width: '140px' },
   ];
 
   private readonly destroyRef = inject(DestroyRef);

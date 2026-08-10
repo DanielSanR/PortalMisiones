@@ -5,7 +5,7 @@ import { filter, firstValueFrom, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -24,7 +24,7 @@ import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
     AsyncPipe,
     MatButtonModule,
     MatIconModule,
-    MatMenuModule,
+    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
@@ -48,7 +48,7 @@ export class EtiquetasListComponent implements OnInit {
   columns: TableColumn<EtiquetaVM>[] = [
     { key: 'nombre',        label: 'Nombre' },
     { key: 'tramitesCount', label: 'Trámites', width: '100px' },
-    { key: 'acciones',      label: 'Acciones', width: '80px' },
+    { key: 'acciones',      label: 'Acciones', width: '140px' },
   ];
 
   constructor(

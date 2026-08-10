@@ -25,13 +25,13 @@
       <!-- Columna: Rol (ícono + nombre + tag + descripción) -->
       <ng-template appTableCell="rol" let-row>
         <div class="rol-cell">
-          <span class="rol-cell__icon" [class.rol-cell__icon--protected]="!canModify(row)">
-            <i class="ph" [class.ph-lock-simple]="!canModify(row)" [class.ph-shield-star]="canModify(row)" aria-hidden="true"></i>
+          <span class="rol-cell__icon" [class.rol-cell__icon--protected]="isSuperAdminRole(row)">
+            <i class="ph" [class.ph-lock-simple]="isSuperAdminRole(row)" [class.ph-shield-star]="!isSuperAdminRole(row)" aria-hidden="true"></i>
           </span>
           <div class="rol-cell__text">
             <div class="rol-cell__name-row">
               <span class="rol-cell__name">{{ row.codigo }}</span>
-              @if (!canModify(row)) {
+              @if (isSuperAdminRole(row)) {
                 <span class="rol-cell__tag rol-cell__tag--protected">Protegido</span>
               } @else if (row.scopeTipo === 'global') {
                 <span class="rol-cell__tag rol-cell__tag--system">Sistema</span>
@@ -42,38 +42,30 @@
         </div>
       </ng-template>
 
-      <!-- Columna: Scope -->
-      <ng-template appTableCell="scopeTipo" let-row>
-        <span class="scope-badge" [class.scope-badge--global]="row.scopeTipo === 'global'"
-                                  [class.scope-badge--organismo]="row.scopeTipo === 'organismo'">
-          {{ row.scopeTipo === 'global' ? 'Global' : 'Organismo' }}
-        </span>
-      </ng-template>
-
       <!-- Columna: Número de permisos -->
       <ng-template appTableCell="permisos" let-row>
         <strong class="count-badge">{{ row.permisos.length }}</strong>
       </ng-template>
 
+      <!-- Columna: Usuarios — sin dato real del backend (ver comentario en columns), placeholder honesto. -->
+      <ng-template appTableCell="usuarios">
+        <span class="count-placeholder" matTooltip="El backend no expone la cantidad de usuarios por rol">—</span>
+      </ng-template>
+
       <!-- Columna: Acciones -->
       <ng-template appTableCell="acciones" let-row>
-        <span (click)="$event.stopPropagation()">
-          <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del rol">
-            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
+        <div class="row-actions" (click)="$event.stopPropagation()">
+          <button type="button" class="row-action" (click)="onEdit(row)" [disabled]="!canModify(row)"
+                  [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede editar el rol SUPERADMIN'"
+                  [matTooltipDisabled]="canModify(row)">
+            <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
           </button>
-          <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="onEdit(row)" [disabled]="!canModify(row)"
-                    [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede editar el rol SUPERADMIN'"
-                    [matTooltipDisabled]="canModify(row)">
-              <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-            </button>
-            <button mat-menu-item class="delete-action" (click)="onDelete(row)" [disabled]="!canModify(row)"
-                    [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede eliminar el rol SUPERADMIN'"
-                    [matTooltipDisabled]="canModify(row)">
-              <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
-            </button>
-          </mat-menu>
-        </span>
+          <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
+                  [disabled]="!canModify(row)" aria-label="Eliminar rol"
+                  [matTooltip]="canModify(row) ? 'Eliminar' : 'Solo un SUPERADMIN puede eliminar el rol SUPERADMIN'">
+            <i class="ph ph-trash" aria-hidden="true"></i>
+          </button>
+        </div>
       </ng-template>
 
     </app-shared-table>
@@ -91,7 +83,7 @@
               @if (rol.asignablePorOrgAdmin) {
                 · asignable por Admin de Organismo
               }
-              @if (!canModify(rol)) {
+              @if (isSuperAdminRole(rol)) {
                 · <i class="ph ph-lock-simple" aria-hidden="true"></i> protegido
               }
             </p>
@@ -122,7 +114,7 @@
           }
         </div>
 
-        @if (!canModify(rol)) {
+        @if (isSuperAdminRole(rol)) {
           <div class="rol-detail__note">
             <i class="ph ph-shield-check" aria-hidden="true"></i>
             Los permisos del rol SUPERADMIN no se pueden modificar desde el backoffice.

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { filter, firstValueFrom, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
@@ -21,7 +21,7 @@ import { PermisosFacade, PermisoVM } from '@features/permisos';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatMenuModule,
+    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
@@ -44,7 +44,7 @@ export class PermisosListComponent implements OnInit {
   columns: TableColumn<PermisoVM>[] = [
     { key: 'codigo',      label: 'Código',      width: '30%' },
     { key: 'descripcion', label: 'Descripción' },
-    { key: 'acciones',    label: 'Acciones',    width: '80px' },
+    { key: 'acciones',    label: 'Acciones',    width: '140px' },
   ];
 
   constructor(

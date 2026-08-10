@@ -88,40 +88,18 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
 
+    // Colores calcados del diseño (Claude Design, pantalla Roles): mismo par bg/texto que
+    // `estado-despublicado` (rojo) para "Protegido" y el tint `primary-800` sobre `info-bg`
+    // (azul, igual al chip de rol del user-menu) para "Sistema" — no un azul-info genérico.
     &--protected {
       background: var(--theme-error-bg);
-      color: var(--theme-error-icon);
+      color: var(--theme-warn-dark);
     }
 
     &--system {
       background: var(--theme-info-bg);
-      color: var(--theme-info);
+      color: var(--theme-primary-800);
     }
-  }
-}
-
-// ── Columnas simples reutilizadas del master ────────────────────────────────
-// Mismo lenguaje de badge con borde que `EstadoBadgePipe`/`estado-badge` (bg + texto + borde),
-// para no quedar como un pill "propio" sin borde frente al resto de badges de la app.
-.scope-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--theme-space-2xs) var(--theme-space-sm);
-  border-radius: var(--theme-radius-full);
-  font-size: var(--theme-font-size-xs);
-  font-weight: var(--theme-font-weight-medium);
-  border: 1px solid transparent;
-
-  &--global {
-    background: var(--theme-info-bg);
-    color: var(--theme-info);
-    border-color: var(--theme-info-border);
-  }
-
-  &--organismo {
-    background: var(--theme-warning-bg);
-    color: var(--theme-warning);
-    border-color: var(--theme-warning-border);
   }
 }
 
@@ -132,6 +110,15 @@
   font-weight: var(--theme-font-weight-semibold);
   color: var(--theme-text-secondary);
   font-variant-numeric: tabular-nums;
+}
+
+// Columna "Usuarios" — el backend no expone el conteo por rol (ver `roles-list.component.ts`):
+// placeholder honesto, tenue y sin negrita para no leerse como un dato real ausente por error.
+.count-placeholder {
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  cursor: help;
 }
 
 // ── Detail: editor de permisos (read-friendly) ──────────────────────────────

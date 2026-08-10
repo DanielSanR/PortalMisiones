@@ -1,7 +1,7 @@
-import { Component, OnInit, DestroyRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ElementRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, fromEvent } from 'rxjs';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatMenuModule } from '@angular/material/menu';
@@ -12,9 +12,14 @@ import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LayoutChromeService } from '../../../core/services/layout-chrome.service';
 import { AuthUser } from '../../../core/models/auth.model';
-import { NAV_GROUPS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
+import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
 import { evaluateAccess } from '../../../core/utils/authorization.utils';
+
+/** Icono genérico cuando el primer segmento del breadcrumb no matchea ningún `NavItem`
+ *  (ej. detalle de trámite, cuyo trail es ["Trámites", "Detalle"] — sí matchea; se usa
+ *  solo como red de seguridad ante secciones fuera del nav). */
+const FALLBACK_SECTION_ICON = 'file-text';
 
 /** Grupo de nav ya filtrado por permiso + búsqueda, con su estado de colapso para el template. */
 interface NavGroupView {
@@ -40,6 +45,7 @@ interface NavGroupView {
 })
 export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
+  @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
   isMobile = false;
   isCollapsed = false;
   userName = '';
@@ -53,6 +59,8 @@ export class AdminLayoutComponent implements OnInit {
 
   /** Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio". */
   breadcrumbTrail: string[] = [];
+  /** Icono de la sección activa (icono del `NavItem` cuyo label matchea `breadcrumbTrail[0]`). */
+  sectionIcon = 'layout';
 
   /** Slot de acciones de la página activa (ver `LayoutChromeService` / `appPageActions`). */
   readonly chrome = inject(LayoutChromeService);
@@ -95,6 +103,24 @@ export class AdminLayoutComponent implements OnInit {
       )
       .subscribe(() => this.updateBreadcrumb());
     this.updateBreadcrumb();
+
+    // Atajo "/": foca el buscador de la sidebar, salvo que el foco ya esté en un campo editable.
+    fromEvent<KeyboardEvent>(document, 'keydown')
+      .pipe(
+        filter((event) => event.key === '/' && !this.isEditableTarget(event.target)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((event) => {
+        event.preventDefault();
+        if (this.isMobile) this.sidenav.open();
+        this.searchInputRef?.nativeElement.focus();
+      });
+  }
+
+  private isEditableTarget(target: EventTarget | null): boolean {
+    const el = target as HTMLElement | null;
+    if (!el) return false;
+    return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
   }
 
   private applyUser(user: AuthUser | null): void {
@@ -123,7 +149,18 @@ export class AdminLayoutComponent implements OnInit {
     let route = this.activatedRoute.root;
     while (route.firstChild) route = route.firstChild;
     this.breadcrumbTrail = (route.snapshot.data['breadcrumb'] as string[] | undefined) ?? [];
+    this.sectionIcon = this.resolveSectionIcon(this.breadcrumbTrail);
     this.cdr.markForCheck();
+  }
+
+  /** Icono de la sección activa: el de "Inicio" cuando no hay trail (Home), o el del `NavItem`
+   *  cuyo `label` matchea el primer segmento del trail (ej. "Roles" → shield-star). Fallback
+   *  genérico si el segmento no corresponde a ningún ítem del nav. */
+  private resolveSectionIcon(trail: string[]): string {
+    if (trail.length === 0) {
+      return NAV_ITEMS.find((item) => item.label === 'Inicio')?.icon ?? FALLBACK_SECTION_ICON;
+    }
+    return NAV_ITEMS.find((item) => item.label === trail[0])?.icon ?? FALLBACK_SECTION_ICON;
   }
 
   trackByRoute(_index: number, item: NavItem): string {

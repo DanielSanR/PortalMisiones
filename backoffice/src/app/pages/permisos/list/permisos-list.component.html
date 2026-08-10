@@ -17,17 +17,15 @@
     emptyIcon="key">
 
   <ng-template appTableCell="acciones" let-row>
-    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del permiso">
-      <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
-    </button>
-    <mat-menu #menu="matMenu">
-      <button mat-menu-item (click)="onEdit(row)">
+    <div class="row-actions">
+      <button type="button" class="row-action" (click)="onEdit(row)">
         <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
       </button>
-      <button mat-menu-item class="delete-action" (click)="onDelete(row)">
-        <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
+      <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
+              aria-label="Eliminar permiso" matTooltip="Eliminar">
+        <i class="ph ph-trash" aria-hidden="true"></i>
       </button>
-    </mat-menu>
+    </div>
   </ng-template>
 
 </app-shared-table>

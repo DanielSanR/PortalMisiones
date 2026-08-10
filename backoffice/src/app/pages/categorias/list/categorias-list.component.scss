@@ -135,31 +135,8 @@
     }
   }
 
-  // ── Acciones: iconos planos (sin botón "Editar", solo íconos 30px) ──
-  &__action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-    border: none;
-    background: transparent;
-    border-radius: var(--theme-radius-md);
-    cursor: pointer;
-    color: var(--theme-text-secondary);
-    transition: background var(--theme-transition-fast), color var(--theme-transition-fast);
-    @include focus-ring;
-
-    i.ph { font-size: 16px; }
-
-    &:hover { background: var(--theme-primary-50); color: var(--theme-primary); }
-
-    &--danger {
-      color: var(--theme-error);
-      &:hover { background: var(--theme-error-bg); color: var(--theme-error); }
-    }
-  }
+  // Acciones de fila: ver `.row-action*` en `shared-styles/_components.scss`
+  // (patrón GLOBAL de listados — icon-only en Categorías: Agregar sub, Editar, Eliminar).
 
   // ── Carga / vacío ───────────────────────────────────────────
   &__loading {
