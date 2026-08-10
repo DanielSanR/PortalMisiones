@@ -1,7 +1,9 @@
-.delete-action {
-  color: var(--theme-error) !important;
+@use '../../../../shared-styles/mixins' as *;
 
-  .mat-icon {
-    color: var(--theme-error) !important;
+.list-toolbar {
+  @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count;
   }
 }

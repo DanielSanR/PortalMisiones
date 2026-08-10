@@ -4,7 +4,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { MatPaginator, MatPaginatorModule, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.model';
 
 // Directiva para registrar cell templates por nombre desde el consumidor.
@@ -53,7 +53,7 @@ function getEsPaginatorIntl(): MatPaginatorIntl {
     MatSortModule,
     MatPaginatorModule,
     MatProgressBarModule,
-    MatIconModule,
+    MatButtonModule,
     TableCellDirective,
     TableHeaderDirective,
   ],
@@ -67,13 +67,7 @@ function getEsPaginatorIntl(): MatPaginatorIntl {
 })
 export class SharedTableComponent<T = any> implements AfterContentInit {
   // Inputs — Datos
-  @Input()
-  set data(value: T[]) {
-    this._data = value;
-    this._updateEmpty();
-  }
-  get data(): T[] { return this._data; }
-  private _data: T[] = [];
+  @Input() data: T[] = [];
 
   //Columnas
   @Input()
@@ -84,19 +78,28 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   get columns(): TableColumn<T>[] { return this._columns; }
   private _columns: TableColumn<T>[] = [];
 
-  //Progress bar
-  @Input()
-  set loading(value: boolean) {
-    this._loading = value;
-    this._updateEmpty();
-  }
-  get loading(): boolean { return this._loading; }
-  private _loading = false;
+  //Progress bar / skeleton
+  @Input() loading = false;
 
+  // Estado vacío — círculo + icono Phosphor + título/texto + CTA opcional.
+  @Input() emptyIcon = 'inbox'; // nombre Phosphor sin prefijo (ej. "buildings")
+  @Input() emptyTitle = '';
   @Input() emptyMessage = 'No se encontraron resultados';
-  @Input() emptyIcon = '';
-  //se usa si empty icon esta vacio
-  @Input() emptyImage = 'assets/img/empty.svg';
+  @Input() emptyImage = ''; // fallback legado: si se define, reemplaza al icono
+  @Input() emptyActionLabel = '';
+  @Input() emptyActionIcon = 'plus';
+  @Output() emptyAction = new EventEmitter<void>();
+
+  // Estado de error — círculo rojo + cloud-slash + CTA "Reintentar".
+  @Input() error = false;
+  @Input() errorTitle = 'No pudimos cargar los datos';
+  @Input() errorMessage = 'Revisá tu conexión e intentá de nuevo.';
+  @Input() errorRetryLabel = 'Reintentar';
+  @Output() retry = new EventEmitter<void>();
+
+  // Skeleton — cantidad de filas fantasma mientras carga sin datos previos.
+  @Input() skeletonRows = 5;
+
   @Input() paginated = false;
   @Input() totalItems = 0;
   @Input() pageSize = 10;
@@ -104,15 +107,19 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @Input() pageSizeOptions: number[] = [10, 25, 50];
   @Input() sortable = false;
   @Input() striped = false; // alternar fondo de filas para mejorar legibilidad
+
+  // Selección de fila (opcional) — ej. layouts master-detail (Roles). El consumidor decide qué fila
+  // está activa; la tabla solo pinta el estado (barra de acento + fondo) vía `shared-table__row--selected`.
+  @Input() isRowSelected?: (row: T) => boolean;
+
   @Output() pageChange = new EventEmitter<TablePageEvent>();
   @Output() sortChange = new EventEmitter<TableSortEvent>();
   @Output() rowClick = new EventEmitter<T>();
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild(MatSort) sort?: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ContentChildren(TableCellDirective) cellTemplates!: QueryList<TableCellDirective>;
   @ContentChildren(TableHeaderDirective) headerTemplates!: QueryList<TableHeaderDirective>;
   _displayedColumns: string[] = [];
-  isEmpty = true;
   private cellTemplateMap = new Map<string, TemplateRef<any>>();
   private headerTemplateMap = new Map<string, TemplateRef<any>>();
 
@@ -120,8 +127,29 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
     return this._displayedColumns;
   }
 
-  private _updateEmpty(): void {
-    this.isEmpty = !this._loading && (!this._data || this._data.length === 0);
+  // ---------------------------------------------------------------------
+  // Estados de la vista — mutuamente excluyentes.
+  // ---------------------------------------------------------------------
+  get showError(): boolean {
+    return this.error && !this.loading;
+  }
+
+  get showEmpty(): boolean {
+    return !this.error && !this.loading && (!this.data || this.data.length === 0);
+  }
+
+  get showSkeleton(): boolean {
+    // Loading manda sobre error: mientras hay un reintento en curso, se
+    // prioriza el skeleton por sobre el estado de error previo.
+    return this.loading && (!this.data || this.data.length === 0);
+  }
+
+  get showTable(): boolean {
+    return !this.showError && !this.showEmpty;
+  }
+
+  get skeletonRowsArray(): number[] {
+    return Array.from({ length: this.skeletonRows });
   }
 
   ngAfterContentInit(): void {
@@ -129,7 +157,7 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
     this.headerTemplates.forEach(d => this.headerTemplateMap.set(d.columnKey, d.templateRef));
   }
 
-  //Helpers 
+  //Helpers
 
   getCellTemplate(column: TableColumn<T>): TemplateRef<any> | null {
     return column.cellTemplate || this.cellTemplateMap.get(column.key) || null;
@@ -159,7 +187,11 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
     });
   }
 
-  onRowClick(row: T): void { 
+  onRowClick(row: T): void {
     this.rowClick.emit(row);
+  }
+
+  rowIsSelected(row: T): boolean {
+    return !!this.isRowSelected && this.isRowSelected(row);
   }
 }

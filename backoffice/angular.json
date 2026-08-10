@@ -52,7 +52,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/@phosphor-icons/web/src/regular/style.css"
             ],
             "scripts": [],
             "stylePreprocessorOptions": {
@@ -121,7 +122,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/@phosphor-icons/web/src/regular/style.css"
             ],
             "scripts": []
           }

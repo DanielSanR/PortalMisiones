@@ -1,15 +1,20 @@
-<app-page-header title="Etiquetas" subtitle="Gestión de etiquetas para clasificar trámites">
+<ng-template appPageActions>
   <button *appHasPermission="'CREATE_TAXONOMY'" mat-raised-button color="primary" (click)="onCreate()">
-    <mat-icon>add</mat-icon> Nueva etiqueta
+    <i class="ph ph-plus" aria-hidden="true"></i> Nueva etiqueta
   </button>
-</app-page-header>
+</ng-template>
+
+<div class="list-toolbar">
+  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
+  <span class="list-toolbar-count">{{ (etiquetas$ | async)?.length || 0 }} etiquetas</span>
+</div>
 
 <app-shared-table
     [data]="(etiquetas$ | async) ?? []"
     [columns]="columns"
     [loading]="loading"
     emptyMessage="No hay etiquetas registradas"
-    emptyIcon="label_off">
+    emptyIcon="bookmarks-simple">
 
     <ng-template appTableCell="nombre" let-row>
         <div class="etiqueta-name">
@@ -24,14 +29,14 @@
 
     <ng-template appTableCell="acciones" let-row>
         <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones">
-            <mat-icon>more_vert</mat-icon>
+            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
         </button>
         <mat-menu #menu="matMenu">
             <button *appHasPermission="'UPDATE_TAXONOMY'" mat-menu-item (click)="onEdit(row)">
-                <mat-icon>edit</mat-icon> Editar
+                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
             </button>
             <button *appHasPermission="'DELETE_TAXONOMY'" mat-menu-item class="delete-action" (click)="onDelete(row)">
-                <mat-icon>delete</mat-icon> Eliminar
+                <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
             </button>
         </mat-menu>
     </ng-template>

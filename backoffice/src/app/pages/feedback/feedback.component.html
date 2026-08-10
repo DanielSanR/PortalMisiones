@@ -1,19 +1,21 @@
-<app-page-header
-  title="Feedback Ciudadano"
-  [subtitle]="tramiteIdFijo ? 'Filtrando por trámite seleccionado' : 'Opiniones de los ciudadanos sobre los trámites del portal'">
+<ng-template appPageActions>
   @if (hasFilters()) {
     <button mat-stroked-button (click)="clearFilters()">
-      <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
+      <i class="ph ph-x-circle" aria-hidden="true"></i> Limpiar filtros
     </button>
   }
-</app-page-header>
+</ng-template>
+
+<div class="list-toolbar">
+  <app-filter-tabs [tabs]="valoracionTabs" [active]="valoracionActiva" (activeChange)="filtrarValoracion($event)"></app-filter-tabs>
+</div>
 
 <!-- ── Stats Cards ── -->
 @if (stats) {
   <div class="stats-grid">
     <mat-card class="stat-card">
       <mat-card-content>
-        <div class="stat-card__icon stat-card__icon--total"><mat-icon>forum</mat-icon></div>
+        <div class="stat-card__icon stat-card__icon--total"><i class="ph ph-chats-circle" aria-hidden="true"></i></div>
         <div class="stat-card__info">
           <span class="stat-card__value">{{ stats.total }}</span>
           <span class="stat-card__label">Respuestas totales</span>
@@ -23,7 +25,7 @@
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <div class="stat-card__icon stat-card__icon--util"><mat-icon>thumb_up</mat-icon></div>
+        <div class="stat-card__icon stat-card__icon--util"><i class="ph ph-thumbs-up" aria-hidden="true"></i></div>
         <div class="stat-card__info">
           <span class="stat-card__value">{{ stats.porcentajeUtil }}%</span>
           <span class="stat-card__label">Consideraron útil el trámite</span>
@@ -33,7 +35,7 @@
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <div class="stat-card__icon stat-card__icon--noUtil"><mat-icon>thumb_down</mat-icon></div>
+        <div class="stat-card__icon stat-card__icon--noUtil"><i class="ph ph-thumbs-down" aria-hidden="true"></i></div>
         <div class="stat-card__info">
           <span class="stat-card__value">{{ stats.totalNoUtil }}</span>
           <span class="stat-card__label">Opiniones negativas</span>
@@ -43,7 +45,7 @@
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <div class="stat-card__icon stat-card__icon--comentario"><mat-icon>comment</mat-icon></div>
+        <div class="stat-card__icon stat-card__icon--comentario"><i class="ph ph-chat-text" aria-hidden="true"></i></div>
         <div class="stat-card__info">
           <span class="stat-card__value">{{ stats.totalConComentario }}</span>
           <span class="stat-card__label">Con comentario escrito</span>
@@ -59,16 +61,7 @@
     <mat-form-field appearance="outline" class="filter-search">
       <mat-label>Buscar trámite u organismo</mat-label>
       <input matInput formControlName="search" placeholder="Ej: BEEG, IPS...">
-      <mat-icon matPrefix>search</mat-icon>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="filter-select">
-      <mat-label>Valoración</mat-label>
-      <mat-select formControlName="esUtil">
-        <mat-option value="">Todas</mat-option>
-        <mat-option [value]="true">Útil</mat-option>
-        <mat-option [value]="false">No útil</mat-option>
-      </mat-select>
+      <i class="ph ph-magnifying-glass" matPrefix aria-hidden="true"></i>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="filter-date">
@@ -84,6 +77,8 @@
       <mat-datepicker-toggle matSuffix [for]="pickerHasta"></mat-datepicker-toggle>
       <mat-datepicker #pickerHasta></mat-datepicker>
     </mat-form-field>
+
+    <span class="filters-count">{{ totalItems }} opiniones</span>
   </form>
 </div>
 
@@ -98,12 +93,12 @@
     [pageIndex]="currentPage"
     [pageSizeOptions]="[5, 10, 25]"
     emptyMessage="No se encontraron registros de feedback"
-    emptyIcon="forum"
+    emptyIcon="chats-circle"
     (pageChange)="onPageChange($event)">
 
     <ng-template appTableCell="util" let-row>
         <span class="util-chip" [class.util-chip--si]="row.esUtil" [class.util-chip--no]="!row.esUtil">
-            <mat-icon class="util-icon">{{ row.esUtil ? 'thumb_up' : 'thumb_down' }}</mat-icon>
+            <i class="ph ph-{{ row.esUtil ? 'thumbs-up' : 'thumbs-down' }} util-icon" aria-hidden="true"></i>
             {{ row.esUtil ? 'Útil' : 'No útil' }}
         </span>
     </ng-template>

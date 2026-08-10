@@ -1,0 +1,11 @@
+@if (errors.length) {
+  <div class="form-error-banner" role="alert">
+    <i class="ph ph-warning-circle form-error-banner__icon" aria-hidden="true"></i>
+    <div class="form-error-banner__body">
+      <span class="form-error-banner__title">
+        Revisá {{ errors.length }} campo{{ errors.length === 1 ? '' : 's' }} para poder guardar
+      </span>
+      <span class="form-error-banner__detail">{{ errors.join(' · ') }}</span>
+    </div>
+  </div>
+}

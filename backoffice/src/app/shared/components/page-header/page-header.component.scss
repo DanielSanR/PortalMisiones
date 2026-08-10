@@ -1,47 +1,70 @@
+// ==========================================================================
+// PageHeaderComponent — título de página (rol "display")
+// 26px/600, line-height 1.25, tracking -0.3px + subtítulo 15px secondary.
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
 .page-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-left: var(--theme-space-lg) ;
-    margin-bottom: var(--theme-space-lg);
-    flex-wrap: wrap;
     gap: var(--theme-space-md);
+    margin-bottom: var(--theme-space-xl);
+    flex-wrap: wrap;
 
     &__left {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: var(--theme-space-sm);
+        min-width: 0;
+    }
+
+    &__back {
+        flex: none;
+        margin-top: 2px;
+
+        i {
+            font-size: 20px;
+        }
+    }
+
+    &__heading {
+        min-width: 0;
     }
 
     &__title {
-        font-size: var(--theme-font-size-2xl);
-        font-weight: var(--theme-font-weight-bold);
         margin: 0;
+        font-size: var(--theme-font-display-size);
+        font-weight: var(--theme-font-display-weight);
+        line-height: var(--theme-font-display-line-height);
+        letter-spacing: var(--theme-font-display-tracking);
         color: var(--theme-text-primary);
-        letter-spacing: -0.02em;
-        line-height: var(--theme-line-height-tight);
     }
 
     &__subtitle {
-        font-size: var(--theme-font-size-base);
-        color: var(--theme-text-secondary);
         margin: 4px 0 0;
-        font-weight: var(--theme-font-weight-normal);
+        font-size: var(--theme-font-subtitle-size);
+        font-weight: var(--theme-font-subtitle-weight);
+        line-height: var(--theme-font-subtitle-line-height);
+        color: var(--theme-text-secondary);
     }
 
     &__actions {
+        flex: none;
         display: flex;
         gap: var(--theme-space-sm);
         align-items: center;
+        flex-wrap: wrap;
     }
 
-    @media (max-width: 767px) {
+    @include responsive(mobile) {
         &__title {
             font-size: var(--theme-font-size-xl);
         }
 
         &__subtitle {
-            font-size: var(--theme-font-size-sm);
+            font-size: var(--theme-font-small-size);
         }
     }
 }

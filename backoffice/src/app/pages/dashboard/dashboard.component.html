@@ -101,7 +101,7 @@
           [data]="topTramites"
           [columns]="topTramitesColumns"
           emptyMessage="Sin datos"
-          emptyIcon="description">
+          emptyIcon="file-text">
           <ng-template appTableCell="consultas" let-row>
             <strong>{{ row.consultas | number }}</strong>
           </ng-template>
@@ -119,7 +119,7 @@
           [data]="topBusquedas"
           [columns]="topBusquedasColumns"
           emptyMessage="Sin datos"
-          emptyIcon="search">
+          emptyIcon="magnifying-glass">
           <ng-template appTableCell="cantidad" let-row>
             {{ row.cantidad | number }}
           </ng-template>

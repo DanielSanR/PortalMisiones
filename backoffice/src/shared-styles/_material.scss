@@ -3,29 +3,94 @@
 // ==========================================================================
 // Overrides globales para que Material se integre con el design system.
 // Todos los colores usan CSS variables para mantener coherencia con _themes.
+//
+// La paleta base (primary/accent escala azul, warn #D32F2F, tipografía
+// Oak Sans/Figtree, densidad 0 "cómoda") se define con mat.define-light-theme
+// en `src/styles.scss` (raíz), que es quien invoca `mat.core()` y
+// `mat.all-component-themes()`. Este archivo NO redefine esa paleta: solo
+// afina radios/sombras/estados por componente usando los tokens `--theme-*`,
+// que ya heredan los deltas de Fase 0 (bordes, tabla, focus, etc.) sin
+// necesidad de tocar cada regla.
+//
+// Fase 2a — retheme fiel al Kitchen Sink "Design System Misiones".
+// Se usan las CSS custom properties oficiales que expone MDC (`--mdc-*`,
+// `--mat-*`) para colores/formas siempre que existen; los ajustes puramente
+// estructurales (alto de input, radios de estado hover, etc.) se hacen sobre
+// las clases estructurales estables de Material (`.mdc-*`, `.mat-mdc-*`).
 // ==========================================================================
 
 // ---------------------------------------------------------------------------
-// Buttons
+// Buttons — matriz primary / secondary / ghost / danger
+// Altura 40px, radius 8, 14/600, pad 0 18 (ghost 0 14), icono 20 gap 8.
 // ---------------------------------------------------------------------------
 .mat-mdc-raised-button,
-.mat-mdc-flat-button,
-.mat-mdc-unelevated-button {
-  font-weight: var(--theme-font-weight-semibold) !important;
-  letter-spacing: 0.02em;
+.mat-mdc-unelevated-button,
+.mat-mdc-outlined-button,
+.mat-mdc-button {
+  height: 40px !important;
+  padding: 0 18px !important;
   border-radius: var(--theme-radius-md) !important;
-  transition: all var(--theme-transition-fast);
+  font-size: var(--theme-font-size-base) !important;
+  font-weight: var(--theme-font-weight-semibold) !important;
+  letter-spacing: normal !important;
+  transition: background-color var(--theme-transition-fast),
+              border-color var(--theme-transition-fast),
+              box-shadow var(--theme-transition-fast),
+              color var(--theme-transition-fast);
+  @include focus-ring;
 
+  .mat-icon {
+    margin-right: var(--theme-space-sm); // gap 8
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  // Iconos Phosphor proyectados por las páginas (botones "Nuevo X", limpiar filtros, etc.)
+  i.ph {
+    margin-right: var(--theme-space-sm); // gap 8
+    font-size: 20px;
+  }
+
+  &[disabled] {
+    cursor: not-allowed;
+  }
+}
+
+// Primary — raised/flat (relleno)
+.mat-mdc-raised-button,
+.mat-mdc-unelevated-button {
   &.mat-primary {
     --mdc-filled-button-container-color: var(--theme-primary);
     --mdc-filled-button-label-text-color: var(--theme-text-on-primary);
     --mdc-protected-button-container-color: var(--theme-primary);
     --mdc-protected-button-label-text-color: var(--theme-text-on-primary);
+    --mdc-filled-button-disabled-container-color: var(--theme-neutral-300);
+    --mdc-filled-button-disabled-label-text-color: var(--theme-text-tertiary);
+    box-shadow: none !important;
 
     &:hover:not([disabled]) {
-      --mdc-filled-button-container-color: var(--theme-primary-light);
-      --mdc-protected-button-container-color: var(--theme-primary-light);
-      box-shadow: var(--theme-shadow-md);
+      --mdc-filled-button-container-color: var(--theme-primary-dark);
+      --mdc-protected-button-container-color: var(--theme-primary-dark);
+    }
+
+    &:active:not([disabled]) {
+      --mdc-filled-button-container-color: var(--theme-primary-darker);
+      --mdc-protected-button-container-color: var(--theme-primary-darker);
+    }
+  }
+
+  // Danger (warn) — bg error / hover error-dark
+  &.mat-warn {
+    --mdc-filled-button-container-color: var(--theme-error);
+    --mdc-filled-button-label-text-color: #FFFFFF;
+    --mdc-protected-button-container-color: var(--theme-error);
+    --mdc-protected-button-label-text-color: #FFFFFF;
+    box-shadow: none !important;
+
+    &:hover:not([disabled]) {
+      --mdc-filled-button-container-color: var(--theme-warn-dark);
+      --mdc-protected-button-container-color: var(--theme-warn-dark);
     }
   }
 
@@ -35,71 +100,123 @@
     --mdc-protected-button-container-color: var(--theme-accent);
     --mdc-protected-button-label-text-color: var(--theme-accent-contrast);
   }
+}
 
-  &.mat-warn {
-    --mdc-filled-button-container-color: var(--theme-warn);
-    --mdc-filled-button-label-text-color: var(--theme-warn-contrast);
-    --mdc-protected-button-container-color: var(--theme-warn);
-    --mdc-protected-button-label-text-color: var(--theme-warn-contrast);
+// Secondary — stroked/outlined
+.mat-mdc-outlined-button {
+  font-weight: var(--theme-font-weight-semibold) !important;
+
+  &.mat-primary {
+    --mdc-outlined-button-label-text-color: var(--theme-primary-dark);
+    --mdc-outlined-button-outline-color: var(--theme-border-strong);
+    --mdc-outlined-button-outline-width: 1px;
+
+    &:hover:not([disabled]) {
+      --mdc-outlined-button-outline-color: var(--theme-primary);
+      background-color: var(--theme-btn-secondary-hover-bg);
+    }
   }
 
-  .mat-icon {
-    margin-right: 4px;
+  &.mat-warn {
+    --mdc-outlined-button-label-text-color: var(--theme-error);
+    --mdc-outlined-button-outline-color: var(--theme-error-border);
+
+    &:hover:not([disabled]) {
+      --mdc-outlined-button-outline-color: var(--theme-error);
+      background-color: var(--theme-error-bg);
+    }
+  }
+}
+
+// Ghost — mat-button "plano" (texto, sin relleno ni borde)
+.mat-mdc-button:not(.mat-mdc-outlined-button) {
+  padding: 0 14px !important; // pad 0 14
+
+  &.mat-primary {
+    --mdc-text-button-label-text-color: var(--theme-primary);
+
+    &:hover:not([disabled]) {
+      background-color: var(--theme-primary-50); // #E8F1FA
+    }
+  }
+
+  &.mat-warn {
+    --mdc-text-button-label-text-color: var(--theme-error);
+
+    &:hover:not([disabled]) {
+      background-color: var(--theme-error-bg);
+    }
+  }
+}
+
+// mat-menu-item de borrado (usado en menús de acciones de fila)
+.mat-mdc-menu-item.delete-action {
+  color: var(--theme-error-icon) !important;
+
+  .mat-icon,
+  i.ph {
+    color: var(--theme-error-icon) !important;
+  }
+
+  &:hover {
+    background-color: var(--theme-error-bg) !important;
+  }
+}
+
+// Icon-button de fila — 40×40, radius 8, hover sunken, variante danger
+.mat-mdc-icon-button {
+  width: 40px !important;
+  height: 40px !important;
+  padding: 8px !important;
+  border-radius: var(--theme-radius-md) !important;
+  color: var(--theme-text-secondary);
+  transition: background-color var(--theme-transition-fast), color var(--theme-transition-fast);
+  @include focus-ring;
+
+  // El state-layer/ripple nativo es circular por defecto: lo alineamos al radius 8.
+  .mat-mdc-button-persistent-ripple,
+  .mat-mdc-button-persistent-ripple::before,
+  .mat-ripple {
+    border-radius: inherit !important;
+  }
+
+  &:hover:not([disabled]) {
+    background-color: var(--theme-surface-sunken);
+    color: var(--theme-primary);
+  }
+
+  &[disabled] {
+    color: var(--theme-text-disabled);
+  }
+
+  &.danger-action,
+  &.delete-action {
+    &:hover:not([disabled]) {
+      background-color: var(--theme-error-bg);
+      color: var(--theme-error);
+    }
+  }
+
+  .mat-icon,
+  i.ph {
     font-size: 20px;
     width: 20px;
     height: 20px;
   }
 }
 
-//mat-menu-item
-
-.mat-mdc-menu-item.delete-action {
-   color: var(--theme-error) !important;
-
-   .mat-icon {
-     color: var(--theme-error) !important;
-  }
-}
-
-.mat-mdc-outlined-button {
-  border-radius: var(--theme-radius-md) !important;
-  font-weight: var(--theme-font-weight-medium) !important;
-  transition: all var(--theme-transition-fast);
-
-  &.mat-primary {
-    --mdc-outlined-button-label-text-color: var(--theme-primary);
-    --mdc-outlined-button-outline-color: var(--theme-primary-200);
-
-    &:hover:not([disabled]) {
-      background-color: var(--theme-primary-50);
-      --mdc-outlined-button-outline-color: var(--theme-primary);
-    }
-  }
-}
-
-.mat-mdc-button {
-  font-weight: var(--theme-font-weight-medium) !important;
-  border-radius: var(--theme-radius-md) !important;
-}
-
-.mat-mdc-icon-button {
-  transition: background-color var(--theme-transition-fast);
-
-  &:hover:not([disabled]) {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--theme-primary);
-    outline-offset: 2px;
-  }
-}
-
 .mat-mdc-fab,
 .mat-mdc-mini-fab {
+  border-radius: var(--theme-radius-md) !important;
+  @include focus-ring;
+
   &.mat-primary {
     --mdc-fab-container-color: var(--theme-primary);
     --mdc-fab-icon-color: var(--theme-text-on-primary);
+
+    &:hover:not([disabled]) {
+      --mdc-fab-container-color: var(--theme-primary-dark);
+    }
   }
 
   &.mat-accent {
@@ -109,39 +226,77 @@
 }
 
 // ---------------------------------------------------------------------------
-// Form Fields
+// Form Fields — input/textarea/select (appearance outline)
+// Borde --theme-border-strong, radius 8, alto ~42px, foco borde primary +
+// soft ring, label primary en foco, error --theme-error.
+//
+// RESUELTO en Fase 4 (formularios): el patrón FORM pide label SIEMPRE arriba,
+// overline estático (no floating). En vez de pelear contra el cálculo JS del
+// notch con `floatLabel="always"`, los templates NO usan `<mat-label>`: el
+// label vive afuera, como `<label class="form-field__label">` (BEM en
+// `_components.scss`, wrapper `.form-field`). Sin `<mat-label>` el notch del
+// outline queda en 0 (borde rectangular completo, igual al diseño) y el
+// `<label for>`/`aria-labelledby` externo mantiene la asociación accesible.
+// Ver `dynamic-form-field.component.html` y los formularios custom
+// (usuarios/roles/permisos) para el patrón de referencia.
 // ---------------------------------------------------------------------------
 .mat-mdc-form-field {
   width: 100%;
   font-size: var(--theme-font-size-base);
 
-  // Outline appearance overrides
   &.mat-form-field-appearance-outline {
+    --mdc-outlined-text-field-container-shape: var(--theme-radius-md);
+    --mdc-outlined-text-field-outline-color: var(--theme-border-strong);
+    --mdc-outlined-text-field-hover-outline-color: var(--theme-text-tertiary);
+    --mdc-outlined-text-field-focus-outline-color: var(--theme-primary);
+    --mdc-outlined-text-field-disabled-outline-color: var(--theme-border-primary);
+    --mdc-outlined-text-field-label-text-color: var(--theme-text-secondary);
+    --mdc-outlined-text-field-hover-label-text-color: var(--theme-text-secondary);
+    --mdc-outlined-text-field-focus-label-text-color: var(--theme-primary);
+    --mdc-outlined-text-field-input-text-color: var(--theme-text-primary);
+    --mdc-outlined-text-field-input-text-placeholder-color: var(--theme-text-tertiary);
+    --mdc-outlined-text-field-disabled-input-text-color: var(--theme-text-disabled);
+    --mdc-outlined-text-field-error-outline-color: var(--theme-error);
+    --mdc-outlined-text-field-error-focus-outline-color: var(--theme-error);
+    --mdc-outlined-text-field-error-label-text-color: var(--theme-error);
+    --mdc-outlined-text-field-error-hover-outline-color: var(--theme-error);
+    --mat-select-panel-background-color: var(--theme-surface-card);
 
-    .mdc-notched-outline__leading,
-    .mdc-notched-outline__notch,
-    .mdc-notched-outline__trailing {
-      border-color: var(--theme-border-input) !important;
+    // Alto ~42px del box del input (técnica documentada: infix es el
+    // contenedor real del control, no depende del cálculo del notch).
+    .mat-mdc-form-field-infix {
+      min-height: 42px;
+      padding-top: 10px;
+      padding-bottom: 10px;
     }
 
-    &:hover:not(.mat-focused):not(.mat-form-field-disabled) {
-
-      .mdc-notched-outline__leading,
-      .mdc-notched-outline__notch,
-      .mdc-notched-outline__trailing {
-        border-color: var(--theme-neutral-600) !important;
-      }
+    // Soft focus ring (firma del sistema) además del borde de foco.
+    &.mat-focused .mdc-notched-outline {
+      box-shadow: var(--theme-focus-ring-soft);
+      border-radius: var(--theme-radius-md);
     }
 
-   /*  &.mat-focused {
+    &.mat-form-field-invalid.mat-focused .mdc-notched-outline {
+      box-shadow: 0 0 0 3px var(--theme-focus-ring-danger-color);
+    }
 
-      .mdc-notched-outline__leading,
-      .mdc-notched-outline__notch,
-      .mdc-notched-outline__trailing {
-        border-color: var(--theme-primary) !important;
-        border-width: 2px !important;
-      }
-    } */
+    &.mat-form-field-disabled {
+      --mdc-outlined-text-field-outline-color: var(--theme-border-primary);
+      background-color: var(--theme-neutral-100);
+      border-radius: var(--theme-radius-md);
+    }
+  }
+
+  // Iconos de prefijo/sufijo — 18px según la spec de inputs.
+  .mat-mdc-form-field-icon-prefix,
+  .mat-mdc-form-field-icon-suffix {
+    .mat-icon,
+    i.ph {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--theme-text-tertiary);
+    }
   }
 
   .mat-mdc-form-field-hint {
@@ -149,8 +304,64 @@
     color: var(--theme-text-secondary);
   }
 
+  // Mensaje de error inline (patrón FORM): ícono `ph-warning-circle` + texto,
+  // pintado por `FormErrorMessageDirective` (ver dynamic-form-field).
   .mat-mdc-form-field-error {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     font-size: var(--theme-font-size-xs);
+    color: var(--theme-error-icon);
+    line-height: 1.4;
+
+    i.ph {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+  }
+
+  textarea.mat-mdc-input-element {
+    min-height: 72px; // ~92px de caja total con el padding del infix
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Select — trigger como input + panel con estados
+// ---------------------------------------------------------------------------
+.mat-mdc-select {
+  .mat-mdc-select-arrow {
+    color: var(--theme-text-secondary);
+  }
+
+  &.mat-mdc-select-invalid .mat-mdc-select-arrow {
+    color: var(--theme-error);
+  }
+}
+
+.mat-mdc-select-panel {
+  border-radius: var(--theme-radius-md) !important;
+  box-shadow: var(--theme-elevation-2) !important;
+  border: none !important;
+  padding: 6px !important;
+
+  .mat-mdc-option {
+    min-height: 40px;
+    border-radius: var(--theme-radius-sm);
+    font-size: var(--theme-font-size-base);
+
+    &:hover:not(.mdc-list-item--disabled) {
+      background-color: var(--theme-surface-sunken);
+    }
+
+    &.mdc-list-item--selected,
+    &.mat-mdc-option-active {
+      background-color: var(--theme-primary-50);
+
+      .mdc-list-item__primary-text {
+        color: var(--theme-primary-800);
+        font-weight: var(--theme-font-weight-semibold);
+      }
+    }
   }
 }
 
@@ -163,22 +374,22 @@
   border-spacing: 0;
 
   .mat-mdc-header-row {
-    background-color: var(--theme-bg-table-header);
-    height: 52px;
+    background-color: var(--theme-table-header-bg);
+    height: auto;
 
     .mat-mdc-header-cell {
-      font-weight: var(--theme-font-weight-semibold);
-      font-size: var(--theme-font-size-xs);
+      font-weight: var(--theme-font-overline-weight);
+      font-size: var(--theme-font-overline-size);
+      letter-spacing: var(--theme-font-overline-track);
       color: var(--theme-text-secondary);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 2px solid var(--theme-border-primary);
-      padding: 0 16px;
+      border-bottom: 1px solid var(--theme-border-primary);
+      padding: 14px 20px;
     }
   }
 
   .mat-mdc-row {
-    height: 56px;
+    height: var(--theme-table-row-height);
     transition: background-color var(--theme-transition-fast);
 
     &:hover {
@@ -190,30 +401,50 @@
     }
 
     .mat-mdc-cell {
-      font-size: var(--theme-font-size-base);
+      font-size: var(--theme-font-body-size);
       color: var(--theme-text-primary);
-      padding: 0 16px;
+      padding: 10px 20px;
       border-bottom-color: var(--theme-border-secondary);
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Paginator
+// Paginator (mat-paginator) — usado por SharedTable
+// Rango "1–5 de 68" 13/secondary; controles 40×40 radius 8, hover sunken.
 // ---------------------------------------------------------------------------
 .mat-mdc-paginator {
   border-top: 1px solid var(--theme-border-secondary);
   background-color: var(--theme-bg-card);
   font-size: var(--theme-font-size-sm);
   color: var(--theme-text-secondary);
+
+  .mat-mdc-paginator-range-label {
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+
+  .mat-mdc-icon-button {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: var(--theme-radius-md) !important;
+
+    &:hover:not([disabled]) {
+      background-color: var(--theme-surface-sunken);
+    }
+  }
+
+  .mat-mdc-select-value {
+    color: var(--theme-text-primary);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Cards
 // ---------------------------------------------------------------------------
 .mat-mdc-card {
-  border-radius: var(--theme-radius-lg) !important;
-  box-shadow: var(--theme-shadow-card) !important;
+  border-radius: var(--theme-radius-md) !important;
+  box-shadow: var(--theme-elevation-1) !important;
   border: 1px solid var(--theme-border-secondary);
   transition: box-shadow var(--theme-transition-normal);
 
@@ -267,18 +498,29 @@
 }
 
 // ---------------------------------------------------------------------------
-// Dialogs
+// Dialogs — radius 12, elevation-3 (que el ConfirmDialogComponent calce)
 // ---------------------------------------------------------------------------
 .custom-modal-panel {
   .mat-mdc-dialog-container {
-    border-radius: var(--theme-radius-xl) !important;
-    box-shadow: var(--theme-shadow-dialog);
+    border-radius: var(--theme-radius-lg) !important;
+    box-shadow: var(--theme-elevation-3);
     overflow: hidden;
 
     .mdc-dialog__surface {
-      border-radius: var(--theme-radius-xl) !important;
+      border-radius: var(--theme-radius-lg) !important;
     }
   }
+}
+
+.mat-mdc-dialog-title {
+  font-size: var(--theme-font-size-lg) !important;
+  font-weight: var(--theme-font-weight-semibold) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+.mat-mdc-dialog-content {
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-base);
 }
 
 .mat-mdc-dialog-actions {
@@ -298,22 +540,30 @@
 
 // ---------------------------------------------------------------------------
 // Snackbar
+// Base: radius 8 + sombra propia. Variantes explícitas (`snackbar-success`,
+// `snackbar-error`, `snackbar-warning`) para cuando el `panelClass` las
+// active; no reutilizan los tokens semánticos de texto/badges.
 // ---------------------------------------------------------------------------
 .mat-mdc-snack-bar-container {
-  border-radius: var(--theme-radius-md) !important;
-
   .mdc-snackbar__surface {
     border-radius: var(--theme-radius-md) !important;
+    box-shadow: var(--theme-shadow-snackbar) !important;
+  }
+
+  .mdc-snackbar__label {
+    font-size: var(--theme-font-size-sm);
   }
 
   &.snackbar-success {
-    --mdc-snackbar-container-color: var(--theme-success);
+    --mdc-snackbar-container-color: var(--theme-snackbar-success-bg);
     --mdc-snackbar-supporting-text-color: #FFFFFF;
+    --mat-snack-bar-button-color: var(--theme-snackbar-success-action);
   }
 
   &.snackbar-error {
-    --mdc-snackbar-container-color: var(--theme-error);
+    --mdc-snackbar-container-color: var(--theme-snackbar-error-bg);
     --mdc-snackbar-supporting-text-color: #FFFFFF;
+    --mat-snack-bar-button-color: var(--theme-snackbar-error-action);
   }
 
   &.snackbar-warning {
@@ -332,65 +582,132 @@
 }
 
 // ---------------------------------------------------------------------------
-// Menu
+// Menu — ~240px, pad 6, radius 8, elevation-2; ítems 40px radius 6.
 // ---------------------------------------------------------------------------
 .mat-mdc-menu-panel {
+  min-width: 200px !important;
   border-radius: var(--theme-radius-md) !important;
-  box-shadow: var(--theme-shadow-lg) !important;
+  box-shadow: var(--theme-elevation-2) !important;
   border: 1px solid var(--theme-border-secondary);
+
+  .mat-mdc-menu-content {
+    padding: 6px !important;
+  }
 
   .mat-mdc-menu-item {
     font-size: var(--theme-font-size-base);
-    min-height: 44px; // touch target minimum
+    min-height: 40px;
+    border-radius: var(--theme-radius-sm);
 
-    .mat-icon {
+    &:not(:last-child) {
+      margin-bottom: 2px;
+    }
+
+    .mat-icon,
+    i.ph {
       margin-right: 12px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
       color: var(--theme-text-secondary);
     }
 
-    &:hover .mat-icon {
+    &:hover:not([disabled]) {
+      background-color: var(--theme-surface-sunken);
+    }
+
+    &:hover .mat-icon,
+    &:hover i.ph {
       color: var(--theme-text-primary);
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Checkbox & Slide Toggle
+// Checkbox / Radio / Slide Toggle — color de marca primary
 // ---------------------------------------------------------------------------
 .mat-mdc-checkbox {
-  &.mat-primary {
+  @include focus-ring;
+
+  .mdc-checkbox__background {
+    border-radius: var(--theme-radius-xs) !important; // 4px
+  }
+
+  &:not(.mat-warn) {
     --mdc-checkbox-selected-checkmark-color: #FFFFFF;
     --mdc-checkbox-selected-focus-icon-color: var(--theme-primary);
-    --mdc-checkbox-selected-hover-icon-color: var(--theme-primary-light);
+    --mdc-checkbox-selected-hover-icon-color: var(--theme-primary-dark);
     --mdc-checkbox-selected-icon-color: var(--theme-primary);
-    --mdc-checkbox-selected-pressed-icon-color: var(--theme-primary);
+    --mdc-checkbox-selected-pressed-icon-color: var(--theme-primary-dark);
+    --mdc-checkbox-unselected-icon-color: var(--theme-border-strong);
+    --mdc-checkbox-unselected-hover-icon-color: var(--theme-text-tertiary);
+  }
+}
+
+.mat-mdc-radio-button {
+  @include focus-ring;
+
+  &:not(.mat-warn) {
+    --mdc-radio-selected-focus-icon-color: var(--theme-primary);
+    --mdc-radio-selected-hover-icon-color: var(--theme-primary-dark);
+    --mdc-radio-selected-icon-color: var(--theme-primary);
+    --mdc-radio-selected-pressed-icon-color: var(--theme-primary-dark);
+    --mdc-radio-unselected-icon-color: var(--theme-border-strong);
+    --mdc-radio-unselected-hover-icon-color: var(--theme-text-tertiary);
   }
 }
 
 .mat-mdc-slide-toggle {
-  &.mat-primary {
+  @include focus-ring;
+
+  // Tamaño 40×22 con thumb 16 (tokens estructurales oficiales del switch MDC)
+  --mdc-switch-track-height: 22px;
+  --mdc-switch-track-width: 40px;
+  --mdc-switch-track-shape: var(--theme-radius-full);
+  --mdc-switch-handle-height: 16px;
+  --mdc-switch-handle-width: 16px;
+  --mdc-switch-handle-shape: var(--theme-radius-full);
+  --mdc-switch-state-layer-size: 40px;
+  --mdc-switch-selected-icon-size: 0px;
+  --mdc-switch-unselected-icon-size: 0px;
+
+  &:not(.mat-warn) {
     --mdc-switch-selected-track-color: var(--theme-primary);
-    --mdc-switch-selected-handle-color: var(--theme-primary-dark);
-    --mdc-switch-selected-hover-track-color: var(--theme-primary-light);
+    --mdc-switch-selected-hover-track-color: var(--theme-primary);
     --mdc-switch-selected-focus-track-color: var(--theme-primary);
-    --mdc-switch-selected-pressed-track-color: var(--theme-primary);
+    --mdc-switch-selected-pressed-track-color: var(--theme-primary-dark);
+    --mdc-switch-selected-handle-color: #FFFFFF;
+    --mdc-switch-selected-hover-handle-color: #FFFFFF;
+    --mdc-switch-selected-focus-handle-color: #FFFFFF;
+    --mdc-switch-selected-pressed-handle-color: #FFFFFF;
+    --mdc-switch-unselected-track-color: var(--theme-neutral-400);
+    --mdc-switch-unselected-hover-track-color: var(--theme-neutral-400);
+    --mdc-switch-unselected-focus-track-color: var(--theme-neutral-400);
+    --mdc-switch-unselected-pressed-track-color: var(--theme-neutral-500);
+    --mdc-switch-unselected-handle-color: #FFFFFF;
+    --mdc-switch-unselected-hover-handle-color: #FFFFFF;
+    --mdc-switch-unselected-focus-handle-color: #FFFFFF;
+    --mdc-switch-unselected-pressed-handle-color: #FFFFFF;
+    --mdc-switch-disabled-selected-track-color: var(--theme-neutral-300);
+    --mdc-switch-disabled-unselected-track-color: var(--theme-neutral-300);
   }
 }
 
 // ---------------------------------------------------------------------------
-// Tooltip
+// Tooltip — bg text-primary, texto blanco, 12px, radius 4.
 // ---------------------------------------------------------------------------
 .mat-mdc-tooltip {
-  font-size: var(--theme-font-size-xs) !important;
-}
+  --mdc-plain-tooltip-container-color: var(--theme-text-primary);
+  --mdc-plain-tooltip-supporting-text-color: #FFFFFF;
+  --mdc-plain-tooltip-container-shape: var(--theme-radius-sm);
+  --mdc-plain-tooltip-supporting-text-size: var(--theme-font-size-xs);
 
-// ---------------------------------------------------------------------------
-// Select
-// ---------------------------------------------------------------------------
-.mat-mdc-select-panel {
-  border-radius: var(--theme-radius-md) !important;
-  box-shadow: var(--theme-shadow-lg) !important;
-  border: 1px solid var(--theme-border-secondary);
+  .mdc-tooltip__surface {
+    min-height: 26px;
+    padding: 0 10px !important;
+    display: flex;
+    align-items: center;
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -1,26 +1,34 @@
+@use '../../../../shared-styles/mixins' as *;
+
+.list-toolbar {
+  @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count;
+  }
+}
+
 // Columnas de la tabla (compartidas entre header y filas para que alineen).
 %cat-cols {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.7fr) 96px 132px;
+  grid-template-columns: minmax(0, 2.4fr) minmax(120px, 1fr) 96px 140px;
   align-items: center;
 }
 
 .cat-table {
-  background: var(--theme-bg-card);
-  border: 1px solid var(--theme-border-secondary);
-  border-radius: var(--theme-radius-lg);
-  box-shadow: var(--theme-shadow-card);
+  @include theme-card;
   overflow: hidden;
 
   // ── Header de columnas ──────────────────────────────────────
   &__head {
     @extend %cat-cols;
     padding: var(--theme-space-sm) var(--theme-space-md);
-    border-bottom: 1px solid var(--theme-border-secondary);
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-medium);
+    background-color: var(--theme-surface-sunken);
+    border-bottom: 1px solid var(--theme-border-primary);
+    font-size: var(--theme-font-overline-size);
+    font-weight: var(--theme-font-overline-weight);
+    letter-spacing: var(--theme-font-overline-track);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--theme-text-secondary);
   }
 
@@ -28,11 +36,11 @@
   &__row {
     @extend %cat-cols;
     padding: 0 var(--theme-space-md);
-    min-height: 48px;
-    border-bottom: 1px solid var(--theme-border-secondary);
-    transition: background 0.12s ease;
+    min-height: 52px;
+    border-bottom: 1px solid var(--theme-border-subtle);
+    transition: background var(--theme-transition-fast);
 
-    &:hover { background: var(--theme-bg-hover); }
+    &:hover { background: var(--theme-table-hover-bg); }
     &:last-child { border-bottom: none; }
   }
 
@@ -42,48 +50,59 @@
     min-width: 0;
     padding: var(--theme-space-xs) 0;
 
-    &--name { gap: var(--theme-space-xs); }
+    &--name { gap: 6px; }
     &--slug {
-      font-family: var(--theme-font-mono, monospace);
+      font-family: var(--theme-font-mono);
       font-size: var(--theme-font-size-sm);
-      color: var(--theme-text-secondary);
+      color: var(--theme-text-tertiary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    &--actions { justify-content: flex-end; gap: 4px; }
+    &--actions { justify-content: flex-end; gap: 2px; }
   }
 
   &__col-center { justify-content: center; text-align: center; }
   &__col-right { text-align: right; justify-content: flex-end; }
 
-  // Chevron de expandir/colapsar + placeholders de alineación
+  // Chevron de expandir/colapsar + marcador de hoja + spacer de alineación
   &__toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
     border: none;
     background: transparent;
-    border-radius: var(--theme-radius-sm, 6px);
+    border-radius: var(--theme-radius-sm);
     cursor: pointer;
     color: var(--theme-text-secondary);
-    transition: background 0.12s ease;
+    transition: background var(--theme-transition-fast);
 
-    &:hover { background: var(--theme-border-secondary); color: var(--theme-text-primary); }
-    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    i.ph { font-size: 16px; }
 
-    &--spacer { display: inline-block; width: 26px; flex-shrink: 0; }
+    &:hover { background: var(--theme-surface-sunken); color: var(--theme-primary); }
+
+    &--leaf {
+      cursor: default;
+      color: var(--theme-neutral-300);
+      &:hover { background: transparent; }
+    }
+
+    &--spacer { display: inline-block; width: 24px; flex-shrink: 0; }
   }
 
-  &__elbow {
-    width: 26px;
+  // Ícono de tipo de nodo: carpeta en la raíz, "elbow" en los hijos
+  &__type-icon {
     flex-shrink: 0;
-    font-size: 18px;
-    color: var(--theme-text-secondary);
-    opacity: 0.6;
+    font-size: 16px;
+    color: var(--theme-text-tertiary);
+
+    &--root {
+      font-size: 17px;
+      color: var(--theme-accent);
+    }
   }
 
   &__name {
@@ -92,6 +111,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    &--child { font-weight: var(--theme-font-weight-normal); }
   }
 
   &__badge {
@@ -102,46 +123,47 @@
     height: 22px;
     padding: 0 8px;
     border-radius: var(--theme-radius-full);
-    background: color-mix(in srgb, var(--theme-primary, #1b5e20) 12%, transparent);
-    color: var(--theme-primary, #1b5e20);
+    background: var(--theme-primary-50);
+    color: var(--theme-primary-700);
     font-size: var(--theme-font-size-xs);
     font-weight: var(--theme-font-weight-semibold);
+    font-variant-numeric: tabular-nums;
 
     &--zero {
       background: transparent;
-      color: var(--theme-text-secondary);
+      color: var(--theme-text-tertiary);
     }
   }
 
-  // ── Acciones: iconos planos (sin botón circular Material) ───
+  // ── Acciones: iconos planos (sin botón "Editar", solo íconos 30px) ──
   &__action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     flex-shrink: 0;
     border: none;
     background: transparent;
     border-radius: var(--theme-radius-md);
     cursor: pointer;
-    color: var(--theme-text-primary);
-    transition: background 0.12s ease, color 0.12s ease;
+    color: var(--theme-text-secondary);
+    transition: background var(--theme-transition-fast), color var(--theme-transition-fast);
+    @include focus-ring;
 
-    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    i.ph { font-size: 16px; }
 
-    &:hover { background: var(--theme-bg-hover); }
+    &:hover { background: var(--theme-primary-50); color: var(--theme-primary); }
 
     &--danger {
       color: var(--theme-error);
-      &:hover { background: color-mix(in srgb, var(--theme-error) 14%, transparent); }
+      &:hover { background: var(--theme-error-bg); color: var(--theme-error); }
     }
   }
 
   // ── Carga / vacío ───────────────────────────────────────────
   &__loading {
-    display: flex;
-    justify-content: center;
+    @include flex-center;
     padding: var(--theme-space-2xl);
   }
 
@@ -151,21 +173,36 @@
     align-items: center;
     text-align: center;
     gap: var(--theme-space-sm);
-    padding: var(--theme-space-2xl);
+    padding: var(--theme-space-3xl) var(--theme-space-lg);
 
     &-icon {
-      font-size: 56px;
-      width: 56px;
-      height: 56px;
-      color: var(--theme-primary, #1b5e20);
-      opacity: 0.6;
+      font-size: 48px;
+      color: var(--theme-primary-200);
+      margin-bottom: var(--theme-space-xs);
     }
     &-title { margin: 0; font-weight: var(--theme-font-weight-semibold); color: var(--theme-text-primary); }
     &-text { margin: 0 0 var(--theme-space-sm); color: var(--theme-text-secondary); font-size: var(--theme-font-size-sm); max-width: 42ch; }
   }
 
+  // Nota informativa al pie de la tabla-árbol (colapso por defecto).
+  // Divergencia: el diseño original agrega "arrastrá para reordenar"; se omite porque no hay
+  // endpoint de reordenamiento en el backend (ver resumen de la tarea).
+  &__note {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    padding: var(--theme-space-sm) var(--theme-space-md);
+    background: var(--theme-surface-sunken);
+    border-top: 1px solid var(--theme-border-primary);
+    color: var(--theme-text-secondary);
+    font-size: var(--theme-font-size-sm);
+
+    i.ph { flex-shrink: 0; font-size: 16px; color: var(--theme-text-tertiary); }
+  }
+
   // Responsive: en mobile ocultamos la columna slug para no romper el layout.
-  @media (max-width: 640px) {
+  @include responsive(mobile) {
     &__head,
     &__row { grid-template-columns: minmax(0, 1fr) 72px 116px; }
     &__cell--slug,

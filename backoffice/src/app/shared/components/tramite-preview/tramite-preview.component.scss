@@ -4,7 +4,9 @@
   align-items: center;
   gap: var(--theme-space-md);
   padding: 12px 20px;
-  background: var(--theme-bg-sidebar);
+  // Usa el navy institucional (no el sidebar, que ahora es claro) — mismo
+  // tono reservado para el hero del Login.
+  background: var(--theme-surface-inverse);
   color: white;
   border-radius: var(--theme-radius-lg) var(--theme-radius-lg) 0 0;
 }

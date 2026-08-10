@@ -15,9 +15,7 @@
         <mat-card-content>
             <div class="detail-row">
                 <span class="detail-label">Estado</span>
-                <span class="estado-badge" [attr.data-estado]="tramite.estado">
-                    {{ tramite.estado | estadoBadge }}
-                </span>
+                <app-estado-badge [estado]="tramite.estado"></app-estado-badge>
             </div>
             <mat-divider></mat-divider>
 

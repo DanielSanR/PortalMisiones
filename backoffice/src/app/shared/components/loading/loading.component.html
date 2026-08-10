@@ -1,4 +1,11 @@
-<div class="loading" *ngIf="loading">
-      <mat-spinner [diameter]="diameter"></mat-spinner>
-      <p *ngIf="message">{{ message }}</p>
+<div class="loading" *ngIf="loading && variant === 'spinner'">
+    <mat-spinner [diameter]="diameter"></mat-spinner>
+    <p *ngIf="message">{{ message }}</p>
+</div>
+
+<div class="loading-skeleton" *ngIf="loading && variant === 'skeleton'" aria-hidden="true" role="presentation">
+    <div class="loading-skeleton__row" *ngFor="let r of rowsArray">
+        <span class="loading-skeleton__bar loading-skeleton__bar--lg"></span>
+        <span class="loading-skeleton__bar loading-skeleton__bar--sm"></span>
     </div>
+</div>

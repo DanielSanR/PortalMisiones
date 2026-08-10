@@ -52,59 +52,59 @@ const routes: Routes = [
     path: '',
     component: AdminLayoutComponent,
     children: [
-      { path: 'home', component: DashboardComponent },
+      { path: 'home', component: DashboardComponent }, // Home sin trail: el breadcrumb queda solo "Inicio".
 
       // Trámites (backend aún bloqueado; gating provisional por los permisos que aplicarán)
-      { path: 'tramites/lista', component: TramitesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME } },
-      { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME } },
-      { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME } },
-      { path: 'tramites/detalle/:id', component: TramiteDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME } },
+      { path: 'tramites/lista', component: TramitesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites'] } },
+      { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Nuevo trámite'] } },
+      { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Editar trámite'] } },
+      { path: 'tramites/detalle/:id', component: TramiteDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Detalle'] } },
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
-      { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME } },
-      { path: 'organismos/nuevo', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM'] }, redirectTo: HOME } },
-      { path: 'organismos/editar/:id', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME } },
-      { path: 'tipos-organismo/lista', component: TiposOrganismoListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM_TYPE'] }, redirectTo: HOME } },
-      { path: 'tipos-organismo/nuevo', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM_TYPE'] }, redirectTo: HOME } },
-      { path: 'tipos-organismo/editar/:id', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME } },
+      { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos'] } },
+      { path: 'organismos/nuevo', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Nuevo organismo'] } },
+      { path: 'organismos/editar/:id', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Editar organismo'] } },
+      { path: 'tipos-organismo/lista', component: TiposOrganismoListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo'] } },
+      { path: 'tipos-organismo/nuevo', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Nuevo tipo'] } },
+      { path: 'tipos-organismo/editar/:id', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Editar tipo'] } },
 
       // Auditoría → sin backend real → escape por rol
-      { path: 'auditoria', component: AuditoriaListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER }, redirectTo: HOME } },
+      { path: 'auditoria', component: AuditoriaListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER }, redirectTo: HOME, breadcrumb: ['Auditoría'] } },
 
       // Taxonomía → escrituras por permiso del catálogo (reads públicos; lista visible si tiene alguna escritura)
-      { path: 'modalidades/lista', component: ModalidadesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] }, redirectTo: HOME } },
-      { path: 'modalidades/nuevo', component: ModalidadFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_MODALITY'] }, redirectTo: HOME } },
-      { path: 'modalidades/editar/:id', component: ModalidadFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_MODALITY'] }, redirectTo: HOME } },
+      { path: 'modalidades/lista', component: ModalidadesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades'] } },
+      { path: 'modalidades/nuevo', component: ModalidadFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades', 'Nueva modalidad'] } },
+      { path: 'modalidades/editar/:id', component: ModalidadFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades', 'Editar modalidad'] } },
       // Etiquetas: sin controller en backend (mock) → permiso genérico de taxonomía como aproximación.
-      { path: 'etiquetas/lista', component: EtiquetasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY', 'UPDATE_TAXONOMY', 'DELETE_TAXONOMY'] }, redirectTo: HOME } },
-      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY'] }, redirectTo: HOME } },
-      { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_TAXONOMY'] }, redirectTo: HOME } },
-      { path: 'categorias/lista', component: CategoriasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] }, redirectTo: HOME } },
-      { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME } },
-      { path: 'categorias/editar/:id', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_CATEGORY'] }, redirectTo: HOME } },
-      { path: 'destinatarios/lista', component: DestinatariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT', 'UPDATE_RECIPIENT', 'DELETE_RECIPIENT'] }, redirectTo: HOME } },
-      { path: 'destinatarios/nuevo', component: DestinatarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT'] }, redirectTo: HOME } },
-      { path: 'destinatarios/editar/:id', component: DestinatarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_RECIPIENT'] }, redirectTo: HOME } },
-      { path: 'eventos-de-vida/lista', component: EventosDeVidaListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] }, redirectTo: HOME } },
-      { path: 'eventos-de-vida/nuevo', component: EventoDeVidaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_LIFE_EVENT'] }, redirectTo: HOME } },
-      { path: 'eventos-de-vida/editar/:id', component: EventoDeVidaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_LIFE_EVENT'] }, redirectTo: HOME } },
+      { path: 'etiquetas/lista', component: EtiquetasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY', 'UPDATE_TAXONOMY', 'DELETE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas'] } },
+      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Nueva etiqueta'] } },
+      { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Editar etiqueta'] } },
+      { path: 'categorias/lista', component: CategoriasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías'] } },
+      { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Nueva categoría'] } },
+      { path: 'categorias/editar/:id', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Editar categoría'] } },
+      { path: 'destinatarios/lista', component: DestinatariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT', 'UPDATE_RECIPIENT', 'DELETE_RECIPIENT'] }, redirectTo: HOME, breadcrumb: ['Destinatarios'] } },
+      { path: 'destinatarios/nuevo', component: DestinatarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT'] }, redirectTo: HOME, breadcrumb: ['Destinatarios', 'Nuevo destinatario'] } },
+      { path: 'destinatarios/editar/:id', component: DestinatarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_RECIPIENT'] }, redirectTo: HOME, breadcrumb: ['Destinatarios', 'Editar destinatario'] } },
+      { path: 'eventos-de-vida/lista', component: EventosDeVidaListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] }, redirectTo: HOME, breadcrumb: ['Eventos de Vida'] } },
+      { path: 'eventos-de-vida/nuevo', component: EventoDeVidaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_LIFE_EVENT'] }, redirectTo: HOME, breadcrumb: ['Eventos de Vida', 'Nuevo evento'] } },
+      { path: 'eventos-de-vida/editar/:id', component: EventoDeVidaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_LIFE_EVENT'] }, redirectTo: HOME, breadcrumb: ['Eventos de Vida', 'Editar evento'] } },
 
       // Feedback Ciudadano → sin backend real → escape por rol
-      { path: 'feedback', component: FeedbackComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME } },
+      { path: 'feedback', component: FeedbackComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME, breadcrumb: ['Feedback Ciudadano'] } },
 
       // Usuarios: listar = lectura (READ_USER: SA/AB/AO); crear/editar = SUPERADMIN por policy override
       // (el form carga /api/organism → READ_ORGANISM, solo SUPERADMIN en el seed).
-      { path: 'usuarios/lista', component: UsuariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_USER'] }, redirectTo: HOME } },
-      { path: 'usuarios/nuevo', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME } },
-      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_USER'] }, redirectTo: HOME } },
+      { path: 'usuarios/lista', component: UsuariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios'] } },
+      { path: 'usuarios/nuevo', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Nuevo usuario'] } },
+      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Editar usuario'] } },
 
       // Roles y Permisos → backend autoriza por ROL (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5)
-      { path: 'roles/lista', component: RolesListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
-      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
-      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
-      { path: 'permisos/lista', component: PermisosListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
-      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
-      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME } },
+      { path: 'roles/lista', component: RolesListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles'] } },
+      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
+      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
+      { path: 'permisos/lista', component: PermisosListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos'] } },
+      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Nuevo permiso'] } },
+      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Editar permiso'] } },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       // Cualquier /dashboard/* sin match (rutas "bare" tipo /organismos, typos, secciones aún sin

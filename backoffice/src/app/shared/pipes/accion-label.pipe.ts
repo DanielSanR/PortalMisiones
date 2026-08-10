@@ -10,13 +10,14 @@ const ACCION_LABELS: Record<AuditoriaAccion, string> = {
   eliminar: 'Eliminación',
 };
 
+// Nombres de íconos Phosphor (sin prefijo "ph-"; ver mapeo en el pipe).
 const ACCION_ICONS: Record<AuditoriaAccion, string> = {
-  crear: 'add_circle',
-  editar: 'edit',
-  publicar: 'publish',
-  despublicar: 'unpublished',
-  enviar_revision: 'rate_review',
-  eliminar: 'delete',
+  crear: 'plus-circle',
+  editar: 'pencil-simple',
+  publicar: 'cloud-arrow-up',
+  despublicar: 'eye-slash',
+  enviar_revision: 'paper-plane-tilt',
+  eliminar: 'trash',
 };
 
 const ACCION_COLORS: Record<AuditoriaAccion, string> = {

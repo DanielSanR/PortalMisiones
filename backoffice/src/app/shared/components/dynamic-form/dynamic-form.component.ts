@@ -6,6 +6,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-field.component';
+import { FormErrorBannerComponent } from '../form-error-banner/form-error-banner.component';
+import { getControlErrorMessage } from '../dynamic-form-field/form-error-messages.util';
+
+/** Tipos de campo sin control reactivo propio ni label overline externo. */
+const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'icon-picker', 'checkbox'];
 
 @Component({
   selector: 'app-dynamic-form',
@@ -17,6 +22,7 @@ import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-fi
     MatIconModule,
     MatProgressSpinnerModule,
     DynamicFormFieldComponent,
+    FormErrorBannerComponent,
   ],
   templateUrl: './dynamic-form.component.html',
   styleUrls: ['./dynamic-form.component.scss'],
@@ -29,11 +35,14 @@ export class DynamicFormComponent implements OnInit {
   @Input() initialData?: any;
   @Input() hideButtons = false;
   @Input() saving = false;
+  @Input() helpText = 'Los cambios se publican al guardar.';
 
   @Output() formSubmit = new EventEmitter<any>();
   @Output() formCancel = new EventEmitter<void>();
 
   form!: FormGroup;
+  /** true luego del primer intento de envío inválido: habilita el banner resumen. */
+  submitted = false;
 
   constructor(private fb: FormBuilder) {}
 
@@ -89,6 +98,25 @@ export class DynamicFormComponent implements OnInit {
     return validators;
   }
 
+  /** El campo lleva label overline externo (todos salvo tip/section-header/icon-picker/checkbox). */
+  showExternalLabel(field: FieldConfig): boolean {
+    return !NO_EXTERNAL_LABEL_TYPES.includes(field.type);
+  }
+
+  /** Mensajes "Label (motivo)" de los campos inválidos y tocados — banner resumen. */
+  invalidFieldMessages(): string[] {
+    if (!this.form) return [];
+    return this.fields
+      .filter((field) => this.showExternalLabel(field) && this.form.contains(field.name))
+      .map((field) => {
+        const control = this.form.get(field.name);
+        if (!control || control.valid || !control.touched) return null;
+        const message = getControlErrorMessage(control, field);
+        return message ? `${field.label} (${message})` : null;
+      })
+      .filter((msg): msg is string => !!msg);
+  }
+
   getFieldCssClass(field: FieldConfig): string {
     if (field.cssClass) {
       switch (field.cssClass) {
@@ -110,9 +138,11 @@ export class DynamicFormComponent implements OnInit {
 
   submit() {
     if (this.form.valid) {
+      this.submitted = false;
       this.formSubmit.emit(this.form.getRawValue());
     } else {
       this.form.markAllAsTouched();
+      this.submitted = true;
     }
   }
 }

@@ -10,8 +10,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
+import { FormErrorBannerComponent } from '../../../shared/components/form-error-banner/form-error-banner.component';
 import { UsuariosFacade, UsuarioFormValue } from '@features/usuarios';
 import { OrganismoOption } from '@features/organismos';
 import { AuthTokenService } from '@core/services/auth-token.service';
@@ -30,8 +30,8 @@ import { UserRole, ROLE_TO_SPANISH } from '@core/enums/user-role.enum';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     LoadingComponent,
+    FormErrorBannerComponent,
   ],
   templateUrl: './usuario-form.component.html',
   styleUrls: ['./usuario-form.component.scss'],
@@ -46,6 +46,8 @@ export class UsuarioFormComponent implements OnInit {
   loading = true;
   hidePassword = true;
   errorMessage = '';
+  /** true tras un intento de envío inválido: habilita el banner resumen. */
+  submitted = false;
   organismos: OrganismoOption[] = [];
 
   readonly isSuperAdmin: boolean;
@@ -158,9 +160,12 @@ export class UsuarioFormComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.submitted = true;
+      this.cdr.markForCheck();
       return;
     }
 
+    this.submitted = false;
     this.saving = true;
     this.errorMessage = '';
     const raw = this.form.getRawValue();
@@ -214,5 +219,35 @@ export class UsuarioFormComponent implements OnInit {
 
   get organismoError(): boolean {
     return !!(this.form.hasError('organismoRequerido') && this.form.get('organismoId')?.touched);
+  }
+
+  /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
+  get errorSummary(): string[] {
+    if (!this.submitted) return [];
+    const fields: { name: string; label: string }[] = [
+      { name: 'nombre', label: 'Nombre' },
+      { name: 'apellido', label: 'Apellido' },
+      { name: 'email', label: 'Email' },
+      ...(this.isEdit ? [] : [{ name: 'password', label: 'Contraseña' }]),
+      { name: 'rol', label: 'Rol' },
+    ];
+    const messages = fields
+      .map(({ name, label }) => {
+        const ctrl = this.form.get(name);
+        if (!ctrl || ctrl.valid) return null;
+        return `${label} (${this.errorReason(ctrl)})`;
+      })
+      .filter((m): m is string => !!m);
+
+    if (this.organismoError) messages.push('Organismo (obligatorio para este rol)');
+    return messages;
+  }
+
+  private errorReason(ctrl: AbstractControl): string {
+    if (ctrl.hasError('required')) return 'obligatorio';
+    if (ctrl.hasError('email')) return 'formato inválido';
+    if (ctrl.hasError('minlength')) return `mínimo ${ctrl.errors?.['minlength']?.requiredLength} caracteres`;
+    if (ctrl.hasError('maxlength')) return `máximo ${ctrl.errors?.['maxlength']?.requiredLength} caracteres`;
+    return 'inválido';
   }
 }

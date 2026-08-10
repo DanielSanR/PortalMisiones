@@ -1,17 +1,18 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { filter, switchMap } from 'rxjs/operators';
+import { filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
+import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
+import { todasOnlyTabs } from '@core/utils/list-filter.utils';
 import { DestinatariosFacade, DestinatarioVM } from '@features/destinatarios';
 
 @Component({
@@ -21,13 +22,13 @@ import { DestinatariosFacade, DestinatarioVM } from '@features/destinatarios';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatIconModule,
     MatMenuModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    FilterTabsComponent,
     HasPermissionDirective,
+    PageActionsDirective,
   ],
   templateUrl: './destinatarios-list.component.html',
   styleUrls: ['./destinatarios-list.component.scss'],
@@ -36,6 +37,9 @@ export class DestinatariosListComponent implements OnInit {
   private readonly facade = inject(DestinatariosFacade);
   readonly destinatarios$ = this.facade.destinatarios$;
   loading = true;
+
+  /** Sin campo real para filtrar (ver divergencias de la tarea): solo chip "Todas" + contador. */
+  readonly filterTabs$ = this.destinatarios$.pipe(map((destinatarios) => todasOnlyTabs(destinatarios.length)));
 
   columns: TableColumn<DestinatarioVM>[] = [
     { key: 'nombre',   label: 'Nombre' },

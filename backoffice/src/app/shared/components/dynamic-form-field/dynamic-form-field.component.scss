@@ -11,56 +11,44 @@ mat-form-field {
 }
 
 // ==========================================================================
-// Section Header
+// Section Header — barra de acento + título (patrón FORM, screens-spec.md §7)
 // ==========================================================================
 .section-header-field {
+  position: relative;
   width: 100%;
-  padding-top: var(--theme-space-lg);
+  padding: var(--theme-space-lg) 0 var(--theme-space-sm) 13px;
 
+  @include accent-bar();
+
+  // Mismo fix que `.section-header` global (`shared-styles/_components.scss`): no reducir el
+  // padding-top del primer header (rompería la altura de caja que usa `accent-bar` para
+  // centrar la barra); compensar el espacio con `margin-top` negativo en su lugar.
   &:first-child {
-    padding-top: 0;
+    margin-top: calc(-1 * var(--theme-space-lg));
+  }
+
+  &:not(:first-child) {
+    margin-top: var(--theme-space-sm);
+    border-top: 1px solid var(--theme-border-primary);
   }
 
   .section-header-title {
-    font-size: var(--theme-font-size-md);
+    font-size: 15px;
     font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-primary);
+    color: var(--theme-text-primary);
     margin: 0;
-    padding-bottom: var(--theme-space-sm);
-    border-bottom: 2px solid var(--theme-primary-100);
     letter-spacing: -0.01em;
   }
 
   .section-header-description {
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
-    margin: var(--theme-space-xs) 0 0;
+    font-size: 12.5px;
+    color: var(--theme-text-tertiary);
+    margin: 2px 0 0;
   }
 }
 
-// ==========================================================================
-// Checkbox / Toggle — Card-like container
-// ==========================================================================
-.checkbox-field,
-.slide-toggle-field {
-  padding: var(--theme-space-md);
-  background-color: var(--theme-neutral-50);
-  border: 1px solid var(--theme-border-secondary);
-  border-radius: var(--theme-radius-md);
-  transition: border-color var(--theme-transition-fast),
-              background-color var(--theme-transition-fast);
-
-  &:hover {
-    border-color: var(--theme-border-primary);
-  }
-}
-
-// Active state when checked
-:host:has(.mat-mdc-checkbox-checked) .checkbox-field,
-:host:has(.mdc-switch--selected) .slide-toggle-field {
-  border-color: var(--theme-primary-200);
-  background-color: var(--theme-primary-50);
-}
+// `.slide-toggle-field` (booleanos) vive en shared-styles/_components.scss
+// (DRY: la usan también los formularios custom de usuarios/roles).
 
 // ==========================================================================
 // Radio
@@ -144,15 +132,14 @@ mat-form-field {
 }
 
 .icon-picker-label {
-  display: block;
-  font-size: var(--theme-font-size-sm);
-  font-weight: var(--theme-font-weight-medium);
-  color: var(--theme-text-primary);
+  @include field-label-overline;
   margin-bottom: var(--theme-space-xs);
 }
 
 .icon-picker-optional {
+  text-transform: none;
   font-weight: var(--theme-font-weight-normal);
+  letter-spacing: normal;
   color: var(--theme-text-tertiary);
 }
 
@@ -299,12 +286,3 @@ mat-form-field {
   }
 }
 
-// ==========================================================================
-// Reduced motion
-// ==========================================================================
-@media (prefers-reduced-motion: reduce) {
-  .checkbox-field,
-  .slide-toggle-field {
-    transition: none;
-  }
-}

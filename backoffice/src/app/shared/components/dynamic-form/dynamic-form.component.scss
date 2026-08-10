@@ -39,19 +39,6 @@
   }
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--theme-space-sm);
-  margin-top: var(--theme-space-xl);
-  padding-top: var(--theme-space-md);
-  border-top: 1px solid var(--theme-border-secondary);
-
-  @media (max-width: 767px) {
-    flex-direction: column-reverse;
-
-    button {
-      width: 100%;
-    }
-  }
-}
+// `.form-actions` (footer sticky) y `.form-field` (label overline) viven en
+// shared-styles/_components.scss (DRY, aplican también a los formularios
+// custom de usuarios/roles/permisos).

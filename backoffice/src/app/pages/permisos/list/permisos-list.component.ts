@@ -1,17 +1,17 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { filter, switchMap } from 'rxjs/operators';
+import { filter, firstValueFrom, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
+import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
+import { todasOnlyTabs } from '@core/utils/list-filter.utils';
 import { PermisosFacade, PermisoVM } from '@features/permisos';
 
 @Component({
@@ -21,12 +21,12 @@ import { PermisosFacade, PermisoVM } from '@features/permisos';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatIconModule,
     MatMenuModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    FilterTabsComponent,
+    PageActionsDirective,
   ],
   templateUrl: './permisos-list.component.html',
   styleUrl: './permisos-list.component.scss',
@@ -37,6 +37,9 @@ export class PermisosListComponent implements OnInit {
 
   readonly permisos$ = this.facade.permisos$;
   loading = true;
+
+  /** Sin campo real para filtrar (ver divergencias de la tarea): solo chip "Todas" + contador. */
+  readonly filterTabs$ = this.permisos$.pipe(map((permisos) => todasOnlyTabs(permisos.length)));
 
   columns: TableColumn<PermisoVM>[] = [
     { key: 'codigo',      label: 'Código',      width: '30%' },

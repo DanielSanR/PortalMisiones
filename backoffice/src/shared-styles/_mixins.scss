@@ -157,16 +157,41 @@ $breakpoint-2xl: 1440px;
 }
 
 // ---------------------------------------------------------------------------
-// Focus Ring — accessible focus indicator
+// Focus Ring — accessible focus indicator (firma del design system)
+// Uso: `@include focus-ring;` directamente sobre el selector interactivo
+// (genera su propio `&:focus-visible`, no anidar dentro de otro `:focus-visible`).
+// Prohibido usar `outline: none` suelto sin este mixin.
 // ---------------------------------------------------------------------------
-@mixin focus-ring($color: var(--theme-primary), $offset: 2px) {
-  outline: 2px solid $color;
-  outline-offset: $offset;
+@mixin focus-ring {
+  &:focus-visible {
+    outline: var(--theme-focus-ring-width) solid var(--theme-focus-ring-color);
+    outline-offset: var(--theme-focus-ring-offset);
+    @content;
+  }
 }
 
 @mixin focus-ring-inset($color: var(--theme-primary)) {
   outline: 2px solid $color;
   outline-offset: -2px;
+}
+
+// ---------------------------------------------------------------------------
+// Accent Bar — barra de 3px que señala estado activo/seleccionado
+// (nav activo, section-header). El contenedor debe ser `position: relative`
+// (el mixin lo aplica) y tener espacio a la izquierda para la barra.
+// ---------------------------------------------------------------------------
+@mixin accent-bar($color: var(--theme-accent-bar-color-on-light)) {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 8px;
+    inset-inline-start: 0;
+    width: var(--theme-accent-bar-width);
+    background-color: $color;
+    border-radius: 0 3px 3px 0;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -182,16 +207,21 @@ $breakpoint-2xl: 1440px;
 }
 
 // ---------------------------------------------------------------------------
-// Form card
+// Form card — panel FORM (patrón "Editar organismo"): borde frío, radio 10,
+// sin sombra ni padding propio (las secciones/el footer sticky lo manejan).
 // ---------------------------------------------------------------------------
 @mixin form-card($max-width: var(--theme-form-max-width)) {
-  @include theme-card;
-  padding: var(--theme-space-xl);
+  background-color: var(--theme-surface-card);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  overflow: hidden;
   max-width: $max-width;
+  width: 100%;
   place-self: center;
+  padding: var(--theme-space-lg) var(--theme-space-lg) 0;
 
   @include responsive(mobile) {
-    padding: var(--theme-space-md);
+    padding: var(--theme-space-md) var(--theme-space-md) 0;
   }
 }
 
@@ -201,23 +231,56 @@ $breakpoint-2xl: 1440px;
 @mixin section-title {
   @include text-heading;
   font-size: var(--theme-font-size-md);
-  color: var(--theme-primary);  
+  color: var(--theme-primary);
   margin-top: 0;
 }
 
 // ---------------------------------------------------------------------------
-// Form actions bar
+// Form field — label overline externo (Fase 4, patrón FORM): arriba del
+// control, NO floating. Uso: envolver cada control en `.form-field` con un
+// `<label class="form-field__label">` (ver `_components.scss`).
+// ---------------------------------------------------------------------------
+@mixin field-label-overline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--theme-font-overline-size);
+  font-weight: var(--theme-font-overline-weight);
+  letter-spacing: var(--theme-font-overline-track);
+  text-transform: uppercase;
+  color: var(--theme-text-secondary);
+  line-height: 1.3;
+}
+
+// ---------------------------------------------------------------------------
+// Form actions bar — footer sticky al pie del `.form-card` (bleed horizontal
+// vía margin negativo para compensar el padding del card).
 // ---------------------------------------------------------------------------
 @mixin form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--theme-z-sticky);
   display: flex;
-  justify-content: flex-end;
-  gap: var(--theme-space-sm);
-  margin-top: var(--theme-space-xl);
-  padding-top: var(--theme-space-md);
-  border-top: 1px solid var(--theme-border-secondary);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--theme-space-md);
+  margin: var(--theme-space-lg) calc(-1 * var(--theme-space-lg)) 0;
+  padding: 13px var(--theme-space-lg);
+  background-color: var(--theme-surface-card);
+  border-top: 1px solid var(--theme-border-primary);
 
   @include responsive(mobile) {
+    margin: var(--theme-space-md) calc(-1 * var(--theme-space-md)) 0;
     flex-direction: column-reverse;
+    align-items: stretch;
+
+    .form-actions__help {
+      display: none;
+    }
+
+    .form-actions__buttons {
+      flex-direction: column-reverse;
+    }
 
     button {
       width: 100%;
@@ -240,6 +303,33 @@ $breakpoint-2xl: 1440px;
   @include responsive(mobile) {
     flex-direction: column;
     padding: var(--theme-space-md);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// List toolbar — fila de filter-tabs + contador sobre listados
+// Ver screens-spec.md §3.3/§5 "LISTA": chips-filtro (`app-filter-tabs`) a la
+// izquierda, contador tabular `#9AA0A6` a la derecha. Si la pantalla no
+// registra `app-filter-tabs` (raro: todas las listas la usan hoy), el
+// contador queda solo, empujado a la derecha por `justify-content`.
+// ---------------------------------------------------------------------------
+@mixin list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--theme-space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--theme-space-sm);
+}
+
+@mixin list-toolbar-count($push-right: false) {
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  @if $push-right {
+    margin-left: auto;
   }
 }
 

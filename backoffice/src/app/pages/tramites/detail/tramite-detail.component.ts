@@ -11,7 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
-import { EstadoBadgePipe } from '../../../shared/pipes/estado-badge.pipe';
+import { EstadoBadgeComponent } from '../../../shared/components/estado-badge/estado-badge.component';
 import { TramitePreviewComponent } from '../../../shared/components/tramite-preview/tramite-preview.component';
 import { TramiteService } from '../../../core/services/tramite.service';
 import { FeedbackService } from '../../../core/services/feedback.service';
@@ -34,7 +34,7 @@ const FEEDBACK_PREVIEW_LIMIT = 5;
     MatTooltipModule,
     PageHeaderComponent,
     LoadingComponent,
-    EstadoBadgePipe,
+    EstadoBadgeComponent,
   ],
   templateUrl: './tramite-detail.component.html',
   styleUrls: ['./tramite-detail.component.scss'],

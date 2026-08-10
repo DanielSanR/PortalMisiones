@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { FormConfig } from '../../../core/models/field.interface';
@@ -15,7 +14,6 @@ import { CategoriasFacade, CategoriaFormValue } from '@features/categorias';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSnackBarModule,
-    PageHeaderComponent,
     DynamicFormComponent,
   ],
   templateUrl: './categoria-form.component.html',

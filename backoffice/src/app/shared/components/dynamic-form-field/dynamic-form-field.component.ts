@@ -6,7 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -26,7 +26,7 @@ import { ICON_CATALOG, IconCategory } from './icon-catalog';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatCheckboxModule,
+    MatSlideToggleModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatButtonModule,
@@ -50,11 +50,6 @@ export class DynamicFormFieldComponent implements OnInit {
 
   @Input() field!: FieldConfig;
   @Input() group!: FormGroup;
-
-  get isOptional(): boolean {
-    return !this.field?.validations?.required &&
-           !['checkbox', 'tip', 'section-header', 'icon-picker'].includes(this.field?.type);
-  }
 
   ngOnInit() {
     if (!this.field || !this.group) {

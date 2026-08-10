@@ -1,17 +1,18 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { filter, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
+import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
+import { ActivoFiltro, activoFilterTabs, filterByActivo } from '@core/utils/list-filter.utils';
 import { TiposOrganismoFacade, TipoOrganismoVM } from '@features/tipos-organismo';
 
 @Component({
@@ -21,13 +22,13 @@ import { TiposOrganismoFacade, TipoOrganismoVM } from '@features/tipos-organismo
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatIconModule,
     MatMenuModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    FilterTabsComponent,
     HasPermissionDirective,
+    PageActionsDirective,
   ],
   templateUrl: './tipos-organismo-list.component.html',
   styleUrls: ['./tipos-organismo-list.component.scss'],
@@ -36,6 +37,13 @@ export class TiposOrganismoListComponent implements OnInit {
   private readonly facade = inject(TiposOrganismoFacade);
   readonly tipos$ = this.facade.tipos$;
   loading = true;
+
+  /** Filtro "Todos/Activos/Inactivos" (campo real `activo`), client-side sobre el stream ya cargado. */
+  readonly filtro$ = new BehaviorSubject<ActivoFiltro>('todos');
+  readonly filterTabs$ = this.tipos$.pipe(map((tipos) => activoFilterTabs(tipos)));
+  readonly tiposFiltrados$ = combineLatest([this.tipos$, this.filtro$]).pipe(
+    map(([tipos, filtro]) => filterByActivo(tipos, filtro)),
+  );
 
   columns: TableColumn<TipoOrganismoVM>[] = [
     { key: 'nombre',      label: 'Nombre' },

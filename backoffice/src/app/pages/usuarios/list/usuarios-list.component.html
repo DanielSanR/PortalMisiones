@@ -1,11 +1,16 @@
-<app-page-header title="Usuarios" subtitle="Gestion de usuarios del backoffice">
+<ng-template appPageActions>
     <button *appHasPermission="'CREATE_USER'" mat-raised-button color="primary" (click)="onCreate()">
-        <mat-icon>person_add</mat-icon> Nuevo usuario
+        <i class="ph ph-user-plus" aria-hidden="true"></i> Nuevo usuario
     </button>
-</app-page-header>
+</ng-template>
+
+<div class="list-toolbar">
+    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    <span class="list-toolbar-count">{{ (usuariosFiltrados$ | async)?.length || 0 }} usuarios</span>
+</div>
 
 <app-shared-table
-    [data]="(usuarios$ | async) ?? []"
+    [data]="(usuariosFiltrados$ | async) ?? []"
     [columns]="columns"
     [loading]="loading"
     emptyMessage="No se encontraron usuarios">
@@ -38,7 +43,7 @@
     <!-- Columna: Acciones -->
     <ng-template appTableCell="acciones" let-row>
         <button *appHasPermission="'UPDATE_USER'" mat-icon-button (click)="onEdit(row)" aria-label="Editar usuario">
-            <mat-icon>edit</mat-icon>
+            <i class="ph ph-pencil-simple" aria-hidden="true"></i>
         </button>
     </ng-template>
 

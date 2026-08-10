@@ -1,0 +1,74 @@
+// ==========================================================================
+// EstadoBadgeComponent — pill de estado de tramite
+// 24px, 12/600, dot 6px del color de estado + borde 1px.
+// ==========================================================================
+
+:host {
+    display: inline-flex;
+    max-width: 100%;
+}
+
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: var(--theme-radius-full);
+    font-size: var(--theme-font-size-xs);
+    font-weight: var(--theme-font-weight-semibold);
+    white-space: nowrap;
+    line-height: 1;
+
+    &__dot {
+        flex: none;
+        width: 6px;
+        height: 6px;
+        border-radius: var(--theme-radius-full);
+    }
+
+    &__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &[data-estado="borrador"] {
+        background: var(--theme-estado-borrador-bg);
+        color: var(--theme-estado-borrador-text);
+        border: 1px solid var(--theme-estado-borrador-border);
+
+        .estado-badge__dot {
+            background: var(--theme-estado-borrador-icon);
+        }
+    }
+
+    &[data-estado="revision"] {
+        background: var(--theme-estado-revision-bg);
+        color: var(--theme-estado-revision-text);
+        border: 1px solid var(--theme-estado-revision-border);
+
+        .estado-badge__dot {
+            background: var(--theme-estado-revision-icon);
+        }
+    }
+
+    &[data-estado="publicado"] {
+        background: var(--theme-estado-publicado-bg);
+        color: var(--theme-estado-publicado-text);
+        border: 1px solid var(--theme-estado-publicado-border);
+
+        .estado-badge__dot {
+            background: var(--theme-estado-publicado-icon);
+        }
+    }
+
+    &[data-estado="despublicado"] {
+        background: var(--theme-estado-despublicado-bg);
+        color: var(--theme-estado-despublicado-text);
+        border: 1px solid var(--theme-estado-despublicado-border);
+
+        .estado-badge__dot {
+            background: var(--theme-estado-despublicado-icon);
+        }
+    }
+}

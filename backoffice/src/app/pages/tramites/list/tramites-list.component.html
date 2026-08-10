@@ -1,15 +1,19 @@
-<app-page-header title="Trámites" subtitle="Gestión de trámites del portal">
+<ng-template appPageActions>
     <button mat-raised-button color="primary" (click)="onCreate()">
-        <mat-icon>add</mat-icon> Nuevo trámite
+        <i class="ph ph-plus" aria-hidden="true"></i> Nuevo trámite
     </button>
-</app-page-header>
+</ng-template>
+
+<div class="list-toolbar">
+    <app-filter-tabs [tabs]="estadoTabs" [active]="estadoTabsActivo" (activeChange)="filtrarEstado($event)"></app-filter-tabs>
+</div>
 
 <!-- Filters -->
 <div class="Filtros" [formGroup]="filterForm">
     <mat-form-field appearance="outline" class="Filtros-field">
         <mat-label>Buscar</mat-label>
         <input matInput formControlName="search" placeholder="Titulo o descripcion..." />
-        <mat-icon matSuffix>search</mat-icon>
+        <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
     </mat-form-field>
 
     @if (isSuperAdmin) {
@@ -44,6 +48,8 @@
             }
         </mat-select>
     </mat-form-field>
+
+    <span class="Filtros-count">{{ totalItems }} trámites</span>
 </div>
 
 <!-- Table -->
@@ -71,7 +77,7 @@
                 <div>
                     <strong>{{ row.titulo }}</strong>
                     @if (row.destacado) {
-                      <mat-icon class="star-icon" matTooltip="Destacado">star</mat-icon>
+                      <i class="ph ph-star star-icon" matTooltip="Destacado" aria-hidden="true"></i>
                     }
                 </div>
                 <small class="text-secondary">{{ row.organismo?.nombre }}</small>
@@ -80,9 +86,7 @@
     </ng-template>
 
     <ng-template appTableCell="estado" let-row>
-        <span class="estado-badge" [attr.data-estado]="row.estado">
-            {{ row.estado | estadoBadge }}
-        </span>
+        <app-estado-badge [estado]="row.estado"></app-estado-badge>
     </ng-template>
 
     <ng-template appTableCell="modalidad" let-row>
@@ -95,37 +99,37 @@
 
     <ng-template appTableCell="acciones" let-row>
         <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del trámite">
-            <mat-icon>more_vert</mat-icon>
+            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
         </button>
         <mat-menu #menu="matMenu">
             <button mat-menu-item (click)="onEdit(row)">
-                <mat-icon>edit</mat-icon> Editar
+                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
             </button>
             <button mat-menu-item (click)="onView(row)">
-                <mat-icon>visibility</mat-icon> Ver detalle
+                <i class="ph ph-eye" aria-hidden="true"></i> Ver detalle
             </button>
             <button mat-menu-item (click)="onPreview(row)">
-                <mat-icon>preview</mat-icon> Vista previa
+                <i class="ph ph-arrow-square-out" aria-hidden="true"></i> Vista previa
             </button>
             <mat-divider></mat-divider>
             @if (row.estado === 'borrador') {
               <button mat-menu-item (click)="onSendToReview(row)">
-                  <mat-icon>send</mat-icon> Enviar a revisión
+                  <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> Enviar a revisión
               </button>
             }
             @if (row.estado === 'revision' && isSuperAdmin) {
               <button mat-menu-item (click)="onPublish(row)">
-                  <mat-icon>publish</mat-icon> Publicar
+                  <i class="ph ph-cloud-arrow-up" aria-hidden="true"></i> Publicar
               </button>
             }
             @if (row.estado === 'publicado') {
               <button mat-menu-item (click)="onUnpublish(row)">
-                  <mat-icon>unpublished</mat-icon> Despublicar
+                  <i class="ph ph-eye-slash" aria-hidden="true"></i> Despublicar
               </button>
             }
             <mat-divider></mat-divider>
             <button mat-menu-item class="delete-action" (click)="onDelete(row)">
-                <mat-icon>delete</mat-icon> Eliminar
+                <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
             </button>
         </mat-menu>
     </ng-template>

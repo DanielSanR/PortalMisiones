@@ -1,55 +1,140 @@
-<app-page-header title="Roles" subtitle="Gestión de roles del sistema">
+<ng-template appPageActions>
   <button mat-raised-button color="primary" (click)="onCreate()">
-    <mat-icon>add</mat-icon> Nuevo rol
+    <i class="ph ph-plus" aria-hidden="true"></i> Nuevo rol
   </button>
-</app-page-header>
+</ng-template>
 
-<app-shared-table
-    [data]="(roles$ | async) ?? []"
-    [columns]="columns"
-    [loading]="loading"
-    emptyMessage="No hay roles registrados"
-    emptyIcon="admin_panel_settings">
+<div class="list-toolbar">
+  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+  <span class="list-toolbar-count">{{ (rolesFiltrados$ | async)?.length || 0 }} roles</span>
+</div>
 
-  <!-- Columna: Scope -->
-  <ng-template appTableCell="scopeTipo" let-row>
-    <span class="scope-badge" [class.scope-badge--global]="row.scopeTipo === 'global'"
-                              [class.scope-badge--organismo]="row.scopeTipo === 'organismo'">
-      {{ row.scopeTipo === 'global' ? 'Global' : 'Organismo' }}
-    </span>
-  </ng-template>
+<div class="roles-layout">
 
-  <!-- Columna: Asignable por Org Admin -->
-  <ng-template appTableCell="asignable" let-row>
-    <mat-icon class="bool-icon" [class.bool-icon--yes]="row.asignablePorOrgAdmin"
-                                [class.bool-icon--no]="!row.asignablePorOrgAdmin"
-              [attr.aria-label]="row.asignablePorOrgAdmin ? 'Sí' : 'No'">
-      {{ row.asignablePorOrgAdmin ? 'check_circle' : 'cancel' }}
-    </mat-icon>
-  </ng-template>
+  <!-- Master: tabla de roles -->
+  <div class="roles-layout__master">
+    <app-shared-table
+        [data]="(rolesFiltrados$ | async) ?? []"
+        [columns]="columns"
+        [loading]="loading"
+        [isRowSelected]="isRowSelected"
+        emptyMessage="No hay roles registrados"
+        emptyIcon="shield-star"
+        (rowClick)="selectRol($event)">
 
-  <!-- Columna: Número de permisos -->
-  <ng-template appTableCell="permisos" let-row>
-    <strong class="count-badge">{{ row.permisos.length }}</strong>
-  </ng-template>
+      <!-- Columna: Rol (ícono + nombre + tag + descripción) -->
+      <ng-template appTableCell="rol" let-row>
+        <div class="rol-cell">
+          <span class="rol-cell__icon" [class.rol-cell__icon--protected]="!canModify(row)">
+            <i class="ph" [class.ph-lock-simple]="!canModify(row)" [class.ph-shield-star]="canModify(row)" aria-hidden="true"></i>
+          </span>
+          <div class="rol-cell__text">
+            <div class="rol-cell__name-row">
+              <span class="rol-cell__name">{{ row.codigo }}</span>
+              @if (!canModify(row)) {
+                <span class="rol-cell__tag rol-cell__tag--protected">Protegido</span>
+              } @else if (row.scopeTipo === 'global') {
+                <span class="rol-cell__tag rol-cell__tag--system">Sistema</span>
+              }
+            </div>
+            <span class="rol-cell__desc">{{ row.descripcion || 'Sin descripción' }}</span>
+          </div>
+        </div>
+      </ng-template>
 
-  <!-- Columna: Acciones -->
-  <ng-template appTableCell="acciones" let-row>
-    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del rol">
-      <mat-icon>more_vert</mat-icon>
-    </button>
-    <mat-menu #menu="matMenu">
-      <button mat-menu-item (click)="onEdit(row)" [disabled]="!canModify(row)"
-              [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede editar el rol SUPERADMIN'"
-              [matTooltipDisabled]="canModify(row)">
-        <mat-icon>edit</mat-icon> Editar
-      </button>
-      <button mat-menu-item class="delete-action" (click)="onDelete(row)" [disabled]="!canModify(row)"
-              [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede eliminar el rol SUPERADMIN'"
-              [matTooltipDisabled]="canModify(row)">
-        <mat-icon>delete</mat-icon> Eliminar
-      </button>
-    </mat-menu>
-  </ng-template>
+      <!-- Columna: Scope -->
+      <ng-template appTableCell="scopeTipo" let-row>
+        <span class="scope-badge" [class.scope-badge--global]="row.scopeTipo === 'global'"
+                                  [class.scope-badge--organismo]="row.scopeTipo === 'organismo'">
+          {{ row.scopeTipo === 'global' ? 'Global' : 'Organismo' }}
+        </span>
+      </ng-template>
 
-</app-shared-table>
+      <!-- Columna: Número de permisos -->
+      <ng-template appTableCell="permisos" let-row>
+        <strong class="count-badge">{{ row.permisos.length }}</strong>
+      </ng-template>
+
+      <!-- Columna: Acciones -->
+      <ng-template appTableCell="acciones" let-row>
+        <span (click)="$event.stopPropagation()">
+          <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del rol">
+            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="onEdit(row)" [disabled]="!canModify(row)"
+                    [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede editar el rol SUPERADMIN'"
+                    [matTooltipDisabled]="canModify(row)">
+              <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+            </button>
+            <button mat-menu-item class="delete-action" (click)="onDelete(row)" [disabled]="!canModify(row)"
+                    [matTooltip]="canModify(row) ? '' : 'Solo un SUPERADMIN puede eliminar el rol SUPERADMIN'"
+                    [matTooltipDisabled]="canModify(row)">
+              <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
+            </button>
+          </mat-menu>
+        </span>
+      </ng-template>
+
+    </app-shared-table>
+  </div>
+
+  <!-- Detail: editor de permisos del rol seleccionado (read-friendly; la edición real vive en el form) -->
+  <div class="roles-layout__detail">
+    @if (selectedRol; as rol) {
+      <div class="rol-detail">
+        <div class="rol-detail__header">
+          <div class="rol-detail__heading">
+            <h2 class="rol-detail__title">{{ rol.descripcion || rol.codigo }}</h2>
+            <p class="rol-detail__meta">
+              {{ rol.permisos.length }} permisos asignados
+              @if (rol.asignablePorOrgAdmin) {
+                · asignable por Admin de Organismo
+              }
+              @if (!canModify(rol)) {
+                · <i class="ph ph-lock-simple" aria-hidden="true"></i> protegido
+              }
+            </p>
+          </div>
+          <button mat-stroked-button type="button" color="primary" (click)="onEdit(rol)" [disabled]="!canModify(rol)"
+                  [matTooltip]="canModify(rol) ? '' : 'El rol SUPERADMIN no se puede editar'"
+                  [matTooltipDisabled]="canModify(rol)">
+            <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar rol
+          </button>
+        </div>
+
+        <div class="rol-detail__groups">
+          @for (group of permisoGroups; track group.key) {
+            <div class="perm-group">
+              <div class="perm-group__header">
+                <span class="perm-group__label">{{ group.label }}</span>
+                <span class="perm-group__count">{{ group.granted }} / {{ group.total }}</span>
+              </div>
+              <div class="perm-group__chips">
+                @for (item of group.items; track item.id) {
+                  <span class="perm-chip" [class.perm-chip--granted]="item.granted">
+                    <i class="ph" [class.ph-check]="item.granted" [class.ph-x]="!item.granted" aria-hidden="true"></i>
+                    {{ item.label }}
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (!canModify(rol)) {
+          <div class="rol-detail__note">
+            <i class="ph ph-shield-check" aria-hidden="true"></i>
+            Los permisos del rol SUPERADMIN no se pueden modificar desde el backoffice.
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="rol-detail rol-detail--empty">
+        <i class="ph ph-shield-star" aria-hidden="true"></i>
+        <p>Seleccioná un rol de la lista para ver el detalle de sus permisos.</p>
+      </div>
+    }
+  </div>
+
+</div>

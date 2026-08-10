@@ -1,20 +1,68 @@
 .loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: var(--theme-space-3xl) var(--theme-space-lg);
-      gap: var(--theme-space-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--theme-space-3xl) var(--theme-space-lg);
+    gap: var(--theme-space-md);
 
-      p {
+    p {
         color: var(--theme-text-secondary);
-        font-size: var(--theme-font-size-base);
+        font-size: var(--theme-font-body-size);
         font-weight: var(--theme-font-weight-normal);
         animation: pulse 2s ease-in-out infinite;
-      }
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+// ==========================================================================
+// Skeleton — filas 56px con shimmer (variant="skeleton")
+// ==========================================================================
+.loading-skeleton {
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: var(--theme-space-md);
+        min-height: var(--theme-table-row-height);
+        padding: 0 var(--theme-space-lg);
+        border-bottom: 1px solid var(--theme-border-secondary);
+
+        &:last-child {
+            border-bottom: none;
+        }
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
+    &__bar {
+        display: block;
+        height: 12px;
+        border-radius: var(--theme-radius-full);
+        background-image: linear-gradient(90deg, #EEF1F4 0%, #F7F9FA 40%, #EEF1F4 80%);
+        background-size: 420px 100%;
+        animation: loading-skeleton-shimmer 1.4s linear infinite;
+
+        &--lg {
+            flex: 1 1 auto;
+        }
+
+        &--sm {
+            flex: 0 0 60px;
+        }
     }
+}
+
+@keyframes loading-skeleton-shimmer {
+    0% { background-position: -420px 0; }
+    100% { background-position: 420px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-skeleton__bar {
+        animation: none;
+        background-image: none;
+        background-color: #EEF1F4;
+    }
+}

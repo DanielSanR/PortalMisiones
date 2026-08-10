@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -10,8 +10,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
+import { FormErrorBannerComponent } from '../../../shared/components/form-error-banner/form-error-banner.component';
+import { buildPermisoGroups, PermisoGroupVM } from '@core/utils/permiso-groups.util';
 import { RolesFacade, RolFormValue, RoleScopeType } from '@features/roles';
 import { PermisoVM } from '@features/permisos';
 
@@ -28,8 +29,8 @@ import { PermisoVM } from '@features/permisos';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     LoadingComponent,
+    FormErrorBannerComponent,
   ],
   templateUrl: './role-form.component.html',
   styleUrl: './role-form.component.scss',
@@ -42,8 +43,12 @@ export class RoleFormComponent implements OnInit {
   isEdit = false;
   saving = false;
   loading = true;
+  /** true tras un intento de envío inválido: habilita el banner resumen. */
+  submitted = false;
 
   permisosDisponibles: PermisoVM[] = [];
+  /** Permisos agrupados por recurso para el multi-select de badges (mismo look que el detalle de Roles). */
+  permisoGroups: PermisoGroupVM[] = [];
 
   readonly scopeOpciones: { value: RoleScopeType; label: string }[] = [
     { value: 'global',    label: 'Global' },
@@ -79,10 +84,30 @@ export class RoleFormComponent implements OnInit {
           permissionsIds:       rol.permisos.map(p => p.id),
         });
       }
+      this.refreshPermisoGroups();
     } finally {
       this.loading = false;
       this.cdr.markForCheck();
     }
+  }
+
+  /** Recalcula los grupos de badges de permisos contra la selección actual del form control. */
+  private refreshPermisoGroups(): void {
+    const selectedIds: string[] = this.form.get('permissionsIds')?.value ?? [];
+    this.permisoGroups = buildPermisoGroups(this.permisosDisponibles, new Set(selectedIds));
+  }
+
+  /** Togglea un permiso (otorgado ↔ no otorgado) desde el multi-select de badges. */
+  togglePermiso(permisoId: string): void {
+    const ctrl = this.form.get('permissionsIds')!;
+    const current: string[] = ctrl.value ?? [];
+    const next = current.includes(permisoId)
+      ? current.filter((id) => id !== permisoId)
+      : [...current, permisoId];
+    ctrl.setValue(next);
+    ctrl.markAsDirty();
+    this.refreshPermisoGroups();
+    this.cdr.markForCheck();
   }
 
   private buildForm(): void {
@@ -99,9 +124,12 @@ export class RoleFormComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.submitted = true;
+      this.cdr.markForCheck();
       return;
     }
 
+    this.submitted = false;
     this.saving = true;
     const raw = this.form.getRawValue();
     const formValue: RolFormValue = {
@@ -140,5 +168,28 @@ export class RoleFormComponent implements OnInit {
   fieldError(field: string, error: string): boolean {
     const ctrl = this.form.get(field);
     return !!(ctrl?.hasError(error) && ctrl.touched);
+  }
+
+  /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
+  get errorSummary(): string[] {
+    if (!this.submitted) return [];
+    const fields: { name: string; label: string }[] = [
+      { name: 'codigo', label: 'Código' },
+      { name: 'descripcion', label: 'Descripción' },
+      { name: 'scopeTipo', label: 'Scope' },
+    ];
+    return fields
+      .map(({ name, label }) => {
+        const ctrl = this.form.get(name);
+        if (!ctrl || ctrl.valid) return null;
+        return `${label} (${this.errorReason(ctrl)})`;
+      })
+      .filter((m): m is string => !!m);
+  }
+
+  private errorReason(ctrl: AbstractControl): string {
+    if (ctrl.hasError('required')) return 'obligatorio';
+    if (ctrl.hasError('maxlength')) return `máximo ${ctrl.errors?.['maxlength']?.requiredLength} caracteres`;
+    return 'inválido';
   }
 }

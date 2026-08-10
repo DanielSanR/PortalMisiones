@@ -44,40 +44,6 @@
     flex-shrink: 0;
 }
 
-.estado-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 14px;
-    border-radius: var(--theme-radius-full);
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
-    letter-spacing: 0.01em;
-
-    &[data-estado="borrador"] {
-        background: var(--theme-estado-borrador-bg);
-        color: var(--theme-estado-borrador-text);
-        border: 1px solid var(--theme-estado-borrador-border);
-    }
-
-    &[data-estado="revision"] {
-        background: var(--theme-estado-revision-bg);
-        color: var(--theme-estado-revision-text);
-        border: 1px solid var(--theme-estado-revision-border);
-    }
-
-    &[data-estado="publicado"] {
-        background: var(--theme-estado-publicado-bg);
-        color: var(--theme-estado-publicado-text);
-        border: 1px solid var(--theme-estado-publicado-border);
-    }
-
-    &[data-estado="despublicado"] {
-        background: var(--theme-estado-despublicado-bg);
-        color: var(--theme-estado-despublicado-text);
-        border: 1px solid var(--theme-estado-despublicado-border);
-    }
-}
-
 .link-icon {
     font-size: 16px;
     width: 16px;

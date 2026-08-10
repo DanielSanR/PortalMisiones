@@ -1,0 +1,18 @@
+<div class="filter-tabs" role="tablist" aria-label="Filtros de la lista">
+  @for (tab of tabs; track tab.value) {
+    <button type="button"
+        class="filter-tabs-tab"
+        role="tab"
+        [class.is-active]="tab.value === active"
+        [attr.aria-selected]="tab.value === active"
+        (click)="select(tab.value)">
+      <span class="filter-tabs-tab-label">{{ tab.label }}</span>
+      @if (tab.count !== undefined) {
+        <span class="filter-tabs-tab-count">{{ tab.count }}</span>
+      }
+      @if (tab.alert) {
+        <span class="filter-tabs-tab-dot" aria-hidden="true"></span>
+      }
+    </button>
+  }
+</div>

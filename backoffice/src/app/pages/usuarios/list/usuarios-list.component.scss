@@ -1,0 +1,9 @@
+@use '../../../../shared-styles/mixins' as *;
+
+.list-toolbar {
+  @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count;
+  }
+}

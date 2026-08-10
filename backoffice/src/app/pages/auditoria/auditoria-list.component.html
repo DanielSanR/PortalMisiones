@@ -1,17 +1,21 @@
-<app-page-header title="Auditoría" subtitle="Registro de cambios y acciones sobre trámites">
+<ng-template appPageActions>
   @if (hasFilters()) {
     <button mat-stroked-button (click)="clearFilters()">
-      <mat-icon>filter_alt_off</mat-icon> Limpiar filtros
+      <i class="ph ph-x-circle" aria-hidden="true"></i> Limpiar filtros
     </button>
   }
-</app-page-header>
+</ng-template>
+
+<div class="list-toolbar">
+  <app-filter-tabs [tabs]="[{ value: 'todas', label: 'Todas', count: totalItems }]" active="todas"></app-filter-tabs>
+</div>
 
 <div class="filters-card">
   <form [formGroup]="filterForm" class="filters-row">
     <mat-form-field appearance="outline" class="filter-search">
       <mat-label>Buscar</mat-label>
       <input matInput formControlName="search" placeholder="Trámite o usuario...">
-      <mat-icon matPrefix>search</mat-icon>
+      <i class="ph ph-magnifying-glass" matPrefix aria-hidden="true"></i>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="filter-select">
@@ -23,6 +27,8 @@
         }
       </mat-select>
     </mat-form-field>
+
+    <span class="filters-count">{{ totalItems }} registros</span>
   </form>
 </div>
 
@@ -36,16 +42,15 @@
     [pageIndex]="currentPage"
     [pageSizeOptions]="[5, 10, 25]"
     emptyMessage="No se encontraron registros de auditoría"
-    emptyIcon="history"
+    emptyIcon="clock-counter-clockwise"
     (pageChange)="onPageChange($event)">
 
     <ng-template appTableCell="accion" let-row>
         <span class="accion-chip"
             [style.color]="row.accion | accionLabel:'color'"
             [style.borderColor]="row.accion | accionLabel:'color'">
-            <mat-icon class="accion-icon" [style.color]="row.accion | accionLabel:'color'">
-                {{ row.accion | accionLabel:'icon' }}
-            </mat-icon>
+            <i class="ph ph-{{ row.accion | accionLabel:'icon' }} accion-icon"
+                [style.color]="row.accion | accionLabel:'color'" aria-hidden="true"></i>
             {{ row.accion | accionLabel }}
         </span>
     </ng-template>
@@ -64,7 +69,7 @@
 
     <ng-template appTableCell="detalle" let-row>
         <button mat-icon-button matTooltip="Ver detalle de cambios" (click)="onViewDetail(row)">
-            <mat-icon>visibility</mat-icon>
+            <i class="ph ph-eye" aria-hidden="true"></i>
         </button>
     </ng-template>
 

@@ -2,7 +2,6 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyR
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { FormConfig } from '../../../core/models/field.interface';
@@ -14,7 +13,6 @@ import { TiposOrganismoFacade, TipoOrganismoFormValue } from '@features/tipos-or
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSnackBarModule,
-    PageHeaderComponent,
     DynamicFormComponent,
   ],
   templateUrl: './tipo-organismo-form.component.html',

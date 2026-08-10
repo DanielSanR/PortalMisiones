@@ -76,15 +76,26 @@
   --theme-bg-primary: #FFFFFF;
   --theme-bg-secondary: #F4F6F8;
   --theme-bg-card: #FFFFFF;
-  --theme-bg-sidebar: #0F335D;
-  --theme-bg-sidebar-hover: rgba(255, 255, 255, 0.08);
-  --theme-bg-sidebar-active: rgba(255, 255, 255, 0.20);
-  --theme-bg-header: #2F6EB1;
+  // delta: shell CLARO — el navy queda reservado para el hero de Login
+  // (--theme-surface-inverse) y tints de avatar; el sidebar ya no es navy.
+  --theme-bg-sidebar: #F7F9FB;
+  --theme-bg-sidebar-hover: #EDF1F5;
+  --theme-bg-sidebar-active: #FFFFFF; // tarjeta blanca + --theme-shadow-card
+  --theme-bg-header: #FFFFFF; // delta: era #2F6EB1
   --theme-bg-input: #FFFFFF;
-  --theme-bg-table-header: #F4F6F8;
+  --theme-bg-table-header: #EDF0F4; // delta: era #F4F6F8
   --theme-bg-table-hover: #F0F5FA;
-  --theme-bg-table-stripe: #F7FAFE;
+  --theme-bg-table-stripe: #F9FBFD; // delta: era #F7FAFE
   --theme-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  // ---------------------------------------------------------------------------
+  // Surfaces (nuevo) — jerarquía app / card / sunken / inverse / canvas
+  // ---------------------------------------------------------------------------
+  --theme-surface-app: #F4F6F8;
+  --theme-surface-card: #FFFFFF;
+  --theme-surface-sunken: #F7F9FB; // delta: era #EDF0F4 — header de tabla, wells
+  --theme-surface-inverse: #0F335D; // navy — reservado para hero de Login y tints oscuros
+  --theme-surface-canvas: #E8EBEF; // nuevo — marco exterior del shell (detrás del panel blanco de <main>)
 
   // ---------------------------------------------------------------------------
   // Text
@@ -96,21 +107,26 @@
   --theme-text-on-primary: #FFFFFF;
   --theme-text-on-accent: #FFFFFF;
   --theme-text-on-dark: rgba(255, 255, 255, 0.92);
-  --theme-text-on-dark-secondary: rgba(255, 255, 255, 0.75);
+  // delta: -secondary bajó de .75 a .70; se mantiene el nombre viejo como alias
+  // (no romper consumidores existentes) y se agrega el nombre nuevo -muted.
+  --theme-text-on-dark-muted: rgba(255, 255, 255, 0.70);
+  --theme-text-on-dark-secondary: var(--theme-text-on-dark-muted);
   --theme-text-link: #2F6EB1;
 
   // ---------------------------------------------------------------------------
   // Borders
   // ---------------------------------------------------------------------------
-  --theme-border-primary: #E0E0E0;
+  --theme-border-primary: #E6E9ED; // delta: era #E3E7EC — bordes más fríos (shell claro)
   --theme-border-secondary: #EEEEEE;
+  --theme-border-subtle: #F1F3F5; // nuevo — divisor de fila (más claro que border-primary)
+  --theme-border-strong: #C9CFD6; // nuevo — contorno input/card
   --theme-border-focus: #2F6EB1;
-  --theme-border-input: rgba(229, 231, 235, 1);
+  --theme-border-input: #C9CFD6; // delta: era rgba(229, 231, 235, 1) / #E5E7EB
 
   // ---------------------------------------------------------------------------
   // Form-specific tokens
   // ---------------------------------------------------------------------------
-  --theme-form-input-border: 1px solid rgba(229, 231, 235, 1);
+  --theme-form-input-border: 1px solid #C9CFD6; // delta: era rgba(229, 231, 235, 1)
   --theme-form-input-text: rgba(10, 10, 10, 0.50);
   --theme-form-separator: 2px solid #2F6EB1;
   --theme-form-btn: #3B82C4;
@@ -121,12 +137,44 @@
   // ---------------------------------------------------------------------------
   --theme-success: #16A34A;
   --theme-success-bg: #F0FDF4;
+  --theme-success-border: #86EFAC;
   --theme-error: #D32F2F;
   --theme-error-bg: #FFEBEE;
-  --theme-warning: #F57C00;
+  --theme-error-border: #EF9A9A;
+  --theme-error-icon: #C62828;
+  --theme-warning: #E65100; // delta: era #F57C00 (icono)
+  --theme-warning-text: #BF360C; // nuevo — texto sobre fondo warning
   --theme-warning-bg: #FFF3E0;
+  --theme-warning-border: #FFCC80;
   --theme-info: #2F6EB1;
   --theme-info-bg: #E8F1FA;
+  --theme-info-border: #9EC4E8;
+
+  // ---------------------------------------------------------------------------
+  // Charts (nuevo)
+  // ---------------------------------------------------------------------------
+  --theme-chart-1: #1A4779;
+  --theme-chart-2: #3B82C4;
+  --theme-chart-3: #77ABDE;
+  --theme-chart-4: #0F8A8A;
+  --theme-chart-5: #7C5CBF;
+  --theme-chart-6: #B0721E;
+
+  // ---------------------------------------------------------------------------
+  // Botones — variante secondary (nuevo, Fase 2a)
+  // ---------------------------------------------------------------------------
+  --theme-btn-secondary-hover-bg: #F5F9FD;
+
+  // ---------------------------------------------------------------------------
+  // Snackbar (nuevo, Fase 2a) — paleta propia, no reutiliza los semánticos
+  // inline (success/error de texto/badges); el toast usa tonos inversos.
+  // ---------------------------------------------------------------------------
+  --theme-snackbar-success-bg: #1A1A2E;       // = --theme-text-primary
+  --theme-snackbar-success-icon: #86EFAC;     // = --theme-success-border
+  --theme-snackbar-success-action: #9EC4E8;   // = --theme-primary-200
+  --theme-snackbar-error-bg: #8E1616;
+  --theme-snackbar-error-icon: #FFFFFF;
+  --theme-snackbar-error-action: #FFCDD2;
 
   // ---------------------------------------------------------------------------
   // Estado de Tramites — colores accesibles con contraste >= 4.5:1
@@ -166,7 +214,8 @@
   // ---------------------------------------------------------------------------
   // Typography
   // ---------------------------------------------------------------------------
-  --theme-font-family: 'Oak Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --theme-font-family: 'Oak Sans', 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
   --theme-font-size-2xs: 0.6875rem;   // 11px
   --theme-font-size-xs: 0.75rem;      // 12px
   --theme-font-size-sm: 0.8125rem;    // 13px
@@ -188,11 +237,42 @@
   --theme-line-height-relaxed: 1.75;
 
   // ---------------------------------------------------------------------------
+  // Typography — escala por ROL (nuevo)
+  // display: título de página · section: H2 · subtitle · body · small · overline
+  // ---------------------------------------------------------------------------
+  --theme-font-display-size: 1.625rem;   // 26px
+  --theme-font-display-weight: 600;
+  --theme-font-display-line-height: 1.25;
+  --theme-font-display-tracking: -0.3px;
+
+  --theme-font-section-size: 1.1875rem;  // 19px
+  --theme-font-section-weight: 600;
+  --theme-font-section-line-height: 1.25;
+
+  --theme-font-subtitle-size: 0.9375rem; // 15px
+  --theme-font-subtitle-weight: 400;
+  --theme-font-subtitle-line-height: 1.5;
+
+  --theme-font-body-size: 0.875rem;      // 14px
+  --theme-font-body-weight: 400;
+  --theme-font-body-line-height: 1.5;
+
+  --theme-font-small-size: 0.8125rem;    // 13px
+  --theme-font-small-weight: 400;
+  --theme-font-small-line-height: 1.5;
+
+  --theme-font-overline-size: 0.6875rem; // 11px
+  --theme-font-overline-weight: 600;
+  --theme-font-overline-line-height: 1;
+  --theme-font-overline-track: 0.5px;
+
+  // ---------------------------------------------------------------------------
   // Border Radius
   // ---------------------------------------------------------------------------
   --theme-radius-xs: 2px;
   --theme-radius-sm: 4px;
   --theme-radius-md: 8px;
+  --theme-radius-panel: 10px; // nuevo — paneles/contenedores de tabla (entre md y lg)
   --theme-radius-lg: 12px;
   --theme-radius-xl: 16px;
   --theme-radius-2xl: 20px;
@@ -209,6 +289,39 @@
   --theme-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   --theme-shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
   --theme-shadow-dialog: 0 24px 48px rgba(0, 0, 0, 0.16), 0 8px 16px rgba(0, 0, 0, 0.08);
+  --theme-shadow-snackbar: 0 10px 15px -3px rgba(0, 0, 0, 0.18);
+
+  // ---------------------------------------------------------------------------
+  // Elevation (nuevo) — alias semánticos sobre las sombras existentes
+  // 0: borde plano · 1: card · 2: menú/popover · 3: dialog
+  // ---------------------------------------------------------------------------
+  --theme-elevation-0: 0 0 0 1px var(--theme-border-primary);
+  --theme-elevation-1: var(--theme-shadow-card);
+  --theme-elevation-2: var(--theme-shadow-lg);
+  --theme-elevation-3: var(--theme-shadow-dialog);
+
+  // ---------------------------------------------------------------------------
+  // Focus ring (nuevo) — firma de foco accesible del sistema
+  // ---------------------------------------------------------------------------
+  --theme-focus-ring-width: 2px;
+  --theme-focus-ring-offset: 2px;
+  --theme-focus-ring-color: #2F6EB1;
+  --theme-focus-ring-soft: 0 0 0 3px rgba(47, 110, 177, 0.18);
+  --theme-focus-ring-danger-color: rgba(211, 47, 47, 0.5);
+
+  // ---------------------------------------------------------------------------
+  // Accent bar (nuevo) — barra de 3px para nav activo / section header
+  // ---------------------------------------------------------------------------
+  --theme-accent-bar-width: 3px;
+  --theme-accent-bar-color: #5A98D6;      // sobre superficies oscuras (hero de Login, tints navy)
+  --theme-accent-bar-color-on-light: #2F6EB1; // sobre superficies claras — usado por el sidebar (shell claro)
+
+  // ---------------------------------------------------------------------------
+  // Table (nuevo)
+  // ---------------------------------------------------------------------------
+  --theme-table-row-height: 56px;
+  --theme-table-header-bg: var(--theme-surface-sunken);
+  --theme-table-hover-bg: var(--theme-bg-table-hover);
 
   // ---------------------------------------------------------------------------
   // Layout

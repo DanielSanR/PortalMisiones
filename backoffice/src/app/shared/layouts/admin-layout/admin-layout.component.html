@@ -1,108 +1,164 @@
 <div class="admin-layout">
-    <mat-toolbar class="admin-layout__header" color="primary">
-        <!-- Hamburger: mobile only -->
-        <button mat-icon-button
-            *ngIf="isMobile"
-            class="admin-layout__menu-btn"
-            (click)="sidenav.toggle()"
-            [attr.aria-expanded]="sidenav.opened"
-            aria-label="Menú de navegación"
-            matTooltip="Menú">
-            <mat-icon>{{ sidenav.opened ? 'close' : 'menu' }}</mat-icon>
-        </button>
-
-        <a class="admin-layout__title" routerLink="/dashboard/home">
-            Portal Misiones
-            <span class="admin-layout__title-separator"></span>
-            <span class="admin-layout__title-sub">Backoffice</span>
-        </a>
-
-        <span class="spacer"></span>
-
-        <!-- User trigger with avatar -->
-        <button class="admin-layout__user-trigger"
-            [matMenuTriggerFor]="userMenu"
-            [attr.aria-label]="'Menú de usuario: ' + userName">
-            <span class="admin-layout__avatar">{{ userInitials }}</span>
-            <span class="admin-layout__user-info">
-                <span class="admin-layout__user-display-name">{{ userName }}</span>
-                <span class="admin-layout__user-role-badge">{{ userRoleSpanish }}</span>
-            </span>
-            <mat-icon class="admin-layout__user-arrow">arrow_drop_down</mat-icon>
-        </button>
-
-        <mat-menu #userMenu="matMenu" class="user-menu" xPosition="before">
-            <div class="user-menu-header" (click)="$event.stopPropagation()">
-                <span class="user-menu-avatar">{{ userInitials }}</span>
-                <div class="user-menu-info">
-                    <strong>{{ userName }}</strong>
-                    <span class="user-menu-role">{{ userRoleSpanish }}</span>
-                </div>
-            </div>
-            <mat-divider></mat-divider>
-            <button mat-menu-item (click)="logout()">
-                <mat-icon>exit_to_app</mat-icon>
-                <span>Cerrar sesión</span>
-            </button>
-        </mat-menu>
-    </mat-toolbar>
-
-    <mat-sidenav-container class="admin-layout__container" autosize>
+    <mat-sidenav-container class="admin-layout__shell" autosize>
         <mat-sidenav #sidenav
             [mode]="isMobile ? 'over' : 'side'"
             [opened]="!isMobile"
             class="admin-layout__sidenav"
             [class.admin-layout__sidenav--mini]="isCollapsed && !isMobile"
-            [style.width]="isMobile ? null : (isCollapsed ? '64px' : '264px')"
+            [style.width]="isMobile ? null : (isCollapsed ? 'var(--theme-sidebar-collapsed-width)' : 'var(--theme-sidebar-width)')"
             role="navigation"
-            aria-label="Navegación principal">
+            aria-label="Menú principal">
 
-            <div class="sidenav-logo">
-                <img [src]="logoSrc"
-                    alt="Escudo de la Provincia de Misiones"
-                    class="sidenav-logo__img" />
+            <div class="admin-layout__logo">
+                <span class="admin-layout__logo-mark" aria-hidden="true">M</span>
+                <span class="admin-layout__logo-text">
+                    <span class="admin-layout__logo-name">Misiones</span>
+                    <span class="admin-layout__logo-sub">Backoffice de trámites</span>
+                </span>
+                <button type="button"
+                    class="admin-layout__collapse-btn"
+                    *ngIf="!isMobile"
+                    (click)="toggleCollapse()"
+                    [attr.aria-expanded]="!isCollapsed"
+                    [attr.aria-label]="isCollapsed ? 'Expandir navegación' : 'Colapsar navegación'"
+                    [matTooltip]="isCollapsed ? 'Expandir navegación' : 'Colapsar navegación'"
+                    matTooltipPosition="right">
+                    <i class="ph ph-sidebar" aria-hidden="true"></i>
+                </button>
             </div>
 
-            <span class="sidenav-section-label">Navegación</span>
+            <div class="admin-layout__search">
+                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                <input type="search"
+                    class="admin-layout__search-input"
+                    placeholder="Buscar…"
+                    aria-label="Buscar en el menú de navegación"
+                    [value]="searchQuery"
+                    (input)="onSearchInput($any($event.target).value)" />
+            </div>
 
-            <mat-nav-list aria-label="Menú principal">
-                <a mat-list-item
-                    *ngFor="let item of filteredNavItems"
-                    [routerLink]="item.route"
-                    routerLinkActive="active"
-                    #rla="routerLinkActive"
-                    [attr.aria-current]="rla.isActive ? 'page' : null"
-                    [matTooltip]="isCollapsed ? item.label : ''"
-                    matTooltipPosition="right"
-                    (click)="isMobile && sidenav.close()">
-                    <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-                    <span matListItemTitle>{{ item.label }}</span>
-                </a>
-                <!-- <div class="test-roles" *ngIf="!isCollapsed">
-                    <h2>Roles del Usuario</h2>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('SUPERADMIN')">SUPERADMIN</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('ADMIN_BACKOFFICE')">ADMIN_BACKOFFICE</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('ADMIN_ORGANIZATION')">ADMIN_ORGANIZATION</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('AGENT')">AGENT</button>
-                    <button mat-raised-button color="secondary" (click)="changeRoleUser('MANAGER')">MANAGER</button>
-                </div> -->
-            </mat-nav-list>
+            <nav class="admin-layout__nav" aria-label="Secciones del backoffice">
+                <div class="admin-layout__nav-group" *ngFor="let group of navGroups; trackBy: trackByGroup">
+                    <button type="button"
+                        class="admin-layout__nav-group-header"
+                        (click)="toggleGroup(group.label)"
+                        [attr.aria-expanded]="group.isOpen"
+                        [attr.aria-label]="'Sección ' + group.label">
+                        <span class="admin-layout__nav-group-label">{{ group.label }}</span>
+                        <i class="ph admin-layout__nav-group-chev" [class.ph-caret-down]="group.isOpen" [class.ph-caret-right]="!group.isOpen" aria-hidden="true"></i>
+                    </button>
+
+                    <div class="admin-layout__nav-group-items" *ngIf="group.isOpen">
+                        <a class="admin-layout__nav-item"
+                            *ngFor="let item of group.items; trackBy: trackByRoute"
+                            [routerLink]="item.route"
+                            routerLinkActive="is-active"
+                            #rla="routerLinkActive"
+                            [attr.aria-current]="rla.isActive ? 'page' : null"
+                            [matTooltip]="isCollapsed ? item.label : ''"
+                            matTooltipPosition="right"
+                            (click)="isMobile && sidenav.close()">
+                            <i class="ph ph-{{ item.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
+                            <span class="admin-layout__nav-label">{{ item.label }}</span>
+                        </a>
+                    </div>
+                </div>
+
+                <p class="admin-layout__nav-empty" *ngIf="searchQuery && navGroups.length === 0">
+                    Sin resultados para "{{ searchQuery }}".
+                </p>
+            </nav>
+
+            <div class="admin-layout__footer">
+                <div class="admin-layout__footer-item is-disabled" aria-disabled="true" [matTooltip]="isCollapsed ? 'Preferencias' : ''" matTooltipPosition="right">
+                    <i class="ph ph-sliders-horizontal" aria-hidden="true"></i>
+                    <span>Preferencias</span>
+                </div>
+                <div class="admin-layout__footer-item is-disabled" aria-disabled="true" [matTooltip]="isCollapsed ? 'Ayuda y documentación' : ''" matTooltipPosition="right">
+                    <i class="ph ph-question" aria-hidden="true"></i>
+                    <span>Ayuda y documentación</span>
+                </div>
+
+                <button type="button"
+                    class="admin-layout__profile"
+                    [matMenuTriggerFor]="profileMenu"
+                    [attr.aria-label]="'Menú de perfil: ' + userName">
+                    <span class="admin-layout__avatar">{{ userInitials }}</span>
+                    <span class="admin-layout__profile-info">
+                        <span class="admin-layout__profile-name">{{ userName }}</span>
+                        <span class="admin-layout__profile-role">{{ userRoleSpanish }}</span>
+                    </span>
+                    <i class="ph ph-dots-three-vertical admin-layout__profile-arrow" aria-hidden="true"></i>
+                </button>
+
+                <mat-menu #profileMenu="matMenu" class="admin-layout__user-menu" xPosition="after" yPosition="above">
+                    <div class="user-menu-header" (click)="$event.stopPropagation()">
+                        <span class="user-menu-avatar">{{ userInitials }}</span>
+                        <div class="user-menu-info">
+                            <strong>{{ userName }}</strong>
+                            <span class="user-menu-email">{{ userEmail }}</span>
+                        </div>
+                    </div>
+                    <div class="user-menu-role" (click)="$event.stopPropagation()">
+                        <span class="user-menu-role__label">Rol</span>
+                        <span class="user-menu-role__badge">
+                            <i class="ph ph-shield-star" aria-hidden="true"></i>
+                            {{ userRoleSpanish }}
+                        </span>
+                    </div>
+                    <div class="user-menu-actions">
+                        <button mat-menu-item class="user-menu-item" [disabled]="true">
+                            <i class="ph ph-user-circle" aria-hidden="true"></i>
+                            <span>Mi perfil</span>
+                        </button>
+                        <button mat-menu-item class="user-menu-item" [disabled]="true">
+                            <i class="ph ph-lock-simple" aria-hidden="true"></i>
+                            <span>Cambiar contraseña</span>
+                        </button>
+                        <button mat-menu-item class="user-menu-item" [disabled]="true">
+                            <i class="ph ph-sliders-horizontal" aria-hidden="true"></i>
+                            <span>Preferencias</span>
+                        </button>
+                    </div>
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item class="user-menu-item user-menu-item--danger" (click)="logout()">
+                        <i class="ph ph-sign-out" aria-hidden="true"></i>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </mat-menu>
+            </div>
         </mat-sidenav>
 
         <mat-sidenav-content class="admin-layout__content">
-            <!-- Collapse toggle: floating pill on the sidenav border, 50% vertical (desktop only) -->
-            <button *ngIf="!isMobile"
-                class="sidenav-collapse-btn"
-                [class.sidenav-collapse-btn--collapsed]="isCollapsed"
-                (click)="toggleCollapse()"
-                [matTooltip]="isCollapsed ? 'Expandir menú' : 'Colapsar menú'"
-                matTooltipPosition="right"
-                aria-label="Colapsar menú lateral">
-                <mat-icon>chevron_left</mat-icon>
-            </button>
+            <header class="admin-layout__header">
+                <button type="button"
+                    class="admin-layout__icon-btn"
+                    (click)="isMobile ? sidenav.toggle() : toggleCollapse()"
+                    [attr.aria-expanded]="isMobile ? sidenav.opened : !isCollapsed"
+                    [attr.aria-label]="isMobile ? 'Menú de navegación' : (isCollapsed ? 'Expandir navegación' : 'Colapsar navegación')"
+                    [matTooltip]="isMobile ? 'Menú' : (isCollapsed ? 'Expandir navegación' : 'Colapsar navegación')">
+                    <i class="ph" [class.ph-x]="isMobile && sidenav.opened" [class.ph-list]="isMobile && !sidenav.opened" [class.ph-sidebar]="!isMobile" aria-hidden="true"></i>
+                </button>
+
+                <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación">
+                    <a routerLink="/dashboard/home" class="admin-layout__breadcrumb-home">Inicio</a>
+                    <ng-container *ngFor="let crumb of breadcrumbTrail; let last = last">
+                        <i class="ph ph-caret-right admin-layout__breadcrumb-sep" aria-hidden="true"></i>
+                        <span class="admin-layout__breadcrumb-crumb" [class.is-current]="last">{{ crumb }}</span>
+                    </ng-container>
+                </nav>
+
+                <span class="admin-layout__header-spacer"></span>
+
+                <div class="admin-layout__header-actions">
+                    <ng-container *ngTemplateOutlet="chrome.actions$ | async"></ng-container>
+                </div>
+            </header>
 
             <div class="admin-layout__page">
-                <router-outlet></router-outlet>
+                <div class="admin-layout__panel">
+                    <router-outlet></router-outlet>
+                </div>
             </div>
         </mat-sidenav-content>
     </mat-sidenav-container>

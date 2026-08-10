@@ -1,12 +1,8 @@
-<app-page-header
-    [title]="isEdit ? 'Editar rol' : 'Nuevo rol'"
-    [showBack]="true"
-    (back)="goBack()">
-</app-page-header>
-
 <app-loading [loading]="loading" message="Cargando..."></app-loading>
 
 @if (!loading) {
+  <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+
   <div class="form-card">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
@@ -14,54 +10,60 @@
       <div class="section-header">Identificación</div>
       <div class="form-grid">
 
-        <mat-form-field appearance="outline">
-          <mat-label>Código</mat-label>
-          <input matInput formControlName="codigo" placeholder="Ej: EDITOR_TRAMITES">
-          <mat-hint>Sin espacios, en mayúsculas</mat-hint>
-          @if (fieldError('codigo', 'required')) {
-            <mat-error>El código es obligatorio</mat-error>
-          }
-          @if (fieldError('codigo', 'maxlength')) {
-            <mat-error>Máximo 100 caracteres</mat-error>
-          }
-        </mat-form-field>
+        <div class="form-field" [class.is-invalid]="fieldError('codigo', 'required') || fieldError('codigo', 'maxlength')">
+          <label class="form-field__label" id="codigo-label" for="codigo">Código <span class="form-field__required" aria-hidden="true">*</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <input matInput id="codigo" aria-labelledby="codigo-label" formControlName="codigo" placeholder="Ej: EDITOR_TRAMITES">
+            <mat-hint>Sin espacios, en mayúsculas</mat-hint>
+            @if (fieldError('codigo', 'required')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El código es obligatorio</span></mat-error>
+            }
+            @if (fieldError('codigo', 'maxlength')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo 100 caracteres</span></mat-error>
+            }
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Descripción</mat-label>
-          <input matInput formControlName="descripcion" placeholder="Ej: Editor de trámites">
-          @if (fieldError('descripcion', 'required')) {
-            <mat-error>La descripción es obligatoria</mat-error>
-          }
-          @if (fieldError('descripcion', 'maxlength')) {
-            <mat-error>Máximo 255 caracteres</mat-error>
-          }
-        </mat-form-field>
+        <div class="form-field" [class.is-invalid]="fieldError('descripcion', 'required') || fieldError('descripcion', 'maxlength')">
+          <label class="form-field__label" id="descripcion-label" for="descripcion">Descripción <span class="form-field__required" aria-hidden="true">*</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <input matInput id="descripcion" aria-labelledby="descripcion-label" formControlName="descripcion" placeholder="Ej: Editor de trámites">
+            @if (fieldError('descripcion', 'required')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>La descripción es obligatoria</span></mat-error>
+            }
+            @if (fieldError('descripcion', 'maxlength')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo 255 caracteres</span></mat-error>
+            }
+          </mat-form-field>
+        </div>
 
       </div>
 
       <!-- ── Configuración ── -->
       <div class="section-header">Configuración</div>
-      <div class="form-grid">
+      <div class="form-grid form-grid--full">
 
-        <mat-form-field appearance="outline">
-          <mat-label>Scope</mat-label>
-          <mat-select formControlName="scopeTipo">
-            @for (op of scopeOpciones; track op.value) {
-              <mat-option [value]="op.value">{{ op.label }}</mat-option>
+        <div class="form-field" [class.is-invalid]="fieldError('scopeTipo', 'required')">
+          <label class="form-field__label" id="scopeTipo-label" for="scopeTipo">Scope <span class="form-field__required" aria-hidden="true">*</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="scopeTipo" aria-labelledby="scopeTipo-label" formControlName="scopeTipo">
+              @for (op of scopeOpciones; track op.value) {
+                <mat-option [value]="op.value">{{ op.label }}</mat-option>
+              }
+            </mat-select>
+            @if (fieldError('scopeTipo', 'required')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El scope es obligatorio</span></mat-error>
             }
-          </mat-select>
-          @if (fieldError('scopeTipo', 'required')) {
-            <mat-error>El scope es obligatorio</mat-error>
-          }
-        </mat-form-field>
+          </mat-form-field>
+        </div>
 
         <div class="form-toggles">
-          <div class="form-toggles__item">
+          <div class="slide-toggle-field">
             <mat-slide-toggle formControlName="asignablePorOrgAdmin" color="primary">
               Asignable por Administrador de Organismo
             </mat-slide-toggle>
           </div>
-          <div class="form-toggles__item">
+          <div class="slide-toggle-field">
             <mat-slide-toggle formControlName="active" color="primary">
               Activo
             </mat-slide-toggle>
@@ -72,29 +74,46 @@
 
       <!-- ── Permisos ── -->
       <div class="section-header">Permisos asignados</div>
-      <div class="form-grid form-grid--full">
-
-        <mat-form-field appearance="outline">
-          <mat-label>Permisos</mat-label>
-          <mat-select formControlName="permissionsIds" multiple>
-            @for (p of permisosDisponibles; track p.id) {
-              <mat-option [value]="p.id">{{ p.codigo }} — {{ p.descripcion }}</mat-option>
-            }
-          </mat-select>
-          <mat-hint>Seleccioná uno o más permisos para este rol</mat-hint>
-        </mat-form-field>
-
+      <div class="permiso-picker" role="group" aria-label="Permisos asignados al rol">
+        @for (group of permisoGroups; track group.key) {
+          <div class="perm-group">
+            <div class="perm-group__header">
+              <span class="perm-group__label">{{ group.label }}</span>
+              <span class="perm-group__count">{{ group.granted }} / {{ group.total }}</span>
+            </div>
+            <div class="perm-group__chips">
+              @for (item of group.items; track item.id) {
+                <button type="button"
+                        class="perm-chip perm-chip--toggle"
+                        [class.perm-chip--granted]="item.granted"
+                        [attr.aria-pressed]="item.granted"
+                        (click)="togglePermiso(item.id)">
+                  <i class="ph" [class.ph-check]="item.granted" [class.ph-x]="!item.granted" aria-hidden="true"></i>
+                  {{ item.label }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+        <p class="permiso-picker__hint">
+          Hacé clic en un permiso para otorgarlo o quitarlo · {{ form.get('permissionsIds')?.value?.length || 0 }} seleccionados
+        </p>
       </div>
 
       <!-- ── Acciones ── -->
       <div class="form-actions">
-        <button mat-stroked-button type="button" (click)="goBack()">Cancelar</button>
-        <button mat-raised-button color="primary" type="submit" [disabled]="saving">
-          @if (saving) {
-            <mat-icon class="spin">sync</mat-icon>
-          }
-          {{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear rol') }}
-        </button>
+        <span class="form-actions__help">Los cambios se publican al guardar.</span>
+        <div class="form-actions__buttons">
+          <button mat-stroked-button color="primary" type="button" (click)="goBack()">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+            @if (saving) {
+              <mat-icon class="spin">sync</mat-icon>
+            } @else {
+              <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+            }
+            <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear rol') }}</span>
+          </button>
+        </div>
       </div>
 
     </form>

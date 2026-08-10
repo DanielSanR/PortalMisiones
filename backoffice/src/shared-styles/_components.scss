@@ -4,26 +4,39 @@
 }
 
 // Layout común de formularios (definido una sola vez; consumido por las pantallas form)
+// Header de sección con barra de acento (patrón FORM, screens-spec.md §7).
 .section-header {
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: var(--theme-space-lg) 0 var(--theme-space-sm);
-    border-bottom: 1px solid var(--theme-border-primary);
+    position: relative;
+    padding: var(--theme-space-lg) 0 var(--theme-space-sm) 13px;
     margin-bottom: var(--theme-space-md);
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+    letter-spacing: -0.01em;
 
+    @include accent-bar();
+
+    // El primer header no debe sumar espacio extra arriba del `.form-card` (que ya trae su
+    // propio padding superior). OJO: NO tocar `padding-top` acá — el mixin `accent-bar` centra
+    // la barra con `inset-block` relativo a la altura de ESTA caja (padding-top + contenido +
+    // padding-bottom); si el primer header perdía su padding-top, su caja quedaba más baja que
+    // la de sus hermanos y la barra salía recortada/desalineada. Se compensa el espacio con un
+    // `margin-top` negativo (no afecta el cálculo de `inset-block`, que ignora el margin), así
+    // la caja —y por lo tanto la barra— mide y se posiciona igual en todos los section-header.
     &:first-of-type {
-        padding-top: 0;
+        margin-top: calc(-1 * var(--theme-space-lg));
+    }
+
+    &:not(:first-of-type) {
+        border-top: 1px solid var(--theme-border-primary);
     }
 }
 
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--theme-space-md);
-    margin-bottom: var(--theme-space-sm);
+    gap: var(--theme-space-md) var(--theme-space-lg);
+    margin-bottom: var(--theme-space-lg);
 
     mat-form-field {
         width: 100%;
@@ -38,8 +51,112 @@
     }
 }
 
+// Wrapper de campo con label overline externo (Fase 4 — patrón FORM).
+// Uso: `<div class="form-field"><label class="form-field__label" for="x">Nombre <span class="form-field__required">*</span></label><mat-form-field>…</mat-form-field></div>`
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+
+    &__label {
+        @include field-label-overline;
+    }
+
+    &__required {
+        color: var(--theme-error-icon);
+    }
+
+    &__optional {
+        text-transform: none;
+        font-weight: var(--theme-font-weight-normal);
+        letter-spacing: normal;
+        color: var(--theme-text-tertiary);
+    }
+
+    &__error {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: var(--theme-font-size-xs);
+        color: var(--theme-error-icon);
+        line-height: 1.4;
+
+        i.ph {
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+    }
+
+    &.is-invalid {
+        .form-field__label {
+            color: var(--theme-error-icon);
+        }
+    }
+
+    mat-form-field {
+        width: 100%;
+    }
+}
+
 .form-actions {
     @include form-actions();
+
+    &__help {
+        font-size: var(--theme-font-size-xs);
+        color: var(--theme-text-tertiary);
+    }
+
+    &__buttons {
+        display: flex;
+        gap: var(--theme-space-sm);
+    }
+}
+
+// Banner resumen de errores de validación (patrón FORM, arriba del form-card).
+.form-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 14px;
+    margin-bottom: var(--theme-space-md);
+    border-radius: var(--theme-radius-md);
+    background-color: var(--theme-error-bg);
+    border: 1px solid var(--theme-error-border);
+
+    &__icon {
+        font-size: 17px;
+        color: var(--theme-error-icon);
+        margin-top: 1px;
+        flex-shrink: 0;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__title {
+        font-size: var(--theme-font-size-sm);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-warn-dark);
+    }
+
+    &__detail {
+        font-size: 12.5px;
+        color: var(--theme-error-icon);
+        line-height: 1.4;
+    }
+}
+
+// Slide-toggle (booleanos) — pill, patrón FORM. Usado por dynamic-form-field
+// (checkbox→toggle) y por los formularios custom (usuarios/roles).
+.slide-toggle-field {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
 }
 
 // Error de envío del formulario (inline, cuando la pantalla maneja el error y no el diálogo global).
@@ -51,6 +168,83 @@
     background: var(--theme-error-bg);
     border: 1px solid rgba(211, 47, 47, 0.12);
     border-radius: var(--theme-radius-md);
+}
+
+// ==========================================================================
+// Grupos de permisos por recurso + chip otorgado/no otorgado (Roles y permisos).
+// Reusado por el panel de detalle read-friendly (`pages/roles/list`) y por el
+// multi-select interactivo de permisos del form de Rol (`pages/roles/create`).
+// ==========================================================================
+.perm-group {
+    &__header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: var(--theme-space-xs);
+    }
+
+    &__label {
+        font-size: var(--theme-font-overline-size);
+        font-weight: var(--theme-font-overline-weight);
+        letter-spacing: var(--theme-font-overline-track);
+        text-transform: uppercase;
+        color: var(--theme-text-secondary);
+    }
+
+    &__count {
+        font-size: var(--theme-font-size-xs);
+        color: var(--theme-text-tertiary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+}
+
+// Chip de permiso individual — otorgado (azul, check) / no otorgado (blanco, x).
+// Como `<span>` es solo lectura (panel de detalle); como `<button>` (`.perm-chip--toggle`)
+// es interactivo (form de Rol) — ver modificador más abajo en este mismo archivo.
+.perm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 var(--theme-space-sm);
+    border-radius: var(--theme-radius-full);
+    border: 1px solid var(--theme-border-primary);
+    background: var(--theme-bg-card);
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-xs);
+    font-weight: var(--theme-font-weight-medium);
+
+    i.ph { font-size: 12px; }
+
+    &--granted {
+        background: var(--theme-info-bg);
+        border-color: var(--theme-primary-200);
+        color: var(--theme-primary-800);
+    }
+
+    // Variante interactiva: chip renderizado como `<button>` (togglea otorgado/no otorgado).
+    &--toggle {
+        font-family: inherit;
+        cursor: pointer;
+        transition: all var(--theme-transition-fast);
+
+        &:hover {
+            border-color: var(--theme-primary-300);
+            background: var(--theme-surface-sunken);
+        }
+
+        &.perm-chip--granted:hover {
+            background: var(--theme-primary-100);
+        }
+
+        @include focus-ring;
+    }
 }
 
 .spin {
@@ -219,8 +413,7 @@
       text-decoration: underline;
     }
 
-    &:focus-visible {
-      @include focus-ring;
+    @include focus-ring {
       border-radius: var(--theme-radius-sm);
     }
 

@@ -1,17 +1,18 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { filter, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
+import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
+import { ActivoFiltro, activoFilterTabs, filterByActivo } from '@core/utils/list-filter.utils';
 import { OrganismosFacade, OrganismoVM } from '@features/organismos';
 
 @Component({
@@ -21,13 +22,13 @@ import { OrganismosFacade, OrganismoVM } from '@features/organismos';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatIconModule,
     MatMenuModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    FilterTabsComponent,
     HasPermissionDirective,
+    PageActionsDirective,
   ],
   templateUrl: './organismos-list.component.html',
   styleUrls: ['./organismos-list.component.scss'],
@@ -36,6 +37,13 @@ export class OrganismosListComponent implements OnInit {
   private readonly facade = inject(OrganismosFacade);
   readonly organismos$ = this.facade.organismos$;
   loading = true;
+
+  /** Filtro "Todos/Activos/Inactivos" (campo real `activo`), client-side sobre el stream ya cargado. */
+  readonly filtro$ = new BehaviorSubject<ActivoFiltro>('todos');
+  readonly filterTabs$ = this.organismos$.pipe(map((organismos) => activoFilterTabs(organismos)));
+  readonly organismosFiltrados$ = combineLatest([this.organismos$, this.filtro$]).pipe(
+    map(([organismos, filtro]) => filterByActivo(organismos, filtro)),
+  );
 
   columns: TableColumn<OrganismoVM>[] = [
     { key: 'nombre',     label: 'Nombre' },

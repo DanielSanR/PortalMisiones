@@ -3,6 +3,8 @@
 // ==========================================================================
 // Estilos para la tabla reutilizable. Usa CSS variables de _themes.scss
 // y mixins de _mixins.scss para mantener coherencia con el design system.
+// Header: --theme-surface-sunken + overline. Filas: --theme-table-row-height
+// (56px). Skeleton: shimmer. Empty/Error: círculo 64 + icono Phosphor.
 // ==========================================================================
 
 @use '../../../../shared-styles/mixins' as *;
@@ -13,7 +15,8 @@
   position: relative;
 
   // ---------------------------------------------------------------------------
-  // Loading indicator — progress bar fija en la parte superior
+  // Loading indicator — progress bar fija en la parte superior (refresh con
+  // datos ya presentes; la carga inicial sin datos usa el skeleton).
   // ---------------------------------------------------------------------------
   &__loader {
     position: absolute;
@@ -45,33 +48,40 @@
 
     // Header row
     .mat-mdc-header-row {
-      background-color: var(--theme-bg-table-header);
-      height: 52px;
+      background-color: var(--theme-table-header-bg);
+      height: auto;
 
       .mat-mdc-header-cell {
-        font-weight: var(--theme-font-weight-semibold);
-        font-size: var(--theme-font-size-xs);
+        font-size: var(--theme-font-overline-size);
+        font-weight: var(--theme-font-overline-weight);
+        letter-spacing: var(--theme-font-overline-track);
+        line-height: var(--theme-font-overline-line-height);
         color: var(--theme-text-secondary);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border-bottom: 2px solid var(--theme-border-primary);
-        padding: 0 var(--theme-space-md);
+        border-bottom: 1px solid var(--theme-border-primary);
+        padding: 14px 20px;
         white-space: nowrap;
 
-        // Sort header arrow — hereda color del texto
+        // El indicador de orden nativo de MatSort se reemplaza por un
+        // icono Phosphor propio (ver .shared-table__sort-icon); se oculta
+        // la flecha SVG por defecto sin perder la semántica/accesibilidad.
         .mat-sort-header-arrow {
-          color: var(--theme-text-secondary);
+          display: none;
+        }
+
+        .mat-sort-header-container {
+          align-items: center;
         }
       }
     }
 
     // Data rows
     .mat-mdc-row {
-      height: 56px;
+      min-height: var(--theme-table-row-height);
       transition: background-color var(--theme-transition-fast);
 
       &:hover {
-        background-color: var(--theme-bg-table-hover);
+        background-color: var(--theme-table-hover-bg);
       }
 
       &:last-child .mat-mdc-cell {
@@ -79,12 +89,40 @@
       }
 
       .mat-mdc-cell {
-        font-size: var(--theme-font-size-base);
+        font-size: var(--theme-font-body-size);
         color: var(--theme-text-primary);
-        padding: 0 var(--theme-space-md);
+        padding: 10px 20px;
         border-bottom-color: var(--theme-border-secondary);
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Header — label + icono de orden (Phosphor)
+  // ---------------------------------------------------------------------------
+  &__th {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__sort-icon {
+    font-size: 16px;
+    color: var(--theme-primary);
+    transition: transform var(--theme-transition-fast);
+
+    &--desc {
+      transform: rotate(180deg);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Celdas numéricas — modificador opcional vía TableColumn.cellClass/headerClass
+  // ---------------------------------------------------------------------------
+  &__cell--numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--theme-font-weight-medium);
   }
 
   // ---------------------------------------------------------------------------
@@ -95,7 +133,17 @@
 
     &:focus-visible {
       @include focus-ring-inset;
-      background-color: var(--theme-bg-table-hover);
+      background-color: var(--theme-table-hover-bg);
+    }
+  }
+
+  // Fila activa en layouts master-detail (ej. Roles) — barra de acento izquierda + fondo tinte.
+  &__row--selected {
+    background-color: var(--theme-info-bg) !important;
+    box-shadow: inset 3px 0 0 var(--theme-primary);
+
+    &:hover {
+      background-color: var(--theme-info-bg) !important;
     }
   }
 
@@ -107,7 +155,7 @@
       background-color: var(--theme-bg-table-stripe);
 
       &:hover {
-        background-color: var(--theme-bg-table-hover);
+        background-color: var(--theme-table-hover-bg);
       }
     }
   }
@@ -122,19 +170,77 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Empty state
+  // Skeleton — filas fantasma (carga inicial sin datos previos)
   // ---------------------------------------------------------------------------
-  &__empty {
+  &__skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-md);
+    min-height: var(--theme-table-row-height);
+    padding: 0 20px;
+    border-bottom: 1px solid var(--theme-border-secondary);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__skeleton-cell {
+    flex: 1 1 0;
+    min-width: 0;
+
+    &:last-child {
+      flex: 0 1 80px;
+    }
+  }
+
+  &__skeleton-bar {
+    display: block;
+    height: 12px;
+    width: 70%;
+    border-radius: var(--theme-radius-full);
+    background-image: linear-gradient(90deg, #EEF1F4 0%, #F7F9FA 40%, #EEF1F4 80%);
+    background-size: 420px 100%;
+    animation: shared-table-shimmer 1.4s linear infinite;
+  }
+
+  &__skeleton-cell:nth-child(3n+2) .shared-table__skeleton-bar {
+    width: 50%;
+  }
+
+  &__skeleton-cell:nth-child(3n) .shared-table__skeleton-bar {
+    width: 36%;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Estados — vacío / error (círculo 64 + icono Phosphor + título + texto + CTA)
+  // ---------------------------------------------------------------------------
+  &__state {
     @include flex-center;
     flex-direction: column;
+    gap: 12px;
     padding: var(--theme-space-3xl) var(--theme-space-lg);
     text-align: center;
   }
 
-  &__empty-image {
+  &__state-icon {
+    @include flex-center;
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--theme-radius-full);
+    background-color: var(--theme-surface-sunken);
+    color: var(--theme-primary-200);
+
+    i {
+      font-size: 34px;
+    }
+  }
+
+  &__state-image {
     width: 160px;
     height: auto;
-    margin-bottom: var(--theme-space-lg);
+    margin-bottom: var(--theme-space-sm);
     opacity: 0.7;
 
     @include responsive(mobile) {
@@ -142,19 +248,32 @@
     }
   }
 
-  &__empty-icon {
-    font-size: 64px;
-    width: 64px;
-    height: 64px;
-    color: var(--theme-neutral-400);
-    margin-bottom: var(--theme-space-md);
+  &__state-title {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
   }
 
-  &__empty-message {
-    @include text-body;
+  &__state-text {
+    max-width: 320px;
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
-    margin: 0;
-    font-size: var(--theme-font-size-base);
+    line-height: var(--theme-font-small-line-height);
+    text-wrap: pretty;
+  }
+
+  &__state-cta {
+    margin-top: 4px;
+
+    i {
+      font-size: 20px;
+      margin-right: var(--theme-space-sm);
+    }
+  }
+
+  &__state--error &__state-icon {
+    background-color: var(--theme-error-bg);
+    color: var(--theme-error);
   }
 
   // ---------------------------------------------------------------------------
@@ -164,7 +283,7 @@
   .mat-mdc-paginator {
     border-top: 1px solid var(--theme-border-secondary);
     background-color: var(--theme-bg-card);
-    font-size: var(--theme-font-size-sm);
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
   }
 
@@ -177,5 +296,18 @@
     &__mat-table {
       min-width: 600px;
     }
+  }
+}
+
+@keyframes shared-table-shimmer {
+  0% { background-position: -420px 0; }
+  100% { background-position: 420px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shared-table__skeleton-bar {
+    animation: none;
+    background-image: none;
+    background-color: #EEF1F4;
   }
 }

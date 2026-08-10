@@ -1,0 +1,58 @@
+// ==========================================================================
+// FilterTabsComponent — chips-filtro tipo pill (screens-spec.md §3.3/§5)
+// Reposo: borde neutro/blanco. Activo: bg info-50 + borde info-200 + texto
+// primary-800 + 600. Dot rojo opcional = alerta ("Requieren revisión").
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
+.filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-sm);
+  flex-wrap: wrap;
+
+  &-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 var(--theme-space-md);
+    border: 1px solid var(--theme-border-primary);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-bg-card);
+    color: var(--theme-text-primary);
+    font-family: inherit;
+    font-size: var(--theme-font-size-sm);
+    font-weight: var(--theme-font-weight-medium);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all var(--theme-transition-fast);
+    @include focus-ring;
+
+    &:hover {
+      border-color: var(--theme-border-strong);
+    }
+
+    &.is-active {
+      background: var(--theme-info-bg);
+      border-color: var(--theme-info-border);
+      color: var(--theme-primary-800);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
+
+  &-tab-count {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--theme-font-size-xs);
+    opacity: 0.75;
+  }
+
+  &-tab-dot {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-error);
+  }
+}

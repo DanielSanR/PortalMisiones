@@ -1,7 +1,16 @@
 <form class="dynamic-form" [formGroup]="form" (ngSubmit)="submit()" *ngIf="form">
+  <app-form-error-banner *ngIf="submitted" [errors]="invalidFieldMessages()"></app-form-error-banner>
+
   <div class="form-fields">
     <div *ngFor="let field of fields"
+         class="form-field"
          [ngClass]="getFieldCssClass(field)">
+      <label *ngIf="showExternalLabel(field)"
+             class="form-field__label"
+             [id]="field.name + '-label'"
+             [attr.for]="field.name">
+        {{ field.label }}<span *ngIf="field.validations?.required" class="form-field__required" aria-hidden="true"> *</span><span *ngIf="!field.validations?.required" class="form-field__optional"> (opcional)</span>
+      </label>
       <app-dynamic-form-field
         [field]="field"
         [group]="form">
@@ -10,14 +19,20 @@
   </div>
 
   <div class="form-actions" *ngIf="!hideButtons">
-    <button mat-button type="button" (click)="formCancel.emit()">
-      {{ cancelButtonText }}
-    </button>
-    <button mat-raised-button color="primary"
-            type="submit"
-            [disabled]="saving || !form.valid">
-      <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
-      <span *ngIf="!saving">{{ submitButtonText }}</span>
-    </button>
+    <span class="form-actions__help">{{ helpText }}</span>
+    <div class="form-actions__buttons">
+      <button mat-stroked-button color="primary" type="button" (click)="formCancel.emit()">
+        {{ cancelButtonText }}
+      </button>
+      <button mat-raised-button color="primary"
+              type="submit"
+              [disabled]="saving">
+        <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
+        <ng-container *ngIf="!saving">
+          <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+          <span>{{ submitButtonText }}</span>
+        </ng-container>
+      </button>
+    </div>
   </div>
 </form>

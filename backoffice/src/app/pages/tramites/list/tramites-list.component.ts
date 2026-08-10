@@ -14,11 +14,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDivider } from '@angular/material/divider';
 import { Subject, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TramitePreviewComponent } from '../../../shared/components/tramite-preview/tramite-preview.component';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
-import { EstadoBadgePipe } from '../../../shared/pipes/estado-badge.pipe';
+import { EstadoBadgeComponent } from '../../../shared/components/estado-badge/estado-badge.component';
+import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
+import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { TramiteService } from '../../../core/services/tramite.service';
 import { OrganismoService } from '../../../core/services/organismo.service';
 import { LocalidadService } from '../../../core/services/localidad.service';
@@ -42,10 +43,11 @@ import { UserRole } from '../../../core/enums/user-role.enum';
     MatTooltipModule,
     MatSnackBarModule,
     MatDivider,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
-    EstadoBadgePipe,
+    EstadoBadgeComponent,
+    FilterTabsComponent,
+    PageActionsDirective,
   ],
   templateUrl: './tramites-list.component.html',
   styleUrls: ['./tramites-list.component.scss'],
@@ -160,6 +162,28 @@ export class TramitesListComponent implements OnInit {
     this.currentPage = event.pageIndex;
     this.pageSize = event.pageSize;
     this.loadTramites();
+  }
+
+  /**
+   * Filtro rápido "Todos/Publicados/Requieren revisión" (campo real `estado`, ver screens-spec.md §5).
+   * Reusa el mismo `filterForm.estado` que el select "Estado" (sin llamadas nuevas); el select sigue
+   * disponible para elegir Borrador/Despublicado, no cubiertos por este acceso rápido.
+   */
+  get estadoTabsActivo(): string {
+    const estado = this.filterForm.value.estado;
+    return estado === 'publicado' || estado === 'revision' ? estado : 'todos';
+  }
+
+  get estadoTabs(): FilterTabOption[] {
+    return [
+      { value: 'todos', label: 'Todos', count: this.totalItems },
+      { value: 'publicado', label: 'Publicados' },
+      { value: 'revision', label: 'Requieren revisión', alert: true },
+    ];
+  }
+
+  filtrarEstado(value: string): void {
+    this.filterForm.patchValue({ estado: value === 'todos' ? '' : value });
   }
 
   onSortChange(_event: TableSortEvent): void {

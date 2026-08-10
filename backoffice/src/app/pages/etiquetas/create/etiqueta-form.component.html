@@ -1,6 +1,3 @@
-<app-page-header [title]="isEdit ? 'Editar etiqueta' : 'Nueva etiqueta'" [showBack]="true"
-    (back)="goBack()"></app-page-header>
-
 @if (config){
     <div class="form-card">
     <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear etiqueta'"

@@ -1,27 +1,36 @@
-<app-page-header title="Categorías" subtitle="Estructura de navegación del portal (categorías y sub-categorías)">
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
-    <mat-icon>add</mat-icon> Nueva categoría
+<ng-template appPageActions>
+  <button mat-stroked-button type="button" (click)="toggleExpandAll()">
+    <i class="ph" [class.ph-arrows-out]="!allExpanded" [class.ph-arrows-in]="allExpanded" aria-hidden="true"></i>
+    {{ allExpanded ? 'Colapsar todo' : 'Expandir todo' }}
   </button>
-</app-page-header>
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
+    <i class="ph ph-plus" aria-hidden="true"></i> Nueva categoría
+  </button>
+</ng-template>
+
+<div class="list-toolbar">
+  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+  <span class="list-toolbar-count">{{ (total$ | async) ?? 0 }} categorías</span>
+</div>
 
 <div class="cat-table">
   @if (loading) {
     <div class="cat-table__loading"><mat-spinner diameter="40"></mat-spinner></div>
   } @else {
-    @if ((arbol$ | async) ?? []; as rows) {
+    @if ((arbolFiltrado$ | async) ?? []; as rows) {
       @if (rows.length === 0) {
         <div class="cat-table__empty">
-          <mat-icon class="cat-table__empty-icon">account_tree</mat-icon>
+          <i class="ph ph-folders cat-table__empty-icon" aria-hidden="true"></i>
           <p class="cat-table__empty-title">Todavía no hay categorías</p>
           <p class="cat-table__empty-text">Creá la primera categoría raíz para armar la navegación del portal.</p>
           <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
-            <mat-icon>add</mat-icon> Nueva categoría
+            <i class="ph ph-plus" aria-hidden="true"></i> Nueva categoría
           </button>
         </div>
       } @else {
         <div class="cat-table__grid" role="tree">
           <div class="cat-table__head">
-            <span>Nombre</span>
+            <span>Categoría</span>
             <span>Slug</span>
             <span class="cat-table__col-center">Sub-cat.</span>
             <span class="cat-table__col-right">Acciones</span>
@@ -30,6 +39,11 @@
             <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: root, depth: 0 }"></ng-container>
           }
         </div>
+
+        <p class="cat-table__note">
+          <i class="ph ph-info" aria-hidden="true"></i>
+          Las categorías se muestran colapsadas por defecto. Desplegá una rama para ver sus sub-categorías.
+        </p>
       }
     }
   }
@@ -38,18 +52,31 @@
 <!-- Fila recursiva: se renderiza a sí misma para los hijos (si el nodo está expandido) → profundidad arbitraria. -->
 <ng-template #rowTpl let-node let-depth="depth">
   <div class="cat-table__row" role="treeitem" [attr.aria-expanded]="node.children.length ? isExpanded(node.id) : null">
-    <div class="cat-table__cell cat-table__cell--name" [style.padding-left.px]="12 + depth * 22">
+    <div class="cat-table__cell cat-table__cell--name" [style.padding-left.px]="12 + depth * 20">
+
+      <!-- Slot de estado: chevron (si tiene hijos), marcador de hoja (nivel > 0 sin hijos) o spacer (raíz sin hijos) -->
       @if (node.children.length > 0) {
         <button type="button" class="cat-table__toggle" (click)="toggle(node.id)"
-                [attr.aria-label]="isExpanded(node.id) ? 'Colapsar' : 'Expandir'">
-          <mat-icon>{{ isExpanded(node.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                [attr.aria-label]="isExpanded(node.id) ? 'Colapsar' : 'Expandir'"
+                [attr.aria-expanded]="isExpanded(node.id)">
+          <i class="ph" [class.ph-caret-down]="isExpanded(node.id)" [class.ph-caret-right]="!isExpanded(node.id)" aria-hidden="true"></i>
         </button>
       } @else if (depth > 0) {
-        <mat-icon class="cat-table__elbow">subdirectory_arrow_right</mat-icon>
+        <span class="cat-table__toggle cat-table__toggle--leaf" aria-hidden="true">
+          <i class="ph ph-minus" aria-hidden="true"></i>
+        </span>
       } @else {
         <span class="cat-table__toggle--spacer"></span>
       }
-      <span class="cat-table__name" [matTooltip]="node.nombre">{{ node.nombre }}</span>
+
+      <!-- Slot de tipo: folder para raíz, elbow-arrow para hijos -->
+      @if (depth === 0) {
+        <i class="ph ph-folder-simple cat-table__type-icon cat-table__type-icon--root" aria-hidden="true"></i>
+      } @else {
+        <i class="ph ph-arrow-elbow-down-right cat-table__type-icon" aria-hidden="true"></i>
+      }
+
+      <span class="cat-table__name" [class.cat-table__name--child]="depth > 0" [matTooltip]="node.nombre">{{ node.nombre }}</span>
     </div>
 
     <div class="cat-table__cell cat-table__cell--slug">/{{ node.slug }}</div>
@@ -61,17 +88,17 @@
     </div>
 
     <div class="cat-table__cell cat-table__cell--actions">
-      <button type="button" class="cat-table__action" (click)="onCreate(node.id)" matTooltip="Agregar sub-categoría"
-              aria-label="Agregar sub-categoría" *appHasPermission="'CREATE_CATEGORY'">
-        <mat-icon>add</mat-icon>
+      <button type="button" class="cat-table__action" (click)="onCreate(node.id)" matTooltip="Agregar subcategoría"
+              aria-label="Agregar subcategoría" *appHasPermission="'CREATE_CATEGORY'">
+        <i class="ph ph-plus" aria-hidden="true"></i>
       </button>
       <button type="button" class="cat-table__action" (click)="onEdit(node)" matTooltip="Editar"
               aria-label="Editar categoría" *appHasPermission="'UPDATE_CATEGORY'">
-        <mat-icon>edit</mat-icon>
+        <i class="ph ph-pencil-simple" aria-hidden="true"></i>
       </button>
       <button type="button" class="cat-table__action cat-table__action--danger" (click)="onDelete(node, node.children.length > 0)"
               matTooltip="Eliminar" aria-label="Eliminar categoría" *appHasPermission="'DELETE_CATEGORY'">
-        <mat-icon>delete</mat-icon>
+        <i class="ph ph-trash" aria-hidden="true"></i>
       </button>
     </div>
   </div>

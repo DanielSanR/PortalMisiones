@@ -1,1 +1,9 @@
-// Sin estilos propios: usa .form-card y utilidades de shared-styles.
+@use '../../../../shared-styles/mixins' as *;
+
+.list-toolbar {
+  @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count;
+  }
+}

@@ -5,7 +5,6 @@ import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -13,8 +12,9 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '../../shared/components/table';
+import { FilterTabsComponent, FilterTabOption } from '../../shared/components/filter-tabs';
+import { PageActionsDirective } from '../../shared/directives/page-actions.directive';
 import { FeedbackService } from '../../core/services/feedback.service';
 import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../../core/models/dashboard.model';
 
@@ -26,17 +26,16 @@ import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../../core/model
     DatePipe,
     ReactiveFormsModule,
     MatButtonModule,
-    MatIconModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatCardModule,
     MatTooltipModule,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    FilterTabsComponent,
+    PageActionsDirective,
   ],
   templateUrl: './feedback.component.html',
   styleUrls: ['./feedback.component.scss'],
@@ -142,6 +141,27 @@ export class FeedbackComponent implements OnInit {
   hasFilters(): boolean {
     const v = this.filterForm.value;
     return !!(v.search || v.esUtil !== '' || v.fechaDesde || v.fechaHasta);
+  }
+
+  /** Filtro real "Todas/Útil/No útil" (campo `esUtil`): reusa el mismo `filterForm` reactivo, sin llamadas nuevas. */
+  get valoracionActiva(): string {
+    const esUtil = this.filterForm.value.esUtil;
+    return esUtil === true ? 'util' : esUtil === false ? 'no-util' : 'todas';
+  }
+
+  get valoracionTabs(): FilterTabOption[] {
+    const total = this.stats?.total ?? this.totalItems;
+    const noUtil = this.stats?.totalNoUtil ?? 0;
+    return [
+      { value: 'todas', label: 'Todas', count: total },
+      { value: 'util', label: 'Útil', count: Math.max(total - noUtil, 0) },
+      { value: 'no-util', label: 'No útil', count: noUtil },
+    ];
+  }
+
+  filtrarValoracion(value: string): void {
+    const esUtil = value === 'util' ? true : value === 'no-util' ? false : '';
+    this.filterForm.patchValue({ esUtil });
   }
 
   private toISODate(date: Date): string {

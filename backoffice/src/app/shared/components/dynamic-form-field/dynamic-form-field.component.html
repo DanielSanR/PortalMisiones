@@ -1,5 +1,5 @@
 <ng-container [formGroup]="group" *ngIf="field">
-  <!-- Section Header (no form control) -->
+  <!-- Section Header (no form control) — barra de acento + título -->
   <div *ngIf="field.type === 'section-header'" class="section-header-field">
     <h3 class="section-header-title">{{ field.label }}</h3>
     <p *ngIf="field.placeholder" class="section-header-description">{{ field.placeholder }}</p>
@@ -16,14 +16,15 @@
     </div>
   </div>
 
-  <!-- All form controls -->
+  <!-- All form controls — label overline externo (ver dynamic-form.component.html) -->
   <ng-container *ngIf="field.type !== 'section-header' && group.contains(field.name)">
     <ng-container [ngSwitch]="field.type">
 
       <!-- Text -->
-      <mat-form-field *ngSwitchCase="'text'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'text'" appearance="outline" subscriptSizing="dynamic">
         <input matInput
+               [id]="field.name"
+               [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [attr.maxlength]="field.validations?.maxLength"
@@ -36,45 +37,50 @@
       </mat-form-field>
 
       <!-- Email -->
-      <mat-form-field *ngSwitchCase="'email'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'email'" appearance="outline" subscriptSizing="dynamic">
         <input matInput type="email"
+               [id]="field.name"
+               [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [required]="field.validations?.required || false">
-        <mat-icon matSuffix>email</mat-icon>
+        <i class="ph ph-envelope-simple" matSuffix aria-hidden="true"></i>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
       <!-- URL -->
-      <mat-form-field *ngSwitchCase="'url'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'url'" appearance="outline" subscriptSizing="dynamic">
         <input matInput type="url"
+               [id]="field.name"
+               [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || 'https://...'"
                [required]="field.validations?.required || false">
-        <mat-icon matSuffix>link</mat-icon>
+        <i class="ph ph-link" matSuffix aria-hidden="true"></i>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
       <!-- Password -->
-      <mat-form-field *ngSwitchCase="'password'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'password'" appearance="outline" subscriptSizing="dynamic">
         <input matInput
+               [id]="field.name"
+               [attr.aria-labelledby]="field.name + '-label'"
                [type]="showPassword ? 'text' : 'password'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [required]="field.validations?.required || false">
-        <button mat-icon-button matSuffix type="button" (click)="togglePassword()">
-          <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        <button mat-icon-button matSuffix type="button" (click)="togglePassword()"
+                [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+          <i class="ph" [class.ph-eye-slash]="showPassword" [class.ph-eye]="!showPassword" aria-hidden="true"></i>
         </button>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
       <!-- Number -->
-      <mat-form-field *ngSwitchCase="'number'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'number'" appearance="outline" subscriptSizing="dynamic">
         <input matInput type="number"
+               [id]="field.name"
+               [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [attr.min]="field.validations?.min"
@@ -85,9 +91,10 @@
       </mat-form-field>
 
       <!-- Textarea -->
-      <mat-form-field *ngSwitchCase="'textarea'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'textarea'" appearance="outline" subscriptSizing="dynamic">
         <textarea matInput
+                  [id]="field.name"
+                  [attr.aria-labelledby]="field.name + '-label'"
                   cdkTextareaAutosize
                   [cdkAutosizeMinRows]="3"
                   [cdkAutosizeMaxRows]="16"
@@ -103,9 +110,10 @@
       </mat-form-field>
 
       <!-- Select -->
-      <mat-form-field *ngSwitchCase="'select'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
-        <mat-select [formControlName]="field.name"
+      <mat-form-field *ngSwitchCase="'select'" appearance="outline" subscriptSizing="dynamic">
+        <mat-select [id]="field.name"
+                    [attr.aria-labelledby]="field.name + '-label'"
+                    [formControlName]="field.name"
                     [placeholder]="field.placeholder || ''"
                     [required]="field.validations?.required || false">
           <mat-option *ngIf="!field.options?.length" disabled>
@@ -119,9 +127,10 @@
       </mat-form-field>
 
       <!-- Select Multiple -->
-      <mat-form-field *ngSwitchCase="'select-multiple'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
-        <mat-select [formControlName]="field.name"
+      <mat-form-field *ngSwitchCase="'select-multiple'" appearance="outline" subscriptSizing="dynamic">
+        <mat-select [id]="field.name"
+                    [attr.aria-labelledby]="field.name + '-label'"
+                    [formControlName]="field.name"
                     [placeholder]="field.placeholder || ''"
                     [required]="field.validations?.required || false"
                     multiple>
@@ -136,9 +145,10 @@
       </mat-form-field>
 
       <!-- Datepicker -->
-      <mat-form-field *ngSwitchCase="'datepicker'" appearance="outline">
-        <mat-label>{{ field.label }}{{ isOptional ? ' (opcional)' : '' }}</mat-label>
+      <mat-form-field *ngSwitchCase="'datepicker'" appearance="outline" subscriptSizing="dynamic">
         <input matInput
+               [id]="field.name"
+               [attr.aria-labelledby]="field.name + '-label'"
                [matDatepicker]="picker"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || 'DD/MM/AAAA'"
@@ -148,16 +158,16 @@
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
-      <!-- Checkbox -->
-      <div *ngSwitchCase="'checkbox'" class="checkbox-field">
-        <mat-checkbox [formControlName]="field.name">
+      <!-- Checkbox (booleano) — slide-toggle pill, patrón FORM -->
+      <div *ngSwitchCase="'checkbox'" class="slide-toggle-field">
+        <mat-slide-toggle [formControlName]="field.name" color="primary">
           {{ field.label }}
-        </mat-checkbox>
+        </mat-slide-toggle>
       </div>
 
       <!-- Radio -->
 
-      
+
       <!-- Icon Picker -->
       <div *ngSwitchCase="'icon-picker'" class="icon-picker-field">
         <label class="icon-picker-label">
@@ -176,14 +186,14 @@
         </div>
 
         <!-- Search -->
-        <mat-form-field appearance="outline" class="icon-picker-search">
-          <mat-label>Buscar ícono...</mat-label>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="icon-picker-search">
           <input matInput
+                 aria-label="Buscar ícono"
                  [(ngModel)]="iconSearch"
                  [ngModelOptions]="{ standalone: true }"
                  (ngModelChange)="filterIcons()"
-                 placeholder="Ej: health, school, work...">
-          <mat-icon matSuffix>search</mat-icon>
+                 placeholder="Buscar ícono... ej: health, school, work">
+          <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
         </mat-form-field>
 
         <!-- Category filter -->
@@ -212,9 +222,10 @@
           </p>
         </div>
 
-        <mat-error *ngIf="group.get(field.name)?.touched && group.get(field.name)?.hasError('required')">
-          Debe seleccionar un ícono
-        </mat-error>
+        <p *ngIf="group.get(field.name)?.touched && group.get(field.name)?.hasError('required')" class="form-field__error">
+          <i class="ph ph-warning-circle" aria-hidden="true"></i>
+          <span>Debe seleccionar un ícono</span>
+        </p>
       </div>
 
       <!-- Unsupported -->

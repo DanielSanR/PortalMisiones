@@ -83,12 +83,15 @@ $misiones-accent-palette: (
 // ---------------------------------------------------------------------------
 // Define Material Palettes
 // ---------------------------------------------------------------------------
+// Nota: $misiones-warn ya resuelve al rojo del design system (#D32F2F = mat.$red-palette, 700).
 $misiones-primary: mat.define-palette($misiones-blue-palette, 600, 500, 800);
 $misiones-accent: mat.define-palette($misiones-accent-palette, 500, 400, 700);
 $misiones-warn: mat.define-palette(mat.$red-palette, 700);
 
 // ---------------------------------------------------------------------------
 // Define Light Theme
+// Tipografía: Oak Sans con fallback Figtree (mismo stack que --theme-font-family).
+// Densidad: 0 ("cómoda" — el nivel por defecto de Material, sin comprimir).
 // ---------------------------------------------------------------------------
 $misiones-theme: mat.define-light-theme((
   color: (
@@ -97,7 +100,7 @@ $misiones-theme: mat.define-light-theme((
     warn: $misiones-warn,
   ),
   typography: mat.define-typography-config(
-    $font-family: 'Oak Sans, sans-serif',
+    $font-family: 'Oak Sans, Figtree, sans-serif',
   ),
   density: 0
 ));

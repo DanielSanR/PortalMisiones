@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -8,8 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
+import { FormErrorBannerComponent } from '../../../shared/components/form-error-banner/form-error-banner.component';
 import { PermisosFacade, PermisoFormValue } from '@features/permisos';
 
 @Component({
@@ -23,8 +23,8 @@ import { PermisosFacade, PermisoFormValue } from '@features/permisos';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    PageHeaderComponent,
     LoadingComponent,
+    FormErrorBannerComponent,
   ],
   templateUrl: './permiso-form.component.html',
   styleUrl: './permiso-form.component.scss',
@@ -37,6 +37,8 @@ export class PermisoFormComponent implements OnInit {
   isEdit = false;
   saving = false;
   loading = true;
+  /** true tras un intento de envío inválido: habilita el banner resumen. */
+  submitted = false;
 
   private editId: string | null = null;
 
@@ -80,9 +82,12 @@ export class PermisoFormComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.submitted = true;
+      this.cdr.markForCheck();
       return;
     }
 
+    this.submitted = false;
     this.saving = true;
     const raw = this.form.getRawValue();
     const formValue: PermisoFormValue = {
@@ -117,5 +122,27 @@ export class PermisoFormComponent implements OnInit {
   fieldError(field: string, error: string): boolean {
     const ctrl = this.form.get(field);
     return !!(ctrl?.hasError(error) && ctrl.touched);
+  }
+
+  /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
+  get errorSummary(): string[] {
+    if (!this.submitted) return [];
+    const fields: { name: string; label: string }[] = [
+      { name: 'codigo', label: 'Código' },
+      { name: 'descripcion', label: 'Descripción' },
+    ];
+    return fields
+      .map(({ name, label }) => {
+        const ctrl = this.form.get(name);
+        if (!ctrl || ctrl.valid) return null;
+        return `${label} (${this.errorReason(ctrl)})`;
+      })
+      .filter((m): m is string => !!m);
+  }
+
+  private errorReason(ctrl: AbstractControl): string {
+    if (ctrl.hasError('required')) return 'obligatorio';
+    if (ctrl.hasError('maxlength')) return `máximo ${ctrl.errors?.['maxlength']?.requiredLength} caracteres`;
+    return 'inválido';
   }
 }

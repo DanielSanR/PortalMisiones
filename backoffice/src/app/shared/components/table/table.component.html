@@ -2,22 +2,23 @@
 <!-- SharedTableComponent — Template                                        -->
 <!-- Tabla reutilizable basada en MatTable con soporte para:                -->
 <!-- - Columnas configurables (texto simple o template personalizado)        -->
-<!-- - Ordenamiento (MatSort) opcional por columna                          -->
+<!-- - Ordenamiento (MatSort) opcional por columna, indicador Phosphor      -->
 <!-- - Paginacion server-side (MatPaginator) opcional                       -->
-<!-- - Estado vacio con imagen/icono                                        -->
-<!-- - Indicador de carga (progress bar)                                    -->
+<!-- - Skeleton (carga inicial) · Empty state · Error state                 -->
 <!-- ====================================================================== -->
 
 <div class="shared-table" [class.shared-table--striped]="striped">
 
-  <!-- Loading-->
-  <mat-progress-bar *ngIf="loading" mode="indeterminate" class="shared-table__loader" aria-label="Cargando datos">
+  <!-- Loading — barra fina cuando ya hay datos previos en pantalla -->
+  <mat-progress-bar *ngIf="loading && data && data.length > 0" mode="indeterminate" class="shared-table__loader"
+    aria-label="Cargando datos">
   </mat-progress-bar>
 
-  <!-- Table -->
-  <div class="shared-table__wrapper" [class.shared-table__wrapper--loading]="loading">
+  <!-- Table / Skeleton -->
+  <div class="shared-table__wrapper" [class.shared-table__wrapper--loading]="loading && data && data.length > 0"
+    *ngIf="showTable">
     <table mat-table [dataSource]="data" matSort (matSortChange)="onSortChange($event)"
-      *ngIf="!isEmpty; else emptyState" class="shared-table__mat-table" role="grid">
+      class="shared-table__mat-table" role="grid">
 
       <!-- Dynamic columns -->
       <ng-container *ngFor="let column of columns" [matColumnDef]="column.key">
@@ -31,7 +32,14 @@
           <ng-container *ngIf="getHeaderTemplate(column) as headerTpl; else defaultHeader">
             <ng-container *ngTemplateOutlet="headerTpl; context: { $implicit: column }"></ng-container>
           </ng-container>
-          <ng-template #defaultHeader>{{ column.label }}</ng-template>
+          <ng-template #defaultHeader>
+            <span class="shared-table__th">
+              <span class="shared-table__th-label">{{ column.label }}</span>
+              <i class="ph ph-arrow-up shared-table__sort-icon" aria-hidden="true"
+                *ngIf="sortable && column.sortable && sort?.active === column.key"
+                [class.shared-table__sort-icon--desc]="sort?.direction === 'desc'"></i>
+            </span>
+          </ng-template>
         </th>
 
         <!-- Data cell -->
@@ -49,26 +57,53 @@
       <!-- Rows -->
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns" (click)="onRowClick(row)"
-        [class.shared-table__row--clickable]="rowClick.observed" tabindex="0" (keydown.enter)="onRowClick(row)">
+        [class.shared-table__row--clickable]="rowClick.observed"
+        [class.shared-table__row--selected]="rowIsSelected(row)"
+        tabindex="0" (keydown.enter)="onRowClick(row)">
       </tr>
     </table>
+
+    <!-- Skeleton — filas fantasma mientras se resuelve la carga inicial -->
+    <div class="shared-table__skeleton" *ngIf="showSkeleton" aria-hidden="true" role="presentation">
+      <div class="shared-table__skeleton-row" *ngFor="let r of skeletonRowsArray">
+        <div class="shared-table__skeleton-cell" *ngFor="let column of columns"
+          [style.width]="column.width" [class.shared-table__cell--hide-mobile]="column.hideOnMobile">
+          <span class="shared-table__skeleton-bar"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Empty state -->
-  <ng-template #emptyState>
-    <div class="shared-table__empty" role="status">
-      <img *ngIf="!emptyIcon && emptyImage" [src]="emptyImage" alt="" class="shared-table__empty-image"
-        aria-hidden="true" />
-      <mat-icon *ngIf="emptyIcon" class="shared-table__empty-icon" aria-hidden="true">
-        {{ emptyIcon }}
-      </mat-icon>
-      <p class="shared-table__empty-message">{{ emptyMessage }}</p>
-    </div>
-  </ng-template>
+  <div class="shared-table__state shared-table__state--empty" *ngIf="showEmpty" role="status">
+    <img *ngIf="emptyImage" [src]="emptyImage" alt="" class="shared-table__state-image" aria-hidden="true" />
+    <span *ngIf="!emptyImage" class="shared-table__state-icon" aria-hidden="true">
+      <i class="ph ph-{{ emptyIcon }}"></i>
+    </span>
+    <span class="shared-table__state-title">{{ emptyTitle || emptyMessage }}</span>
+    <span class="shared-table__state-text" *ngIf="emptyTitle && emptyMessage">{{ emptyMessage }}</span>
+    <button *ngIf="emptyActionLabel" type="button" mat-raised-button color="primary"
+      class="shared-table__state-cta" (click)="emptyAction.emit()">
+      <i class="ph ph-{{ emptyActionIcon }}" aria-hidden="true"></i>{{ emptyActionLabel }}
+    </button>
+  </div>
+
+  <!-- Error state -->
+  <div class="shared-table__state shared-table__state--error" *ngIf="showError" role="alert">
+    <span class="shared-table__state-icon" aria-hidden="true">
+      <i class="ph ph-cloud-slash"></i>
+    </span>
+    <span class="shared-table__state-title">{{ errorTitle }}</span>
+    <span class="shared-table__state-text">{{ errorMessage }}</span>
+    <button type="button" mat-stroked-button color="primary" class="shared-table__state-cta"
+      (click)="retry.emit()">
+      <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>{{ errorRetryLabel }}
+    </button>
+  </div>
 
   <!-- Paginador -->
-  <mat-paginator *ngIf="paginated && !isEmpty" [length]="totalItems" [pageSize]="pageSize" [pageIndex]="pageIndex"
-    [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" showFirstLastButtons
+  <mat-paginator *ngIf="paginated && showTable && !showSkeleton" [length]="totalItems" [pageSize]="pageSize"
+    [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" showFirstLastButtons
     aria-label="Paginacion de la tabla">
   </mat-paginator>
 

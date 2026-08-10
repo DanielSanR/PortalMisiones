@@ -1,15 +1,20 @@
-<app-page-header title="Tipos de Organismo" subtitle="Catálogo de tipos para clasificar organismos">
+<ng-template appPageActions>
   <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_ORGANISM_TYPE'">
-    <mat-icon>add</mat-icon> Nuevo tipo
+    <i class="ph ph-plus" aria-hidden="true"></i> Nuevo tipo
   </button>
-</app-page-header>
+</ng-template>
+
+<div class="list-toolbar">
+  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+  <span class="list-toolbar-count">{{ (tiposFiltrados$ | async)?.length || 0 }} tipos de organismo</span>
+</div>
 
 <app-shared-table
-    [data]="(tipos$ | async) ?? []"
+    [data]="(tiposFiltrados$ | async) ?? []"
     [columns]="columns"
     [loading]="loading"
     emptyMessage="No hay tipos de organismo registrados"
-    emptyIcon="category">
+    emptyIcon="folders">
 
     <ng-template appTableCell="nombre" let-row>
         <strong>{{ row.nombre }}</strong>
@@ -25,14 +30,14 @@
 
     <ng-template appTableCell="acciones" let-row>
         <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones">
-            <mat-icon>more_vert</mat-icon>
+            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
         </button>
         <mat-menu #menu="matMenu">
             <button mat-menu-item (click)="onEdit(row)" *appHasPermission="'UPDATE_ORGANISM_TYPE'">
-                <mat-icon>edit</mat-icon> Editar
+                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
             </button>
             <button mat-menu-item class="delete-action" (click)="onDelete(row)" *appHasPermission="'DELETE_ORGANISM_TYPE'">
-                <mat-icon>delete</mat-icon> Eliminar
+                <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
             </button>
         </mat-menu>
     </ng-template>

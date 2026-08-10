@@ -4,14 +4,14 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '../../shared/components/table';
+import { FilterTabsComponent } from '../../shared/components/filter-tabs';
 import { AccionLabelPipe } from '../../shared/pipes/accion-label.pipe';
+import { PageActionsDirective } from '../../shared/directives/page-actions.directive';
 import { AuditoriaService } from '../../core/services/auditoria.service';
 import { AuditoriaTramite, AuditoriaAccion, AuditoriaFilter } from '../../core/models/dashboard.model';
 import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.component';
@@ -24,14 +24,14 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
     DatePipe,
     ReactiveFormsModule,
     MatButtonModule,
-    MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    PageHeaderComponent,
     SharedTableComponent,
     TableCellDirective,
+    FilterTabsComponent,
     AccionLabelPipe,
+    PageActionsDirective,
   ],
   templateUrl: './auditoria-list.component.html',
   styleUrls: ['./auditoria-list.component.scss'],

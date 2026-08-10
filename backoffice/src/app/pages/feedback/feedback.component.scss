@@ -1,3 +1,9 @@
+@use '../../../shared-styles/mixins' as *;
+
+.list-toolbar {
+  @include list-toolbar;
+}
+
 // ── Stats Cards ─────────────────────────────────────────────
 
 .stats-grid {
@@ -24,10 +30,8 @@
     justify-content: center;
     flex-shrink: 0;
 
-    .mat-icon {
+    i.ph {
       font-size: 26px;
-      width: 26px;
-      height: 26px;
     }
 
     &--total     { background: #3B82F618; color: #3B82F6; }
@@ -86,22 +90,11 @@
 .filter-select { width: 160px; }
 .filter-date   { width: 170px; }
 
-// ── Tabla ────────────────────────────────────────────────────
-
-.table-container {
-  background: var(--theme-bg-card);
-  border-radius: var(--theme-radius-lg);
-  box-shadow: var(--theme-shadow-card);
-  border: 1px solid var(--theme-border-secondary);
-  overflow: hidden;
-
-  @media (max-width: 767px) { overflow-x: auto; }
+.filters-count {
+  @include list-toolbar-count(true);
 }
 
-.full-width { width: 100%; }
-
-.col-util  { width: 110px; }
-.col-fecha { width: 150px; white-space: nowrap; }
+// ── Tabla ────────────────────────────────────────────────────
 
 // Chip útil/no útil
 .util-chip {
@@ -129,8 +122,6 @@
 
 .util-icon {
   font-size: 14px;
-  width: 14px;
-  height: 14px;
 }
 
 // Tramite cell
@@ -160,23 +151,6 @@
 .sin-comentario {
   color: var(--theme-text-secondary);
   font-size: var(--theme-font-size-sm);
-}
-
-// Empty state
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--theme-space-2xl);
-  color: var(--theme-text-secondary);
-
-  mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
-    margin-bottom: var(--theme-space-sm);
-    opacity: 0.5;
-  }
 }
 
 // ── Responsive ───────────────────────────────────────────────
