@@ -1,7 +1,9 @@
 // ==========================================================================
-// FilterTabsComponent — chips-filtro tipo pill (screens-spec.md §3.3/§5)
-// Reposo: borde neutro/blanco. Activo: bg info-50 + borde info-200 + texto
-// primary-800 + 600. Dot rojo opcional = alerta ("Requieren revisión").
+// FilterTabsComponent — chips/segmented-control PLANOS, radius 8 (delta
+// design "Filtros rediseñados" §2B, variante SOLID del toolbar de LISTA).
+// No son pills full ni dropdowns. Reposo: caja blanca, borde neutro. Activo:
+// bg info-50 (#E8F1FA) + borde info-200 (#9EC4E8) + texto primary-800 + 600.
+// Dot rojo opcional = alerta ("Requieren revisión").
 // ==========================================================================
 
 @use '../../../../shared-styles/mixins' as *;
@@ -9,14 +11,14 @@
 .filter-tabs {
   display: flex;
   align-items: center;
-  gap: var(--theme-space-sm);
+  gap: 6px;
   flex-wrap: wrap;
 
   &-tab {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    height: 32px;
+    height: 34px;
     padding: 0 var(--theme-space-md);
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-md);

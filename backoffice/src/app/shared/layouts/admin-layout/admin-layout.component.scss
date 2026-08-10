@@ -36,6 +36,17 @@
         &.mat-drawer {
             border-right: none; // el borde lo aporta el selector de arriba
         }
+
+        // El contenido proyectado (logo/buscador/nav/footer) no es hijo directo del
+        // `mat-drawer` sino de su wrapper interno `.mat-drawer-inner-container` (CDK).
+        // El `display:flex` de arriba solo gobierna ESE wrapper como único hijo: para que
+        // `.admin-layout__nav { flex: 1 }` realmente empuje el footer al fondo (a cualquier
+        // zoom/alto), el wrapper mismo tiene que ser el contenedor flex-column.
+        ::ng-deep .mat-drawer-inner-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
     }
 
     &__sidenav--mini {
@@ -371,6 +382,7 @@
 // ==========================================================================
 .admin-layout__footer {
     flex: none;
+    margin-top: auto; // siempre al fondo, aunque el nav tenga pocos ítems (short-circuit del flex:1 de arriba)
     padding: 10px 12px 12px;
     display: flex;
     flex-direction: column;
@@ -572,9 +584,17 @@
 
 .admin-layout__header-actions {
     flex: none;
+    height: 100%; // spanea la altura real del header (no la del contenido) para centrar sin ambigüedad
     display: flex;
     align-items: center;
     gap: var(--theme-space-sm);
+
+    // Los botones que proyectan las páginas (mat-*-button, 40px) deben centrarse entre sí
+    // sin importar el orden/variante — nunca `align-self` propio ni márgenes verticales.
+    ::ng-deep > * {
+        flex: none;
+        align-self: center;
+    }
 }
 
 // ==========================================================================

@@ -2,37 +2,22 @@
 
  .list-toolbar {
    @include list-toolbar;
- }
-
- .Filtros {
-   display: flex;
-   gap: var(--theme-space-md);
-   padding: var(--theme-space-md) var(--theme-space-lg);
-   background: var(--theme-bg-card);
-   border-radius: var(--theme-radius-lg);
-   box-shadow: var(--theme-shadow-card);
-   border: 1px solid var(--theme-border-secondary);
-   margin-bottom: var(--theme-space-md);
-   flex-wrap: wrap;
-   align-items: flex-start;
-
-   @media (max-width: 767px) {
-     flex-direction: column;
-     padding: var(--theme-space-md);
-   }
-
-   &-field {
-     flex: 1;
-     min-width: 200px;
-
-     @media (max-width: 767px) {
-       min-width: 100%;
-     }
-   }
 
    &-count {
      @include list-toolbar-count(true);
-     align-self: center;
+   }
+ }
+
+ // Campos de búsqueda/selects reales (fila A del well) — dato real ya persistido
+ // por el backend (título/descripción, organismo, estado, localidad). Fondo
+ // blanco explícito para que el campo se lea sobre el well sunken (#F7F9FB).
+ .Filtros-field {
+   flex: 1;
+   min-width: 200px;
+   --mdc-outlined-text-field-container-color: var(--theme-surface-card);
+
+   @media (max-width: 767px) {
+     min-width: 100%;
    }
  }
 

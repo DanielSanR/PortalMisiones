@@ -81,10 +81,14 @@ export class RolesListComponent implements OnInit {
   columns: TableColumn<RolVM>[] = [
     { key: 'rol',      label: 'Rol' },
     { key: 'permisos', label: 'Permisos', width: '110px' },
-    // El backend no expone la cantidad de usuarios por rol (no hay `GET /api/user` ni un join role→users,
-    // ver BACKEND_API_SPEC.md §4.2) → columna placeholder honesto ('—'), sin inventar un número. Cuando el
-    // backend agregue el dato (p. ej. `RolVM.usuariosCount`), reemplazar la celda por el valor real.
-    { key: 'usuarios', label: 'Usuarios', width: '110px' },
+    // Divergencia: BACKEND_API_SPEC.md (ítem "G") documenta que `RoleResponseDTO` YA expone `active`
+    // ("ahora SÍ incluye active"; antes no se exponía) y QA lo confirmó pendiente ("Editar Roles: no
+    // muestra el 'active' del role", ver qa_result.md). El dato real existe en el backend, pero
+    // `RolVM`/`toRolVM()` (core/features/roles) todavía no lo mapean — fuera del alcance de esta pantalla
+    // (solo se tocan los archivos de roles-list). Hasta que se agregue `activo` al ViewModel, la columna
+    // muestra un placeholder honesto (no se inventa true/false). TODO: una vez mapeado, bindear a
+    // `row.activo` con `.bool-badge`/`.bool-badge--active`/`.bool-badge--inactive` (mismo patrón que Organismos).
+    { key: 'activo',   label: 'Activo', width: '110px' },
     { key: 'acciones', label: 'Acciones', width: '150px' },
   ];
 

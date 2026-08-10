@@ -47,9 +47,12 @@
         <strong class="count-badge">{{ row.permisos.length }}</strong>
       </ng-template>
 
-      <!-- Columna: Usuarios — sin dato real del backend (ver comentario en columns), placeholder honesto. -->
-      <ng-template appTableCell="usuarios">
-        <span class="count-placeholder" matTooltip="El backend no expone la cantidad de usuarios por rol">—</span>
+      <!-- Columna: Activo (RoleResponseDTO.active, mapeado a RolVM.activo). -->
+      <ng-template appTableCell="activo" let-row>
+        <span class="bool-badge" [class.bool-badge--active]="row.activo" [class.bool-badge--inactive]="!row.activo">
+          <span class="bool-badge__dot" aria-hidden="true"></span>
+          {{ row.activo ? 'Activo' : 'Inactivo' }}
+        </span>
       </ng-template>
 
       <!-- Columna: Acciones -->
@@ -88,11 +91,6 @@
               }
             </p>
           </div>
-          <button mat-stroked-button type="button" color="primary" (click)="onEdit(rol)" [disabled]="!canModify(rol)"
-                  [matTooltip]="canModify(rol) ? '' : 'El rol SUPERADMIN no se puede editar'"
-                  [matTooltipDisabled]="canModify(rol)">
-            <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar rol
-          </button>
         </div>
 
         <div class="rol-detail__groups">

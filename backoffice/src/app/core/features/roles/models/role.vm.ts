@@ -8,6 +8,7 @@ export interface RolVM {
   descripcion: string;
   scopeTipo: RoleScopeType; // 'global' | 'organismo'
   asignablePorOrgAdmin: boolean;
+  activo: boolean;
   permisos: PermisoVM[];
 }
 

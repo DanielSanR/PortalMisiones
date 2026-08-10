@@ -9,12 +9,12 @@ const DELAY = 200;
 @Injectable()
 export class RolesMockDataSource extends RolesDataSource {
   private data: RolVM[] = [
-    { id: 'rol-1', codigo: 'SUPERADMIN',         descripcion: 'Superusuario',                  scopeTipo: 'global',    asignablePorOrgAdmin: false, permisos: [] },
-    { id: 'rol-2', codigo: 'ADMIN_BACKOFFICE',   descripcion: 'Admin de backoffice',           scopeTipo: 'global',    asignablePorOrgAdmin: false, permisos: [] },
-    { id: 'rol-3', codigo: 'ADMIN_ORGANIZATION', descripcion: 'Admin de organización local',   scopeTipo: 'organismo', asignablePorOrgAdmin: true,  permisos: [] },
-    { id: 'rol-4', codigo: 'AGENT',              descripcion: 'Operador de trámites',          scopeTipo: 'organismo', asignablePorOrgAdmin: true,  permisos: [] },
-    { id: 'rol-5', codigo: 'MANAGER',            descripcion: 'Visualizador de estadísticas',  scopeTipo: 'organismo', asignablePorOrgAdmin: true,  permisos: [] },
-    { id: 'rol-6', codigo: 'USER',               descripcion: 'Usuario final',                 scopeTipo: 'global',    asignablePorOrgAdmin: false, permisos: [] },
+    { id: 'rol-1', codigo: 'SUPERADMIN',         descripcion: 'Superusuario',                  scopeTipo: 'global',    asignablePorOrgAdmin: false, activo: true, permisos: [] },
+    { id: 'rol-2', codigo: 'ADMIN_BACKOFFICE',   descripcion: 'Admin de backoffice',           scopeTipo: 'global',    asignablePorOrgAdmin: false, activo: true, permisos: [] },
+    { id: 'rol-3', codigo: 'ADMIN_ORGANIZATION', descripcion: 'Admin de organización local',   scopeTipo: 'organismo', asignablePorOrgAdmin: true,  activo: true, permisos: [] },
+    { id: 'rol-4', codigo: 'AGENT',              descripcion: 'Operador de trámites',          scopeTipo: 'organismo', asignablePorOrgAdmin: true,  activo: true, permisos: [] },
+    { id: 'rol-5', codigo: 'MANAGER',            descripcion: 'Visualizador de estadísticas',  scopeTipo: 'organismo', asignablePorOrgAdmin: true,  activo: true, permisos: [] },
+    { id: 'rol-6', codigo: 'USER',               descripcion: 'Usuario final',                 scopeTipo: 'global',    asignablePorOrgAdmin: false, activo: true, permisos: [] },
   ];
 
   list(): Observable<RolVM[]> {
@@ -39,6 +39,7 @@ export class RolesMockDataSource extends RolesDataSource {
       descripcion: form.descripcion,
       scopeTipo: form.scopeTipo,
       asignablePorOrgAdmin: form.asignablePorOrgAdmin,
+      activo: form.active,
       permisos: [],
     };
     this.data = [...this.data, nuevo];
@@ -54,6 +55,7 @@ export class RolesMockDataSource extends RolesDataSource {
       descripcion: form.descripcion,
       scopeTipo: form.scopeTipo,
       asignablePorOrgAdmin: form.asignablePorOrgAdmin,
+      activo: form.active,
       permisos: this.data[idx].permisos,
     };
     this.data = this.data.map((x) => (x.id === id ? actualizado : x));

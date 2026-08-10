@@ -10,6 +10,7 @@ export function toRolVM(dto: RoleResponseDTO): RolVM {
     descripcion: dto.description ?? '',
     scopeTipo: dto.scopeType,
     asignablePorOrgAdmin: dto.assignableByOrgAdmin,
+    activo: dto.active ?? true,
     permisos: (dto.permissions ?? []).map(
       (p): PermisoVM => ({ id: p.id, codigo: p.code, descripcion: p.description })
     ),

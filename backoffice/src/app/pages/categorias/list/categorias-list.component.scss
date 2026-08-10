@@ -139,10 +139,8 @@
   // (patrón GLOBAL de listados — icon-only en Categorías: Agregar sub, Editar, Eliminar).
 
   // ── Carga / vacío ───────────────────────────────────────────
-  &__loading {
-    @include flex-center;
-    padding: var(--theme-space-2xl);
-  }
+  // Skeleton de carga: `app-loading[variant=skeleton]` (ver template), sin
+  // estilos propios acá — hereda el shimmer/radios del componente compartido.
 
   &__empty {
     display: flex;

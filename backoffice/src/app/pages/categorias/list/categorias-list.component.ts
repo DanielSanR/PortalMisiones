@@ -5,10 +5,10 @@ import { BehaviorSubject, combineLatest, filter, firstValueFrom, map, switchMap 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
@@ -37,8 +37,8 @@ function filterRoots(roots: CategoriaNode[], filtro: ArbolFiltro): CategoriaNode
     NgTemplateOutlet,
     MatButtonModule,
     MatTooltipModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
+    LoadingComponent,
     FilterTabsComponent,
     HasPermissionDirective,
     PageActionsDirective,

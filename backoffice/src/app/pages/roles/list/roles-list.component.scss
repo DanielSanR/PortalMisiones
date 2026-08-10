@@ -112,19 +112,31 @@
   font-variant-numeric: tabular-nums;
 }
 
-// Columna "Usuarios" — el backend no expone el conteo por rol (ver `roles-list.component.ts`):
-// placeholder honesto, tenue y sin negrita para no leerse como un dato real ausente por error.
-.count-placeholder {
-  font-size: var(--theme-font-size-sm);
+// Columna "Activo" — `RolVM` aún no mapea `active` (dato real ya expuesto por el backend, ver comentario
+// en `roles-list.component.ts`): modificador propio y distinto de `.bool-badge--inactive` (definido en
+// shared-styles) para que el gris se lea como "sin dato todavía", no como un rol dado de baja de verdad.
+.bool-badge--unknown {
+  background: var(--theme-surface-sunken);
   color: var(--theme-text-tertiary);
-  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--theme-border-primary);
   cursor: help;
+
+  .bool-badge__dot {
+    background: var(--theme-text-tertiary);
+  }
 }
 
 // ── Detail: editor de permisos (read-friendly) ──────────────────────────────
 .rol-detail {
   @include theme-card;
+  // Panel = alto de `.roles-layout__detail` (techado por viewport, ver arriba) repartido en columna:
+  // el header queda fijo (flex: none) y solo `&__groups` scrollea, para que la cantidad de grupos de
+  // permisos no estire el panel por encima de la tabla master.
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px);
   padding: var(--theme-space-lg);
+  overflow: hidden;
 
   &--empty {
     @include flex-center;
@@ -133,6 +145,7 @@
     padding: var(--theme-space-3xl) var(--theme-space-lg);
     text-align: center;
     color: var(--theme-text-tertiary);
+    max-height: none;
 
     i.ph { font-size: 40px; color: var(--theme-primary-200); }
     p { margin: 0; font-size: var(--theme-font-size-sm); max-width: 32ch; }
@@ -143,6 +156,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--theme-space-md);
+    flex: none;
     margin-bottom: var(--theme-space-lg);
     padding-bottom: var(--theme-space-md);
     border-bottom: 1px solid var(--theme-border-secondary);
@@ -168,13 +182,19 @@
   &__groups {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0; // permite que el flex item se achique por debajo de su contenido y habilite el scroll
     gap: var(--theme-space-md);
+    overflow-y: auto;
+    padding-right: var(--theme-space-xs); // separa los chips de la scrollbar
+    @include custom-scrollbar;
   }
 
   &__note {
     display: flex;
     align-items: center;
     gap: var(--theme-space-sm);
+    flex: none;
     margin-top: var(--theme-space-lg);
     padding: var(--theme-space-sm) var(--theme-space-md);
     background: var(--theme-surface-sunken);

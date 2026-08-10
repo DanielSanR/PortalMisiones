@@ -2,22 +2,18 @@
 
 .list-toolbar {
   @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count(true);
+  }
 }
 
-.filters-card {
-  background: var(--theme-bg-card);
-  border-radius: var(--theme-radius-lg);
-  box-shadow: var(--theme-shadow-card);
-  border: 1px solid var(--theme-border-secondary);
-  padding: var(--theme-space-md) var(--theme-space-lg);
-  margin-bottom: var(--theme-space-lg);
-}
-
-.filters-row {
-  display: flex;
-  gap: var(--theme-space-md);
-  align-items: center;
-  flex-wrap: wrap;
+// Campos de búsqueda/select reales (fila A del well) — dato real (`search`,
+// `accion`) ya persistido en el backend de auditoría. Fondo blanco explícito
+// para que el campo se lea sobre el well sunken (#F7F9FB).
+.filter-search,
+.filter-select {
+  --mdc-outlined-text-field-container-color: var(--theme-surface-card);
 }
 
 .filter-search {
@@ -27,10 +23,6 @@
 
 .filter-select {
   width: 200px;
-}
-
-.filters-count {
-  @include list-toolbar-count(true);
 }
 
 .accion-chip {

@@ -133,13 +133,15 @@
 
         <mat-sidenav-content class="admin-layout__content">
             <header class="admin-layout__header">
+                <!-- Trigger solo-mobile: en desktop el colapso vive únicamente en el sidenav (logo). -->
                 <button type="button"
-                    class="admin-layout__icon-btn"
-                    (click)="isMobile ? sidenav.toggle() : toggleCollapse()"
-                    [attr.aria-expanded]="isMobile ? sidenav.opened : !isCollapsed"
-                    [attr.aria-label]="isMobile ? 'Menú de navegación' : (isCollapsed ? 'Expandir navegación' : 'Colapsar navegación')"
-                    [matTooltip]="isMobile ? 'Menú' : (isCollapsed ? 'Expandir navegación' : 'Colapsar navegación')">
-                    <i class="ph" [class.ph-x]="isMobile && sidenav.opened" [class.ph-list]="isMobile && !sidenav.opened" [class.ph-sidebar]="!isMobile" aria-hidden="true"></i>
+                    class="admin-layout__icon-btn admin-layout__mobile-nav-btn"
+                    *ngIf="isMobile"
+                    (click)="sidenav.toggle()"
+                    [attr.aria-expanded]="sidenav.opened"
+                    aria-label="Menú de navegación"
+                    matTooltip="Menú">
+                    <i class="ph" [class.ph-x]="sidenav.opened" [class.ph-list]="!sidenav.opened" aria-hidden="true"></i>
                 </button>
 
                 <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación">

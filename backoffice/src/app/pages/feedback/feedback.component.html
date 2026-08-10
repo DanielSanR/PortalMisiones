@@ -6,10 +6,6 @@
   }
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="valoracionTabs" [active]="valoracionActiva" (activeChange)="filtrarValoracion($event)"></app-filter-tabs>
-</div>
-
 <!-- ── Stats Cards ── -->
 @if (stats) {
   <div class="stats-grid">
@@ -55,9 +51,9 @@
   </div>
 }
 
-<!-- ── Filtros ── -->
-<div class="filters-card">
-  <form [formGroup]="filterForm" class="filters-row">
+<!-- Toolbar de lista (well): fila A = búsqueda/fechas reales + contador · fila B = filter-tabs de valoración. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <form [formGroup]="filterForm" class="list-toolbar__row">
     <mat-form-field appearance="outline" class="filter-search">
       <mat-label>Buscar trámite u organismo</mat-label>
       <input matInput formControlName="search" placeholder="Ej: BEEG, IPS...">
@@ -78,8 +74,12 @@
       <mat-datepicker #pickerHasta></mat-datepicker>
     </mat-form-field>
 
-    <span class="filters-count">{{ totalItems }} opiniones</span>
+    <span class="list-toolbar-count">{{ totalItems }} opiniones</span>
   </form>
+
+  <div class="list-toolbar__row">
+    <app-filter-tabs [tabs]="valoracionTabs" [active]="valoracionActiva" (activeChange)="filtrarValoracion($event)"></app-filter-tabs>
+  </div>
 </div>
 
 <!-- ── Tabla ── -->

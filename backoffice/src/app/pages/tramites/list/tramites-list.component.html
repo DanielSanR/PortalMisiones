@@ -4,52 +4,54 @@
     </button>
 </ng-template>
 
-<div class="list-toolbar">
-    <app-filter-tabs [tabs]="estadoTabs" [active]="estadoTabsActivo" (activeChange)="filtrarEstado($event)"></app-filter-tabs>
-</div>
+<!-- Toolbar de lista (well): fila A = búsqueda/selects reales + contador · fila B = filter-tabs de estado. -->
+<div class="list-toolbar list-toolbar--stacked">
+    <div class="list-toolbar__row" [formGroup]="filterForm">
+        <mat-form-field appearance="outline" class="Filtros-field">
+            <mat-label>Buscar</mat-label>
+            <input matInput formControlName="search" placeholder="Titulo o descripcion..." />
+            <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
+        </mat-form-field>
 
-<!-- Filters -->
-<div class="Filtros" [formGroup]="filterForm">
-    <mat-form-field appearance="outline" class="Filtros-field">
-        <mat-label>Buscar</mat-label>
-        <input matInput formControlName="search" placeholder="Titulo o descripcion..." />
-        <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
-    </mat-form-field>
+        @if (isSuperAdmin) {
+          <mat-form-field appearance="outline" class="Filtros-field">
+              <mat-label>Organismo</mat-label>
+              <mat-select formControlName="organismoId">
+                  <mat-option value="">Todos</mat-option>
+                  @for (org of organismos; track org.id) {
+                    <mat-option [value]="org.id">{{ org.nombre }}</mat-option>
+                  }
+              </mat-select>
+          </mat-form-field>
+        }
 
-    @if (isSuperAdmin) {
-      <mat-form-field appearance="outline" class="Filtros-field">
-          <mat-label>Organismo</mat-label>
-          <mat-select formControlName="organismoId">
-              <mat-option value="">Todos</mat-option>
-              @for (org of organismos; track org.id) {
-                <mat-option [value]="org.id">{{ org.nombre }}</mat-option>
-              }
-          </mat-select>
-      </mat-form-field>
-    }
+        <mat-form-field appearance="outline" class="Filtros-field">
+            <mat-label>Estado</mat-label>
+            <mat-select formControlName="estado">
+                <mat-option value="">Todos</mat-option>
+                <mat-option value="borrador">Borrador</mat-option>
+                <mat-option value="revision">En revisión</mat-option>
+                <mat-option value="publicado">Publicado</mat-option>
+                <mat-option value="despublicado">Despublicado</mat-option>
+            </mat-select>
+        </mat-form-field>
 
-    <mat-form-field appearance="outline" class="Filtros-field">
-        <mat-label>Estado</mat-label>
-        <mat-select formControlName="estado">
-            <mat-option value="">Todos</mat-option>
-            <mat-option value="borrador">Borrador</mat-option>
-            <mat-option value="revision">En revisión</mat-option>
-            <mat-option value="publicado">Publicado</mat-option>
-            <mat-option value="despublicado">Despublicado</mat-option>
-        </mat-select>
-    </mat-form-field>
+        <mat-form-field appearance="outline" class="Filtros-field">
+            <mat-label>Localidad</mat-label>
+            <mat-select formControlName="localidadId">
+                <mat-option value="">Todas</mat-option>
+                @for (loc of localidades; track loc.id) {
+                  <mat-option [value]="loc.id">{{ loc.nombre }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
 
-    <mat-form-field appearance="outline" class="Filtros-field">
-        <mat-label>Localidad</mat-label>
-        <mat-select formControlName="localidadId">
-            <mat-option value="">Todas</mat-option>
-            @for (loc of localidades; track loc.id) {
-              <mat-option [value]="loc.id">{{ loc.nombre }}</mat-option>
-            }
-        </mat-select>
-    </mat-form-field>
+        <span class="list-toolbar-count">{{ totalItems }} trámites</span>
+    </div>
 
-    <span class="Filtros-count">{{ totalItems }} trámites</span>
+    <div class="list-toolbar__row">
+        <app-filter-tabs [tabs]="estadoTabs" [active]="estadoTabsActivo" (activeChange)="filtrarEstado($event)"></app-filter-tabs>
+    </div>
 </div>
 
 <!-- Table -->

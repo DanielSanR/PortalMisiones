@@ -15,7 +15,9 @@
 
 <div class="cat-table">
   @if (loading) {
-    <div class="cat-table__loading"><mat-spinner diameter="40"></mat-spinner></div>
+    <!-- Skeleton (carga inicial) — mismo patrón shimmer que `SharedTable`/`LoadingComponent`,
+         reusado acá porque el árbol de categorías no usa `app-shared-table`. -->
+    <app-loading [loading]="true" variant="skeleton" [rows]="6"></app-loading>
   } @else {
     @if ((arbolFiltrado$ | async) ?? []; as rows) {
       @if (rows.length === 0) {

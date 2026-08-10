@@ -2,6 +2,10 @@
 
 .list-toolbar {
   @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count(true);
+  }
 }
 
 // ── Stats Cards ─────────────────────────────────────────────
@@ -64,22 +68,13 @@
   }
 }
 
-// ── Filtros ──────────────────────────────────────────────────
-
-.filters-card {
-  background: var(--theme-bg-card);
-  border-radius: var(--theme-radius-lg);
-  box-shadow: var(--theme-shadow-card);
-  border: 1px solid var(--theme-border-secondary);
-  padding: var(--theme-space-md) var(--theme-space-lg);
-  margin-bottom: var(--theme-space-lg);
-}
-
-.filters-row {
-  display: flex;
-  gap: var(--theme-space-md);
-  align-items: center;
-  flex-wrap: wrap;
+// ── Filtros (fila A del well) — dato real (`search`, `esUtil`, fechas) ──────
+// ya persistido/consultado vía `FeedbackFacade`/`FeedbackService`. Fondo
+// blanco explícito para que el campo se lea sobre el well sunken (#F7F9FB).
+.filter-search,
+.filter-select,
+.filter-date {
+  --mdc-outlined-text-field-container-color: var(--theme-surface-card);
 }
 
 .filter-search {
@@ -89,10 +84,6 @@
 
 .filter-select { width: 160px; }
 .filter-date   { width: 170px; }
-
-.filters-count {
-  @include list-toolbar-count(true);
-}
 
 // ── Tabla ────────────────────────────────────────────────────
 

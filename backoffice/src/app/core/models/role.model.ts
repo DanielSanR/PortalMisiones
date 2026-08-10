@@ -20,6 +20,7 @@ export interface RoleResponseDTO {
   description: string;
   scopeType: RoleScopeType;
   assignableByOrgAdmin: boolean;
+  active: boolean; // desde d800be0 el response ya expone `active` (§4.3, ítem G)
   permissions: PermissionResponseDTO[];
 }
 
