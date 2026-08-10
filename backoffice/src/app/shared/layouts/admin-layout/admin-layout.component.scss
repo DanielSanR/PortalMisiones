@@ -126,7 +126,7 @@
     display: flex;
     align-items: center;
     gap: 11px;
-    border-bottom: 1px solid var(--theme-border-strong);
+    border-bottom: 1px solid var(--theme-border-primary);
 
     &-mark {
         flex: none;
@@ -492,7 +492,7 @@
     height: var(--theme-header-height);
     flex: none;
     background-color: var(--theme-bg-header);
-    border-bottom: 1px solid var(--theme-border-strong);
+    border-bottom: 1px solid var(--theme-border-primary);
     display: flex;
     align-items: center;
     gap: var(--theme-space-md);
