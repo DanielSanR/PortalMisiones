@@ -32,6 +32,76 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Paginador propio (Kitchen Sink §05) — rango a la izquierda, carets y chips
+  // numerados a la derecha. El diseño no incluye selector de tamaño de página.
+  // ---------------------------------------------------------------------------
+  &__paginador {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 11px 18px;
+  }
+
+  &__paginador-rango {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__paginador-controles {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__paginador-elipsis {
+    min-width: 18px;
+    text-align: center;
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-xs);
+  }
+
+  &__pagina {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--theme-text-secondary);
+    font-family: inherit;
+    font-size: var(--theme-font-size-xs);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background-color var(--theme-transition-fast), color var(--theme-transition-fast);
+    @include focus-ring;
+
+    i.ph {
+      font-size: 16px;
+    }
+
+    &:hover:not([disabled]):not(.is-active) {
+      background: var(--theme-surface-sunken);
+    }
+
+    &.is-active {
+      background: var(--theme-primary);
+      color: var(--theme-text-on-primary);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+
+    &[disabled] {
+      color: var(--theme-border-strong);
+      cursor: not-allowed;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Table wrapper — permite scroll horizontal en mobile
   // ---------------------------------------------------------------------------
   &__wrapper {

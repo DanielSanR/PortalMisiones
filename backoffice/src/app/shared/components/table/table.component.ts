@@ -2,7 +2,6 @@ import { AfterContentInit, Component, Input, Output, EventEmitter, ViewChild, Co
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.model';
@@ -27,23 +26,6 @@ export class TableHeaderDirective {
   constructor(public templateRef: TemplateRef<any>) { }
 }
 
-// Etiquetas en espanol para mat-paginator
-function getEsPaginatorIntl(): MatPaginatorIntl {
-  const intl = new MatPaginatorIntl();
-  intl.itemsPerPageLabel = 'Items por pagina:';
-  intl.nextPageLabel = 'Siguiente';
-  intl.previousPageLabel = 'Anterior';
-  intl.firstPageLabel = 'Primera pagina';
-  intl.lastPageLabel = 'Ultima pagina';
-  intl.getRangeLabel = (page, pageSize, length) => {
-    if (length === 0 || pageSize === 0) return `0 de ${length}`;
-    const startIndex = page * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, length);
-    return `${startIndex + 1} - ${endIndex} de ${length}`;
-  };
-  return intl;
-}
-
 @Component({
   selector: 'app-shared-table',
   standalone: true,
@@ -51,14 +33,10 @@ function getEsPaginatorIntl(): MatPaginatorIntl {
     CommonModule,
     MatTableModule,
     MatSortModule,
-    MatPaginatorModule,
     MatProgressBarModule,
     MatButtonModule,
     TableCellDirective,
     TableHeaderDirective,
-  ],
-  providers: [
-    { provide: MatPaginatorIntl, useFactory: getEsPaginatorIntl },
   ],
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss'],
@@ -104,7 +82,6 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @Input() totalItems = 0;
   @Input() pageSize = 10;
   @Input() pageIndex = 0;
-  @Input() pageSizeOptions: number[] = [10, 25, 50];
   @Input() sortable = false;
   @Input() striped = false; // alternar fondo de filas para mejorar legibilidad
 
@@ -116,7 +93,6 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @Output() sortChange = new EventEmitter<TableSortEvent>();
   @Output() rowClick = new EventEmitter<T>();
   @ViewChild(MatSort) sort?: MatSort;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ContentChildren(TableCellDirective) cellTemplates!: QueryList<TableCellDirective>;
   @ContentChildren(TableHeaderDirective) headerTemplates!: QueryList<TableHeaderDirective>;
   _displayedColumns: string[] = [];
@@ -180,11 +156,47 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
     });
   }
 
-  onPageChange(event: PageEvent): void {
-    this.pageChange.emit({
-      pageIndex: event.pageIndex,
-      pageSize: event.pageSize,
-    });
+  // ---------------------------------------------------------------------
+  // Paginador propio — Kitchen Sink §05.
+  // ---------------------------------------------------------------------
+  get ultimaPagina(): number {
+    return Math.max(0, Math.ceil(this.totalItems / Math.max(1, this.pageSize)) - 1);
+  }
+
+  /** "1–7 de 68". */
+  get rangoTexto(): string {
+    if (this.totalItems === 0) return '0 de 0';
+    const desde = this.pageIndex * this.pageSize + 1;
+    const hasta = Math.min(desde + this.pageSize - 1, this.totalItems);
+    return `${desde}–${hasta} de ${this.totalItems}`;
+  }
+
+  /**
+   * Páginas a mostrar. Con muchas, se colapsan con elipsis (`null`) manteniendo
+   * siempre la primera, la última y la actual con sus vecinas.
+   */
+  get paginas(): (number | null)[] {
+    const total = this.ultimaPagina + 1;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+
+    const visibles = new Set<number>([0, total - 1, this.pageIndex]);
+    if (this.pageIndex - 1 > 0) visibles.add(this.pageIndex - 1);
+    if (this.pageIndex + 1 < total - 1) visibles.add(this.pageIndex + 1);
+
+    const salida: (number | null)[] = [];
+    let previa = -1;
+    for (const pagina of [...visibles].sort((a, b) => a - b)) {
+      if (previa !== -1 && pagina - previa > 1) salida.push(null);
+      salida.push(pagina);
+      previa = pagina;
+    }
+    return salida;
+  }
+
+  irAPagina(indice: number): void {
+    const destino = Math.min(Math.max(indice, 0), this.ultimaPagina);
+    if (destino === this.pageIndex) return;
+    this.pageChange.emit({ pageIndex: destino, pageSize: this.pageSize });
   }
 
   onRowClick(row: T): void {
