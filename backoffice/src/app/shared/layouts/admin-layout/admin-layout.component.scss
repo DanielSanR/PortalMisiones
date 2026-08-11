@@ -84,13 +84,17 @@
     // ======================================================================
     // CONTENT — columna principal (header + canvas + panel de página)
     // ======================================================================
+    // El `<main>` del diseño es blanco liso: el contenido va directo sobre él, sin un
+    // lienzo gris detrás ni una tarjeta que lo recorte. Antes el área de página usaba
+    // `surface-canvas` (#E8EBEF) y el panel una tarjeta blanca encima, así que se veían
+    // dos superficies donde el diseño tiene una.
     &__content {
-        background-color: var(--theme-surface-canvas);
+        background-color: var(--theme-surface-card);
     }
 
     &__page {
         flex: 1;
-        background-color: var(--theme-surface-canvas);
+        background-color: var(--theme-surface-card);
         padding: var(--theme-space-md) calc(var(--theme-space-xl) + var(--theme-space-sm)) calc(var(--theme-space-2xl));
         display: flex;
         justify-content: center;
@@ -100,13 +104,11 @@
         }
     }
 
+    // Contenedor de ancho máximo, no una tarjeta: el diseño no dibuja borde ni sombra
+    // alrededor del contenido de la página.
     &__panel {
         width: 100%;
         max-width: var(--theme-content-max-width);
-        background-color: var(--theme-surface-card);
-        border: 1px solid var(--theme-border-primary);
-        border-radius: var(--theme-radius-panel);
-        box-shadow: var(--theme-shadow-xs);
         padding: var(--theme-space-lg) calc(var(--theme-space-xl) + var(--theme-space-sm));
 
         @include responsive(mobile) {
