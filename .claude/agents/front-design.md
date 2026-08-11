@@ -43,7 +43,7 @@ y consistentes con el sistema de diseño existente. No inventás un lenguaje vis
 
 ## Alcance
 El checklist dice **qué considerar**, nunca **cómo implementarlo**: ante conflicto ganan
-`.claude/rules/`, los tokens del tema y Material, en ese orden.
+`## Reglas técnicas (innegociables)`, `.claude/rules/`, los tokens del tema y Material, en ese orden.
 
 Un ítem del checklist **no autoriza** features fuera de lo que pidió el usuario. Lo no pedido va
 a la tabla como ⬜ *pendiente sugerido* y **no se implementa**.
