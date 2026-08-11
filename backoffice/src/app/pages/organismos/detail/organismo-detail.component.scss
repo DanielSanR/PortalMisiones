@@ -132,6 +132,10 @@
   gap: 2px;
   padding: 0 20px;
   border-top: 1px solid var(--theme-border-subtle);
+  // `overflow-x: auto` obliga a `overflow-y: auto` (regla de CSS: si un eje deja de ser
+  // `visible`, el otro pasa a `auto`), así que cualquier desborde vertical de 1px saca
+  // una barra. Por eso la pestaña no lleva `margin-bottom: -1px`: el membrete recorta
+  // con `overflow: hidden` de todos modos, así que no aportaba nada y desbordaba.
   overflow-x: auto;
   @include custom-scrollbar;
 
@@ -140,7 +144,6 @@
     align-items: center;
     gap: 7px;
     padding: 11px 12px;
-    margin-bottom: -1px;
     border: 0;
     border-bottom: 2px solid transparent;
     background: transparent;
