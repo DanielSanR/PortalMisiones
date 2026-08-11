@@ -299,6 +299,7 @@
   // Iconos de prefijo/sufijo — 18px según la spec de inputs.
   .mat-mdc-form-field-icon-prefix,
   .mat-mdc-form-field-icon-suffix {
+    padding: 0 4px 0 0;
     .mat-icon,
     i.ph {
       font-size: 18px;
