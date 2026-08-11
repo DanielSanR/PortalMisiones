@@ -126,9 +126,10 @@ export class OrganismoFormComponent implements OnInit, PuedeTenerCambiosSinGuard
       .subscribe({
         next: () => {
           this.snackBar.open(
-            this.isEdit ? 'Organismo actualizado' : 'Organismo creado',
+            this.isEdit ? 'Organismo actualizado' : 'Organismo creado correctamente',
             'OK',
-            { duration: 3000 },
+            // Variante del design system (fondo #1A1A2E) — Kitchen Sink §07.
+            { duration: 3000, panelClass: 'snackbar-success' },
           );
           this.router.navigate(['/dashboard/organismos/lista']);
         },

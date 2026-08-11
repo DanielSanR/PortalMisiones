@@ -296,8 +296,9 @@
     transition: all var(--theme-transition-fast);
     @include focus-ring;
 
+    // Kitchen Sink §09: iconografía de acciones a 18px.
     i.ph {
-        font-size: 15px;
+        font-size: 18px;
     }
 
     &:hover {

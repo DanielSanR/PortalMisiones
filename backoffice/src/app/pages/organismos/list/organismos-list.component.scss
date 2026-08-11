@@ -216,6 +216,45 @@
 // Celdas de la tabla -------------------------------------------------------
 .organismos-list {
 
+  // Celda de nombre: avatar de iniciales + nombre y metadatos (Kitchen Sink §05).
+  &__nombre {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: var(--theme-font-size-2xs);
+    font-weight: var(--theme-font-weight-bold);
+    letter-spacing: 0.2px;
+
+    // Cuatro tintes, asignados por id para que un organismo conserve su color.
+    &--blue  { background: var(--theme-primary-50);  color: var(--theme-primary-600); }
+    &--warm  { background: var(--theme-warning-bg);  color: var(--theme-warning-text); }
+    &--green { background: var(--theme-success-bg);  color: var(--theme-estado-publicado-text); }
+    &--grey  { background: var(--theme-border-subtle); color: var(--theme-text-secondary); }
+  }
+
+  &__nombre-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__nombre-principal {
+    font-weight: var(--theme-font-weight-medium);
+    @include truncate;
+  }
+
   // Marca el organismo sin padre para que "Depende de" nunca quede en blanco.
   &__raiz {
     color: var(--theme-text-tertiary);

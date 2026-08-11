@@ -8,7 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { SharedTableComponent, TableCellDirective, TableColumn, TableSortEvent } from '../../../shared/components/table';
+import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -31,10 +31,17 @@ interface FiltroActivo {
 
 /** ViewModel de la pantalla: filas ya filtradas/ordenadas + los textos que corresponden. */
 interface OrganismosVista extends EstadoVacio {
+  /** Solo la página visible. */
   rows: OrganismoVM[];
+  /** Total tras filtrar (lo que cuenta el toolbar y alimenta al paginador). */
+  total: number;
+  pageIndex: number;
   hayFiltros: boolean;
   filtrosActivos: FiltroActivo[];
 }
+
+/** Paleta de tintes de los avatares de la tabla (Kitchen Sink §05). */
+const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
 
 @Component({
   selector: 'app-organismos-list',
@@ -81,12 +88,30 @@ export class OrganismosListComponent implements OnInit {
     map(([organismos, search]) => activoFilterTabs(this.buscar(organismos, search))),
   );
 
-  readonly vista$ = combineLatest([this.organismos$, this.filtro$, this.search$, this.sort$]).pipe(
-    map(([organismos, filtro, search, sort]): OrganismosVista => {
-      const rows = this.ordenar(filterByActivo(this.buscar(organismos, search), filtro), sort);
+  readonly pageIndex$ = new BehaviorSubject<number>(0);
+  readonly pageSize$ = new BehaviorSubject<number>(10);
+
+  readonly vista$ = combineLatest([
+    this.organismos$, this.filtro$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
+  ]).pipe(
+    map(([organismos, filtro, search, sort, pageIndex, pageSize]): OrganismosVista => {
+      const filtradas = this.ordenar(filterByActivo(this.buscar(organismos, search), filtro), sort);
+      // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de
+      // mostrar una tabla vacía con resultados que sí existen.
+      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
+      const pagina = Math.min(pageIndex, ultimaPagina);
+      const desde = pagina * pageSize;
+
       const filtrosActivos = this.filtrosActivos(search, filtro);
       const hayFiltros = filtrosActivos.length > 0;
-      return { rows, hayFiltros, filtrosActivos, ...this.estadoVacio(organismos.length, hayFiltros) };
+      return {
+        rows: filtradas.slice(desde, desde + pageSize),
+        total: filtradas.length,
+        pageIndex: pagina,
+        hayFiltros,
+        filtrosActivos,
+        ...this.estadoVacio(organismos.length, hayFiltros),
+      };
     }),
   );
 
@@ -157,6 +182,35 @@ export class OrganismosListComponent implements OnInit {
     this.sort$.next(sort);
   }
 
+  onPageChange(evento: TablePageEvent): void {
+    this.pageIndex$.next(evento.pageIndex);
+    this.pageSize$.next(evento.pageSize);
+  }
+
+  /**
+   * Iniciales para el avatar de la fila: hasta dos, salteando conectores.
+   * Sin esto "Instituto de Previsión Social" daría "ID" en vez de "IP".
+   */
+  iniciales(nombre: string): string {
+    const conectores = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en', 'para']);
+    return (nombre ?? '')
+      .split(/\s+/)
+      .filter((palabra) => /\p{L}/u.test(palabra) && !conectores.has(palabra.toLocaleLowerCase('es-AR')))
+      .slice(0, 2)
+      .map((palabra) => palabra[0].toLocaleUpperCase('es-AR'))
+      .join('') || '—';
+  }
+
+  /**
+   * Tinte del avatar. Se deriva del id para que un mismo organismo conserve su color
+   * entre recargas y ordenamientos, en vez de depender de la posición en la lista.
+   */
+  tinte(id: string): string {
+    let acumulado = 0;
+    for (const caracter of id ?? '') acumulado = (acumulado + caracter.charCodeAt(0)) % 997;
+    return TINTES[acumulado % TINTES.length];
+  }
+
   accionEditar(organismo: OrganismoVM): RowAction {
     return {
       label: 'Editar',
@@ -190,9 +244,14 @@ export class OrganismosListComponent implements OnInit {
   onDelete(organismo: OrganismoVM): void {
     this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Eliminar organismo',
-        message: `¿Está seguro de eliminar "${organismo.nombre}"? Esta acción es permanente y no se puede deshacer. No se puede eliminar si tiene organismos hijos activos.`,
-        confirmText: 'Eliminar',
+        title: '¿Eliminar el organismo?',
+        // El diseño pide contar la consecuencia, no la restricción: qué pasa si sigo.
+        // La regla de "no se puede si tiene hijos activos" la aplica el backend y, si
+        // corresponde, vuelve como error; acá solo estorbaba.
+        message: `Se eliminará ${organismo.nombre} y dejará de estar disponible para asociar trámites y usuarios. Esta acción no se puede deshacer.`,
+        highlight: organismo.nombre,
+        danger: true,
+        confirmText: 'Sí, eliminar',
         busyText: 'Eliminando...',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend responde,
         // en vez de cerrar optimistamente y dejar al usuario sin señal. La fila queda
@@ -209,7 +268,11 @@ export class OrganismosListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Organismo eliminado', 'OK', { duration: 3000 }));
+      .subscribe(() => this.snackBar.open('Organismo eliminado', 'OK', {
+        duration: 3000,
+        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+        panelClass: 'snackbar-success',
+      }));
   }
 
   private buscar(organismos: OrganismoVM[], termino: string): OrganismoVM[] {

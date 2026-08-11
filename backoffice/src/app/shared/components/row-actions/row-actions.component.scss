@@ -13,11 +13,11 @@
 
 .row-actions {
 
-  // Separa el grupo destructivo del resto dentro del menú.
+  // Separa el grupo destructivo del resto dentro del menú (Kitchen Sink §07).
   &__divisor {
-    margin: var(--theme-space-xs) 0;
+    margin: 5px 4px;
     border: 0;
-    border-top: 1px solid var(--theme-border-primary);
+    border-top: 1px solid var(--theme-border-subtle);
   }
 
   &__spinner {

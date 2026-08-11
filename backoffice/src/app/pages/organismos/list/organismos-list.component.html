@@ -18,7 +18,7 @@
     </div>
 
     <div class="orglist-acciones">
-      <span class="list-toolbar-count">{{ vista.rows.length }} organismos</span>
+      <span class="list-toolbar-count">{{ vista.total }} organismos</span>
       <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
       <button type="button" class="orglist-iconbtn" disabled
               aria-label="Ordenar">
@@ -61,9 +61,16 @@
     [columns]="columns"
     [loading]="loading"
     [error]="error"
+    errorTitle="No pudimos cargar los organismos"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Gobierno Inteligente."
     (retry)="load()"
     [sortable]="true"
     (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
     [emptyActionLabel]="vista.emptyActionLabel"
@@ -72,12 +79,20 @@
     emptyIcon="buildings">
 
     <ng-template appTableCell="nombre" let-row>
-        <strong>{{ row.nombre }}</strong>
-        @if (row.acronym) { <span class="text-secondary"> ({{ row.acronym }})</span> }
-        <!-- En mobile las columnas Tipo y "Depende de" se ocultan: acá no se pierde el dato. -->
-        <span class="organismos-list__meta">
-            {{ row.tipoNombre || 'Sin tipo' }}@if (row.parentNombre) { · depende de {{ row.parentNombre }} }
-        </span>
+        <div class="organismos-list__nombre">
+            <!-- Avatar con iniciales tintadas (Kitchen Sink §05). El tinte se deriva del id. -->
+            <span class="organismos-list__avatar" [class]="'organismos-list__avatar organismos-list__avatar--' + tinte(row.id)"
+                  aria-hidden="true">{{ iniciales(row.nombre) }}</span>
+            <div class="organismos-list__nombre-texto">
+                <span class="organismos-list__nombre-principal">
+                    {{ row.nombre }}@if (row.acronym) {<span class="text-secondary">&nbsp;({{ row.acronym }})</span>}
+                </span>
+                <!-- En mobile las columnas Tipo y "Depende de" se ocultan: acá no se pierde el dato. -->
+                <span class="organismos-list__meta">
+                    {{ row.tipoNombre || 'Sin tipo' }}@if (row.parentNombre) { · depende de {{ row.parentNombre }} }
+                </span>
+            </div>
+        </div>
     </ng-template>
 
     <ng-template appTableCell="parentNombre" let-row>
