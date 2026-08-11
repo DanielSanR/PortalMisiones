@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable, forkJoin, map, of, tap } from 'rxjs';
 import { TiposOrganismoRepository } from '@features/tipos-organismo';
 import { LocalidadesRepository } from '@features/localidades';
 import { OrganismosRepository } from '../repositories/organismos.repository';
-import { OrganismoDetalleVM, OrganismoFormData, OrganismoFormValue, OrganismoVM } from '../models/organismo.vm';
+import { OrganismoFormData, OrganismoFormValue, OrganismoVM } from '../models/organismo.vm';
 
 /**
  * Facade de Organismos. Expone Observables (async pipe; NO signals). Depende de su Repository y,
@@ -35,34 +35,6 @@ export class OrganismosFacade {
       organismos: this.repo.list(),
       organismo: id ? this.repo.getById(id) : of(null),
     });
-  }
-
-  /**
-   * Detalle de un organismo con las etiquetas de sus relaciones resueltas.
-   * `/api/organism/{id}` solo devuelve ids (`typeId`, `parentId`, `baseLocationId`),
-   * así que se piden los catálogos en paralelo para poder mostrar nombres.
-   */
-  getDetalle(id: string): Observable<OrganismoDetalleVM> {
-    return forkJoin({
-      organismo: this.repo.getById(id),
-      tipos: this.tiposRepo.getOptions(),
-      localidades: this.localidadesRepo.getLocalidades(),
-      organismos: this.repo.list(),
-    }).pipe(
-      map(({ organismo, tipos, localidades, organismos }) => {
-        const localidad = organismo.baseLocationId
-          ? localidades.find((l) => l.id === organismo.baseLocationId)
-          : undefined;
-        return {
-          organismo,
-          tipoNombre: tipos.find((t) => t.id === organismo.typeId)?.nombre ?? null,
-          parentNombre: organismo.parentId
-            ? organismos.find((o) => o.id === organismo.parentId)?.nombre ?? null
-            : null,
-          localidadNombre: localidad ? `${localidad.nombre} (${localidad.departamentoNombre})` : null,
-        };
-      }),
-    );
   }
 
   /** Carga organismos + tipos y resuelve `tipoNombre` (el DTO solo trae `typeId`). */

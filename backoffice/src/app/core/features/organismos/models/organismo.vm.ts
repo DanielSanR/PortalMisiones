@@ -23,14 +23,6 @@ export interface OrganismoVM {
   updatedAt?: string | null;
 }
 
-/** Organismo + las etiquetas de sus relaciones, resueltas contra los catálogos. */
-export interface OrganismoDetalleVM {
-  organismo: OrganismoVM;
-  tipoNombre: string | null;
-  parentNombre: string | null;
-  localidadNombre: string | null;
-}
-
 /** Valor del formulario de organismo. `typeId` requerido; `parentId`/`baseLocationId` opcionales. */
 export interface OrganismoFormValue {
   typeId: string;

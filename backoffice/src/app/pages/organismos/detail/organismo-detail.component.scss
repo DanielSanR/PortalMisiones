@@ -126,6 +126,34 @@
   }
 }
 
+// Barra compacta del modo edición: chip de modificación + pestañas ---------
+.orgdet-barra {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-md);
+  flex-wrap: wrap;
+}
+
+.orgdet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-surface-card);
+  font-size: var(--theme-font-size-xs);
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+
+  i.ph {
+    font-size: 15px;
+    color: var(--theme-text-tertiary);
+  }
+}
+
 // Tabs subrayadas ----------------------------------------------------------
 .orgdet-tabs {
   display: flex;
@@ -138,6 +166,12 @@
   // con `overflow: hidden` de todos modos, así que no aportaba nada y desbordaba.
   overflow-x: auto;
   @include custom-scrollbar;
+
+  // Fuera del membrete (modo edición) no hay tarjeta que las contenga.
+  &--sueltas {
+    padding: 0;
+    border-top: 0;
+  }
 
   &__tab {
     display: inline-flex;

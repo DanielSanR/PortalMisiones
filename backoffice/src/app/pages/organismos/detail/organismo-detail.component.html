@@ -1,5 +1,30 @@
-<!-- Detalle de organismo — diseño "Pantallas · Backoffice Misiones", pantalla DETALLE.
+<!-- Ficha de organismo — diseño "Pantallas · Backoffice Misiones", pantallas DETALLE y FORM.
+     Una sola pantalla en dos modos: comparten membrete, chip de modificación y pestañas.
      Los bloques sin fuente en el backend se marcan explícitamente en vez de inventar datos. -->
+
+<!-- Incondicional: `PageActionsDirective` publica el template en su `ngOnInit`, así que
+     envolverlo en un `@if` lo registra tarde y el shell ya no lo toma. El contenido sí
+     espera a que el organismo esté cargado. -->
+<ng-template appPageActions>
+  @if (organismo) {
+    <!-- El portal ciudadano todavía no expone la ficha pública del organismo. -->
+    <button type="button" mat-stroked-button color="primary" disabled
+            matTooltip="Ver en el portal ciudadano — pendiente">
+      <i class="ph ph-arrow-square-out" aria-hidden="true"></i> Ver en el portal
+    </button>
+    @if (modo === 'editar') {
+      <button type="button" mat-flat-button color="primary" [disabled]="saving"
+              (click)="guardarDesdeElHeader()">
+        <i class="ph ph-floppy-disk" aria-hidden="true"></i> Guardar cambios
+      </button>
+    } @else {
+      <button type="button" mat-flat-button color="primary" (click)="onEditar()"
+              *appHasPermission="'UPDATE_ORGANISM'">
+        <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+      </button>
+    }
+  }
+</ng-template>
 
 @if (loading) {
   <div class="orgdet-cargando" role="status">
@@ -15,63 +40,65 @@
       <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
     </button>
   </div>
-} @else if (detalle) {
+} @else if (organismo) {
 
 <div class="orgdet">
 
-  <!-- Membrete -->
-  <div class="orgdet-membrete">
-    <div class="orgdet-membrete__fila">
-      <span class="orgdet-membrete__avatar" aria-hidden="true">{{ iniciales }}</span>
+  @if (modo === 'ver') {
+    <!-- Membrete completo: solo en lectura. Editando, el diseño usa la barra compacta. -->
+    <div class="orgdet-membrete">
+      <div class="orgdet-membrete__fila">
+        <span class="orgdet-membrete__avatar" aria-hidden="true">{{ iniciales }}</span>
 
-      <div class="orgdet-membrete__identidad">
-        <div class="orgdet-membrete__titulo-fila">
-          <h2 class="orgdet-membrete__titulo">{{ detalle.organismo.nombre }}</h2>
-          <span class="bool-badge"
-                [class.bool-badge--active]="detalle.organismo.activo"
-                [class.bool-badge--inactive]="!detalle.organismo.activo">
-            <span class="bool-badge__dot" aria-hidden="true"></span>
-            {{ detalle.organismo.activo ? 'Activo' : 'Inactivo' }}
-          </span>
+        <div class="orgdet-membrete__identidad">
+          <div class="orgdet-membrete__titulo-fila">
+            <h2 class="orgdet-membrete__titulo">{{ organismo.nombre }}</h2>
+            <span class="bool-badge"
+                  [class.bool-badge--active]="organismo.activo"
+                  [class.bool-badge--inactive]="!organismo.activo">
+              <span class="bool-badge__dot" aria-hidden="true"></span>
+              {{ organismo.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+
+          <div class="orgdet-membrete__meta">
+            @if (tipoNombre) {
+              <span class="orgdet-membrete__meta-item">
+                <i class="ph ph-buildings" aria-hidden="true"></i>{{ tipoNombre }}
+              </span>
+            }
+            @if (localidadNombre) {
+              <span class="orgdet-membrete__separador" aria-hidden="true"></span>
+              <span class="orgdet-membrete__meta-item">
+                <i class="ph ph-map-pin" aria-hidden="true"></i>{{ localidadNombre }}
+              </span>
+            }
+          </div>
         </div>
 
-        <div class="orgdet-membrete__meta">
-          @if (detalle.tipoNombre) {
-            <span class="orgdet-membrete__meta-item">
-              <i class="ph ph-buildings" aria-hidden="true"></i>{{ detalle.tipoNombre }}
-            </span>
-          }
-          @if (detalle.localidadNombre) {
-            <span class="orgdet-membrete__separador" aria-hidden="true"></span>
-            <span class="orgdet-membrete__meta-item">
-              <i class="ph ph-map-pin" aria-hidden="true"></i>{{ detalle.localidadNombre }}
-            </span>
-          }
-          @if (detalle.organismo.updatedAt) {
-            <span class="orgdet-membrete__separador" aria-hidden="true"></span>
-            <span class="orgdet-membrete__meta-item">
-              act. {{ detalle.organismo.updatedAt | date:'dd/MM/yyyy' }}
-            </span>
-          }
+        <div class="orgdet-membrete__acciones">
+          <app-row-actions [actions]="accionesDelMembrete"></app-row-actions>
         </div>
       </div>
 
-      <div class="orgdet-membrete__acciones">
-        <!-- El portal ciudadano todavía no expone la ficha pública del organismo. -->
-        <button type="button" class="orgdet-iconbtn" disabled
-                aria-label="Ver en el portal ciudadano"
-                matTooltip="Ver en el portal ciudadano — pendiente">
-          <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
-        </button>
-        <app-row-actions [actions]="accionesDelMembrete"></app-row-actions>
-        <button type="button" mat-flat-button color="primary" (click)="onEdit()"
-                *appHasPermission="'UPDATE_ORGANISM'">
-          <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-        </button>
-      </div>
+      <ng-container *ngTemplateOutlet="pestanas"></ng-container>
     </div>
+  } @else {
+    <!-- Barra compacta de edición: chip de última modificación + pestañas. -->
+    <div class="orgdet-barra">
+      @if (organismo.updatedAt) {
+        <span class="orgdet-chip">
+          <i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>
+          Modificado {{ organismo.updatedAt | date:'dd/MM/yyyy' }}
+        </span>
+      }
+      <ng-container *ngTemplateOutlet="pestanas"></ng-container>
+    </div>
+  }
 
-    <nav class="orgdet-tabs" aria-label="Secciones del organismo">
+  <ng-template #pestanas>
+    <nav class="orgdet-tabs" [class.orgdet-tabs--sueltas]="modo === 'editar'"
+         aria-label="Secciones del organismo">
       @for (tab of tabs; track tab.clave) {
         <button type="button" class="orgdet-tabs__tab"
                 [class.is-active]="(tab$ | async) === tab.clave"
@@ -84,7 +111,22 @@
         </button>
       }
     </nav>
-  </div>
+  </ng-template>
+
+  @if ((tab$ | async) === 'datos' && modo === 'editar') {
+    <!-- Edición: la pestaña Datos es el formulario. -->
+    <div class="form-card">
+      <app-dynamic-form [fields]="config.fields!"
+                        submitButtonText="Guardar cambios"
+                        cancelButtonText="Cancelar"
+                        [initialData]="initialData"
+                        [saving]="saving"
+                        [serverError]="serverError"
+                        (formSubmit)="onSubmit($event)"
+                        (formCancel)="onVerFicha()">
+      </app-dynamic-form>
+    </div>
+  } @else {
 
   <div class="orgdet-grid">
     <!-- Columna principal -->
@@ -99,7 +141,7 @@
 
           <div class="orgdet-campos">
             @for (campo of campos; track campo.label) {
-              <div class="orgdet-campo" [class.orgdet-campo--pendiente]="campo.pendiente">
+              <div class="orgdet-campo">
                 <span class="orgdet-campo__label">{{ campo.label }}</span>
                 @if (campo.pendiente) {
                   <span class="orgdet-campo__pendiente">
@@ -168,11 +210,11 @@
             <dl class="orgdet-fechas">
               <div>
                 <dt>Alta</dt>
-                <dd>{{ (detalle.organismo.createdAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
+                <dd>{{ (organismo.createdAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
               </div>
               <div>
                 <dt>Última edición</dt>
-                <dd>{{ (detalle.organismo.updatedAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
+                <dd>{{ (organismo.updatedAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
               </div>
             </dl>
           </div>
@@ -197,19 +239,20 @@
         <dl class="orgdet-fechas orgdet-fechas--apilado">
           <div>
             <dt>Alta</dt>
-            <dd>{{ (detalle.organismo.createdAt | date:'dd/MM/yyyy') || '—' }}</dd>
+            <dd>{{ (organismo.createdAt | date:'dd/MM/yyyy') || '—' }}</dd>
           </div>
           <div>
             <dt>Última edición</dt>
-            <dd>{{ (detalle.organismo.updatedAt | date:'dd/MM/yyyy') || '—' }}</dd>
+            <dd>{{ (organismo.updatedAt | date:'dd/MM/yyyy') || '—' }}</dd>
           </div>
           <div>
             <dt>Estado</dt>
-            <dd>{{ detalle.organismo.activo ? 'Activo' : 'Inactivo' }}</dd>
+            <dd>{{ organismo.activo ? 'Activo' : 'Inactivo' }}</dd>
           </div>
         </dl>
       </section>
     </aside>
   </div>
+  }
 </div>
 }
