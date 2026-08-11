@@ -4,7 +4,8 @@
             [disabled]="busy || accion.disabled"
             [attr.aria-label]="accion.ariaLabel || null"
             [attr.aria-busy]="busy || null"
-            [matTooltip]="busy ? busyLabel : ''">
+            [matTooltip]="busy ? busyLabel : ''"
+            (click)="accion.run()">
       <i class="ph" [class]="'ph ph-' + (busy ? 'spinner-gap' : accion.icon)"
          [class.row-actions__spinner]="busy" aria-hidden="true"></i>
       {{ accion.label }}

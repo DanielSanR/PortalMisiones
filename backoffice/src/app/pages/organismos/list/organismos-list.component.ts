@@ -188,17 +188,28 @@ export class OrganismosListComponent implements OnInit {
   }
 
   /**
-   * Iniciales para el avatar de la fila: hasta dos, salteando conectores.
-   * Sin esto "Instituto de Previsión Social" daría "ID" en vez de "IP".
+   * Iniciales del avatar: las dos primeras letras de la SIGLA.
+   *
+   * Es la regla del diseño, no las iniciales del nombre. "Secretaría de Estado de
+   * Agricultura Familiar" (SAF) da "SA", que por nombre daría "SE". Cuando no hay
+   * sigla se cae a las iniciales del nombre, salteando conectores para que
+   * "Instituto de Previsión Social" no dé "ID".
    */
-  iniciales(nombre: string): string {
+  iniciales(organismo: OrganismoVM): string {
+    const letrasSigla = (organismo.acronym ?? '').replace(/[^\p{L}]/gu, '');
+    if (letrasSigla.length >= 2) return letrasSigla.slice(0, 2).toLocaleUpperCase('es-AR');
+
     const conectores = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en', 'para']);
-    return (nombre ?? '')
+    const palabras = (organismo.nombre ?? '')
       .split(/\s+/)
-      .filter((palabra) => /\p{L}/u.test(palabra) && !conectores.has(palabra.toLocaleLowerCase('es-AR')))
-      .slice(0, 2)
-      .map((palabra) => palabra[0].toLocaleUpperCase('es-AR'))
-      .join('') || '—';
+      .filter((palabra) => /\p{L}/u.test(palabra) && !conectores.has(palabra.toLocaleLowerCase('es-AR')));
+
+    if (palabras.length === 0) return '—';
+    // Nombre de una sola palabra ("Vialidad"): dos letras se leen mejor que una.
+    const letras = palabras.length === 1
+      ? palabras[0].slice(0, 2)
+      : palabras.slice(0, 2).map((palabra) => palabra[0]).join('');
+    return letras.toLocaleUpperCase('es-AR');
   }
 
   /**

@@ -82,7 +82,7 @@
         <div class="organismos-list__nombre">
             <!-- Avatar con iniciales tintadas (Kitchen Sink §05). El tinte se deriva del id. -->
             <span class="organismos-list__avatar" [class]="'organismos-list__avatar organismos-list__avatar--' + tinte(row.id)"
-                  aria-hidden="true">{{ iniciales(row.nombre) }}</span>
+                  aria-hidden="true">{{ iniciales(row) }}</span>
             <div class="organismos-list__nombre-texto">
                 <span class="organismos-list__nombre-principal">
                     {{ row.nombre }}@if (row.acronym) {<span class="text-secondary">&nbsp;({{ row.acronym }})</span>}
