@@ -172,8 +172,14 @@
         </mat-slide-toggle>
       </div>
 
-      <!-- Radio -->
-
+      <!-- Radio — opciones en línea (ver "Jurisdicción" en el diseño del form) -->
+      <mat-radio-group *ngSwitchCase="'radio'" class="radio-field"
+                       [formControlName]="field.name"
+                       [attr.aria-labelledby]="field.name + '-label'">
+        <mat-radio-button *ngFor="let option of field.options" [value]="option.id" color="primary">
+          {{ option.name }}
+        </mat-radio-button>
+      </mat-radio-group>
 
       <!-- Icon Picker -->
       <div *ngSwitchCase="'icon-picker'" class="icon-picker-field">

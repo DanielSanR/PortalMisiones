@@ -126,6 +126,7 @@ export class DynamicFormComponent implements OnInit {
   getFieldCssClass(field: FieldConfig): string {
     if (field.cssClass) {
       switch (field.cssClass) {
+        case 'colspan-wide': return 'dynamic-form-field-wide';
         case 'colspan-third': return 'dynamic-form-field-third';
         case 'colspan-half': return 'dynamic-form-field-half';
         case 'colspan-full': return 'dynamic-form-field-full';

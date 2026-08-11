@@ -48,8 +48,21 @@
   }
 }
 
+// Fila del diseño: `wide + third + third` = 2fr / 1fr / 1fr (NOMBRE ancho, SIGLA y
+// CUIT angostos). Las bases suman ~100% a propósito: con base 0 la proporción salía
+// bien pero entraban cuatro campos por fila, porque nada obligaba a cortar.
+.dynamic-form-field-wide {
+  flex: 2 1 calc(50% - var(--theme-space-md));
+  min-width: 240px;
+
+  @media (max-width: 600px) {
+    flex-basis: 100% !important;
+    min-width: 0;
+  }
+}
+
 .dynamic-form-field-third {
-  flex: 1 1 calc(33.333% - var(--theme-space-md) * 2 / 3);
+  flex: 1 1 calc(25% - var(--theme-space-md));
   min-width: 150px;
 
   @media (max-width: 600px) {

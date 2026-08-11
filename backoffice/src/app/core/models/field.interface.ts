@@ -8,6 +8,7 @@ export interface FieldConfig {
   | 'textarea'
   | 'select-multiple'
   | 'checkbox'
+  | 'radio'
   | 'datepicker'
   | 'url'
   | 'email'
@@ -17,7 +18,7 @@ export interface FieldConfig {
   | 'section-header';
   placeholder?: string;
   hint?: string;
-  cssClass?: 'colspan-full' | 'colspan-half' | 'colspan-third';
+  cssClass?: 'colspan-full' | 'colspan-half' | 'colspan-third' | 'colspan-wide';
   disabled?: boolean;
   value?: unknown;
   options?: { id: string | number; name: string }[];

@@ -219,16 +219,12 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
   }
 
   /**
-   * En edición solo "Datos" es editable; las demás pestañas pertenecen a la ficha, así
-   * que se sale del modo edición (y el guard de cambios sin guardar avisa si corresponde).
+   * La pestaña es navegación DENTRO de la entidad: no cambia el modo. Antes, elegir
+   * "Trámites" mientras se editaba mandaba a la ficha, y al volver a "Datos" el
+   * formulario ya no estaba: se perdía el modo edición —y lo escrito— sin avisar.
+   * El formulario se oculta, no se destruye (ver el template).
    */
   seleccionarTab(clave: TabDetalle): void {
-    if (this.modo === 'editar' && clave !== 'datos') {
-      this.router.navigate(['/dashboard/organismos/detalle', this.id]).then((navego) => {
-        if (navego) this.tab$.next(clave);
-      });
-      return;
-    }
     this.tab$.next(clave);
   }
 

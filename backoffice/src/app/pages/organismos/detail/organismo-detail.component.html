@@ -113,9 +113,10 @@
     </nav>
   </ng-template>
 
-  @if ((tab$ | async) === 'datos' && modo === 'editar') {
-    <!-- Edición: la pestaña Datos es el formulario. -->
-    <div class="form-card">
+  @if (modo === 'editar') {
+    <!-- Edición: la pestaña Datos es el formulario. Se OCULTA al cambiar de pestaña en vez
+         de destruirse, para no perder lo que el usuario venía escribiendo. -->
+    <div class="form-card" [hidden]="(tab$ | async) !== 'datos'">
       <app-dynamic-form [fields]="config.fields!"
                         submitButtonText="Guardar cambios"
                         cancelButtonText="Cancelar"
@@ -126,8 +127,11 @@
                         (formCancel)="onVerFicha()">
       </app-dynamic-form>
     </div>
-  } @else {
+  }
 
+  <!-- Los paneles de las demás pestañas se ven en los dos modos; la ficha de "Datos"
+       solo en lectura, porque editando ese lugar lo ocupa el formulario. -->
+  @if (modo === 'ver' || (tab$ | async) !== 'datos') {
   <div class="orgdet-grid">
     <!-- Columna principal -->
     <div class="orgdet-col">
