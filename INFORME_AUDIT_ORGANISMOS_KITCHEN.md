@@ -157,7 +157,7 @@ tanto en vacío como en error, con `ph-cloud-slash` y `ph-arrow-clockwise` tal c
 - ✅ Empty state: título "Todavía no hay organismos" coincide con el Kitchen Sink.
 - 🟡 **Error sin personalizar.** El spec dice *"No pudimos cargar **los organismos**"*;
   la pantalla no pasa `errorTitle`, así que queda el default *"No pudimos cargar los datos"*.
-- 🟡 El mensaje del spec cierra con *"Si sigue, avisá a Gobierno Inteligente."* — un canal de
+- 🟡 El mensaje del spec cierra con *"Si sigue, avisá a Soporte."* — un canal de
   escape que el nuestro no ofrece.
 - ✅ Skeleton en carga fría, indicador discreto al refrescar (`176d9b7`).
 
