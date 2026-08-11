@@ -21,7 +21,9 @@
   <div class="form-actions" *ngIf="!hideButtons">
     <span class="form-actions__help">{{ helpText }}</span>
     <div class="form-actions__buttons">
-      <button mat-stroked-button color="primary" type="button" (click)="formCancel.emit()">
+      <button mat-stroked-button color="primary" type="button"
+              [disabled]="saving"
+              (click)="formCancel.emit()">
         {{ cancelButtonText }}
       </button>
       <button mat-raised-button color="primary"

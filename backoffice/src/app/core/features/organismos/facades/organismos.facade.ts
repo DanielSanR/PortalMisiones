@@ -30,7 +30,9 @@ export class OrganismosFacade {
       localidades: this.localidadesRepo.getLocalidades().pipe(
         map((ls) => ls.map((l) => ({ id: l.id, nombre: `${l.nombre} (${l.departamentoNombre})` })))
       ),
-      organismos: this.repo.getOptions(),
+      // VMs completos (no `getOptions()`): el form necesita `parentId` para excluir descendientes.
+      // Mismo costo de red — `getOptions()` también resuelve sobre `ds.list()`.
+      organismos: this.repo.list(),
       organismo: id ? this.repo.getById(id) : of(null),
     });
   }

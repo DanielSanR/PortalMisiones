@@ -32,10 +32,14 @@ export interface SelectOption {
   nombre: string;
 }
 
-/** Datos del formulario de organismo, resueltos en una sola llamada (orquestación del facade). */
+/**
+ * Datos del formulario de organismo, resueltos en una sola llamada (orquestación del facade).
+ * `organismos` son VMs completos —no `OrganismoOption`— porque el form necesita `parentId`
+ * para excluir la descendencia del organismo en edición y no permitir ciclos en el árbol.
+ */
 export interface OrganismoFormData {
   tipos: SelectOption[];
   localidades: SelectOption[];
-  organismos: OrganismoOption[];
+  organismos: OrganismoVM[];
   organismo: OrganismoVM | null;
 }
