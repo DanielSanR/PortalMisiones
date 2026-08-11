@@ -58,7 +58,7 @@ Checklist completo (~9 KB).
 {
   "success": true,
   "checklist": { "id": "uuid", "name": "Button", "slug": "button", "description": "…" },
-  "items": [                                  // ← EL CHECKLIST REAL
+  "items": [                                  // ← checklist (vacío en la categoría `flows`)
     { "title": "Base style",
       "description": "Your default style, one of the following: fill, outline, underline",
       "suggestion": null, "sort_order": 0 },
@@ -67,13 +67,37 @@ Checklist completo (~9 KB).
       "suggestion": "Users should understand what will happen before clicking a button…",
       "sort_order": 3 }
   ],
-  "tabs": [                                   // notas explicativas con imagen de referencia
+  "tabs": [                                   // notas… salvo en `flows`, donde SON el checklist
     { "title": "Sizes", "description": "Having multiple sizes helps…",
       "image_url": "https://framerusercontent.com/…svg", "sort_order": 0 }
   ],
-  "related": [], "collections": [], "sameNameOnOtherPlatforms": []
+  "related": [                                // → renderizable como `categoría/slug`
+    { "sort_order": 359,
+      "related": { "name": "Checkbox", "slug": "checkbox",
+                   "website_categories": { "name": "Design system", "slug": "design-system" } } }
+  ],
+  "collections": [], "sameNameOnOtherPlatforms": []
 }
 ```
+
+#### ⚠️ `items` vs `tabs` — dónde vive realmente el contenido
+
+Relevado sobre las 112 checklists (no asumido):
+
+| Categoría | items | tabs | Regla |
+|---|---:|---:|---|
+| `web-app` | 181 | 0 | El checklist son los `items` |
+| `design-system` | 168 | 70 | Checklist = `items`; `tabs` = notas complementarias |
+| `website` | 160 | 25 | ídem |
+| `mobile` | 143 | 5 | ídem |
+| **`flows`** | **0** | **66** | **Las 13 no tienen `items`.** El checklist son los `tabs`, y son **pasos secuenciales** ordenados por `sort_order` |
+
+**Regla del renderer:** si `items.length > 0` → checklist desde `items`, y `tabs` van a *Notas*.
+Si `items.length === 0` → checklist desde `tabs`, numerado como pasos del flujo.
+Ignorar esto deja las 13 checklists de `flows` —las más transversales al backoffice— vacías.
+
+Totales del corpus: **652 items + 166 tabs = 818 puntos de verificación**, 283 con `suggestion`.
+Las 112 responden 200; el barrido completo tarda ~30 s.
 
 **`category` es obligatorio en la práctica.** Nueve slugs existen en más de una categoría
 (`login`, `billing`, `pricing`, `cart`, `search`, `onboarding`, `account`, `chat`, `settings`).
