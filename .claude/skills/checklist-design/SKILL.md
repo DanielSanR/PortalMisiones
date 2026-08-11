@@ -139,7 +139,7 @@ Catálogo completo: **112 checklists** en 5 categorías.
 node .claude/skills/checklist-design/scripts/sync.mjs                       # las 112
 node .claude/skills/checklist-design/scripts/sync.mjs --category flows      # una categoría
 node .claude/skills/checklist-design/scripts/sync.mjs --category design-system --slug table
-node --test .claude/skills/checklist-design/scripts/                        # tests
+node --test .claude/skills/checklist-design/scripts/*.test.mjs              # tests
 ```
 
 Fuente y contrato de la API: `BRIEF_CHECKLIST_DESIGN.md` en la raíz del repo.

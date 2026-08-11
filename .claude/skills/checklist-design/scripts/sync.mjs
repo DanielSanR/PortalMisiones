@@ -19,6 +19,11 @@ const REFERENCES_DIR = join(SKILL_DIR, 'references');
 const SKILL_MD = join(SKILL_DIR, 'SKILL.md');
 const PAUSA_MS = 120;
 
+// Estado de progreso visible fuera de `main()`: si la corrida se corta a mitad de
+// camino, el catch de abajo necesita saber cuánto se alcanzó a escribir para no dejar
+// que el corpus parcial en disco pase desapercibido.
+const progreso = { escritos: 0, total: 0, dryRun: false };
+
 function parseArgs(argv) {
   const args = { category: null, slug: null, dryRun: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -71,6 +76,8 @@ async function main() {
   console.log(`→ Sincronizando ${objetivos.length} checklist(s)…`);
   let escritos = 0;
   let vacios = 0;
+  progreso.total = objetivos.length;
+  progreso.dryRun = args.dryRun;
   for (const [i, objetivo] of objetivos.entries()) {
     const payload = await fetchChecklist(objetivo.slug, objetivo.category);
     const puntos = payload.items.length || payload.tabs.length;
@@ -84,6 +91,7 @@ async function main() {
       await writeFile(destino, markdown, 'utf8');
     }
     escritos += 1;
+    progreso.escritos = escritos;
     console.log(`  [${i + 1}/${objetivos.length}] ${objetivo.category}/${objetivo.slug} (${puntos} puntos)`);
     if (i < objetivos.length - 1) await sleep(PAUSA_MS);
   }
@@ -100,10 +108,17 @@ async function main() {
 }
 
 main().catch((error) => {
+  // Si la corrida se cortó a mitad de camino, el corpus en disco quedó parcialmente
+  // actualizado (algunas categorías nuevas, otras viejas): avisarlo fuerte acá, no
+  // dejar que se infiera scrolleando el log de progreso.
+  const huboEscritura = !progreso.dryRun && progreso.total > 0 && progreso.escritos < progreso.total;
+  const aviso = huboEscritura
+    ? `\n  ⚠ Corpus PARCIAL: se escribieron ${progreso.escritos}/${progreso.total} archivo(s) antes de la falla. No commitear sin volver a correr sync.mjs hasta el final.`
+    : '';
   if (error instanceof ApiError) {
-    console.error(`\n✗ Error de API (${error.status}) en ${error.url}\n  ${error.message}`);
+    console.error(`\n✗ Error de API (${error.status}) en ${error.url}\n  ${error.message}${aviso}`);
   } else {
-    console.error(`\n✗ ${error.message}`);
+    console.error(`\n✗ ${error.message}${aviso}`);
   }
   process.exitCode = 1;
 });
