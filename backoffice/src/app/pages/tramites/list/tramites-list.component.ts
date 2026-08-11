@@ -250,7 +250,7 @@ export class TramitesListComponent implements OnInit {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Eliminar trámite',
-        message: `¿Está seguro de eliminar "${tramite.titulo}"?`,
+        message: `¿Está seguro de eliminar "${tramite.titulo}"? Esta acción es permanente: el trámite se eliminará junto con toda su información y no podrá recuperarse.`,
         confirmText: 'Eliminar',
       },
       panelClass: 'custom-modal-panel',
