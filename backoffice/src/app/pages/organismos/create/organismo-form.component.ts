@@ -1,10 +1,12 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { FormConfig } from '../../../core/models/field.interface';
+import { extractErrorMessage } from '../../../core/models/api-response.model';
+import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { OrganismosFacade, OrganismoFormValue, OrganismoVM } from '@features/organismos';
 
 @Component({
@@ -18,11 +20,15 @@ import { OrganismosFacade, OrganismoFormValue, OrganismoVM } from '@features/org
   templateUrl: './organismo-form.component.html',
   styleUrls: ['./organismo-form.component.scss'],
 })
-export class OrganismoFormComponent implements OnInit {
+export class OrganismoFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
   config: FormConfig = getFormConfig('ORGANISMO');
   isEdit = false;
   saving = false;
+  /** Motivo del último fallo de guardado, para mostrarlo dentro del formulario. */
+  serverError = '';
   initialData: Record<string, unknown> | null = null;
+
+  @ViewChild(DynamicFormComponent) private dynamicForm?: DynamicFormComponent;
 
   private editId: string | null = null;
   private readonly destroyRef = inject(DestroyRef);
@@ -101,6 +107,7 @@ export class OrganismoFormComponent implements OnInit {
 
   onSubmit(data: Record<string, unknown>): void {
     this.saving = true;
+    this.serverError = '';
     const form: OrganismoFormValue = {
       typeId: String(data['typeId'] ?? ''),
       parentId: (data['parentId'] as string) || null,
@@ -125,8 +132,10 @@ export class OrganismoFormComponent implements OnInit {
           );
           this.router.navigate(['/dashboard/organismos/lista']);
         },
-        error: () => {
+        error: (err: unknown) => {
           this.saving = false;
+          this.serverError = extractErrorMessage((err as { error?: unknown })?.error)
+            || 'No se pudo guardar el organismo. Intentá de nuevo.';
           this.cdr.markForCheck();
         },
       });
@@ -134,5 +143,14 @@ export class OrganismoFormComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/dashboard/organismos/lista']);
+  }
+
+  /**
+   * Lo consulta `unsavedChangesGuard` antes de dejar salir de la pantalla.
+   * Durante un guardado en curso `saving` sigue en true hasta que la navegación
+   * de éxito ocurre, así que un guardado exitoso no dispara la pregunta.
+   */
+  tieneCambiosSinGuardar(): boolean {
+    return !this.saving && !!this.dynamicForm?.form?.dirty;
   }
 }

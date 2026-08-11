@@ -208,6 +208,7 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'text',
         placeholder: 'Ej: IPS',
         cssClass: 'colspan-half',
+        validations: { maxLength: 50 },
       },
       {
         name: 'typeId',
@@ -217,6 +218,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         cssClass: 'colspan-half',
         validations: { required: true },
         options: [],
+        // Es requerido y sin opción "ninguno": si no hay tipos cargados, el alta
+        // queda trabada. El mensaje tiene que decir cómo destrabarla.
+        emptyOptionsMessage: 'No hay tipos de organismo cargados. Creá uno primero en Tipos de organismo.',
       },
       {
         name: 'parentId',
@@ -463,6 +467,9 @@ export function updateFormConfigOptions(
   const field = clone.fields?.find((f: FieldConfig) => f.name === fieldName);
   if (field) {
     field.options = options;
+    // Aunque `options` venga vacío: el catálogo se resolvió, y el select debe decir
+    // "no hay opciones" en vez de quedarse en "Cargando opciones...".
+    field.optionsLoaded = true;
   }
   return clone;
 }

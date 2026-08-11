@@ -4,20 +4,58 @@
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (organismosFiltrados$ | async)?.length || 0 }} organismos</span>
+@if (vista$ | async; as vista) {
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <mat-form-field appearance="outline" class="Filtros-field">
+      <mat-label>Buscar</mat-label>
+      <input matInput [formControl]="searchCtrl" placeholder="Nombre, sigla, tipo o dependencia..." />
+      <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
+    </mat-form-field>
+
+    @if (vista.hayFiltros) {
+      <button type="button" mat-stroked-button class="organismos-list__clear" (click)="limpiarFiltros()">
+        <i class="ph ph-x" aria-hidden="true"></i> Limpiar filtros
+      </button>
+    }
+  </div>
+
+  <div class="list-toolbar__row">
+    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    <span class="list-toolbar-count">{{ vista.rows.length }} organismos</span>
+  </div>
 </div>
 
 <app-shared-table
-    [data]="(organismosFiltrados$ | async) ?? []"
+    [data]="vista.rows"
     [columns]="columns"
-    [loading]="loading"
-    emptyMessage="No hay organismos registrados"
+    [loading]="loading || deletingId !== null"
+    [error]="error"
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
     emptyIcon="buildings">
 
     <ng-template appTableCell="nombre" let-row>
         <strong>{{ row.nombre }}</strong>
+        @if (row.acronym) { <span class="text-secondary"> ({{ row.acronym }})</span> }
+        <!-- En mobile las columnas Tipo y "Depende de" se ocultan: acá no se pierde el dato. -->
+        <span class="organismos-list__meta">
+            {{ row.tipoNombre || 'Sin tipo' }}@if (row.parentNombre) { · depende de {{ row.parentNombre }} }
+        </span>
+    </ng-template>
+
+    <ng-template appTableCell="parentNombre" let-row>
+        @if (row.parentNombre) {
+            <span class="text-secondary">{{ row.parentNombre }}</span>
+        } @else {
+            <span class="organismos-list__raiz">Raíz</span>
+        }
     </ng-template>
 
     <ng-template appTableCell="tipoNombre" let-row>
@@ -33,14 +71,22 @@
 
     <ng-template appTableCell="acciones" let-row>
         <div class="row-actions">
-            <button type="button" class="row-action" (click)="onEdit(row)" *appHasPermission="'UPDATE_ORGANISM'">
+            <button type="button" class="row-action" (click)="onEdit(row)"
+                [disabled]="deletingId === row.id" *appHasPermission="'UPDATE_ORGANISM'">
                 <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
             </button>
             <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
-                *appHasPermission="'DELETE_ORGANISM'" aria-label="Eliminar organismo" matTooltip="Eliminar">
-                <i class="ph ph-trash" aria-hidden="true"></i>
+                *appHasPermission="'DELETE_ORGANISM'"
+                [disabled]="deletingId === row.id"
+                [attr.aria-busy]="deletingId === row.id"
+                [attr.aria-label]="deletingId === row.id ? 'Eliminando organismo' : 'Eliminar organismo'"
+                [matTooltip]="deletingId === row.id ? 'Eliminando...' : 'Eliminar'">
+                <i class="ph" [class.ph-trash]="deletingId !== row.id"
+                   [class.ph-spinner-gap]="deletingId === row.id"
+                   [class.organismos-list__spinner]="deletingId === row.id" aria-hidden="true"></i>
             </button>
         </div>
     </ng-template>
 
 </app-shared-table>
+}

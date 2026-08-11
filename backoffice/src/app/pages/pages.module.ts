@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
-import { accessGuard } from '../core/guards';
+import { accessGuard, unsavedChangesGuard } from '../core/guards';
 import { UserRole } from '../core/enums/user-role.enum';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -62,8 +62,8 @@ const routes: Routes = [
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
       { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos'] } },
-      { path: 'organismos/nuevo', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Nuevo organismo'] } },
-      { path: 'organismos/editar/:id', component: OrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Editar organismo'] } },
+      { path: 'organismos/nuevo', component: OrganismoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Nuevo organismo'] } },
+      { path: 'organismos/editar/:id', component: OrganismoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Editar organismo'] } },
       { path: 'tipos-organismo/lista', component: TiposOrganismoListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo'] } },
       { path: 'tipos-organismo/nuevo', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Nuevo tipo'] } },
       { path: 'tipos-organismo/editar/:id', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Editar tipo'] } },

@@ -117,7 +117,9 @@
                     [placeholder]="field.placeholder || ''"
                     [required]="field.validations?.required || false">
           <mat-option *ngIf="!field.options?.length" disabled>
-            Cargando opciones...
+            {{ field.optionsLoaded
+                ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
+                : 'Cargando opciones...' }}
           </mat-option>
           <mat-option *ngFor="let option of field.options" [value]="option.id">
             {{ option.name }}
@@ -135,7 +137,9 @@
                     [required]="field.validations?.required || false"
                     multiple>
           <mat-option *ngIf="!field.options?.length" disabled>
-            Cargando opciones...
+            {{ field.optionsLoaded
+                ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
+                : 'Cargando opciones...' }}
           </mat-option>
           <mat-option *ngFor="let option of field.options" [value]="option.id">
             {{ option.name }}

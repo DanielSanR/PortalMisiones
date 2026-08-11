@@ -357,6 +357,19 @@ $breakpoint-2xl: 1440px;
   }
 }
 
+// Campo de búsqueda/select dentro del well de filtros. Fondo de card explícito
+// para que se lea sobre el `surface-sunken` del toolbar. Usado por las listas
+// que filtran sobre dato real (trámites, organismos).
+@mixin list-filter-field {
+  flex: 1;
+  min-width: 200px;
+  --mdc-outlined-text-field-container-color: var(--theme-surface-card);
+
+  @include responsive(mobile) {
+    min-width: 100%;
+  }
+}
+
 @mixin list-toolbar-count($push-right: false) {
   font-size: var(--theme-font-size-sm);
   color: var(--theme-text-tertiary);

@@ -4,12 +4,16 @@ export interface OrganismoOption {
   nombre: string;
 }
 
-/** ViewModel de Organismo (BACKEND_API_SPEC.md §5.2). `tipoNombre` lo resuelve el facade. */
+/**
+ * ViewModel de Organismo (BACKEND_API_SPEC.md §5.2).
+ * `tipoNombre` y `parentNombre` los resuelve el facade: el DTO solo trae los ids.
+ */
 export interface OrganismoVM {
   id: string;
   typeId: string;
   tipoNombre?: string;
   parentId: string | null;
+  parentNombre?: string;
   baseLocationId: string | null;
   nombre: string;
   acronym: string;

@@ -9,12 +9,15 @@
         <p>{{ data.message }}</p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-        <button mat-button (click)="dialogRef.close(false)">
+        <button mat-button [disabled]="ejecutando" (click)="dialogRef.close(false)">
             {{ data.cancelText || 'Cancelar' }}
         </button>
         <button mat-flat-button [color]="data.confirmText === 'Eliminar' ? 'warn' : 'primary'"
-            (click)="dialogRef.close(true)">
-            {{ data.confirmText || 'Confirmar' }}
+            [disabled]="ejecutando"
+            [attr.aria-busy]="ejecutando"
+            (click)="confirmar()">
+            <mat-spinner *ngIf="ejecutando" diameter="18"></mat-spinner>
+            <span>{{ ejecutando ? (data.busyText || 'Procesando...') : (data.confirmText || 'Confirmar') }}</span>
         </button>
     </mat-dialog-actions>
 </div>

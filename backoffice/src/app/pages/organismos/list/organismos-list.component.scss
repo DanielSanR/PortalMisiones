@@ -7,3 +7,41 @@
     @include list-toolbar-count;
   }
 }
+
+.Filtros-field {
+  @include list-filter-field;
+}
+
+.organismos-list {
+
+  &__clear {
+    white-space: nowrap;
+  }
+
+  // Marca el organismo sin padre para que "Depende de" nunca quede en blanco.
+  &__raiz {
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-sm);
+  }
+
+  // En mobile la tabla oculta "Depende de" y "Tipo": este resumen bajo el
+  // nombre recupera ese dato en vez de perderlo.
+  &__meta {
+    display: none;
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-sm);
+
+    @include responsive(mobile) {
+      display: block;
+    }
+  }
+
+  &__spinner {
+    display: inline-block;
+    animation: organismos-list-spin 0.9s linear infinite;
+  }
+}
+
+@keyframes organismos-list-spin {
+  to { transform: rotate(360deg); }
+}

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, QueryList, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /** Una pestaña/chip de `FilterTabsComponent`. `count` es opcional (se omite si no aporta info). */
@@ -30,8 +30,38 @@ export class FilterTabsComponent {
   @Input() active = '';
   @Output() readonly activeChange = new EventEmitter<string>();
 
+  @ViewChildren('tabBtn') private tabBtns!: QueryList<ElementRef<HTMLButtonElement>>;
+
   select(value: string): void {
     if (value === this.active) return;
     this.activeChange.emit(value);
+  }
+
+  /**
+   * Navegación por teclado del patrón `tablist` (ARIA APG): las flechas mueven entre chips
+   * y Home/End van a los extremos, con wrap-around. Solo el chip activo es tabbable
+   * (roving tabindex en el template), así que Tab entra y sale de la barra de una vez
+   * en lugar de recorrer un chip por pulsación.
+   *
+   * Activación automática —mover el foco cambia el filtro— porque el filtrado es
+   * client-side sobre datos ya cargados y no dispara pedidos al backend.
+   */
+  onKeydown(event: KeyboardEvent): void {
+    const navegacion = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+    if (!navegacion.includes(event.key) || this.tabs.length === 0) return;
+    event.preventDefault();
+
+    const ultimo = this.tabs.length - 1;
+    const actual = Math.max(0, this.tabs.findIndex((tab) => tab.value === this.active));
+    let destino: number;
+    switch (event.key) {
+      case 'ArrowRight': destino = actual === ultimo ? 0 : actual + 1; break;
+      case 'ArrowLeft':  destino = actual === 0 ? ultimo : actual - 1; break;
+      case 'Home':       destino = 0; break;
+      default:           destino = ultimo;
+    }
+
+    this.tabBtns?.get(destino)?.nativeElement.focus();
+    this.select(this.tabs[destino].value);
   }
 }
