@@ -186,10 +186,15 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
   // Sin sitioWeb/logoUrl (no existen en el backend).
   ORGANISMO: {
     fields: [
+      // Estructura del diseño "Pantallas · Backoffice Misiones", pantalla FORM.
+      // Los campos marcados `pendiente` están en el diseño pero el backend no los
+      // persiste (`OrganismRequestDTO` solo acepta typeId, parentId, baseLocationId,
+      // name, acronym y active): van deshabilitados para que nadie escriba y pierda.
       {
         name: '_section_datos',
-        label: 'Datos del organismo',
+        label: 'Datos institucionales',
         type: 'section-header',
+        placeholder: 'Identificación y jerarquía del organismo',
       },
       {
         name: 'nombre',
@@ -240,10 +245,96 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         options: [],
       },
       {
+        name: 'cuit',
+        label: 'CUIT',
+        type: 'text',
+        placeholder: 'Ej. 30-67890123-4',
+        cssClass: 'colspan-half',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'jurisdiccion',
+        label: 'Jurisdicción',
+        type: 'select',
+        placeholder: 'Provincial',
+        cssClass: 'colspan-half',
+        disabled: true,
+        pendiente: true,
+        options: [],
+      },
+      {
+        name: 'descripcion',
+        label: 'Descripción',
+        type: 'textarea',
+        placeholder: 'Se muestra en la ficha pública del organismo.',
+        cssClass: 'colspan-full',
+        disabled: true,
+        pendiente: true,
+        validations: { maxLength: 500 },
+      },
+      {
         name: 'activo',
         label: 'Organismo activo',
         type: 'checkbox',
         value: true,
+      },
+
+      {
+        name: '_section_contacto',
+        label: 'Contacto y visibilidad',
+        type: 'section-header',
+        placeholder: 'Datos que se publican en el portal ciudadano',
+      },
+      {
+        name: 'domicilio',
+        label: 'Domicilio',
+        type: 'text',
+        placeholder: 'Ej. Av. López y Planes 2760, Posadas',
+        cssClass: 'colspan-half',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'telefono',
+        label: 'Teléfono',
+        type: 'text',
+        placeholder: 'Ej. 376 444-7000',
+        cssClass: 'colspan-half',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'correo',
+        label: 'Correo institucional',
+        type: 'email',
+        placeholder: 'Ej. contacto@salud.misiones.gob.ar',
+        cssClass: 'colspan-half',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'sitioWeb',
+        label: 'Sitio web',
+        type: 'url',
+        placeholder: 'Ej. salud.misiones.gob.ar',
+        cssClass: 'colspan-half',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'visiblePortal',
+        label: 'Visible en el portal ciudadano',
+        type: 'checkbox',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'destacado',
+        label: 'Destacar en la página de inicio',
+        type: 'checkbox',
+        disabled: true,
+        pendiente: true,
       },
     ],
     submitButtonText: 'Crear organismo',

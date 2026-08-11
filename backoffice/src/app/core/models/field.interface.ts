@@ -29,6 +29,12 @@ export interface FieldConfig {
   optionsLoaded?: boolean;
   /** Qué decirle al usuario si el catálogo llegó vacío (debería explicar cómo destrabarse). */
   emptyOptionsMessage?: string;
+  /**
+   * El campo está en el diseño pero el backend todavía no lo persiste. Se muestra
+   * deshabilitado y con una marca visible: en un formulario, un campo editable que no
+   * se guarda es peor que uno ausente, porque el usuario escribe y pierde lo que puso.
+   */
+  pendiente?: boolean;
   validations?: FieldValidations;
 }
  

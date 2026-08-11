@@ -19,6 +19,11 @@
         [field]="field"
         [group]="form">
       </app-dynamic-form-field>
+      <!-- Una sola marca para todos los tipos de campo, en vez de repetirla por variante. -->
+      <span *ngIf="field.pendiente" class="form-field__pendiente">
+        <i class="ph ph-clock" aria-hidden="true"></i>
+        Aún no se guarda: el backend todavía no persiste este campo.
+      </span>
     </div>
   </div>
 

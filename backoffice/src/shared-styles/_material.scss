@@ -341,8 +341,11 @@
     }
   }
 
+  // Sin `min-height`: los textarea usan `cdkTextareaAutosize` con `cdkAutosizeMinRows`,
+  // que mide una fila clonada. Si esa fila hereda un min-height, el alto se multiplica
+  // por la cantidad de filas (72px × 3 = 216px). El alto lo fija el minRows.
   textarea.mat-mdc-input-element {
-    min-height: 72px; // ~92px de caja total con el padding del infix
+    resize: vertical;
   }
 }
 

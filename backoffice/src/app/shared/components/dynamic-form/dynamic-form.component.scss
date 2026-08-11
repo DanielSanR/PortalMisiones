@@ -14,6 +14,25 @@
   box-sizing: border-box;
 }
 
+// Campo presente en el diseño que el backend todavía no persiste. Va deshabilitado
+// (ver `pendiente` en FieldConfig) y con esta marca, deliberadamente distinta de un
+// hint normal: tiene que leerse como "esto no se guarda", no como una ayuda.
+.form-field__pendiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: var(--theme-font-size-xs);
+  font-style: italic;
+  color: var(--theme-text-tertiary);
+  line-height: 1.4;
+
+  i.ph {
+    font-size: 14px;
+    font-style: normal;
+  }
+}
+
 .dynamic-form-field-full {
   flex-basis: 100%;
   min-width: 0;

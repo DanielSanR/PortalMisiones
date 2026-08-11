@@ -17,7 +17,10 @@
   </div>
 
   <!-- All form controls — label overline externo (ver dynamic-form.component.html) -->
-  <ng-container *ngIf="field.type !== 'section-header' && group.contains(field.name)">
+  <!-- `group.contains()` devuelve false para controles DESHABILITADOS, así que un campo
+       con `disabled: true` no renderizaba su caja: solo quedaba el label. `get()` sí los
+       encuentra. -->
+  <ng-container *ngIf="field.type !== 'section-header' && !!group.get(field.name)">
     <ng-container [ngSwitch]="field.type">
 
       <!-- Text -->
@@ -96,7 +99,7 @@
                   [id]="field.name"
                   [attr.aria-labelledby]="field.name + '-label'"
                   cdkTextareaAutosize
-                  [cdkAutosizeMinRows]="3"
+                  [cdkAutosizeMinRows]="4"
                   [cdkAutosizeMaxRows]="16"
                   [formControlName]="field.name"
                   [placeholder]="field.placeholder || ''"
