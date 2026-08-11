@@ -5,8 +5,6 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -25,10 +23,17 @@ interface EstadoVacio {
   emptyActionLabel: string;
 }
 
+/** Un filtro aplicado, para la barra "Filtros activos" (chip + ✕ para quitarlo). */
+interface FiltroActivo {
+  clave: 'search' | 'estado';
+  etiqueta: string;
+}
+
 /** ViewModel de la pantalla: filas ya filtradas/ordenadas + los textos que corresponden. */
 interface OrganismosVista extends EstadoVacio {
   rows: OrganismoVM[];
   hayFiltros: boolean;
+  filtrosActivos: FiltroActivo[];
 }
 
 @Component({
@@ -39,8 +44,6 @@ interface OrganismosVista extends EstadoVacio {
     AsyncPipe,
     ReactiveFormsModule,
     MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
@@ -81,8 +84,9 @@ export class OrganismosListComponent implements OnInit {
   readonly vista$ = combineLatest([this.organismos$, this.filtro$, this.search$, this.sort$]).pipe(
     map(([organismos, filtro, search, sort]): OrganismosVista => {
       const rows = this.ordenar(filterByActivo(this.buscar(organismos, search), filtro), sort);
-      const hayFiltros = filtro !== 'todos' || search.trim().length > 0;
-      return { rows, hayFiltros, ...this.estadoVacio(organismos.length, hayFiltros) };
+      const filtrosActivos = this.filtrosActivos(search, filtro);
+      const hayFiltros = filtrosActivos.length > 0;
+      return { rows, hayFiltros, filtrosActivos, ...this.estadoVacio(organismos.length, hayFiltros) };
     }),
   );
 
@@ -125,9 +129,20 @@ export class OrganismosListComponent implements OnInit {
     this.filtro$.next('todos');
   }
 
+  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
+  quitarFiltro(clave: FiltroActivo['clave']): void {
+    if (clave === 'search') this.searchCtrl.setValue('');
+    else this.filtro$.next('todos');
+  }
+
   hayFiltrosActivos(): boolean {
     return this.filtro$.value !== 'todos' || this.searchCtrl.value.trim().length > 0;
   }
+
+  // NOTA: el diseño dibuja un chip "/" también en este buscador, pero esa tecla ya está
+  // tomada por el buscador global del shell (admin-layout.component.ts:108) y una misma
+  // tecla no puede enfocar dos inputs. Se omite acá para no mostrar un atajo que no
+  // hace lo que promete; si se quiere uno propio hay que elegir otra tecla.
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
   onEmptyAction(): void {
@@ -201,6 +216,16 @@ export class OrganismosListComponent implements OnInit {
       case 'activo':       return organismo.activo ? 'Activo' : 'Inactivo';
       default:             return '';
     }
+  }
+
+  private filtrosActivos(search: string, filtro: ActivoFiltro): FiltroActivo[] {
+    const activos: FiltroActivo[] = [];
+    const termino = search.trim();
+    if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
+    if (filtro !== 'todos') {
+      activos.push({ clave: 'estado', etiqueta: `Estado: ${filtro === 'activos' ? 'Activos' : 'Inactivos'}` });
+    }
+    return activos;
   }
 
   private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {

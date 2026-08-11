@@ -5,26 +5,56 @@
 </ng-template>
 
 @if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + contador + acciones · fila B = chips de filtro. -->
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
-    <mat-form-field appearance="outline" class="Filtros-field">
-      <mat-label>Buscar</mat-label>
-      <input matInput [formControl]="searchCtrl" placeholder="Nombre, sigla, tipo o dependencia..." />
-      <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
-    </mat-form-field>
+    <div class="orglist-search">
+      <i class="ph ph-magnifying-glass orglist-search__icon" aria-hidden="true"></i>
+      <input type="text" class="orglist-search__input"
+             [formControl]="searchCtrl"
+             placeholder="Buscar por nombre o sigla…"
+             aria-label="Buscar organismos por nombre, sigla, tipo o dependencia" />
+    </div>
 
-    @if (vista.hayFiltros) {
-      <button type="button" mat-stroked-button class="organismos-list__clear" (click)="limpiarFiltros()">
-        <i class="ph ph-x" aria-hidden="true"></i> Limpiar filtros
+    <div class="orglist-acciones">
+      <span class="list-toolbar-count">{{ vista.rows.length }} organismos</span>
+      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
+      <button type="button" class="orglist-iconbtn" disabled
+              aria-label="Ordenar">
+        <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-    }
+      <button type="button" class="orglist-iconbtn" disabled
+              aria-label="Exportar a CSV">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+      </button>
+    </div>
   </div>
 
-  <div class="list-toolbar__row">
+  <div class="list-toolbar__row orglist-chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <span class="list-toolbar-count">{{ vista.rows.length }} organismos</span>
+    <button type="button" class="orglist-masfiltros" disabled matTooltip="Más filtros — próximamente">
+      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
+    </button>
   </div>
 </div>
+
+@if (vista.filtrosActivos.length) {
+  <div class="orglist-activos">
+    <span class="orglist-activos__label">Filtros activos</span>
+    @for (filtro of vista.filtrosActivos; track filtro.clave) {
+      <span class="orglist-activos__chip">
+        {{ filtro.etiqueta }}
+        <button type="button" class="orglist-activos__quitar"
+                (click)="quitarFiltro(filtro.clave)"
+                [attr.aria-label]="'Quitar filtro — ' + filtro.etiqueta">
+          <i class="ph ph-x" aria-hidden="true"></i>
+        </button>
+      </span>
+    }
+    <button type="button" class="orglist-activos__limpiar" (click)="limpiarFiltros()">Limpiar todo</button>
+  </div>
+}
 
 <app-shared-table
     [data]="vista.rows"
