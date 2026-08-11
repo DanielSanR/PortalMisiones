@@ -60,7 +60,7 @@ mappers + models/view = hojas · barrel index.ts = superficie pública · <featu
 
 ## Tooling agéntico del proyecto (`.claude/`)
 - **rules/**: constraints path-scoped (arquitectura, componentes Angular, SCSS/BEM).
-- **skills/**: `nueva-feature` (scaffolder), `migrar-pantalla`.
+- **skills/**: `nueva-feature` (scaffolder), `migrar-pantalla`, `checklist-design` (corpus de checklists UI/UX, build o audit).
 - **agents/**: `angular-ssr-reviewer`, `arquitecto-capas`, `front-design`. Derivar la revisión/diseño al agente correspondiente.
 
 ## Roles (códigos reales del backend — ver BACKEND_API_SPEC.md §4.2)

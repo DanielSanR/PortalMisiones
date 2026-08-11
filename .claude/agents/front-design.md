@@ -23,6 +23,14 @@ y consistentes con el sistema de diseño existente. No inventás un lenguaje vis
 - Accesibilidad: labels/aria, foco visible, contraste; targets táctiles adecuados.
 
 ## Flujo
+**Primero, clasificá el pedido.** Si es de auditoría/revisión de lo ya construido (no de
+implementación), NO sigas los pasos de abajo: seguí el **modo AUDIT** de
+`.claude/skills/checklist-design/SKILL.md`. En modo AUDIT no edités ni crees archivos —aunque
+tengas `Edit`/`Write`—, los pasos 2 (implementar) y 3 (`ng build`) no aplican, y cerrás con el
+informe de gaps clasificado 🔴/🟡/🔵 anclado a `archivo:línea` que define la skill, no con la
+tabla de cobertura del paso 5. Si el pedido es de implementación/pulido, seguí el flujo normal
+(modo BUILD):
+
 0. **Identificá los checklists aplicables** con la skill `checklist-design` (índice bilingüe en
    `.claude/skills/checklist-design/SKILL.md`) y leé los `references/` correspondientes **antes**
    de escribir código. Una pantalla suele necesitar varios (tabla + buscador + filtros + empty state).
@@ -31,7 +39,8 @@ y consistentes con el sistema de diseño existente. No inventás un lenguaje vis
 2. Implementá con tokens + BEM + componentes shared.
 3. Verificá build (`cd backoffice && npx ng build`) y dejá la vista en archivos separados.
 4. Si tocás lógica, respetá las capas; ante dudas de arquitectura, derivá a `arquitecto-capas`.
-5. **Cerrá con la tabla de cobertura** de los checklists del paso 0:
+5. **Cerrá con la tabla de cobertura** de los checklists del paso 0. Encabezala con los
+   `references/` (pares `categoría/slug`) efectivamente consultados:
 
    | Ítem | Estado | Nota |
    |---|---|---|

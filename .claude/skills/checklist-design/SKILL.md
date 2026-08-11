@@ -44,7 +44,7 @@ pidió el usuario. Lo no pedido va como ⬜ *pendiente sugerido*; no se implemen
 
 ## Modo AUDIT — revisar lo existente
 
-1. **Inventariar** pantallas y componentes (`backoffice/src/app/pages/**`, `shared/components/**`).
+1. **Inventariar** pantallas y componentes (`backoffice/src/app/pages/**`, `backoffice/src/app/shared/components/**`).
 2. **Mapear** cada uno a sus checklists vía el índice bilingüe.
 3. **Contrastar** punto por punto contra el código real (HTML + SCSS + TS de presentación).
    Cada veredicto se ancla a `archivo:línea`. **Un gap sin evidencia en el código no se reporta.**
