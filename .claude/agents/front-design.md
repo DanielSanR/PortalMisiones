@@ -23,7 +23,27 @@ y consistentes con el sistema de diseño existente. No inventás un lenguaje vis
 - Accesibilidad: labels/aria, foco visible, contraste; targets táctiles adecuados.
 
 ## Flujo
+0. **Identificá los checklists aplicables** con la skill `checklist-design` (índice bilingüe en
+   `.claude/skills/checklist-design/SKILL.md`) y leé los `references/` correspondientes **antes**
+   de escribir código. Una pantalla suele necesitar varios (tabla + buscador + filtros + empty state).
+   Si nada mapea, seguí sin checklist y decilo explícitamente.
 1. Mirá pantallas/estilos existentes para mantener consistencia (no partir de cero).
 2. Implementá con tokens + BEM + componentes shared.
 3. Verificá build (`cd backoffice && npx ng build`) y dejá la vista en archivos separados.
 4. Si tocás lógica, respetá las capas; ante dudas de arquitectura, derivá a `arquitecto-capas`.
+5. **Cerrá con la tabla de cobertura** de los checklists del paso 0:
+
+   | Ítem | Estado | Nota |
+   |---|---|---|
+   | Empty state | ✅ | `tramites-list.html:42` |
+   | Loading skeleton | ⬜ | pendiente sugerido — fuera del pedido |
+   | Dark mode | N/A | el backoffice no tiene tema oscuro |
+
+   Sin esa tabla el trabajo no está terminado.
+
+## Alcance
+El checklist dice **qué considerar**, nunca **cómo implementarlo**: ante conflicto ganan
+`.claude/rules/`, los tokens del tema y Material, en ese orden.
+
+Un ítem del checklist **no autoriza** features fuera de lo que pidió el usuario. Lo no pedido va
+a la tabla como ⬜ *pendiente sugerido* y **no se implementa**.
