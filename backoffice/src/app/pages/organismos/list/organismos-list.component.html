@@ -33,7 +33,7 @@
 
   <div class="list-toolbar__row orglist-chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <button type="button" class="orglist-masfiltros" disabled matTooltip="Más filtros — próximamente">
+    <button type="button" class="orglist-masfiltros" disabled>
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -59,7 +59,7 @@
 <app-shared-table
     [data]="vista.rows"
     [columns]="columns"
-    [loading]="loading || deletingId !== null"
+    [loading]="loading"
     [error]="error"
     (retry)="load()"
     [sortable]="true"

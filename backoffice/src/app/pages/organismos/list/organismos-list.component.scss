@@ -20,8 +20,13 @@
   display: flex;
   align-items: center;
   gap: var(--theme-space-sm);
-  flex: 1 1 220px;
-  min-width: 0;
+  // El diseño especifica `flex: 1 1 220px`, pero con el `flex-wrap: wrap` del row esa
+  // base fija hace que el contenedor calcule una segunda línea vacía: suma un row-gap
+  // y otra altura de línea, y la fila pasa de 34px a 84px con los hijos igual centrados.
+  // `auto` da el mismo resultado visual (crece para llenar, encoge al achicar) sin la
+  // línea fantasma; el ancho mínimo lo sostiene `min-width`.
+  flex: 1 1 auto;
+  min-width: 220px;
   height: 34px;
   padding: 0 11px;
   border: 1px solid var(--theme-border-input);
