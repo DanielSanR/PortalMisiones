@@ -10,6 +10,7 @@ import { TramiteFormComponent } from './tramites/create/tramite-form.component';
 import { TramiteDetailComponent } from './tramites/detail/tramite-detail.component';
 import { OrganismosListComponent } from './organismos/list/organismos-list.component';
 import { OrganismoFormComponent } from './organismos/create/organismo-form.component';
+import { OrganismoDetailComponent } from './organismos/detail/organismo-detail.component';
 import { TiposOrganismoListComponent } from './tipos-organismo/list/tipos-organismo-list.component';
 import { TipoOrganismoFormComponent } from './tipos-organismo/create/tipo-organismo-form.component';
 import { UsuariosListComponent } from './usuarios/list/usuarios-list.component';
@@ -62,6 +63,7 @@ const routes: Routes = [
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
       { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos'] } },
+      { path: 'organismos/detalle/:id', component: OrganismoDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Detalle'] } },
       { path: 'organismos/nuevo', component: OrganismoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Nuevo organismo'] } },
       { path: 'organismos/editar/:id', component: OrganismoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Editar organismo'] } },
       { path: 'tipos-organismo/lista', component: TiposOrganismoListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo'] } },

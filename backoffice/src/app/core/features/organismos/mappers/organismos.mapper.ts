@@ -11,6 +11,8 @@ export function toOrganismoVM(dto: OrganismResponseDTO): OrganismoVM {
     nombre: dto.name,
     acronym: dto.acronym ?? '',
     activo: dto.active,
+    createdAt: dto.createdAt ?? null,
+    updatedAt: dto.updatedAt ?? null,
   };
 }
 

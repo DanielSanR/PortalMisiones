@@ -18,6 +18,17 @@ export interface OrganismoVM {
   nombre: string;
   acronym: string;
   activo: boolean;
+  /** ISO del backend. Únicos datos temporales que expone hoy `/api/organism/{id}`. */
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+/** Organismo + las etiquetas de sus relaciones, resueltas contra los catálogos. */
+export interface OrganismoDetalleVM {
+  organismo: OrganismoVM;
+  tipoNombre: string | null;
+  parentNombre: string | null;
+  localidadNombre: string | null;
 }
 
 /** Valor del formulario de organismo. `typeId` requerido; `parentId`/`baseLocationId` opcionales. */

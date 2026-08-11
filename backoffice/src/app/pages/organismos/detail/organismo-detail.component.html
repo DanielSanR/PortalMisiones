@@ -1,0 +1,215 @@
+<!-- Detalle de organismo — diseño "Pantallas · Backoffice Misiones", pantalla DETALLE.
+     Los bloques sin fuente en el backend se marcan explícitamente en vez de inventar datos. -->
+
+@if (loading) {
+  <div class="orgdet-cargando" role="status">
+    <i class="ph ph-spinner-gap orgdet-cargando__spinner" aria-hidden="true"></i>
+    <span>Cargando organismo...</span>
+  </div>
+} @else if (error) {
+  <div class="orgdet-error" role="alert">
+    <span class="orgdet-error__icono" aria-hidden="true"><i class="ph ph-cloud-slash"></i></span>
+    <span class="orgdet-error__titulo">No pudimos cargar el organismo</span>
+    <span class="orgdet-error__texto">Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Gobierno Inteligente.</span>
+    <button type="button" mat-stroked-button color="primary" (click)="cargar()">
+      <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+    </button>
+  </div>
+} @else if (detalle) {
+
+<div class="orgdet">
+
+  <!-- Membrete -->
+  <div class="orgdet-membrete">
+    <div class="orgdet-membrete__fila">
+      <span class="orgdet-membrete__avatar" aria-hidden="true">{{ iniciales }}</span>
+
+      <div class="orgdet-membrete__identidad">
+        <div class="orgdet-membrete__titulo-fila">
+          <h2 class="orgdet-membrete__titulo">{{ detalle.organismo.nombre }}</h2>
+          <span class="bool-badge"
+                [class.bool-badge--active]="detalle.organismo.activo"
+                [class.bool-badge--inactive]="!detalle.organismo.activo">
+            <span class="bool-badge__dot" aria-hidden="true"></span>
+            {{ detalle.organismo.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+
+        <div class="orgdet-membrete__meta">
+          @if (detalle.tipoNombre) {
+            <span class="orgdet-membrete__meta-item">
+              <i class="ph ph-buildings" aria-hidden="true"></i>{{ detalle.tipoNombre }}
+            </span>
+          }
+          @if (detalle.localidadNombre) {
+            <span class="orgdet-membrete__separador" aria-hidden="true"></span>
+            <span class="orgdet-membrete__meta-item">
+              <i class="ph ph-map-pin" aria-hidden="true"></i>{{ detalle.localidadNombre }}
+            </span>
+          }
+          @if (detalle.organismo.updatedAt) {
+            <span class="orgdet-membrete__separador" aria-hidden="true"></span>
+            <span class="orgdet-membrete__meta-item">
+              act. {{ detalle.organismo.updatedAt | date:'dd/MM/yyyy' }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <div class="orgdet-membrete__acciones">
+        <!-- El portal ciudadano todavía no expone la ficha pública del organismo. -->
+        <button type="button" class="orgdet-iconbtn" disabled
+                aria-label="Ver en el portal ciudadano"
+                matTooltip="Ver en el portal ciudadano — pendiente">
+          <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
+        </button>
+        <app-row-actions [actions]="accionesDelMembrete"></app-row-actions>
+        <button type="button" mat-flat-button color="primary" (click)="onEdit()"
+                *appHasPermission="'UPDATE_ORGANISM'">
+          <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+        </button>
+      </div>
+    </div>
+
+    <nav class="orgdet-tabs" aria-label="Secciones del organismo">
+      @for (tab of tabs; track tab.clave) {
+        <button type="button" class="orgdet-tabs__tab"
+                [class.is-active]="(tab$ | async) === tab.clave"
+                [attr.aria-current]="(tab$ | async) === tab.clave ? 'page' : null"
+                (click)="seleccionarTab(tab.clave)">
+          {{ tab.label }}
+          @if (tab.contador !== null) {
+            <span class="orgdet-tabs__contador">{{ tab.contador }}</span>
+          }
+        </button>
+      }
+    </nav>
+  </div>
+
+  <div class="orgdet-grid">
+    <!-- Columna principal -->
+    <div class="orgdet-col">
+
+      @if ((tab$ | async) === 'datos') {
+        <section class="orgdet-card orgdet-card--padded">
+          <header class="orgdet-card__encabezado">
+            <span class="orgdet-card__titulo">Datos institucionales</span>
+            <span class="orgdet-card__subtitulo">Información publicada en la ficha del organismo</span>
+          </header>
+
+          <div class="orgdet-campos">
+            @for (campo of campos; track campo.label) {
+              <div class="orgdet-campo" [class.orgdet-campo--pendiente]="campo.pendiente">
+                <span class="orgdet-campo__label">{{ campo.label }}</span>
+                @if (campo.pendiente) {
+                  <span class="orgdet-campo__pendiente">
+                    <i class="ph ph-clock" aria-hidden="true"></i> Aún no disponible
+                  </span>
+                } @else {
+                  <span class="orgdet-campo__valor">{{ campo.valor || '—' }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="orgdet-descripcion">
+            <span class="orgdet-campo__label">Descripción</span>
+            <p class="orgdet-campo__pendiente">
+              <i class="ph ph-clock" aria-hidden="true"></i>
+              El backend todavía no persiste la descripción del organismo.
+            </p>
+          </div>
+        </section>
+      }
+
+      @if ((tab$ | async) === 'tramites') {
+        <section class="orgdet-card">
+          <header class="orgdet-card__barra">
+            <span class="orgdet-card__titulo">Trámites del organismo</span>
+          </header>
+          <div class="orgdet-pendiente">
+            <span class="orgdet-pendiente__icono" aria-hidden="true"><i class="ph ph-file-text"></i></span>
+            <span class="orgdet-pendiente__titulo">Todavía no se pueden listar</span>
+            <span class="orgdet-pendiente__texto">
+              El backend no expone los trámites por organismo. Cuando lo haga, se muestran acá
+              con su estado y sus consultas.
+            </span>
+          </div>
+        </section>
+      }
+
+      @if ((tab$ | async) === 'responsables') {
+        <section class="orgdet-card">
+          <header class="orgdet-card__barra">
+            <span class="orgdet-card__titulo">Responsables</span>
+          </header>
+          <div class="orgdet-pendiente">
+            <span class="orgdet-pendiente__icono" aria-hidden="true"><i class="ph ph-users"></i></span>
+            <span class="orgdet-pendiente__titulo">Todavía no hay responsables asignables</span>
+            <span class="orgdet-pendiente__texto">
+              No existe la relación entre usuarios y organismo en el backend.
+            </span>
+          </div>
+        </section>
+      }
+
+      @if ((tab$ | async) === 'historial') {
+        <section class="orgdet-card">
+          <header class="orgdet-card__barra">
+            <span class="orgdet-card__titulo">Historial</span>
+          </header>
+          <div class="orgdet-pendiente">
+            <span class="orgdet-pendiente__icono" aria-hidden="true"><i class="ph ph-clock-counter-clockwise"></i></span>
+            <span class="orgdet-pendiente__titulo">Sin registro de actividad</span>
+            <span class="orgdet-pendiente__texto">
+              La auditoría por organismo todavía no está disponible. Lo único que se conoce hoy
+              son las fechas de alta y última edición.
+            </span>
+            <dl class="orgdet-fechas">
+              <div>
+                <dt>Alta</dt>
+                <dd>{{ (detalle.organismo.createdAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Última edición</dt>
+                <dd>{{ (detalle.organismo.updatedAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+      }
+    </div>
+
+    <!-- Columna lateral -->
+    <aside class="orgdet-col">
+      <section class="orgdet-card orgdet-card--padded">
+        <span class="orgdet-card__overline">Resumen</span>
+        <div class="orgdet-pendiente orgdet-pendiente--compacto">
+          <span class="orgdet-pendiente__texto">
+            Las métricas del organismo (trámites publicados, en revisión, categorías vinculadas
+            y consultas) dependen de endpoints que todavía no existen.
+          </span>
+        </div>
+      </section>
+
+      <section class="orgdet-card orgdet-card--padded">
+        <span class="orgdet-card__overline">Ficha</span>
+        <dl class="orgdet-fechas orgdet-fechas--apilado">
+          <div>
+            <dt>Alta</dt>
+            <dd>{{ (detalle.organismo.createdAt | date:'dd/MM/yyyy') || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Última edición</dt>
+            <dd>{{ (detalle.organismo.updatedAt | date:'dd/MM/yyyy') || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd>{{ detalle.organismo.activo ? 'Activo' : 'Inactivo' }}</dd>
+          </div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+</div>
+}

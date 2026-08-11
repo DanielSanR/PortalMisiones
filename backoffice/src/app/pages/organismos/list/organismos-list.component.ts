@@ -234,6 +234,13 @@ export class OrganismosListComponent implements OnInit {
   accionesDe(organismo: OrganismoVM): RowAction[] {
     return [
       {
+        label: 'Ver detalle',
+        icon: 'eye',
+        permission: 'READ_ORGANISM',
+        ariaLabel: `Ver detalle de ${organismo.nombre}`,
+        run: () => this.onVerDetalle(organismo),
+      },
+      {
         label: 'Eliminar',
         icon: 'trash',
         permission: 'DELETE_ORGANISM',
@@ -246,6 +253,10 @@ export class OrganismosListComponent implements OnInit {
 
   onCreate(): void {
     this.router.navigate(['/dashboard/organismos/nuevo']);
+  }
+
+  onVerDetalle(organismo: OrganismoVM): void {
+    this.router.navigate(['/dashboard/organismos/detalle', organismo.id]);
   }
 
   onEdit(organismo: OrganismoVM): void {

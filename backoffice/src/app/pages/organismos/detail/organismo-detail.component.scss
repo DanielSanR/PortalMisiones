@@ -1,0 +1,420 @@
+// ==========================================================================
+// Detalle de Organismo — diseño "Pantallas · Backoffice Misiones" (DETALLE).
+// Membrete con avatar + tabs subrayadas, y grid 1.6fr / 1fr de tarjetas.
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
+.orgdet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// Membrete -----------------------------------------------------------------
+.orgdet-membrete {
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+  overflow: hidden;
+
+  &__fila {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-md);
+    padding: 18px 20px;
+    flex-wrap: wrap;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--theme-radius-panel);
+    background: var(--theme-primary-50);
+    color: var(--theme-primary-800);
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-bold);
+    letter-spacing: -0.2px;
+  }
+
+  &__identidad {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  &__titulo-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: var(--theme-font-size-lg);
+    font-weight: var(--theme-font-weight-semibold);
+    letter-spacing: -0.2px;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex-wrap: wrap;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+  }
+
+  &__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    i.ph {
+      font-size: 15px;
+      color: var(--theme-text-tertiary);
+    }
+  }
+
+  &__separador {
+    width: 1px;
+    height: 12px;
+    background: var(--theme-border-primary);
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex: none;
+  }
+}
+
+.orgdet-iconbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-surface-card);
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--theme-transition-fast), color var(--theme-transition-fast);
+  @include focus-ring;
+
+  i.ph {
+    font-size: 17px;
+  }
+
+  &:hover:not([disabled]) {
+    border-color: var(--theme-border-strong);
+    color: var(--theme-primary);
+  }
+
+  &[disabled] {
+    color: var(--theme-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+// Tabs subrayadas ----------------------------------------------------------
+.orgdet-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 20px;
+  border-top: 1px solid var(--theme-border-subtle);
+  overflow-x: auto;
+  @include custom-scrollbar;
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 12px;
+    margin-bottom: -1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    font-family: inherit;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--theme-transition-fast), border-color var(--theme-transition-fast);
+    @include focus-ring;
+
+    &.is-active {
+      border-bottom-color: var(--theme-primary);
+      color: var(--theme-primary-800);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
+
+  &__contador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 19px;
+    padding: 0 6px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-border-subtle);
+    color: var(--theme-text-secondary);
+    font-size: var(--theme-font-size-2xs);
+    font-weight: var(--theme-font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Grid y tarjetas ----------------------------------------------------------
+.orgdet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+
+  @include responsive(tablet-down) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.orgdet-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.orgdet-card {
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+  overflow: hidden;
+
+  &--padded {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  // Encabezado con barra de acento a la izquierda.
+  &__encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 3px solid var(--theme-primary);
+    padding-left: 13px;
+  }
+
+  &__barra {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-md);
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--theme-border-subtle);
+    flex-wrap: wrap;
+  }
+
+  &__titulo {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__subtitulo {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-tertiary);
+  }
+
+  &__overline {
+    @include field-label-overline;
+  }
+}
+
+// Campos de la ficha -------------------------------------------------------
+.orgdet-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.orgdet-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+
+  &__label {
+    @include field-label-overline;
+  }
+
+  &__valor {
+    font-size: var(--theme-font-size-sm);
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  // Marca de "el backend todavía no lo devuelve". Deliberadamente distinta de un
+  // valor real: nadie tiene que confundir un pendiente con un dato vacío.
+  &__pendiente {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: var(--theme-font-size-xs);
+    font-style: italic;
+    color: var(--theme-text-tertiary);
+    line-height: 1.5;
+
+    i.ph {
+      font-size: 14px;
+      font-style: normal;
+    }
+  }
+}
+
+.orgdet-descripcion {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 16px;
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
+// Bloque de "todavía no disponible" ----------------------------------------
+.orgdet-pendiente {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 34px 26px;
+  text-align: center;
+
+  &--compacto {
+    align-items: flex-start;
+    padding: 0;
+    text-align: left;
+  }
+
+  &__icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-surface-sunken);
+    color: var(--theme-text-tertiary);
+
+    i.ph {
+      font-size: 28px;
+    }
+  }
+
+  &__titulo {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__texto {
+    max-width: 46ch;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+}
+
+// Fechas reales ------------------------------------------------------------
+.orgdet-fechas {
+  display: flex;
+  gap: 26px;
+  margin: 6px 0 0;
+  flex-wrap: wrap;
+
+  &--apilado {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  dt {
+    @include field-label-overline;
+    margin-bottom: 3px;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Carga y error ------------------------------------------------------------
+.orgdet-cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--theme-space-sm);
+  padding: 48px;
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-sm);
+
+  &__spinner {
+    display: inline-block;
+    font-size: 20px;
+    animation: orgdet-spin 0.9s linear infinite;
+  }
+}
+
+.orgdet-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 26px;
+  text-align: center;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+
+  &__icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-error-bg);
+    color: var(--theme-error);
+
+    i.ph {
+      font-size: 28px;
+    }
+  }
+
+  &__titulo {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__texto {
+    max-width: 44ch;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+    line-height: 1.5;
+  }
+}
+
+@keyframes orgdet-spin {
+  to { transform: rotate(360deg); }
+}
