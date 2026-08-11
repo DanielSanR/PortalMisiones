@@ -270,6 +270,15 @@
       padding-bottom: 10px;
     }
 
+    // MDC posiciona el label en reposo con `top: 28px`, la mitad del infix por
+    // defecto (56px). Como arriba lo bajamos a 42px (caja real de 44px), el label
+    // quedaba ~7px por debajo del centro y rozaba el borde inferior del campo.
+    // Se recentra SOLO el estado en reposo: el flotante se calcula sobre el mismo
+    // `top` y ya se apoya bien sobre el borde, así que tocarlo lo despegaría del notch.
+    .mdc-floating-label:not(.mdc-floating-label--float-above) {
+      top: 50%;
+    }
+
     // Soft focus ring (firma del sistema) además del borde de foco.
     &.mat-focused .mdc-notched-outline {
       box-shadow: var(--theme-focus-ring-soft);
