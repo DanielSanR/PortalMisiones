@@ -107,7 +107,30 @@ Para lo que no esté en esta tabla, buscá el slug en el catálogo de abajo.
 ## Catálogo completo
 
 <!-- BEGIN:CATALOGO-GENERADO -->
-<!-- Se llena al correr scripts/sync.mjs -->
+<!-- Generado por scripts/sync.mjs — no editar a mano. Última sync: 2026-08-11 -->
+
+Catálogo completo: **112 checklists** en 5 categorías.
+
+### `website` — Website (23)
+
+`security` · `about` · `legal-privacy` · `features` · `testimonials` · `affiliate` · `compare-page` · `status` · `billing` · `press-media` · `waitlist` · `team` · `cart` · `search` · `careers` · `blog-post` · `contact-us` · `pricing` · `faq` · `404` · `login` · `blog` · `sign-up`
+
+### `web-app` — Web app (27)
+
+`2-factor-authentication` · `notification-settings` · `account` · `help-center` · `billing` · `settings` · `user-management` · `single-item-detail` · `admin-panel` · `empty-state` · `analytics` · `onboarding` · `notifications` · `public-profile` · `timeline-gantt-view` · `feed` · `api-keys` · `search-results` · `integrations` · `version-history` · `comments` · `multi-step-form` · `kanban-board-view` · `chat` · `maintenance` · `pricing` · `login`
+
+### `design-system` — Design system (29)
+
+`drawer` · `typography` · `accessibility` · `date-picker` · `spacing-and-grid` · `color-system` · `tokens` · `accordion` · `skeleton` · `carousel` · `banner` · `slider` · `toast` · `tabs` · `checkbox` · `radio` · `searchbar` · `tooltip` · `modal` · `loading` · `toggle` · `input-field` · `icon` · `table` · `card` · `button` · `badge` · `avatar` · `dropdown-menu`
+
+### `mobile` — Mobile app (20)
+
+`gesture-navigation` · `splash-screen` · `checkout` · `tab-bar-navigation` · `in-app-notifications` · `action-sheet` · `billing` · `search` · `camera-media-capture` · `map-view` · `onboarding-checklist` · `paywall` · `onboarding` · `chat` · `settings` · `in-app-browser` · `cart` · `login` · `account` · `invite`
+
+### `flows` — Flows (13)
+
+`adding-to-cart` · `uploading-media` · `verifying-account` · `canceling-subscription` · `filtering-items` · `saving-changes` · `entering-promo-code` · `showing-input-error` · `resetting-password` · `deleting-account` · `contacting-support` · `making-a-payment` · `submitting-a-form`
+
 <!-- END:CATALOGO-GENERADO -->
 
 ## Mantenimiento
