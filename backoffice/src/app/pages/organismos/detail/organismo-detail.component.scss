@@ -132,6 +132,13 @@
   align-items: center;
   gap: var(--theme-space-md);
   flex-wrap: wrap;
+
+  // Sin chip, el primer elemento son las pestañas, y su padding interno de 12px dejaba
+  // el texto y el subrayado flotando adentro del borde de la tarjeta de abajo. Se
+  // compensa para que la barra arranque a ras, como el chip cuando sí está.
+  > .orgdet-tabs:first-child {
+    margin-left: -12px;
+  }
 }
 
 .orgdet-chip {
