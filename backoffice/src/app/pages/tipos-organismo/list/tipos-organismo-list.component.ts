@@ -4,12 +4,12 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { ActivoFiltro, activoFilterTabs, filterByActivo } from '@core/utils/list-filter.utils';
@@ -22,11 +22,11 @@ import { TiposOrganismoFacade, TipoOrganismoVM } from '@features/tipos-organismo
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -77,6 +77,21 @@ export class TiposOrganismoListComponent implements OnInit {
 
   onCreate(): void {
     this.router.navigate(['/dashboard/tipos-organismo/nuevo']);
+  }
+
+  accionEditar(tipo: TipoOrganismoVM): RowAction {
+    return { label: 'Editar', icon: 'pencil-simple', permission: 'UPDATE_ORGANISM_TYPE', run: () => this.onEdit(tipo) };
+  }
+
+  accionesDe(tipo: TipoOrganismoVM): RowAction[] {
+    return [{
+      label: 'Eliminar',
+      icon: 'trash',
+      permission: 'DELETE_ORGANISM_TYPE',
+      danger: true,
+      ariaLabel: 'Eliminar tipo de organismo',
+      run: () => this.onDelete(tipo),
+    }];
   }
 
   onEdit(tipo: TipoOrganismoVM): void {

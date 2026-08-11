@@ -4,12 +4,12 @@ import { Router } from '@angular/router';
 import { filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { todasOnlyTabs } from '@core/utils/list-filter.utils';
@@ -22,11 +22,11 @@ import { ModalidadesFacade, ModalidadVM } from '@features/modalidades';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -71,6 +71,21 @@ export class ModalidadesListComponent implements OnInit {
 
   onCreate(): void {
     this.router.navigate(['/dashboard/modalidades/nuevo']);
+  }
+
+  accionEditar(modalidad: ModalidadVM): RowAction {
+    return { label: 'Editar', icon: 'pencil-simple', permission: 'UPDATE_MODALITY', run: () => this.onEdit(modalidad) };
+  }
+
+  accionesDe(modalidad: ModalidadVM): RowAction[] {
+    return [{
+      label: 'Eliminar',
+      icon: 'trash',
+      permission: 'DELETE_MODALITY',
+      danger: true,
+      ariaLabel: 'Eliminar modalidad',
+      run: () => this.onDelete(modalidad),
+    }];
   }
 
   onEdit(modalidad: ModalidadVM): void {

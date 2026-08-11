@@ -5,12 +5,12 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { ActivoFiltro, activoFilterTabs, filterByActivo } from '@core/utils/list-filter.utils';
@@ -44,11 +44,11 @@ interface OrganismosVista extends EstadoVacio {
     AsyncPipe,
     ReactiveFormsModule,
     MatButtonModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -155,6 +155,28 @@ export class OrganismosListComponent implements OnInit {
 
   onSortChange(sort: TableSortEvent): void {
     this.sort$.next(sort);
+  }
+
+  accionEditar(organismo: OrganismoVM): RowAction {
+    return {
+      label: 'Editar',
+      icon: 'pencil-simple',
+      permission: 'UPDATE_ORGANISM',
+      run: () => this.onEdit(organismo),
+    };
+  }
+
+  accionesDe(organismo: OrganismoVM): RowAction[] {
+    return [
+      {
+        label: 'Eliminar',
+        icon: 'trash',
+        permission: 'DELETE_ORGANISM',
+        danger: true,
+        ariaLabel: `Eliminar organismo ${organismo.nombre}`,
+        run: () => this.onDelete(organismo),
+      },
+    ];
   }
 
   onCreate(): void {

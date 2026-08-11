@@ -4,12 +4,12 @@ import { Router } from '@angular/router';
 import { filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { todasOnlyTabs } from '@core/utils/list-filter.utils';
@@ -22,11 +22,11 @@ import { DestinatariosFacade, DestinatarioVM } from '@features/destinatarios';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -71,6 +71,21 @@ export class DestinatariosListComponent implements OnInit {
 
   onCreate(): void {
     this.router.navigate(['/dashboard/destinatarios/nuevo']);
+  }
+
+  accionEditar(destinatario: DestinatarioVM): RowAction {
+    return { label: 'Editar', icon: 'pencil-simple', permission: 'UPDATE_RECIPIENT', run: () => this.onEdit(destinatario) };
+  }
+
+  accionesDe(destinatario: DestinatarioVM): RowAction[] {
+    return [{
+      label: 'Eliminar',
+      icon: 'trash',
+      permission: 'DELETE_RECIPIENT',
+      danger: true,
+      ariaLabel: 'Eliminar destinatario',
+      run: () => this.onDelete(destinatario),
+    }];
   }
 
   onEdit(destinatario: DestinatarioVM): void {

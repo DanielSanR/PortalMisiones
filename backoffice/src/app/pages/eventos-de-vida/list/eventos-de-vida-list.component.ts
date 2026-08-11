@@ -4,12 +4,12 @@ import { Router } from '@angular/router';
 import { filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { todasOnlyTabs } from '@core/utils/list-filter.utils';
@@ -22,11 +22,11 @@ import { EventosDeVidaFacade, EventoDeVidaVM } from '@features/eventos-de-vida';
   imports: [
     AsyncPipe,
     MatButtonModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -72,6 +72,21 @@ export class EventosDeVidaListComponent implements OnInit {
 
   onCreate(): void {
     this.router.navigate(['/dashboard/eventos-de-vida/nuevo']);
+  }
+
+  accionEditar(evento: EventoDeVidaVM): RowAction {
+    return { label: 'Editar', icon: 'pencil-simple', permission: 'UPDATE_LIFE_EVENT', run: () => this.onEdit(evento) };
+  }
+
+  accionesDe(evento: EventoDeVidaVM): RowAction[] {
+    return [{
+      label: 'Eliminar',
+      icon: 'trash',
+      permission: 'DELETE_LIFE_EVENT',
+      danger: true,
+      ariaLabel: 'Eliminar evento de vida',
+      run: () => this.onDelete(evento),
+    }];
   }
 
   onEdit(evento: EventoDeVidaVM): void {

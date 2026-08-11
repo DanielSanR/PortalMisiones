@@ -100,22 +100,12 @@
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <div class="row-actions">
-            <button type="button" class="row-action" (click)="onEdit(row)"
-                [disabled]="deletingId === row.id" *appHasPermission="'UPDATE_ORGANISM'">
-                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-            </button>
-            <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
-                *appHasPermission="'DELETE_ORGANISM'"
-                [disabled]="deletingId === row.id"
-                [attr.aria-busy]="deletingId === row.id"
-                [attr.aria-label]="deletingId === row.id ? 'Eliminando organismo' : 'Eliminar organismo'"
-                [matTooltip]="deletingId === row.id ? 'Eliminando...' : 'Eliminar'">
-                <i class="ph" [class.ph-trash]="deletingId !== row.id"
-                   [class.ph-spinner-gap]="deletingId === row.id"
-                   [class.organismos-list__spinner]="deletingId === row.id" aria-hidden="true"></i>
-            </button>
-        </div>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="deletingId === row.id"
+            busyLabel="Eliminando organismo...">
+        </app-row-actions>
     </ng-template>
 
 </app-shared-table>

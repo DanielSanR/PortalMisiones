@@ -28,15 +28,7 @@
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <div class="row-actions">
-            <button *appHasPermission="'UPDATE_TAXONOMY'" type="button" class="row-action" (click)="onEdit(row)">
-                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-            </button>
-            <button *appHasPermission="'DELETE_TAXONOMY'" type="button" class="row-action row-action--icon row-action--danger"
-                (click)="onDelete(row)" aria-label="Eliminar etiqueta" matTooltip="Eliminar">
-                <i class="ph ph-trash" aria-hidden="true"></i>
-            </button>
-        </div>
+        <app-row-actions [primary]="accionEditar(row)" [actions]="accionesDe(row)"></app-row-actions>
     </ng-template>
 
 </app-shared-table>

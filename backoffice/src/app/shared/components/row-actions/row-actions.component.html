@@ -1,0 +1,45 @@
+<div class="row-actions">
+  @if (primaryVisible$ | async; as accion) {
+    <button type="button" class="row-action"
+            [disabled]="busy || accion.disabled"
+            [attr.aria-label]="accion.ariaLabel || null"
+            [attr.aria-busy]="busy || null"
+            [matTooltip]="busy ? busyLabel : ''">
+      <i class="ph" [class]="'ph ph-' + (busy ? 'spinner-gap' : accion.icon)"
+         [class.row-actions__spinner]="busy" aria-hidden="true"></i>
+      {{ accion.label }}
+    </button>
+  }
+
+  @if (menu$ | async; as menu) {
+    @if (!menu.vacio) {
+      <button type="button" class="row-action row-action--icon"
+              [disabled]="busy"
+              [attr.aria-label]="menuLabel"
+              [matMenuTriggerFor]="acciones"
+              [matTooltip]="menuLabel">
+        <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
+      </button>
+
+      <mat-menu #acciones="matMenu" xPosition="before">
+        @for (accion of menu.normales; track accion.label) {
+          <button mat-menu-item type="button" [disabled]="accion.disabled"
+                  [attr.aria-label]="accion.ariaLabel || null" (click)="accion.run()">
+            <i class="ph" [class]="'ph ph-' + accion.icon" aria-hidden="true"></i>
+            <span>{{ accion.label }}</span>
+          </button>
+        }
+
+        @if (menu.divisor) { <hr class="row-actions__divisor" aria-hidden="true" /> }
+
+        @for (accion of menu.destructivas; track accion.label) {
+          <button mat-menu-item type="button" class="delete-action" [disabled]="accion.disabled"
+                  [attr.aria-label]="accion.ariaLabel || null" (click)="accion.run()">
+            <i class="ph" [class]="'ph ph-' + accion.icon" aria-hidden="true"></i>
+            <span>{{ accion.label }}</span>
+          </button>
+        }
+      </mat-menu>
+    }
+  }
+</div>
