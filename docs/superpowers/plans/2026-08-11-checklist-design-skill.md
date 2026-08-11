@@ -22,6 +22,12 @@
 - **Regla `items` vs `tabs`**: si `items.length > 0` → el checklist son los `items` y los `tabs` van a *Notas*. Si `items.length === 0` (las 13 de `flows`) → el checklist son los `tabs`, numerados como pasos secuenciales. Ignorarlo deja `flows` vacío.
 - **Base URL**: `https://www.checklist.design` (con `www.`).
 - **Fin de línea LF** en los archivos generados (`\n`), nunca `\r\n`.
+- **Los tests de `api.mjs` son de integración en vivo, por decisión explícita del dueño del repo.**
+  Pegan contra la API real y no se mockean: toda la herramienta depende de una API pública no
+  documentada ni versionada, y el riesgo #1 del brief es que cambie el contrato. Queremos que eso
+  rompa en `api.test.mjs` y no al escribir 112 archivos corruptos. **No es un defecto de test
+  hygiene ni un test frágil: es el diseño acordado.** `render.mjs` —donde vive toda la lógica de
+  formato— sí se testea en aislamiento total, sin red.
 
 ## File Structure
 
