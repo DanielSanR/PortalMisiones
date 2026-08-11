@@ -24,6 +24,11 @@
     left: 0;
     right: 0;
     z-index: 2;
+    // Refresco en segundo plano: los datos en pantalla siguen siendo válidos, así que
+    // el indicador tiene que ser discreto. Hilo de 2px y sin riel de fondo, para que
+    // solo se vea la porción en movimiento y no una banda llena a lo ancho.
+    height: 2px;
+    --mdc-linear-progress-track-color: transparent;
   }
 
   // ---------------------------------------------------------------------------
@@ -34,8 +39,12 @@
     @include custom-scrollbar;
     transition: opacity var(--theme-transition-fast);
 
+    // Atenuación apenas perceptible: al refrescar, lo que está en pantalla sigue
+    // siendo correcto. Bajarlo a 0.6 hacía parecer que la tabla se vaciaba.
+    // Se mantiene `pointer-events: none` para no actuar sobre filas que están por
+    // cambiar (ej. borrar una que el refresco va a reemplazar).
     &--loading {
-      opacity: 0.6;
+      opacity: 0.85;
       pointer-events: none;
     }
   }
