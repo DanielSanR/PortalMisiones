@@ -23,7 +23,12 @@ async function getJson(url) {
   if (!res.ok) {
     throw new ApiError(`HTTP ${res.status} en ${url}`, { url, status: res.status });
   }
-  const body = await res.json();
+  let body;
+  try {
+    body = await res.json();
+  } catch (cause) {
+    throw new ApiError(`Respuesta no es JSON válido en ${url}: ${cause.message}`, { url, status: res.status });
+  }
   if (body?.success !== true) {
     throw new ApiError(
       `Respuesta sin success:true en ${url} — ${body?.error ?? 'sin detalle'}`,
@@ -59,6 +64,11 @@ export async function fetchChecklist(slug, category) {
   const body = await getJson(url);
   if (!body.checklist?.slug) {
     throw new ApiError(`Respuesta sin checklist.slug en ${url}`, { url, status: 200 });
+  }
+  for (const campo of ['items', 'tabs', 'related']) {
+    if (body[campo] != null && !Array.isArray(body[campo])) {
+      throw new ApiError(`Campo \`${campo}\` no es un array en ${url}: cambió la forma de la API`, { url, status: 200 });
+    }
   }
   return {
     checklist: body.checklist,
