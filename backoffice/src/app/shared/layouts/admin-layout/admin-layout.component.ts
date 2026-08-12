@@ -29,13 +29,20 @@ interface NavGroupView {
   isOpen: boolean;
 }
 
-/** Una fila del panel de resultados del buscador (navegación o comando). */
+/** Una fila de resultados del buscador (navegación o comando). */
 export interface ResultadoBuscador {
   tipo: 'nav' | 'comando';
   label: string;
   icon: string;
   route?: string;
   id?: 'cerrar-sesion' | 'colapsar-nav';
+}
+
+/** Grupo del listado de resultados. `indice` es la posición en la lista plana
+ *  `resultados`, para que las flechas recorran los grupos de corrido. */
+interface GrupoResultado {
+  titulo: string;
+  items: (ResultadoBuscador & { indice: number })[];
 }
 
 @Component({
@@ -56,6 +63,7 @@ export interface ResultadoBuscador {
 export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
+  @ViewChild('navScroll') navScrollRef?: ElementRef<HTMLElement>;
   isMobile = false;
   isCollapsed = false;
   userName = '';
@@ -67,11 +75,11 @@ export class AdminLayoutComponent implements OnInit {
   navGroups: NavGroupView[] = [];
   searchQuery = '';
 
-  /** Resultados del buscador: navegación primero, comandos después. */
+  /** Resultados en lista plana: es el orden que recorren las flechas. */
   resultados: ResultadoBuscador[] = [];
-  /** Cuántos de `resultados` son navegación — el resto son comandos (para los encabezados). */
-  cantidadNavegacion = 0;
-  /** Fila resaltada; -1 cuando no hay resultados. */
+  /** Los mismos resultados agrupados, que es lo que dibuja el nav. */
+  gruposResultado: GrupoResultado[] = [];
+  /** Fila bajo el cursor; -1 cuando no hay resultados. */
   indiceActivo = -1;
 
   /** Contexto de autorización del usuario actual, para gatear los comandos. */
@@ -216,22 +224,23 @@ export class AdminLayoutComponent implements OnInit {
   /** Filtro client-side del buscador de la sidebar (sin backend). */
   onSearchInput(value: string): void {
     this.searchQuery = value;
-    this.recomputeNavGroups();
     this.recomputeResultados();
+    this.cdr.markForCheck();
   }
 
   // ---------------------------------------------------------------------
-  // Buscador de comandos — panel desplegable bajo el input.
+  // Buscador — el nav SE CONVIERTE en los resultados (no hay panel flotante).
   // ---------------------------------------------------------------------
 
   /**
-   * Resultados en una lista plana con encabezados: así el recorrido con las flechas
-   * es lineal y no hay que saltar entre grupos.
+   * Arma la lista plana (para las flechas) y su agrupación (para el nav) en una
+   * sola pasada, así los índices no se pueden desfasar entre las dos vistas.
    */
   private recomputeResultados(): void {
     const q = this.searchQuery.trim().toLocaleLowerCase('es-AR');
     if (!q) {
       this.resultados = [];
+      this.gruposResultado = [];
       this.indiceActivo = -1;
       return;
     }
@@ -249,14 +258,22 @@ export class AdminLayoutComponent implements OnInit {
       .map((c) => ({ tipo: 'comando' as const, label: c.label, icon: c.icon, route: c.route, id: c.id }));
 
     this.resultados = [...navegacion, ...comandos];
-    this.cantidadNavegacion = navegacion.length;
+    this.gruposResultado = [
+      { titulo: 'Ir a', items: navegacion.map((r, i) => ({ ...r, indice: i })) },
+      { titulo: 'Acciones', items: comandos.map((r, i) => ({ ...r, indice: navegacion.length + i })) },
+    ].filter((g) => g.items.length > 0);
     // Se preselecciona el primero: Enter sin tocar las flechas ejecuta lo más probable.
     this.indiceActivo = this.resultados.length > 0 ? 0 : -1;
   }
 
-  /** Flechas para recorrer, Enter para ejecutar, Escape para cerrar. */
+  /** Flechas para recorrer, Enter para ejecutar, Escape para limpiar. */
   onSearchKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
+      // `MatDrawer` escucha Escape en su propio elemento y cierra el sidenav. Cortamos
+      // la propagación solo cuando hay algo que limpiar: si no, Escape con el buscador
+      // vacío deja de cerrar el drawer en mobile, que ahí sí es lo que se espera.
+      if (!this.searchQuery) return;
+      event.stopPropagation();
       this.limpiarBusqueda();
       return;
     }
@@ -267,12 +284,23 @@ export class AdminLayoutComponent implements OnInit {
       const paso = event.key === 'ArrowDown' ? 1 : -1;
       const total = this.resultados.length;
       this.indiceActivo = (this.indiceActivo + paso + total) % total;
+      this.desplazarAlCursor();
       return;
     }
     if (event.key === 'Enter' && this.indiceActivo >= 0) {
       event.preventDefault();
       this.ejecutar(this.resultados[this.indiceActivo]);
     }
+  }
+
+  /** La lista vive dentro del nav, que scrollea: sin esto el cursor se va de vista
+   *  con las flechas. `setTimeout` porque el alto hay que medirlo ya renderizado. */
+  private desplazarAlCursor(): void {
+    setTimeout(() => {
+      this.navScrollRef?.nativeElement
+        .querySelector('.is-cursor')
+        ?.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   ejecutar(resultado: ResultadoBuscador): void {
@@ -289,9 +317,10 @@ export class AdminLayoutComponent implements OnInit {
   limpiarBusqueda(): void {
     this.searchQuery = '';
     this.resultados = [];
+    this.gruposResultado = [];
     this.indiceActivo = -1;
     if (this.searchInputRef) this.searchInputRef.nativeElement.value = '';
-    this.recomputeNavGroups();
+    this.cdr.markForCheck();
   }
 
   /** Abre/cierra un grupo del nav. Estado local, no persiste entre sesiones. */
@@ -304,16 +333,14 @@ export class AdminLayoutComponent implements OnInit {
     this.recomputeNavGroups();
   }
 
+  /** Nav en reposo. El filtrado por texto ya no vive acá: con búsqueda activa el nav
+   *  no se dibuja, lo reemplaza el grupo "Ir a" de los resultados. */
   private recomputeNavGroups(): void {
-    const query = this.searchQuery.trim().toLowerCase();
-    this.navGroups = this.accessibleGroups
-      .map((group) => ({
-        label: group.label,
-        items: query ? group.items.filter((item) => item.label.toLowerCase().includes(query)) : group.items,
-        // Con búsqueda activa se fuerza abierto para poder ver los resultados de todos los grupos.
-        isOpen: query.length > 0 || !this.collapsedGroups.has(group.label),
-      }))
-      .filter((group) => group.items.length > 0);
+    this.navGroups = this.accessibleGroups.map((group) => ({
+      label: group.label,
+      items: group.items,
+      isOpen: !this.collapsedGroups.has(group.label),
+    }));
     this.cdr.markForCheck();
   }
 
@@ -330,6 +357,9 @@ export class AdminLayoutComponent implements OnInit {
 
   toggleCollapse(): void {
     this.isCollapsed = !this.isCollapsed;
+    // Colapsado el input queda oculto: si quedara una búsqueda activa, el nav seguiría
+    // mostrando resultados sin caja donde escribir ni forma de limpiarlos.
+    if (this.isCollapsed) this.limpiarBusqueda();
   }
 
   logout(): void {

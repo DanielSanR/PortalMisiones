@@ -27,76 +27,86 @@
                 </button>
             </div>
 
-            <div class="admin-layout__search-wrap">
-                <div class="admin-layout__search">
-                    <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
-                    <input type="search"
-                        #searchInput
-                        class="admin-layout__search-input"
-                        placeholder="Buscar o ejecutar…"
-                        aria-label="Buscar secciones y acciones"
-                        role="combobox"
-                        aria-autocomplete="list"
-                        [attr.aria-expanded]="resultados.length > 0"
-                        [attr.aria-activedescendant]="indiceActivo >= 0 ? 'resultado-' + indiceActivo : null"
-                        [value]="searchQuery"
-                        (input)="onSearchInput($any($event.target).value)"
-                        (keydown)="onSearchKeydown($event)" />
-                    <kbd class="admin-layout__search-kbd" aria-hidden="true">/</kbd>
-                </div>
-
-                <!-- Panel de resultados: navegación primero, después las acciones. -->
-                <div class="admin-layout__resultados" *ngIf="resultados.length > 0" role="listbox">
-                    <ng-container *ngFor="let r of resultados; let i = index">
-                        <span class="admin-layout__resultados-titulo" *ngIf="i === 0 && r.tipo === 'nav'">Ir a</span>
-                        <span class="admin-layout__resultados-titulo" *ngIf="i === cantidadNavegacion && r.tipo === 'comando'">Acciones</span>
-                        <button type="button"
-                            class="admin-layout__resultado"
-                            [id]="'resultado-' + i"
-                            role="option"
-                            [attr.aria-selected]="i === indiceActivo"
-                            [class.is-active]="i === indiceActivo"
-                            (mouseenter)="indiceActivo = i"
-                            (click)="ejecutar(r)">
-                            <i class="ph ph-{{ r.icon }}" aria-hidden="true"></i>
-                            <span class="admin-layout__resultado-label">{{ r.label }}</span>
-                            <i class="ph ph-arrow-elbow-down-left admin-layout__resultado-enter" aria-hidden="true"
-                               *ngIf="i === indiceActivo"></i>
-                        </button>
-                    </ng-container>
-                </div>
+            <div class="admin-layout__search">
+                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                <input type="search"
+                    #searchInput
+                    class="admin-layout__search-input"
+                    placeholder="Buscar o ejecutar…"
+                    aria-label="Buscar secciones y acciones"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="nav-resultados"
+                    [attr.aria-expanded]="resultados.length > 0"
+                    [attr.aria-activedescendant]="indiceActivo >= 0 ? 'resultado-' + indiceActivo : null"
+                    [value]="searchQuery"
+                    (input)="onSearchInput($any($event.target).value)"
+                    (keydown)="onSearchKeydown($event)" />
+                <kbd class="admin-layout__search-kbd" aria-hidden="true">/</kbd>
             </div>
 
-            <nav class="admin-layout__nav" aria-label="Secciones del backoffice">
-                <div class="admin-layout__nav-group" *ngFor="let group of navGroups; trackBy: trackByGroup">
-                    <button type="button"
-                        class="admin-layout__nav-group-header"
-                        (click)="toggleGroup(group.label)"
-                        [attr.aria-expanded]="group.isOpen"
-                        [attr.aria-label]="'Sección ' + group.label">
-                        <span class="admin-layout__nav-group-label">{{ group.label }}</span>
-                        <i class="ph admin-layout__nav-group-chev" [class.ph-caret-down]="group.isOpen" [class.ph-caret-right]="!group.isOpen" aria-hidden="true"></i>
-                    </button>
+            <nav class="admin-layout__nav" #navScroll aria-label="Secciones del backoffice">
+                <!-- Con búsqueda activa el nav SE CONVIERTE en los resultados, en vez de
+                     filtrarse y quedar tapado por un panel flotante encima. -->
+                <ng-container *ngIf="searchQuery; else navEnReposo">
+                    <div class="admin-layout__nav-resultados" id="nav-resultados" role="listbox">
+                        <div class="admin-layout__nav-group"
+                            *ngFor="let grupo of gruposResultado"
+                            role="group"
+                            [attr.aria-label]="grupo.titulo">
+                            <span class="admin-layout__nav-group-title">{{ grupo.titulo }}</span>
 
-                    <div class="admin-layout__nav-group-items" *ngIf="group.isOpen">
-                        <a class="admin-layout__nav-item"
-                            *ngFor="let item of group.items; trackBy: trackByRoute"
-                            [routerLink]="item.route"
-                            routerLinkActive="is-active"
-                            #rla="routerLinkActive"
-                            [attr.aria-current]="rla.isActive ? 'page' : null"
-                            [matTooltip]="isCollapsed ? item.label : ''"
-                            matTooltipPosition="right"
-                            (click)="isMobile && sidenav.close()">
-                            <i class="ph ph-{{ item.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
-                            <span class="admin-layout__nav-label">{{ item.label }}</span>
-                        </a>
+                            <div class="admin-layout__nav-group-items">
+                                <button type="button"
+                                    class="admin-layout__nav-item"
+                                    *ngFor="let r of grupo.items"
+                                    [id]="'resultado-' + r.indice"
+                                    role="option"
+                                    [attr.aria-selected]="r.indice === indiceActivo"
+                                    [class.is-cursor]="r.indice === indiceActivo"
+                                    (mouseenter)="indiceActivo = r.indice"
+                                    (click)="ejecutar(r)">
+                                    <i class="ph ph-{{ r.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
+                                    <span class="admin-layout__nav-label">{{ r.label }}</span>
+                                    <i class="ph ph-arrow-elbow-down-left admin-layout__nav-enter" aria-hidden="true"
+                                       *ngIf="r.indice === indiceActivo"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <p class="admin-layout__nav-empty" *ngIf="searchQuery && navGroups.length === 0">
-                    Sin resultados para "{{ searchQuery }}".
-                </p>
+                    <p class="admin-layout__nav-empty" *ngIf="resultados.length === 0">
+                        Sin resultados para "{{ searchQuery }}".
+                    </p>
+                </ng-container>
+
+                <ng-template #navEnReposo>
+                    <div class="admin-layout__nav-group" *ngFor="let group of navGroups; trackBy: trackByGroup">
+                        <button type="button"
+                            class="admin-layout__nav-group-header"
+                            (click)="toggleGroup(group.label)"
+                            [attr.aria-expanded]="group.isOpen"
+                            [attr.aria-label]="'Sección ' + group.label">
+                            <span class="admin-layout__nav-group-label">{{ group.label }}</span>
+                            <i class="ph admin-layout__nav-group-chev" [class.ph-caret-down]="group.isOpen" [class.ph-caret-right]="!group.isOpen" aria-hidden="true"></i>
+                        </button>
+
+                        <div class="admin-layout__nav-group-items" *ngIf="group.isOpen">
+                            <a class="admin-layout__nav-item"
+                                *ngFor="let item of group.items; trackBy: trackByRoute"
+                                [routerLink]="item.route"
+                                routerLinkActive="is-active"
+                                #rla="routerLinkActive"
+                                [attr.aria-current]="rla.isActive ? 'page' : null"
+                                [matTooltip]="isCollapsed ? item.label : ''"
+                                matTooltipPosition="right"
+                                (click)="isMobile && sidenav.close()">
+                                <i class="ph ph-{{ item.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
+                                <span class="admin-layout__nav-label">{{ item.label }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </ng-template>
             </nav>
 
             <div class="admin-layout__footer">
