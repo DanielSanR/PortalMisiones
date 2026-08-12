@@ -509,9 +509,9 @@
 // ---------------------------------------------------------------------------
 // Sidenav
 // ---------------------------------------------------------------------------
-.mat-sidenav {
-  border-right: none !important;
-}
+// El divisor propio de Material (`.mat-drawer-side`) se pisa desde el layout con el
+// borde del design system. Acá había un `border-right: none !important` que ganaba por
+// `!important` y dejaba el sidebar sin borde, pese a que el layout lo declaraba.
 
 .mat-sidenav-container {
   background-color: var(--theme-bg-secondary);

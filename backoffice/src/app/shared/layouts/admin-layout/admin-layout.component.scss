@@ -33,9 +33,11 @@
         overflow-x: hidden;
         transition: width var(--theme-transition-normal);
 
-        &.mat-drawer {
-            border-right: none; // el borde lo aporta el selector de arriba
-        }
+        // El `border-right` de arriba pisa al divisor de Material (`.mat-drawer-side`)
+        // por especificidad: clase + atributo de encapsulación le gana a una clase sola.
+        // Antes no se veía por dos motivos encadenados: un `&.mat-drawer { border-right:
+        // none }` acá —más específico que `&__sidenav`, pese al comentario que decía lo
+        // contrario— y un `.mat-sidenav { border-right: none !important }` global.
 
         // El contenido proyectado (logo/buscador/nav/footer) no es hijo directo del
         // `mat-drawer` sino de su wrapper interno `.mat-drawer-inner-container` (CDK).
@@ -105,16 +107,12 @@
     }
 
     // Contenedor de ancho máximo, no una tarjeta: el diseño no dibuja borde ni sombra
-    // alrededor del contenido de la página.
+    // alrededor del contenido de la página. Sin padding propio: con `box-sizing: border-box`
+    // el max-width lo incluía, así que el contenido nunca llegaba a los 1400px. El aire
+    // exterior lo pone `__page`, igual que el `<main>` del diseño.
     &__panel {
         width: 100%;
         max-width: var(--theme-content-max-width);
-        padding: var(--theme-space-lg) calc(var(--theme-space-xl) + var(--theme-space-sm));
-
-        @include responsive(mobile) {
-            padding: var(--theme-space-md);
-            border-radius: var(--theme-radius-md);
-        }
     }
 }
 
@@ -330,7 +328,9 @@
     gap: 12px;
     border-radius: var(--theme-radius-md);
     border: 1px solid transparent;
-    font-size: var(--theme-font-body-size);
+    // 13px, como la navegación del diseño. Usaba `--theme-font-body-size` (14px), que es
+    // el tamaño de cuerpo de contenido, no el de la nav.
+    font-size: var(--theme-font-size-sm);
     color: var(--theme-text-secondary);
     text-decoration: none;
     cursor: pointer;

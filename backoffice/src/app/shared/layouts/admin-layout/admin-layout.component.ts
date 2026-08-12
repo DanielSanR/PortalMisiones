@@ -123,6 +123,17 @@ export class AdminLayoutComponent implements OnInit {
     return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
   }
 
+  /** "juan.perez@misiones.gob.ar" → "Juan Perez". Respaldo cuando el JWT no trae el nombre. */
+  private nombreDesdeEmail(email: string): string {
+    const usuario = (email ?? '').split('@')[0];
+    if (!usuario) return 'Usuario';
+    return usuario
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((parte) => parte.charAt(0).toLocaleUpperCase('es-AR') + parte.slice(1))
+      .join(' ');
+  }
+
   private applyUser(user: AuthUser | null): void {
     if (!user) {
       this.userName = '';
@@ -133,9 +144,15 @@ export class AdminLayoutComponent implements OnInit {
       this.recomputeNavGroups();
       return;
     }
-    this.userName = `${user.nombre} ${user.apellido}`.trim();
+    // El JWT NO trae nombre/apellido (ver AuthUser): con el backend real quedaban vacíos
+    // y el bloque de perfil mostraba solo el rol. Se cae al usuario del correo, que
+    // siempre está, para que nombre y rol se vean juntos como en el diseño.
+    const nombreCompleto = `${user.nombre ?? ''} ${user.apellido ?? ''}`.trim();
+    this.userName = nombreCompleto || this.nombreDesdeEmail(user.email);
     this.userEmail = user.email;
-    this.userInitials = `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase();
+    this.userInitials = nombreCompleto
+      ? `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase()
+      : this.userName.slice(0, 2).toLocaleUpperCase('es-AR');
     this.userRoleSpanish = this.authTokenService.getUserRoleLabel();
     const ctx = { permissions: user.permissions ?? [], roles: user.roles ?? [] };
     this.accessibleGroups = NAV_GROUPS
