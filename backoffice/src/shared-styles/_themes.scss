@@ -323,15 +323,16 @@
   --theme-table-header-bg: var(--theme-surface-sunken);
   --theme-table-hover-bg: var(--theme-bg-table-hover);
 
-  // ---------------------------------------------------------------------------
+  // -----------------------  --theme-form-max-width: 1400px;   // igual que content-max-width: el form ocupa la columna completa
+  // igual que content-max-width: el form ocupa la columna completa
   // Layout
-  // ---------------------------------------------------------------------------
+  // -----------------------------------0----0----------------------------------
   --theme-sidebar-width: 260px;
   --theme-sidebar-collapsed-width: 64px;
   --theme-header-height: 60px;
   --theme-header-height-mobile: 56px;
   --theme-content-max-width: 1400px;
-  --theme-form-max-width: 1400px;   // igual que content-max-width: el form ocupa la columna completa
+  --theme-form-max-width: 1400px;  
 
   // ---------------------------------------------------------------------------
   // Transitions

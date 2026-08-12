@@ -196,6 +196,80 @@
 // ==========================================================================
 // BUSCADOR de la sidebar (filtra el nav client-side)
 // ==========================================================================
+// Ancla del panel de resultados: se posiciona respecto de este wrapper, no del input,
+// para que el panel abarque el ancho del sidebar sin heredar su padding.
+.admin-layout__search-wrap {
+    position: relative;
+    flex: none;
+    z-index: 20;
+}
+
+// Panel desplegable del buscador de comandos.
+.admin-layout__resultados {
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    right: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    padding: 6px;
+    background: var(--theme-surface-card);
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: var(--theme-radius-md);
+    box-shadow: var(--theme-elevation-2);
+}
+
+.admin-layout__resultados-titulo {
+    display: block;
+    padding: 6px 8px 4px;
+    font-size: var(--theme-font-size-2xs);
+    font-weight: var(--theme-font-weight-semibold);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--theme-text-tertiary);
+}
+
+.admin-layout__resultado {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    min-height: 38px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    font-family: inherit;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-primary);
+    text-align: left;
+    cursor: pointer;
+
+    i.ph {
+        flex: none;
+        font-size: 18px;
+        color: var(--theme-text-secondary);
+    }
+
+    // Resaltado único: lo mueven tanto las flechas como el mouse, así no hay dos
+    // "seleccionados" compitiendo (uno por teclado y otro por hover).
+    &.is-active {
+        background: var(--theme-surface-sunken);
+    }
+}
+
+.admin-layout__resultado-label {
+    flex: 1;
+    min-width: 0;
+    @include truncate;
+}
+
+.admin-layout__resultado-enter {
+    color: var(--theme-text-tertiary) !important;
+    font-size: 14px !important;
+}
+
 .admin-layout__search {
     flex: none;
     margin: 10px 12px;

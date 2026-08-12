@@ -12,6 +12,7 @@ import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LayoutChromeService } from '../../../core/services/layout-chrome.service';
 import { AuthUser } from '../../../core/models/auth.model';
+import { COMANDOS } from '../../../core/constants/comandos.constants';
 import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
 import { evaluateAccess } from '../../../core/utils/authorization.utils';
@@ -26,6 +27,15 @@ interface NavGroupView {
   label: string;
   items: NavItem[];
   isOpen: boolean;
+}
+
+/** Una fila del panel de resultados del buscador (navegación o comando). */
+export interface ResultadoBuscador {
+  tipo: 'nav' | 'comando';
+  label: string;
+  icon: string;
+  route?: string;
+  id?: 'cerrar-sesion' | 'colapsar-nav';
 }
 
 @Component({
@@ -56,6 +66,17 @@ export class AdminLayoutComponent implements OnInit {
   /** Grupos de nav visibles (por permiso + búsqueda), lo que consume el template. */
   navGroups: NavGroupView[] = [];
   searchQuery = '';
+
+  /** Resultados del buscador: navegación primero, comandos después. */
+  resultados: ResultadoBuscador[] = [];
+  /** Cuántos de `resultados` son navegación — el resto son comandos (para los encabezados). */
+  cantidadNavegacion = 0;
+  /** Fila resaltada; -1 cuando no hay resultados. */
+  indiceActivo = -1;
+
+  /** Contexto de autorización del usuario actual, para gatear los comandos. */
+  private permisosActuales: string[] = [];
+  private rolesActuales: UserRole[] = [];
 
   /** Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio". */
   breadcrumbTrail: string[] = [];
@@ -140,6 +161,8 @@ export class AdminLayoutComponent implements OnInit {
       this.userEmail = '';
       this.userInitials = '';
       this.userRoleSpanish = '';
+      this.permisosActuales = [];
+      this.rolesActuales = [];
       this.accessibleGroups = [];
       this.recomputeNavGroups();
       return;
@@ -154,7 +177,9 @@ export class AdminLayoutComponent implements OnInit {
       ? `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase()
       : this.userName.slice(0, 2).toLocaleUpperCase('es-AR');
     this.userRoleSpanish = this.authTokenService.getUserRoleLabel();
-    const ctx = { permissions: user.permissions ?? [], roles: user.roles ?? [] };
+    this.permisosActuales = user.permissions ?? [];
+    this.rolesActuales = user.roles ?? [];
+    const ctx = { permissions: this.permisosActuales, roles: this.rolesActuales };
     this.accessibleGroups = NAV_GROUPS
       .map((group) => ({ label: group.label, items: group.items.filter((item) => evaluateAccess(ctx, item.rule)) }))
       .filter((group) => group.items.length > 0);
@@ -191,6 +216,81 @@ export class AdminLayoutComponent implements OnInit {
   /** Filtro client-side del buscador de la sidebar (sin backend). */
   onSearchInput(value: string): void {
     this.searchQuery = value;
+    this.recomputeNavGroups();
+    this.recomputeResultados();
+  }
+
+  // ---------------------------------------------------------------------
+  // Buscador de comandos — panel desplegable bajo el input.
+  // ---------------------------------------------------------------------
+
+  /**
+   * Resultados en una lista plana con encabezados: así el recorrido con las flechas
+   * es lineal y no hay que saltar entre grupos.
+   */
+  private recomputeResultados(): void {
+    const q = this.searchQuery.trim().toLocaleLowerCase('es-AR');
+    if (!q) {
+      this.resultados = [];
+      this.indiceActivo = -1;
+      return;
+    }
+
+    const navegacion: ResultadoBuscador[] = this.accessibleGroups
+      .flatMap((g) => g.items)
+      .filter((item) => item.label.toLocaleLowerCase('es-AR').includes(q))
+      .map((item) => ({ tipo: 'nav' as const, label: item.label, icon: item.icon, route: item.route }));
+
+    const ctx = { permissions: this.permisosActuales, roles: this.rolesActuales };
+    const comandos: ResultadoBuscador[] = COMANDOS
+      .filter((c) => evaluateAccess(ctx, c.rule))
+      .filter((c) => c.label.toLocaleLowerCase('es-AR').includes(q)
+                  || c.keywords.some((k) => k.includes(q)))
+      .map((c) => ({ tipo: 'comando' as const, label: c.label, icon: c.icon, route: c.route, id: c.id }));
+
+    this.resultados = [...navegacion, ...comandos];
+    this.cantidadNavegacion = navegacion.length;
+    // Se preselecciona el primero: Enter sin tocar las flechas ejecuta lo más probable.
+    this.indiceActivo = this.resultados.length > 0 ? 0 : -1;
+  }
+
+  /** Flechas para recorrer, Enter para ejecutar, Escape para cerrar. */
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.limpiarBusqueda();
+      return;
+    }
+    if (this.resultados.length === 0) return;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const paso = event.key === 'ArrowDown' ? 1 : -1;
+      const total = this.resultados.length;
+      this.indiceActivo = (this.indiceActivo + paso + total) % total;
+      return;
+    }
+    if (event.key === 'Enter' && this.indiceActivo >= 0) {
+      event.preventDefault();
+      this.ejecutar(this.resultados[this.indiceActivo]);
+    }
+  }
+
+  ejecutar(resultado: ResultadoBuscador): void {
+    this.limpiarBusqueda();
+    if (this.isMobile) this.sidenav?.close();
+
+    switch (resultado.id) {
+      case 'cerrar-sesion': this.logout(); return;
+      case 'colapsar-nav': this.toggleCollapse(); return;
+    }
+    if (resultado.route) this.router.navigate([resultado.route]);
+  }
+
+  limpiarBusqueda(): void {
+    this.searchQuery = '';
+    this.resultados = [];
+    this.indiceActivo = -1;
+    if (this.searchInputRef) this.searchInputRef.nativeElement.value = '';
     this.recomputeNavGroups();
   }
 
