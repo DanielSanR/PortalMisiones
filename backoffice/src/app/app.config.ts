@@ -23,6 +23,7 @@ import { provideEventosDeVidaFeature } from './core/features/eventos-de-vida';
 import { provideCategoriasFeature } from './core/features/categorias';
 import { provideTiposOrganismoFeature } from './core/features/tipos-organismo';
 import { provideDestinatariosFeature } from './core/features/destinatarios';
+import { provideTramitesFeature } from './core/features/tramites';
 
 registerLocaleData(localeEsAr, 'es-AR');
 
@@ -51,5 +52,6 @@ export const appConfig: ApplicationConfig = {
     ...provideCategoriasFeature(),
     ...provideTiposOrganismoFeature(),
     ...provideDestinatariosFeature(),
+    ...provideTramitesFeature(),
   ],
 };
