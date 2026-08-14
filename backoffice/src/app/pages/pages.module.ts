@@ -57,8 +57,8 @@ const routes: Routes = [
 
       // Trámites (backend aún bloqueado; gating provisional por los permisos que aplicarán)
       { path: 'tramites/lista', component: TramitesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites'] } },
-      { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Nuevo trámite'] } },
-      { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Editar trámite'] } },
+      { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Nuevo trámite'] } },
+      { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Editar trámite'] } },
       { path: 'tramites/detalle/:id', component: TramiteDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Detalle'] } },
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)

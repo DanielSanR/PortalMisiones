@@ -1,5 +1,5 @@
-import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
-import { delay, of } from 'rxjs';
+import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
+import { Observable, delay, of, switchMap, throwError, timer } from 'rxjs';
 import {
   MOCK_TRAMITES,
   MOCK_ORGANISMOS,
@@ -34,7 +34,24 @@ let localidades = [...MOCK_LOCALIDADES];
 let categorias = [...MOCK_CATEGORIAS];
 let contenidoLocalidad: TramiteContenidoLocalidad[] = [...MOCK_CONTENIDO_LOCALIDAD];
 
-function jsonResponse(body: unknown, status = 200) {
+/**
+ * Un status >= 400 tiene que llegar como ERROR, no como respuesta exitosa.
+ *
+ * Antes esto devolvía siempre `of(new HttpResponse({ status }))`, y `HttpClient` solo
+ * considera error lo que llega por el canal de error: un 404 del mock se entregaba como
+ * éxito con `{ message: 'No encontrado' }` de body. El resultado es que NINGÚN camino de
+ * "no encontrado" de la app podía dispararse contra datos mockeados —la pantalla mapeaba
+ * ese body a un modelo vacío y dibujaba una ficha con guiones en vez de decir que el
+ * recurso no existe—. Son 18 respuestas de error en este archivo, todas silenciadas.
+ */
+function jsonResponse(body: unknown, status = 200): Observable<HttpResponse<unknown>> {
+  if (status >= 400) {
+    // `delay` no demora la notificación de error (la deja pasar de largo), así que la
+    // latencia simulada se consigue con un timer previo.
+    return timer(MOCK_DELAY).pipe(
+      switchMap(() => throwError(() => new HttpErrorResponse({ status, error: body }))),
+    );
+  }
   return of(new HttpResponse({ status, body })).pipe(delay(MOCK_DELAY));
 }
 

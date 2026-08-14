@@ -8,7 +8,7 @@
   <!-- Tip (no form control) -->
   <div *ngIf="field.type === 'tip'" class="tip-field">
     <div class="tip-content">
-      <mat-icon class="tip-icon">info_outline</mat-icon>
+      <i class="ph ph-info tip-icon" aria-hidden="true"></i>
       <div class="tip-body">
         <h6 *ngIf="field.label" class="tip-title">{{ field.label }}</h6>
         <p class="tip-text">{{ field.placeholder || '' }}</p>
@@ -190,11 +190,16 @@
         <p *ngIf="field.placeholder" class="icon-picker-hint">{{ field.placeholder }}</p>
 
         <!-- Selected icon preview -->
+        <!-- Los `mat-icon` que quedan en este bloque NO son una elección de estilo: el campo
+             `icono` del trámite guarda un NOMBRE de Material Symbols (`account_balance`,
+             `directions_bus`…) y eso es lo que se persiste y consume aguas abajo. Pasar el
+             picker a Phosphor no es cambiar un ícono, es migrar el dato de todos los
+             trámites ya cargados. Ver la nota al respecto en el informe de audit. -->
         <div *ngIf="group.get(field.name)?.value" class="icon-picker-selected">
           <mat-icon class="icon-picker-selected__icon">{{ group.get(field.name)?.value }}</mat-icon>
           <span class="icon-picker-selected__name">{{ group.get(field.name)?.value }}</span>
           <button mat-icon-button type="button" (click)="clearIcon()" aria-label="Quitar ícono">
-            <mat-icon>close</mat-icon>
+            <i class="ph ph-x" aria-hidden="true"></i>
           </button>
         </div>
 

@@ -37,7 +37,8 @@
       </button>
       <button mat-raised-button color="primary"
               type="submit"
-              [disabled]="saving">
+              [disabled]="saving || (requireChanges && form.pristine)"
+              [matTooltip]="requireChanges && form.pristine ? 'No hay cambios para guardar' : ''">
         <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
         <ng-container *ngIf="!saving">
           <i class="ph ph-floppy-disk" aria-hidden="true"></i>
