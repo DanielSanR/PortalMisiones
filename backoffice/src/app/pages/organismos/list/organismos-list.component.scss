@@ -1,8 +1,11 @@
 // ==========================================================================
 // Listado de Organismos — toolbar fiel al diseño "Pantallas · Backoffice
-// Misiones", pantalla LISTA. El buscador NO es un mat-form-field: el diseño
-// especifica una caja plana de 34px con placeholder e icono a la izquierda
-// (sin label flotante ni subscript, que son los que descentraban la fila).
+// Misiones", pantalla LISTA.
+//
+// Lo compartido con las demás listas ya no vive acá: la caja de búsqueda es
+// `app-list-search`, la barra de filtros es `app-active-filters`, y los botones
+// de la fila A/B salen de los mixins `list-iconbtn` / `list-ghost-button`.
+// Este archivo se queda solo con las celdas propias de Organismos.
 // ==========================================================================
 
 @use '../../../../shared-styles/mixins' as *;
@@ -15,59 +18,6 @@
   }
 }
 
-// Caja de búsqueda ---------------------------------------------------------
-.orglist-search {
-  display: flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  // El diseño especifica `flex: 1 1 220px`, pero con el `flex-wrap: wrap` del row esa
-  // base fija hace que el contenedor calcule una segunda línea vacía: suma un row-gap
-  // y otra altura de línea, y la fila pasa de 34px a 84px con los hijos igual centrados.
-  // `auto` da el mismo resultado visual (crece para llenar, encoge al achicar) sin la
-  // línea fantasma; el ancho mínimo lo sostiene `min-width`.
-  flex: 1 1 auto;
-  min-width: 220px;
-  height: 34px;
-  padding: 0 11px;
-  border: 1px solid var(--theme-border-input);
-  border-radius: var(--theme-radius-md);
-  background: var(--theme-surface-card);
-  transition: border-color var(--theme-transition-fast), box-shadow var(--theme-transition-fast);
-
-  &:hover {
-    border-color: var(--theme-text-tertiary);
-  }
-
-  // El foco vive en el input, pero el anillo se pinta sobre la caja completa.
-  &:focus-within {
-    border-color: var(--theme-primary);
-    box-shadow: var(--theme-focus-ring-soft);
-  }
-
-  &__icon {
-    flex: none;
-    font-size: 17px;
-    color: var(--theme-text-tertiary);
-  }
-
-  &__input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    outline: none;
-    padding: 0;
-    background: transparent;
-    font-family: inherit;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-primary);
-
-    &::placeholder {
-      color: var(--theme-text-tertiary);
-    }
-  }
-
-}
-
 // Contador + acciones de la fila A ----------------------------------------
 .orglist-acciones {
   display: flex;
@@ -77,33 +27,7 @@
 }
 
 .orglist-iconbtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-md);
-  background: var(--theme-surface-card);
-  color: var(--theme-text-secondary);
-  cursor: pointer;
-  transition: border-color var(--theme-transition-fast), color var(--theme-transition-fast);
-  @include focus-ring;
-
-  i.ph {
-    font-size: 17px;
-  }
-
-  &:hover:not([disabled]) {
-    border-color: var(--theme-border-strong);
-    color: var(--theme-primary);
-  }
-
-  // Todavía sin funcionalidad: se muestran, pero sin fingir que responden.
-  &[disabled] {
-    color: var(--theme-text-disabled);
-    cursor: not-allowed;
-  }
+  @include list-iconbtn;
 }
 
 // Fila B — chips de filtro + "Más filtros" --------------------------------
@@ -113,104 +37,7 @@
 }
 
 .orglist-masfiltros {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 var(--theme-space-md);
-  border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-md);
-  background: var(--theme-surface-card);
-  font-family: inherit;
-  font-size: var(--theme-font-size-sm);
-  color: var(--theme-text-secondary);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color var(--theme-transition-fast);
-  @include focus-ring;
-
-  i.ph {
-    font-size: 16px;
-    color: var(--theme-text-tertiary);
-  }
-
-  &:hover:not([disabled]) {
-    border-color: var(--theme-border-strong);
-  }
-
-  &[disabled] {
-    color: var(--theme-text-disabled);
-    cursor: not-allowed;
-
-    i.ph {
-      color: var(--theme-text-disabled);
-    }
-  }
-}
-
-// Barra "Filtros activos" — fuera del well, sobre la tabla ----------------
-.orglist-activos {
-  display: flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--theme-space-md);
-
-  &__label {
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-tertiary);
-  }
-
-  &__chip {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--theme-space-xs);
-    height: 26px;
-    padding: 0 6px 0 10px;
-    border-radius: var(--theme-radius-full);
-    background: var(--theme-info-bg);
-    color: var(--theme-primary-800);
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
-  }
-
-  &__quitar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    border-radius: var(--theme-radius-full);
-    @include focus-ring;
-
-    i.ph {
-      font-size: 13px;
-    }
-
-    &:hover {
-      color: var(--theme-primary);
-    }
-  }
-
-  &__limpiar {
-    margin-left: 2px;
-    border: 0;
-    padding: 0;
-    background: transparent;
-    font-family: inherit;
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-primary);
-    cursor: pointer;
-    @include focus-ring;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
+  @include list-ghost-button;
 }
 
 // Celdas de la tabla -------------------------------------------------------

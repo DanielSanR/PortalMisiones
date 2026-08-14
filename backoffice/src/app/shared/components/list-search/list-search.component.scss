@@ -1,0 +1,56 @@
+// El host es el hijo flex de la fila A del toolbar: la métrica de crecimiento va acá.
+//
+// El diseño especifica `flex: 1 1 220px`, pero con el `flex-wrap: wrap` del row esa
+// base fija hace que el contenedor calcule una segunda línea vacía: suma un row-gap y
+// otra altura de línea, y la fila pasa de 34px a 84px con los hijos igual centrados.
+// `auto` da el mismo resultado visual sin la línea fantasma; el ancho mínimo lo
+// sostiene `min-width`.
+:host {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 220px;
+}
+
+.list-search {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    height: 34px;
+    padding: 0 11px;
+    border: 1px solid var(--theme-border-input);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-card);
+    transition: border-color var(--theme-transition-fast), box-shadow var(--theme-transition-fast);
+
+    &:hover {
+        border-color: var(--theme-text-tertiary);
+    }
+
+    // El foco vive en el input, pero el anillo se pinta sobre la caja completa.
+    &:focus-within {
+        border-color: var(--theme-primary);
+        box-shadow: var(--theme-focus-ring-soft);
+    }
+
+    &__icon {
+        flex: none;
+        font-size: 17px;
+        color: var(--theme-text-tertiary);
+    }
+
+    &__input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        outline: none;
+        padding: 0;
+        background: transparent;
+        font-family: inherit;
+        font-size: var(--theme-font-size-sm);
+        color: var(--theme-text-primary);
+
+        &::placeholder {
+            color: var(--theme-text-tertiary);
+        }
+    }
+}

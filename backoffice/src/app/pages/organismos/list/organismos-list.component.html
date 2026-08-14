@@ -9,13 +9,11 @@
      fila A = buscador + contador + acciones · fila B = chips de filtro. -->
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
-    <div class="orglist-search">
-      <i class="ph ph-magnifying-glass orglist-search__icon" aria-hidden="true"></i>
-      <input type="text" class="orglist-search__input"
-             [formControl]="searchCtrl"
-             placeholder="Buscar por nombre o sigla…"
-             aria-label="Buscar organismos por nombre, sigla, tipo o dependencia" />
-    </div>
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por nombre o sigla…"
+      ariaLabel="Buscar organismos por nombre, sigla, tipo o dependencia">
+    </app-list-search>
 
     <div class="orglist-acciones">
       <span class="list-toolbar-count">{{ vista.total }} organismos</span>
@@ -40,20 +38,11 @@
 </div>
 
 @if (vista.filtrosActivos.length) {
-  <div class="orglist-activos">
-    <span class="orglist-activos__label">Filtros activos</span>
-    @for (filtro of vista.filtrosActivos; track filtro.clave) {
-      <span class="orglist-activos__chip">
-        {{ filtro.etiqueta }}
-        <button type="button" class="orglist-activos__quitar"
-                (click)="quitarFiltro(filtro.clave)"
-                [attr.aria-label]="'Quitar filtro — ' + filtro.etiqueta">
-          <i class="ph ph-x" aria-hidden="true"></i>
-        </button>
-      </span>
-    }
-    <button type="button" class="orglist-activos__limpiar" (click)="limpiarFiltros()">Limpiar todo</button>
-  </div>
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
 }
 
 <app-shared-table

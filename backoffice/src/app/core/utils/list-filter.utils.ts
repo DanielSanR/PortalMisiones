@@ -22,6 +22,22 @@ export function activoFilterTabs<T extends { activo: boolean }>(items: T[]): Fil
 }
 
 /**
+ * Búsqueda client-side sobre los campos que la pantalla declare relevantes.
+ *
+ * `campos` devuelve los valores a mirar de cada ítem, así cada lista decide qué es
+ * "buscable" sin que este helper conozca sus modelos. Compara en minúsculas con
+ * locale es-AR, que es lo que espera un usuario que escribe "direccion" y quiere
+ * encontrar "Dirección".
+ */
+export function buscarEn<T>(items: T[], termino: string, campos: (item: T) => (string | null | undefined)[]): T[] {
+  const q = (termino ?? '').trim().toLocaleLowerCase('es-AR');
+  if (!q) return items;
+  return items.filter((item) =>
+    campos(item).some((campo) => (campo ?? '').toLocaleLowerCase('es-AR').includes(q)),
+  );
+}
+
+/**
  * Chip único "Todas" + contador, para listas sin ningún campo real para filtrar (ver
  * `screens-spec.md` §11.9 y el encargo de la tarea: "no inventes filtros sin dato"). Mantiene
  * la barra de filter-tabs visualmente consistente con el resto de las listas sin fabricar datos.

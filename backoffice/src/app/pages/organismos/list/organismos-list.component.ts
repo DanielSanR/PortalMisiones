@@ -11,9 +11,11 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
+import { ListSearchComponent } from '../../../shared/components/list-search';
+import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { ActivoFiltro, activoFilterTabs, filterByActivo } from '@core/utils/list-filter.utils';
+import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
 import { OrganismosFacade, OrganismoVM } from '@features/organismos';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
@@ -21,12 +23,6 @@ interface EstadoVacio {
   emptyTitle: string;
   emptyMessage: string;
   emptyActionLabel: string;
-}
-
-/** Un filtro aplicado, para la barra "Filtros activos" (chip + ✕ para quitarlo). */
-interface FiltroActivo {
-  clave: 'search' | 'estado';
-  etiqueta: string;
 }
 
 /** ViewModel de la pantalla: filas ya filtradas/ordenadas + los textos que corresponden. */
@@ -56,6 +52,8 @@ const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
     TableCellDirective,
     FilterTabsComponent,
     RowActionsComponent,
+    ListSearchComponent,
+    ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -155,7 +153,7 @@ export class OrganismosListComponent implements OnInit {
   }
 
   /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: FiltroActivo['clave']): void {
+  quitarFiltro(clave: string): void {
     if (clave === 'search') this.searchCtrl.setValue('');
     else this.filtro$.next('todos');
   }
@@ -298,12 +296,7 @@ export class OrganismosListComponent implements OnInit {
   }
 
   private buscar(organismos: OrganismoVM[], termino: string): OrganismoVM[] {
-    const q = termino.trim().toLocaleLowerCase('es-AR');
-    if (!q) return organismos;
-    return organismos.filter((o) =>
-      [o.nombre, o.acronym, o.tipoNombre, o.parentNombre]
-        .some((campo) => (campo ?? '').toLocaleLowerCase('es-AR').includes(q)),
-    );
+    return buscarEn(organismos, termino, (o) => [o.nombre, o.acronym, o.tipoNombre, o.parentNombre]);
   }
 
   private ordenar(organismos: OrganismoVM[], sort: TableSortEvent | null): OrganismoVM[] {

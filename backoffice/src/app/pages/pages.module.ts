@@ -68,8 +68,8 @@ const routes: Routes = [
       // Detalle y edición son la misma pantalla en dos modos (comparten membrete y pestañas).
       { path: 'organismos/editar/:id', component: OrganismoDetailComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { modo: 'editar', access: { permissions: ['UPDATE_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos', 'Editar'] } },
       { path: 'tipos-organismo/lista', component: TiposOrganismoListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo'] } },
-      { path: 'tipos-organismo/nuevo', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Nuevo tipo'] } },
-      { path: 'tipos-organismo/editar/:id', component: TipoOrganismoFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Editar tipo'] } },
+      { path: 'tipos-organismo/nuevo', component: TipoOrganismoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Nuevo tipo'] } },
+      { path: 'tipos-organismo/editar/:id', component: TipoOrganismoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Editar tipo'] } },
 
       // Auditoría → sin backend real → escape por rol
       { path: 'auditoria', component: AuditoriaListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER }, redirectTo: HOME, breadcrumb: ['Auditoría'] } },

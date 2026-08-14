@@ -1,0 +1,15 @@
+<div class="active-filters">
+    <span class="active-filters__label">Filtros activos</span>
+
+    <span class="active-filters__chip" *ngFor="let filtro of filtros; trackBy: trackByClave">
+        {{ filtro.etiqueta }}
+        <button type="button"
+                class="active-filters__quitar"
+                (click)="quitar.emit(filtro.clave)"
+                [attr.aria-label]="'Quitar filtro — ' + filtro.etiqueta">
+            <i class="ph ph-x" aria-hidden="true"></i>
+        </button>
+    </span>
+
+    <button type="button" class="active-filters__limpiar" (click)="limpiar.emit()">Limpiar todo</button>
+</div>
