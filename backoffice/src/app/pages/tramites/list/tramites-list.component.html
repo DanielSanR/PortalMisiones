@@ -1,89 +1,99 @@
 <ng-template appPageActions>
-    <button mat-raised-button color="primary" (click)="onCreate()">
+    <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_PROCEDURE'">
         <i class="ph ph-plus" aria-hidden="true"></i> Nuevo trámite
     </button>
 </ng-template>
 
-<!-- Toolbar de lista (well): fila A = búsqueda/selects reales + contador · fila B = filter-tabs de estado. -->
+@if (catalogos$ | async; as catalogos) {
+@if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + selects + contador · fila B = chips de estado. -->
 <div class="list-toolbar list-toolbar--stacked">
-    <div class="list-toolbar__row" [formGroup]="filterForm">
-        <mat-form-field appearance="outline" class="Filtros-field">
-            <mat-label>Buscar</mat-label>
-            <input matInput formControlName="search" placeholder="Titulo o descripcion..." />
-            <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
-        </mat-form-field>
+    <div class="list-toolbar__row">
+        <app-list-search
+            [control]="searchCtrl"
+            placeholder="Buscar por título o descripción…"
+            ariaLabel="Buscar trámites por título o descripción">
+        </app-list-search>
 
-        @if (isSuperAdmin) {
-          <mat-form-field appearance="outline" class="Filtros-field">
-              <mat-label>Organismo</mat-label>
-              <mat-select formControlName="organismoId">
-                  <mat-option value="">Todos</mat-option>
-                  @for (org of organismos; track org.id) {
-                    <mat-option [value]="org.id">{{ org.nombre }}</mat-option>
-                  }
-              </mat-select>
-          </mat-form-field>
-        }
-
-        <mat-form-field appearance="outline" class="Filtros-field">
-            <mat-label>Estado</mat-label>
-            <mat-select formControlName="estado">
+        <mat-form-field appearance="outline" class="tramlist-select" *appHasPermission="'READ_ORGANISM'">
+            <mat-label>Organismo</mat-label>
+            <mat-select [formControl]="organismoCtrl">
                 <mat-option value="">Todos</mat-option>
-                <mat-option value="borrador">Borrador</mat-option>
-                <mat-option value="revision">En revisión</mat-option>
-                <mat-option value="publicado">Publicado</mat-option>
-                <mat-option value="despublicado">Despublicado</mat-option>
-            </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="Filtros-field">
-            <mat-label>Localidad</mat-label>
-            <mat-select formControlName="localidadId">
-                <mat-option value="">Todas</mat-option>
-                @for (loc of localidades; track loc.id) {
-                  <mat-option [value]="loc.id">{{ loc.nombre }}</mat-option>
+                @for (org of catalogos.organismos; track org.id) {
+                    <mat-option [value]="org.id">{{ org.nombre }}</mat-option>
                 }
             </mat-select>
         </mat-form-field>
 
-        <span class="list-toolbar-count">{{ totalItems }} trámites</span>
+        <mat-form-field appearance="outline" class="tramlist-select">
+            <mat-label>Estado</mat-label>
+            <mat-select [formControl]="estadoCtrl">
+                <mat-option value="">Todos</mat-option>
+                @for (estado of estados; track estado.value) {
+                    <mat-option [value]="estado.value">{{ estado.label }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="tramlist-select">
+            <mat-label>Localidad</mat-label>
+            <mat-select [formControl]="localidadCtrl">
+                <mat-option value="">Todas</mat-option>
+                @for (loc of catalogos.localidades; track loc.id) {
+                    <mat-option [value]="loc.id">{{ loc.nombre }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <span class="list-toolbar-count">{{ vista.total }} trámites</span>
     </div>
 
-    <div class="list-toolbar__row">
-        <app-filter-tabs [tabs]="estadoTabs" [active]="estadoTabsActivo" (activeChange)="filtrarEstado($event)"></app-filter-tabs>
+    <div class="list-toolbar__row tramlist-chips">
+        <app-filter-tabs [tabs]="vista.tabs" [active]="estadoTabsActivo" (activeChange)="filtrarEstado($event)"></app-filter-tabs>
     </div>
 </div>
 
-<!-- Table -->
+@if (vista.filtrosActivos.length) {
+    <app-active-filters
+        [filtros]="vista.filtrosActivos"
+        (quitar)="quitarFiltro($event)"
+        (limpiar)="limpiarFiltros()">
+    </app-active-filters>
+}
+
 <app-shared-table
-    [data]="tramites"
+    [data]="vista.rows"
     [columns]="columns"
-    [loading]="loading"
+    [loading]="vista.cargando"
+    [error]="vista.error"
+    errorTitle="No pudimos cargar los trámites"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="recargar()"
     [sortable]="true"
+    (sortChange)="onSortChange($event)"
     [paginated]="true"
     [striped]="true"
-    [totalItems]="totalItems"
-    [pageSize]="pageSize"
-    [pageIndex]="currentPage"
-
-    emptyMessage="No se encontraron trámites"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
     (pageChange)="onPageChange($event)"
-    (sortChange)="onSortChange($event)">
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
+    emptyIcon="file-text">
 
     <ng-template appTableCell="titulo" let-row>
-        <div class="tramite-titulo-cell">
-            @if (row.icono) {
-              <mat-icon class="tramite-icono">{{ row.icono }}</mat-icon>
-            }
-            <div>
-                <div>
-                    <strong>{{ row.titulo }}</strong>
-                    @if (row.destacado) {
-                      <i class="ph ph-star star-icon" matTooltip="Destacado" aria-hidden="true"></i>
-                    }
-                </div>
-                <small class="text-secondary">{{ row.organismo?.nombre }}</small>
-            </div>
+        <div class="tramlist-titulo">
+            <span class="tramlist-titulo__principal">
+                {{ row.titulo }}
+                @if (row.destacado) {
+                    <i class="ph ph-star tramlist-destacado" matTooltip="Destacado" aria-label="Destacado"></i>
+                }
+            </span>
+            <span class="tramlist-titulo__meta">{{ row.organismoNombre }}</span>
         </div>
     </ng-template>
 
@@ -92,48 +102,22 @@
     </ng-template>
 
     <ng-template appTableCell="modalidad" let-row>
-        {{ row.modalidad?.nombre }}
+        <span class="text-secondary">{{ row.modalidadNombre }}</span>
     </ng-template>
 
     <ng-template appTableCell="updatedAt" let-row>
-        {{ row.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+        <span class="text-secondary">{{ row.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones del trámite">
-            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
-        </button>
-        <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="onEdit(row)">
-                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-            </button>
-            <button mat-menu-item (click)="onView(row)">
-                <i class="ph ph-eye" aria-hidden="true"></i> Ver detalle
-            </button>
-            <button mat-menu-item (click)="onPreview(row)">
-                <i class="ph ph-arrow-square-out" aria-hidden="true"></i> Vista previa
-            </button>
-            <mat-divider></mat-divider>
-            @if (row.estado === 'borrador') {
-              <button mat-menu-item (click)="onSendToReview(row)">
-                  <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> Enviar a revisión
-              </button>
-            }
-            @if (row.estado === 'revision' && isSuperAdmin) {
-              <button mat-menu-item (click)="onPublish(row)">
-                  <i class="ph ph-cloud-arrow-up" aria-hidden="true"></i> Publicar
-              </button>
-            }
-            @if (row.estado === 'publicado') {
-              <button mat-menu-item (click)="onUnpublish(row)">
-                  <i class="ph ph-eye-slash" aria-hidden="true"></i> Despublicar
-              </button>
-            }
-            <mat-divider></mat-divider>
-            <button mat-menu-item class="delete-action" (click)="onDelete(row)">
-                <i class="ph ph-trash" aria-hidden="true"></i> Eliminar
-            </button>
-        </mat-menu>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="trabajandoId === row.id"
+            busyLabel="Procesando trámite...">
+        </app-row-actions>
     </ng-template>
 
 </app-shared-table>
+}
+}

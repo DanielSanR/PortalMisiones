@@ -4,6 +4,7 @@ import { TramitesRepository } from '../repositories/tramites.repository';
 import {
   ContenidoLocalidadFormValue,
   ContenidoLocalidadVM,
+  TramiteCatalogos,
   TramiteConteos,
   TramiteFormData,
   TramiteFormValue,
@@ -34,6 +35,11 @@ export class TramitesFacade {
 
   getById(id: string): Observable<TramiteVM> {
     return this.repo.getById(id);
+  }
+
+  /** Catálogos sueltos: los selects de filtro de la lista (organismo, localidad). */
+  getCatalogos(): Observable<TramiteCatalogos> {
+    return this.repo.getCatalogos();
   }
 
   /**
