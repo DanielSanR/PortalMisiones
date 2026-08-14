@@ -1,4 +1,8 @@
 <form class="dynamic-form" [formGroup]="form" (ngSubmit)="submit()" *ngIf="form">
+  <!-- El error del servidor queda a la vista hasta el próximo intento: el diálogo global
+       se cierra y el usuario se queda sin el motivo del fallo. -->
+  <app-form-error-banner *ngIf="serverError" [errors]="[serverError]"
+                         titulo="No se pudo guardar"></app-form-error-banner>
   <app-form-error-banner *ngIf="submitted" [errors]="invalidFieldMessages()"></app-form-error-banner>
 
   <div class="form-fields">
@@ -15,13 +19,20 @@
         [field]="field"
         [group]="form">
       </app-dynamic-form-field>
+      <!-- Una sola marca para todos los tipos de campo, en vez de repetirla por variante. -->
+      <span *ngIf="field.pendiente" class="form-field__pendiente">
+        <i class="ph ph-clock" aria-hidden="true"></i>
+        Campo de ejemplo, no persiste.
+      </span>
     </div>
   </div>
 
   <div class="form-actions" *ngIf="!hideButtons">
     <span class="form-actions__help">{{ helpText }}</span>
     <div class="form-actions__buttons">
-      <button mat-stroked-button color="primary" type="button" (click)="formCancel.emit()">
+      <button mat-stroked-button color="primary" type="button"
+              [disabled]="saving"
+              (click)="formCancel.emit()">
         {{ cancelButtonText }}
       </button>
       <button mat-raised-button color="primary"

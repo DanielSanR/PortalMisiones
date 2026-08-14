@@ -1,0 +1,65 @@
+@use '../../../../shared-styles/mixins' as *;
+
+.active-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex-wrap: wrap;
+    margin-bottom: var(--theme-space-md);
+
+    &__label {
+        font-size: var(--theme-font-size-xs);
+        color: var(--theme-text-tertiary);
+    }
+
+    &__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--theme-space-xs);
+        height: 26px;
+        padding: 0 6px 0 10px;
+        border-radius: var(--theme-radius-full);
+        background: var(--theme-info-bg);
+        color: var(--theme-primary-800);
+        font-size: var(--theme-font-size-xs);
+        font-weight: var(--theme-font-weight-semibold);
+    }
+
+    &__quitar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        border-radius: var(--theme-radius-full);
+        @include focus-ring;
+
+        i.ph {
+            font-size: 13px;
+        }
+
+        &:hover {
+            color: var(--theme-primary);
+        }
+    }
+
+    &__limpiar {
+        margin-left: 2px;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        font-family: inherit;
+        font-size: var(--theme-font-size-xs);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-primary);
+        cursor: pointer;
+        @include focus-ring;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

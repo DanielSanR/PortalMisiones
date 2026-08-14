@@ -12,6 +12,7 @@ import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LayoutChromeService } from '../../../core/services/layout-chrome.service';
 import { AuthUser } from '../../../core/models/auth.model';
+import { COMANDOS } from '../../../core/constants/comandos.constants';
 import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
 import { evaluateAccess } from '../../../core/utils/authorization.utils';
@@ -26,6 +27,22 @@ interface NavGroupView {
   label: string;
   items: NavItem[];
   isOpen: boolean;
+}
+
+/** Una fila de resultados del buscador (navegación o comando). */
+export interface ResultadoBuscador {
+  tipo: 'nav' | 'comando';
+  label: string;
+  icon: string;
+  route?: string;
+  id?: 'cerrar-sesion' | 'colapsar-nav';
+}
+
+/** Grupo del listado de resultados. `indice` es la posición en la lista plana
+ *  `resultados`, para que las flechas recorran los grupos de corrido. */
+interface GrupoResultado {
+  titulo: string;
+  items: (ResultadoBuscador & { indice: number })[];
 }
 
 @Component({
@@ -46,6 +63,7 @@ interface NavGroupView {
 export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
+  @ViewChild('navScroll') navScrollRef?: ElementRef<HTMLElement>;
   isMobile = false;
   isCollapsed = false;
   userName = '';
@@ -56,6 +74,17 @@ export class AdminLayoutComponent implements OnInit {
   /** Grupos de nav visibles (por permiso + búsqueda), lo que consume el template. */
   navGroups: NavGroupView[] = [];
   searchQuery = '';
+
+  /** Resultados en lista plana: es el orden que recorren las flechas. */
+  resultados: ResultadoBuscador[] = [];
+  /** Los mismos resultados agrupados, que es lo que dibuja el nav. */
+  gruposResultado: GrupoResultado[] = [];
+  /** Fila bajo el cursor; -1 cuando no hay resultados. */
+  indiceActivo = -1;
+
+  /** Contexto de autorización del usuario actual, para gatear los comandos. */
+  private permisosActuales: string[] = [];
+  private rolesActuales: UserRole[] = [];
 
   /** Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio". */
   breadcrumbTrail: string[] = [];
@@ -123,21 +152,42 @@ export class AdminLayoutComponent implements OnInit {
     return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
   }
 
+  /** "juan.perez@misiones.gob.ar" → "Juan Perez". Respaldo cuando el JWT no trae el nombre. */
+  private nombreDesdeEmail(email: string): string {
+    const usuario = (email ?? '').split('@')[0];
+    if (!usuario) return 'Usuario';
+    return usuario
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((parte) => parte.charAt(0).toLocaleUpperCase('es-AR') + parte.slice(1))
+      .join(' ');
+  }
+
   private applyUser(user: AuthUser | null): void {
     if (!user) {
       this.userName = '';
       this.userEmail = '';
       this.userInitials = '';
       this.userRoleSpanish = '';
+      this.permisosActuales = [];
+      this.rolesActuales = [];
       this.accessibleGroups = [];
       this.recomputeNavGroups();
       return;
     }
-    this.userName = `${user.nombre} ${user.apellido}`.trim();
+    // El JWT NO trae nombre/apellido (ver AuthUser): con el backend real quedaban vacíos
+    // y el bloque de perfil mostraba solo el rol. Se cae al usuario del correo, que
+    // siempre está, para que nombre y rol se vean juntos como en el diseño.
+    const nombreCompleto = `${user.nombre ?? ''} ${user.apellido ?? ''}`.trim();
+    this.userName = nombreCompleto || this.nombreDesdeEmail(user.email);
     this.userEmail = user.email;
-    this.userInitials = `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase();
+    this.userInitials = nombreCompleto
+      ? `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase()
+      : this.userName.slice(0, 2).toLocaleUpperCase('es-AR');
     this.userRoleSpanish = this.authTokenService.getUserRoleLabel();
-    const ctx = { permissions: user.permissions ?? [], roles: user.roles ?? [] };
+    this.permisosActuales = user.permissions ?? [];
+    this.rolesActuales = user.roles ?? [];
+    const ctx = { permissions: this.permisosActuales, roles: this.rolesActuales };
     this.accessibleGroups = NAV_GROUPS
       .map((group) => ({ label: group.label, items: group.items.filter((item) => evaluateAccess(ctx, item.rule)) }))
       .filter((group) => group.items.length > 0);
@@ -174,7 +224,103 @@ export class AdminLayoutComponent implements OnInit {
   /** Filtro client-side del buscador de la sidebar (sin backend). */
   onSearchInput(value: string): void {
     this.searchQuery = value;
-    this.recomputeNavGroups();
+    this.recomputeResultados();
+    this.cdr.markForCheck();
+  }
+
+  // ---------------------------------------------------------------------
+  // Buscador — el nav SE CONVIERTE en los resultados (no hay panel flotante).
+  // ---------------------------------------------------------------------
+
+  /**
+   * Arma la lista plana (para las flechas) y su agrupación (para el nav) en una
+   * sola pasada, así los índices no se pueden desfasar entre las dos vistas.
+   */
+  private recomputeResultados(): void {
+    const q = this.searchQuery.trim().toLocaleLowerCase('es-AR');
+    if (!q) {
+      this.resultados = [];
+      this.gruposResultado = [];
+      this.indiceActivo = -1;
+      return;
+    }
+
+    const navegacion: ResultadoBuscador[] = this.accessibleGroups
+      .flatMap((g) => g.items)
+      .filter((item) => item.label.toLocaleLowerCase('es-AR').includes(q))
+      .map((item) => ({ tipo: 'nav' as const, label: item.label, icon: item.icon, route: item.route }));
+
+    const ctx = { permissions: this.permisosActuales, roles: this.rolesActuales };
+    const comandos: ResultadoBuscador[] = COMANDOS
+      .filter((c) => evaluateAccess(ctx, c.rule))
+      .filter((c) => c.label.toLocaleLowerCase('es-AR').includes(q)
+                  || c.keywords.some((k) => k.includes(q)))
+      .map((c) => ({ tipo: 'comando' as const, label: c.label, icon: c.icon, route: c.route, id: c.id }));
+
+    this.resultados = [...navegacion, ...comandos];
+    this.gruposResultado = [
+      { titulo: 'Ir a', items: navegacion.map((r, i) => ({ ...r, indice: i })) },
+      { titulo: 'Acciones', items: comandos.map((r, i) => ({ ...r, indice: navegacion.length + i })) },
+    ].filter((g) => g.items.length > 0);
+    // Se preselecciona el primero: Enter sin tocar las flechas ejecuta lo más probable.
+    this.indiceActivo = this.resultados.length > 0 ? 0 : -1;
+  }
+
+  /** Flechas para recorrer, Enter para ejecutar, Escape para limpiar. */
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      // `MatDrawer` escucha Escape en su propio elemento y cierra el sidenav. Cortamos
+      // la propagación solo cuando hay algo que limpiar: si no, Escape con el buscador
+      // vacío deja de cerrar el drawer en mobile, que ahí sí es lo que se espera.
+      if (!this.searchQuery) return;
+      event.stopPropagation();
+      this.limpiarBusqueda();
+      return;
+    }
+    if (this.resultados.length === 0) return;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const paso = event.key === 'ArrowDown' ? 1 : -1;
+      const total = this.resultados.length;
+      this.indiceActivo = (this.indiceActivo + paso + total) % total;
+      this.desplazarAlCursor();
+      return;
+    }
+    if (event.key === 'Enter' && this.indiceActivo >= 0) {
+      event.preventDefault();
+      this.ejecutar(this.resultados[this.indiceActivo]);
+    }
+  }
+
+  /** La lista vive dentro del nav, que scrollea: sin esto el cursor se va de vista
+   *  con las flechas. `setTimeout` porque el alto hay que medirlo ya renderizado. */
+  private desplazarAlCursor(): void {
+    setTimeout(() => {
+      this.navScrollRef?.nativeElement
+        .querySelector('.is-cursor')
+        ?.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  ejecutar(resultado: ResultadoBuscador): void {
+    this.limpiarBusqueda();
+    if (this.isMobile) this.sidenav?.close();
+
+    switch (resultado.id) {
+      case 'cerrar-sesion': this.logout(); return;
+      case 'colapsar-nav': this.toggleCollapse(); return;
+    }
+    if (resultado.route) this.router.navigate([resultado.route]);
+  }
+
+  limpiarBusqueda(): void {
+    this.searchQuery = '';
+    this.resultados = [];
+    this.gruposResultado = [];
+    this.indiceActivo = -1;
+    if (this.searchInputRef) this.searchInputRef.nativeElement.value = '';
+    this.cdr.markForCheck();
   }
 
   /** Abre/cierra un grupo del nav. Estado local, no persiste entre sesiones. */
@@ -187,16 +333,14 @@ export class AdminLayoutComponent implements OnInit {
     this.recomputeNavGroups();
   }
 
+  /** Nav en reposo. El filtrado por texto ya no vive acá: con búsqueda activa el nav
+   *  no se dibuja, lo reemplaza el grupo "Ir a" de los resultados. */
   private recomputeNavGroups(): void {
-    const query = this.searchQuery.trim().toLowerCase();
-    this.navGroups = this.accessibleGroups
-      .map((group) => ({
-        label: group.label,
-        items: query ? group.items.filter((item) => item.label.toLowerCase().includes(query)) : group.items,
-        // Con búsqueda activa se fuerza abierto para poder ver los resultados de todos los grupos.
-        isOpen: query.length > 0 || !this.collapsedGroups.has(group.label),
-      }))
-      .filter((group) => group.items.length > 0);
+    this.navGroups = this.accessibleGroups.map((group) => ({
+      label: group.label,
+      items: group.items,
+      isOpen: !this.collapsedGroups.has(group.label),
+    }));
     this.cdr.markForCheck();
   }
 
@@ -213,6 +357,9 @@ export class AdminLayoutComponent implements OnInit {
 
   toggleCollapse(): void {
     this.isCollapsed = !this.isCollapsed;
+    // Colapsado el input queda oculto: si quedara una búsqueda activa, el nav seguiría
+    // mostrando resultados sin caja donde escribir ni forma de limpiarlos.
+    if (this.isCollapsed) this.limpiarBusqueda();
   }
 
   logout(): void {

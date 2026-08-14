@@ -76,7 +76,7 @@ function extractId(url: string): string {
 /**
  * Rutas YA implementadas en el backend real (BACKEND_API_SPEC.md). El mock NO las toca:
  * deja pasar la request al backend (http://localhost:8080). Las rutas mock heredadas usan
- * nombres en español plural (/api/usuarios, /api/tramites, ...) que no colisionan con éstas.
+ * nombres en español plural (/api/usuarios, /api/tramites, ...).
  */
 const REAL_BACKEND_ROUTES = [
   '/api/auth/',
@@ -89,17 +89,42 @@ const REAL_BACKEND_ROUTES = [
   '/api/life-event', // taxonomía real (mock usa /api/eventos-de-vida)
   '/api/category', // taxonomía real (mock usa /api/categorias)
   '/api/recipient', // destinatarios real (mock usa /api/destinatarios)
+  '/api/organism', // organismos real (mock usa /api/organismos — ver isRealBackendRoute)
+  '/api/organism-type', // tipos de organismo real (mock no tiene ruta propia)
   '/api/email/',
   '/api/storage/',
   '/api/recaptcha/',
 ];
+
+/**
+ * ¿La URL apunta a una ruta del backend real?
+ *
+ * El match respeta el límite del segmento en vez de usar `includes` a secas, porque
+ * `/api/organismos` (mock, español) CONTIENE `/api/organism` (real, inglés): con
+ * `includes`, agregar la ruta real mandaría también el mock de organismos al backend
+ * y rompería el modo mock. Es el único par donde el nombre real es prefijo del mock
+ * (`/api/user` vs `/api/usuarios` y el resto no colisionan), pero la regla vale para
+ * cualquier ruta que se agregue después.
+ *
+ * Una entrada terminada en `/` ya cierra el segmento por sí misma (`/api/auth/login`).
+ */
+function isRealBackendRoute(url: string): boolean {
+  const path = url.split('?')[0];
+  return REAL_BACKEND_ROUTES.some((route) => {
+    const at = path.indexOf(route);
+    if (at === -1) return false;
+    if (route.endsWith('/')) return true;
+    const next = path.charAt(at + route.length);
+    return next === '' || next === '/';
+  });
+}
 
 export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
   const url = req.url;
   const method = req.method;
 
   // Passthrough: las rutas reales van directo al backend.
-  if (REAL_BACKEND_ROUTES.some((route) => url.includes(route))) {
+  if (isRealBackendRoute(url)) {
     return next(req);
   }
 

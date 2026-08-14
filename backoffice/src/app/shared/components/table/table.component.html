@@ -101,10 +101,32 @@
     </button>
   </div>
 
-  <!-- Paginador -->
-  <mat-paginator *ngIf="paginated && showTable && !showSkeleton" [length]="totalItems" [pageSize]="pageSize"
-    [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" showFirstLastButtons
-    aria-label="Paginacion de la tabla">
-  </mat-paginator>
+  <!-- Paginador propio del design system (Kitchen Sink §05): rango a la izquierda,
+       carets y chips numerados a la derecha. Sin selector de tamaño de página. -->
+  <nav class="shared-table__paginador" *ngIf="paginated && showTable && !showSkeleton"
+    aria-label="Paginación de la tabla">
+    <span class="shared-table__paginador-rango">{{ rangoTexto }}</span>
+
+    <div class="shared-table__paginador-controles">
+      <button type="button" class="shared-table__pagina shared-table__pagina--nav"
+        [disabled]="pageIndex <= 0" (click)="irAPagina(pageIndex - 1)" aria-label="Página anterior">
+        <i class="ph ph-caret-left" aria-hidden="true"></i>
+      </button>
+
+      <ng-container *ngFor="let pagina of paginas">
+        <span *ngIf="pagina === null" class="shared-table__paginador-elipsis" aria-hidden="true">…</span>
+        <button *ngIf="pagina !== null" type="button" class="shared-table__pagina"
+          [class.is-active]="pagina === pageIndex"
+          [attr.aria-current]="pagina === pageIndex ? 'page' : null"
+          [attr.aria-label]="'Página ' + (pagina + 1)"
+          (click)="irAPagina(pagina)">{{ pagina + 1 }}</button>
+      </ng-container>
+
+      <button type="button" class="shared-table__pagina shared-table__pagina--nav"
+        [disabled]="pageIndex >= ultimaPagina" (click)="irAPagina(pageIndex + 1)" aria-label="Página siguiente">
+        <i class="ph ph-caret-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </nav>
 
 </div>

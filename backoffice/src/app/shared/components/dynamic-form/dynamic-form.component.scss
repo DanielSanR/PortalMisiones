@@ -14,6 +14,25 @@
   box-sizing: border-box;
 }
 
+// Campo presente en el diseño que el backend todavía no persiste. Va deshabilitado
+// (ver `pendiente` en FieldConfig) y con esta marca, deliberadamente distinta de un
+// hint normal: tiene que leerse como "esto no se guarda", no como una ayuda.
+.form-field__pendiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: var(--theme-font-size-xs);
+  font-style: italic;
+  color: var(--theme-text-tertiary);
+  line-height: 1.4;
+
+  i.ph {
+    font-size: 14px;
+    font-style: normal;
+  }
+}
+
 .dynamic-form-field-full {
   flex-basis: 100%;
   min-width: 0;
@@ -29,8 +48,21 @@
   }
 }
 
+// Fila del diseño: `wide + third + third` = 2fr / 1fr / 1fr (NOMBRE ancho, SIGLA y
+// CUIT angostos). Las bases suman ~100% a propósito: con base 0 la proporción salía
+// bien pero entraban cuatro campos por fila, porque nada obligaba a cortar.
+.dynamic-form-field-wide {
+  flex: 2 1 calc(50% - var(--theme-space-md));
+  min-width: 240px;
+
+  @media (max-width: 600px) {
+    flex-basis: 100% !important;
+    min-width: 0;
+  }
+}
+
 .dynamic-form-field-third {
-  flex: 1 1 calc(33.333% - var(--theme-space-md) * 2 / 3);
+  flex: 1 1 calc(25% - var(--theme-space-md));
   min-width: 150px;
 
   @media (max-width: 600px) {

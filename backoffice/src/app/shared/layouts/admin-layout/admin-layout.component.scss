@@ -33,9 +33,11 @@
         overflow-x: hidden;
         transition: width var(--theme-transition-normal);
 
-        &.mat-drawer {
-            border-right: none; // el borde lo aporta el selector de arriba
-        }
+        // El `border-right` de arriba pisa al divisor de Material (`.mat-drawer-side`)
+        // por especificidad: clase + atributo de encapsulación le gana a una clase sola.
+        // Antes no se veía por dos motivos encadenados: un `&.mat-drawer { border-right:
+        // none }` acá —más específico que `&__sidenav`, pese al comentario que decía lo
+        // contrario— y un `.mat-sidenav { border-right: none !important }` global.
 
         // El contenido proyectado (logo/buscador/nav/footer) no es hijo directo del
         // `mat-drawer` sino de su wrapper interno `.mat-drawer-inner-container` (CDK).
@@ -84,13 +86,17 @@
     // ======================================================================
     // CONTENT — columna principal (header + canvas + panel de página)
     // ======================================================================
+    // El `<main>` del diseño es blanco liso: el contenido va directo sobre él, sin un
+    // lienzo gris detrás ni una tarjeta que lo recorte. Antes el área de página usaba
+    // `surface-canvas` (#E8EBEF) y el panel una tarjeta blanca encima, así que se veían
+    // dos superficies donde el diseño tiene una.
     &__content {
-        background-color: var(--theme-surface-canvas);
+        background-color: var(--theme-surface-card);
     }
 
     &__page {
         flex: 1;
-        background-color: var(--theme-surface-canvas);
+        background-color: var(--theme-surface-card);
         padding: var(--theme-space-md) calc(var(--theme-space-xl) + var(--theme-space-sm)) calc(var(--theme-space-2xl));
         display: flex;
         justify-content: center;
@@ -100,19 +106,13 @@
         }
     }
 
+    // Contenedor de ancho máximo, no una tarjeta: el diseño no dibuja borde ni sombra
+    // alrededor del contenido de la página. Sin padding propio: con `box-sizing: border-box`
+    // el max-width lo incluía, así que el contenido nunca llegaba a los 1400px. El aire
+    // exterior lo pone `__page`, igual que el `<main>` del diseño.
     &__panel {
         width: 100%;
         max-width: var(--theme-content-max-width);
-        background-color: var(--theme-surface-card);
-        border: 1px solid var(--theme-border-primary);
-        border-radius: var(--theme-radius-panel);
-        box-shadow: var(--theme-shadow-xs);
-        padding: var(--theme-space-lg) calc(var(--theme-space-xl) + var(--theme-space-sm));
-
-        @include responsive(mobile) {
-            padding: var(--theme-space-md);
-            border-radius: var(--theme-radius-md);
-        }
     }
 }
 
@@ -194,11 +194,13 @@
 }
 
 // ==========================================================================
-// BUSCADOR de la sidebar (filtra el nav client-side)
+// BUSCADOR de la sidebar — los resultados se dibujan DENTRO del nav
+// (patrón Cloudflare), así que acá no hay panel ni ancla de posicionamiento.
 // ==========================================================================
 .admin-layout__search {
     flex: none;
-    margin: 10px 12px;
+    // El diseño deja 6px arriba y 10px abajo (no 10/10): son 4px más para el nav.
+    margin: 6px 12px 10px;
     height: 34px;
     padding: 0 10px;
     display: flex;
@@ -312,6 +314,26 @@
     gap: 1px;
 }
 
+// Encabezado de grupo en modo búsqueda: mismo tono que el del nav en reposo, pero
+// estático — no hay nada que colapsar mientras se está buscando.
+.admin-layout__nav-group-title {
+    display: flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 8px;
+    font-size: var(--theme-font-overline-size);
+    font-weight: var(--theme-font-weight-semibold);
+    letter-spacing: var(--theme-font-overline-track);
+    text-transform: uppercase;
+    color: var(--theme-text-tertiary);
+}
+
+.admin-layout__nav-resultados {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
 .admin-layout__nav-empty {
     margin: var(--theme-space-sm) 8px 0;
     font-size: var(--theme-font-small-size);
@@ -321,14 +343,24 @@
 .admin-layout__nav-item {
     position: relative;
     flex: none;
-    height: 40px;
-    padding: 0 12px;
+    width: 100%;
+    // 36px / 10px, la métrica del diseño. Estaba en 40/12: con 14 ítems eso son 56px de
+    // más, que es exactamente lo que desbordaba el nav en pantallas de ~900px de alto.
+    height: 36px;
+    padding: 0 10px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     border-radius: var(--theme-radius-md);
     border: 1px solid transparent;
-    font-size: var(--theme-font-body-size);
+    // En modo búsqueda las filas son `<button>`, no `<a>`: hay que neutralizar los
+    // estilos propios del botón para que se vean idénticas a un ítem del nav.
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    // 13px, como la navegación del diseño. Usaba `--theme-font-body-size` (14px), que es
+    // el tamaño de cuerpo de contenido, no el de la nav.
+    font-size: var(--theme-font-size-sm);
     color: var(--theme-text-secondary);
     text-decoration: none;
     cursor: pointer;
@@ -362,11 +394,29 @@
             background-color: var(--theme-bg-sidebar-active);
         }
     }
+
+    // Cursor del buscador. Deliberadamente más liviano que `is-active`: ese estado
+    // significa "acá estás parado", y el cursor solo "esto ejecuta Enter". Es único —
+    // lo mueven tanto las flechas como el mouse, así no compiten dos resaltados.
+    &.is-cursor {
+        background-color: var(--theme-bg-sidebar-hover);
+        color: var(--theme-text-primary);
+
+        .admin-layout__nav-icon {
+            color: var(--theme-text-secondary);
+        }
+    }
+}
+
+.admin-layout__nav-enter {
+    flex: none;
+    font-size: 14px;
+    color: var(--theme-text-tertiary);
 }
 
 .admin-layout__nav-icon {
     flex: none;
-    font-size: 20px;
+    font-size: 18px;
     color: var(--theme-text-tertiary);
     transition: color var(--theme-transition-fast);
 }

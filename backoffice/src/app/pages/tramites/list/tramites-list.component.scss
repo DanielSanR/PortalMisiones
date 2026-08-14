@@ -9,16 +9,9 @@
  }
 
  // Campos de búsqueda/selects reales (fila A del well) — dato real ya persistido
- // por el backend (título/descripción, organismo, estado, localidad). Fondo
- // blanco explícito para que el campo se lea sobre el well sunken (#F7F9FB).
+ // por el backend (título/descripción, organismo, estado, localidad).
  .Filtros-field {
-   flex: 1;
-   min-width: 200px;
-   --mdc-outlined-text-field-container-color: var(--theme-surface-card);
-
-   @media (max-width: 767px) {
-     min-width: 100%;
-   }
+   @include list-filter-field;
  }
 
  .tramite-titulo-cell {

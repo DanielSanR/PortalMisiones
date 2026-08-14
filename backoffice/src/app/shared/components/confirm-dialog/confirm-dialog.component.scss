@@ -1,48 +1,83 @@
+// ==========================================================================
+// ConfirmDialogComponent — Kitchen Sink §07 (overlays).
+// Círculo 38px sobre la escala de ERROR cuando la acción es destructiva
+// (antes usaba la de warning: un borrado irreversible no es "atención").
+// Ícono Phosphor, como el resto del sistema (§09), no Material Symbols.
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
 .confirm-dialog {
-      padding: var(--theme-space-lg);
-      min-width: 360px;
+  padding: var(--theme-space-lg);
+  min-width: 360px;
 
-      @media (max-width: 480px) {
-        min-width: auto;
-        padding: var(--theme-space-md);
-      }
+  @include responsive(mobile) {
+    min-width: auto;
+    padding: var(--theme-space-md);
+  }
 
-      &__header {
-        display: flex;
-        align-items: center;
-        gap: var(--theme-space-md);
-        margin-bottom: var(--theme-space-md);
-      }
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
 
-      &__icon-wrapper {
-        width: 44px;
-        height: 44px;
-        border-radius: var(--theme-radius-full);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--theme-warning-bg);
-        flex-shrink: 0;
+  &__icon-wrapper {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    border-radius: var(--theme-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // Consulta: variante no destructiva. Se pisa abajo para la destructiva.
+    background: var(--theme-info-bg);
+    color: var(--theme-primary);
 
-        .mat-icon {
-          color: var(--theme-warning);
-          font-size: 24px;
-          width: 24px;
-          height: 24px;
-        }
-      }
-
-      h2 {
-        margin: 0;
-        font-size: var(--theme-font-size-lg);
-        font-weight: var(--theme-font-weight-semibold);
-        color: var(--theme-text-primary);
-      }
-
-      p {
-        color: var(--theme-text-secondary);
-        margin: 0;
-        font-size: var(--theme-font-size-base);
-        line-height: var(--theme-line-height-normal);
-      }
+    i.ph {
+      font-size: 20px;
     }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+  }
+
+  &__message {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    line-height: 1.5;
+    color: var(--theme-text-secondary);
+    text-wrap: pretty;
+
+    // El nombre del objeto afectado: el diseño lo destaca en el color de texto principal.
+    b {
+      color: var(--theme-text-primary);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
+
+  &--danger {
+    .confirm-dialog__icon-wrapper {
+      background: var(--theme-error-bg);
+      color: var(--theme-error);
+    }
+  }
+
+  .mat-mdc-dialog-actions {
+    gap: var(--theme-space-sm);
+    padding: var(--theme-space-lg) 0 0;
+    margin: 0;
+    min-height: 0;
+  }
+}

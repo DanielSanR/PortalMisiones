@@ -186,17 +186,22 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
   // Sin sitioWeb/logoUrl (no existen en el backend).
   ORGANISMO: {
     fields: [
+      // Estructura del diseño "Pantallas · Backoffice Misiones", pantalla FORM.
+      // Los campos marcados `pendiente` están en el diseño pero el backend no los
+      // persiste (`OrganismRequestDTO` solo acepta typeId, parentId, baseLocationId,
+      // name, acronym y active): van deshabilitados para que nadie escriba y pierda.
       {
         name: '_section_datos',
-        label: 'Datos del organismo',
+        label: 'Datos institucionales',
         type: 'section-header',
+        placeholder: 'Identificación y jerarquía del organismo',
       },
       {
         name: 'nombre',
         label: 'Nombre',
         type: 'text',
         placeholder: 'Nombre del organismo',
-        cssClass: 'colspan-half',
+        cssClass: 'colspan-wide',
         validations: {
           required: true,
           maxLength: 255,
@@ -204,27 +209,52 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
       },
       {
         name: 'acronym',
-        label: 'Acrónimo',
+        label: 'Sigla',
         type: 'text',
         placeholder: 'Ej: IPS',
-        cssClass: 'colspan-half',
+        cssClass: 'colspan-third',
+        validations: { maxLength: 50 },
+      },
+      {
+        name: 'cuit',
+        label: 'CUIT',
+        type: 'text',
+        placeholder: 'Ej. 30-67890123-4',
+        cssClass: 'colspan-third',
+        disabled: true,
+        pendiente: true,
       },
       {
         name: 'typeId',
         label: 'Tipo de organismo',
         type: 'select',
         placeholder: 'Seleccione un tipo',
-        cssClass: 'colspan-half',
+        cssClass: 'colspan-wide',
         validations: { required: true },
         options: [],
+        // Es requerido y sin opción "ninguno": si no hay tipos cargados, el alta
+        // queda trabada. El mensaje tiene que decir cómo destrabarla.
+        emptyOptionsMessage: 'No hay tipos de organismo cargados. Creá uno primero en Tipos de organismo.',
       },
       {
         name: 'parentId',
-        label: 'Organismo padre',
+        label: 'Organismo superior',
         type: 'select',
-        placeholder: 'Ninguno (raíz)',
-        cssClass: 'colspan-half',
+        placeholder: 'Sin organismo superior',
+        cssClass: 'colspan-third',
         options: [],
+      },
+      {
+        name: 'jurisdiccion',
+        label: 'Jurisdicción',
+        type: 'radio',
+        cssClass: 'colspan-third',
+        disabled: true,
+        pendiente: true,
+        options: [
+          { id: 'provincial', name: 'Provincial' },
+          { id: 'municipal', name: 'Municipal' },
+        ],
       },
       {
         name: 'baseLocationId',
@@ -236,11 +266,79 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         options: [],
       },
       {
+        name: 'descripcion',
+        label: 'Descripción',
+        type: 'textarea',
+        placeholder: 'Se muestra en la ficha pública del organismo.',
+        cssClass: 'colspan-full',
+        disabled: true,
+        pendiente: true,
+        validations: { maxLength: 500 },
+      },
+      {
         name: 'activo',
         label: 'Organismo activo',
         type: 'checkbox',
         value: true,
       },
+
+      {
+        name: '_section_contacto',
+        label: 'Contacto y visibilidad',
+        type: 'section-header',
+        placeholder: 'Datos que se publican en el portal ciudadano',
+      },
+      {
+        name: 'domicilio',
+        label: 'Domicilio',
+        type: 'text',
+        placeholder: 'Ej. Av. López y Planes 2760, Posadas',
+        cssClass: 'colspan-wide',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'telefono',
+        label: 'Teléfono',
+        type: 'text',
+        placeholder: 'Ej. 376 444-7000',
+        cssClass: 'colspan-third',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'correo',
+        label: 'Correo institucional',
+        type: 'email',
+        placeholder: 'Ej. contacto@salud.misiones.gob.ar',
+        cssClass: 'colspan-third',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'sitioWeb',
+        label: 'Sitio web',
+        type: 'url',
+        placeholder: 'Ej. salud.misiones.gob.ar',
+        cssClass: 'colspan-third',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'visiblePortal',
+        label: 'Visible en el portal ciudadano',
+        type: 'checkbox',
+        disabled: true,
+        pendiente: true,
+      },
+      {
+        name: 'destacado',
+        label: 'Destacar en la página de inicio',
+        type: 'checkbox',
+        disabled: true,
+        pendiente: true,
+      },
+
     ],
     submitButtonText: 'Crear organismo',
     cancelButtonText: 'Cancelar',
@@ -463,6 +561,9 @@ export function updateFormConfigOptions(
   const field = clone.fields?.find((f: FieldConfig) => f.name === fieldName);
   if (field) {
     field.options = options;
+    // Aunque `options` venga vacío: el catálogo se resolvió, y el select debe decir
+    // "no hay opciones" en vez de quedarse en "Cargando opciones...".
+    field.optionsLoaded = true;
   }
   return clone;
 }

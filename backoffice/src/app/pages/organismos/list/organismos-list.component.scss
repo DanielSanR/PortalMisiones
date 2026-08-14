@@ -1,3 +1,13 @@
+// ==========================================================================
+// Listado de Organismos — toolbar fiel al diseño "Pantallas · Backoffice
+// Misiones", pantalla LISTA.
+//
+// Lo compartido con las demás listas ya no vive acá: la caja de búsqueda es
+// `app-list-search`, la barra de filtros es `app-active-filters`, y los botones
+// de la fila A/B salen de los mixins `list-iconbtn` / `list-ghost-button`.
+// Este archivo se queda solo con las celdas propias de Organismos.
+// ==========================================================================
+
 @use '../../../../shared-styles/mixins' as *;
 
 .list-toolbar {
@@ -6,4 +16,96 @@
   &-count {
     @include list-toolbar-count;
   }
+}
+
+// Contador + acciones de la fila A ----------------------------------------
+.orglist-acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-sm);
+  flex: none;
+}
+
+.orglist-iconbtn {
+  @include list-iconbtn;
+}
+
+// Fila B — chips de filtro + "Más filtros" --------------------------------
+.orglist-chips {
+  justify-content: flex-start;
+  gap: var(--theme-space-xs);
+}
+
+.orglist-masfiltros {
+  @include list-ghost-button;
+}
+
+// Celdas de la tabla -------------------------------------------------------
+.organismos-list {
+
+  // Celda de nombre: avatar de iniciales + nombre y metadatos (Kitchen Sink §05).
+  &__nombre {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: var(--theme-font-size-2xs);
+    font-weight: var(--theme-font-weight-bold);
+    letter-spacing: 0.2px;
+
+    // Cuatro tintes, asignados por id para que un organismo conserve su color.
+    &--blue  { background: var(--theme-primary-50);  color: var(--theme-primary-600); }
+    &--warm  { background: var(--theme-warning-bg);  color: var(--theme-warning-text); }
+    &--green { background: var(--theme-success-bg);  color: var(--theme-estado-publicado-text); }
+    &--grey  { background: var(--theme-border-subtle); color: var(--theme-text-secondary); }
+  }
+
+  &__nombre-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__nombre-principal {
+    font-weight: var(--theme-font-weight-medium);
+    @include truncate;
+  }
+
+  // Marca el organismo sin padre para que "Depende de" nunca quede en blanco.
+  &__raiz {
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-sm);
+  }
+
+  // En mobile la tabla oculta "Depende de" y "Tipo": este resumen bajo el
+  // nombre recupera ese dato en vez de perderlo.
+  &__meta {
+    display: none;
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-sm);
+
+    @include responsive(mobile) {
+      display: block;
+    }
+  }
+
+  &__spinner {
+    display: inline-block;
+    animation: organismos-list-spin 0.9s linear infinite;
+  }
+}
+
+@keyframes organismos-list-spin {
+  to { transform: rotate(360deg); }
 }

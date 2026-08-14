@@ -1,10 +1,12 @@
-<div class="filter-tabs" role="tablist" aria-label="Filtros de la lista">
-  @for (tab of tabs; track tab.value) {
+<div class="filter-tabs" role="tablist" aria-label="Filtros de la lista" (keydown)="onKeydown($event)">
+  @for (tab of tabs; track tab.value; let i = $index) {
     <button type="button"
+        #tabBtn
         class="filter-tabs-tab"
         role="tab"
         [class.is-active]="tab.value === active"
         [attr.aria-selected]="tab.value === active"
+        [tabindex]="tab.value === active ? 0 : -1"
         (click)="select(tab.value)">
       <span class="filter-tabs-tab-label">{{ tab.label }}</span>
       @if (tab.count !== undefined) {

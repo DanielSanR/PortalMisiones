@@ -35,6 +35,12 @@ export class DynamicFormComponent implements OnInit {
   @Input() initialData?: any;
   @Input() hideButtons = false;
   @Input() saving = false;
+  /**
+   * Mensaje devuelto por el backend al fallar el guardado. El contrato actual solo trae
+   * `{code, message}` —sin errores por campo—, así que se muestra como banner general;
+   * anclarlo a un campo puntual requeriría que el backend informe cuál falló.
+   */
+  @Input() serverError = '';
   @Input() helpText = 'Los cambios se publican al guardar.';
 
   @Output() formSubmit = new EventEmitter<any>();
@@ -120,6 +126,7 @@ export class DynamicFormComponent implements OnInit {
   getFieldCssClass(field: FieldConfig): string {
     if (field.cssClass) {
       switch (field.cssClass) {
+        case 'colspan-wide': return 'dynamic-form-field-wide';
         case 'colspan-third': return 'dynamic-form-field-third';
         case 'colspan-half': return 'dynamic-form-field-half';
         case 'colspan-full': return 'dynamic-form-field-full';

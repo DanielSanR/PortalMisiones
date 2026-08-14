@@ -1,20 +1,29 @@
-<div class="confirm-dialog">
+<div class="confirm-dialog" [class.confirm-dialog--danger]="esDestructivo">
     <div class="confirm-dialog__header">
         <div class="confirm-dialog__icon-wrapper">
-            <mat-icon>{{ data.confirmText === 'Eliminar' ? 'warning_amber' : 'help_outline' }}</mat-icon>
+            <i class="ph" [class.ph-warning]="esDestructivo" [class.ph-question]="!esDestructivo"
+               aria-hidden="true"></i>
         </div>
-        <h2>{{ data.title }}</h2>
+        <div class="confirm-dialog__body">
+            <h3 class="confirm-dialog__title">{{ data.title }}</h3>
+            <p class="confirm-dialog__message">
+                <ng-container *ngFor="let parte of partes">
+                    <b *ngIf="parte.destacado">{{ parte.texto }}</b>
+                    <ng-container *ngIf="!parte.destacado">{{ parte.texto }}</ng-container>
+                </ng-container>
+            </p>
+        </div>
     </div>
-    <mat-dialog-content>
-        <p>{{ data.message }}</p>
-    </mat-dialog-content>
     <mat-dialog-actions align="end">
-        <button mat-button (click)="dialogRef.close(false)">
+        <button mat-stroked-button color="primary" [disabled]="ejecutando" (click)="dialogRef.close(false)">
             {{ data.cancelText || 'Cancelar' }}
         </button>
-        <button mat-flat-button [color]="data.confirmText === 'Eliminar' ? 'warn' : 'primary'"
-            (click)="dialogRef.close(true)">
-            {{ data.confirmText || 'Confirmar' }}
+        <button mat-flat-button [color]="esDestructivo ? 'warn' : 'primary'"
+            [disabled]="ejecutando"
+            [attr.aria-busy]="ejecutando"
+            (click)="confirmar()">
+            <mat-spinner *ngIf="ejecutando" diameter="18"></mat-spinner>
+            <span>{{ ejecutando ? (data.busyText || 'Procesando...') : (data.confirmText || 'Confirmar') }}</span>
         </button>
     </mat-dialog-actions>
 </div>

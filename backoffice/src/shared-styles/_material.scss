@@ -27,7 +27,8 @@
 .mat-mdc-unelevated-button,
 .mat-mdc-outlined-button,
 .mat-mdc-button {
-  height: 40px !important;
+  // Kitchen Sink §03: botón md = 34px (sm = 30px, que es el de las acciones de fila).
+  height: 34px !important;
   padding: 0 18px !important;
   border-radius: var(--theme-radius-md) !important;
   font-size: var(--theme-font-size-base) !important;
@@ -46,10 +47,19 @@
     height: 20px;
   }
 
+  // El label de MDC es un bloque, así que el `align-items: center` del botón no llega a
+  // su contenido: un glifo de 20px apoyado sobre la línea base del texto de 14px quedaba
+  // ~2,5px por encima del centro. Con el label en flex, ícono y texto se centran de verdad.
+  .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+  }
+
   // Iconos Phosphor proyectados por las páginas (botones "Nuevo X", limpiar filtros, etc.)
   i.ph {
     margin-right: var(--theme-space-sm); // gap 8
     font-size: 20px;
+    line-height: 1;
   }
 
   &[disabled] {
@@ -264,10 +274,20 @@
 
     // Alto ~42px del box del input (técnica documentada: infix es el
     // contenedor real del control, no depende del cálculo del notch).
+    // Kitchen Sink §04: alto del control = 40px.
     .mat-mdc-form-field-infix {
-      min-height: 42px;
-      padding-top: 10px;
-      padding-bottom: 10px;
+      min-height: 40px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    // MDC posiciona el label en reposo con `top: 28px`, la mitad del infix por
+    // defecto (56px). Como arriba lo bajamos a 42px (caja real de 44px), el label
+    // quedaba ~7px por debajo del centro y rozaba el borde inferior del campo.
+    // Se recentra SOLO el estado en reposo: el flotante se calcula sobre el mismo
+    // `top` y ya se apoya bien sobre el borde, así que tocarlo lo despegaría del notch.
+    .mdc-floating-label:not(.mdc-floating-label--float-above) {
+      top: 50%;
     }
 
     // Soft focus ring (firma del sistema) además del borde de foco.
@@ -290,6 +310,7 @@
   // Iconos de prefijo/sufijo — 18px según la spec de inputs.
   .mat-mdc-form-field-icon-prefix,
   .mat-mdc-form-field-icon-suffix {
+    padding: 0 4px 0 0;
     .mat-icon,
     i.ph {
       font-size: 18px;
@@ -320,8 +341,11 @@
     }
   }
 
+  // Sin `min-height`: los textarea usan `cdkTextareaAutosize` con `cdkAutosizeMinRows`,
+  // que mide una fila clonada. Si esa fila hereda un min-height, el alto se multiplica
+  // por la cantidad de filas (72px × 3 = 216px). El alto lo fija el minRows.
   textarea.mat-mdc-input-element {
-    min-height: 72px; // ~92px de caja total con el padding del infix
+    resize: vertical;
   }
 }
 
@@ -485,9 +509,9 @@
 // ---------------------------------------------------------------------------
 // Sidenav
 // ---------------------------------------------------------------------------
-.mat-sidenav {
-  border-right: none !important;
-}
+// El divisor propio de Material (`.mat-drawer-side`) se pisa desde el layout con el
+// borde del design system. Acá había un `border-right: none !important` que ganaba por
+// `!important` y dejaba el sidebar sin borde, pese a que el layout lo declaraba.
 
 .mat-sidenav-container {
   background-color: var(--theme-bg-secondary);
@@ -523,10 +547,7 @@
   font-size: var(--theme-font-size-base);
 }
 
-.mat-mdc-dialog-actions {
-  padding: var(--theme-space-md) var(--theme-space-lg) var(--theme-space-lg) !important;
-  gap: var(--theme-space-sm);
-}
+ 
 
 @media (max-width: 768px) {
   .custom-modal-panel {
@@ -588,16 +609,17 @@
   min-width: 200px !important;
   border-radius: var(--theme-radius-md) !important;
   box-shadow: var(--theme-elevation-2) !important;
-  border: 1px solid var(--theme-border-secondary);
+  border: 1px solid var(--theme-border-subtle);
 
   .mat-mdc-menu-content {
     padding: 6px !important;
   }
 
+  // Kitchen Sink §07 (menú contextual): ítem 38px, 13.5px, radio 6, ícono 18px.
   .mat-mdc-menu-item {
-    font-size: var(--theme-font-size-base);
-    min-height: 40px;
-    border-radius: var(--theme-radius-sm);
+    font-size: var(--theme-font-size-sm);
+    min-height: 38px;
+    border-radius: 6px;
 
     &:not(:last-child) {
       margin-bottom: 2px;
@@ -605,10 +627,10 @@
 
     .mat-icon,
     i.ph {
-      margin-right: 12px;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+      margin-right: 11px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
       color: var(--theme-text-secondary);
     }
 

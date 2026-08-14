@@ -4,20 +4,75 @@
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (tiposFiltrados$ | async)?.length || 0 }} tipos de organismo</span>
+@if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + contador + acciones · fila B = chips de filtro. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por nombre o descripción…"
+      ariaLabel="Buscar tipos de organismo por nombre, descripción o código">
+    </app-list-search>
+
+    <div class="tiposlist-acciones">
+      <span class="list-toolbar-count">{{ vista.total }} tipos de organismo</span>
+      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
+      <button type="button" class="tiposlist-iconbtn" disabled aria-label="Ordenar">
+        <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="tiposlist-iconbtn" disabled aria-label="Exportar a CSV">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="list-toolbar__row tiposlist-chips">
+    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    <button type="button" class="tiposlist-masfiltros" disabled>
+      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
+    </button>
+  </div>
 </div>
 
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
 <app-shared-table
-    [data]="(tiposFiltrados$ | async) ?? []"
+    [data]="vista.rows"
     [columns]="columns"
     [loading]="loading"
-    emptyMessage="No hay tipos de organismo registrados"
+    [error]="error"
+    errorTitle="No pudimos cargar los tipos de organismo"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
     emptyIcon="folders">
 
     <ng-template appTableCell="nombre" let-row>
-        <strong>{{ row.nombre }}</strong>
+        <div class="tiposlist-nombre">
+            <span class="tiposlist-nombre__principal">{{ row.nombre }}</span>
+            <!-- En mobile la columna Descripción se oculta: acá no se pierde el dato. -->
+            @if (row.descripcion) {
+                <span class="tiposlist-nombre__meta">{{ row.descripcion }}</span>
+            }
+        </div>
     </ng-template>
 
     <ng-template appTableCell="descripcion" let-row>
@@ -32,15 +87,13 @@
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <div class="row-actions">
-            <button type="button" class="row-action" (click)="onEdit(row)" *appHasPermission="'UPDATE_ORGANISM_TYPE'">
-                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-            </button>
-            <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
-                *appHasPermission="'DELETE_ORGANISM_TYPE'" aria-label="Eliminar tipo de organismo" matTooltip="Eliminar">
-                <i class="ph ph-trash" aria-hidden="true"></i>
-            </button>
-        </div>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="deletingId === row.id"
+            busyLabel="Eliminando tipo de organismo...">
+        </app-row-actions>
     </ng-template>
 
 </app-shared-table>
+}

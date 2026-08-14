@@ -30,7 +30,9 @@ export class OrganismosFacade {
       localidades: this.localidadesRepo.getLocalidades().pipe(
         map((ls) => ls.map((l) => ({ id: l.id, nombre: `${l.nombre} (${l.departamentoNombre})` })))
       ),
-      organismos: this.repo.getOptions(),
+      // VMs completos (no `getOptions()`): el form necesita `parentId` para excluir descendientes.
+      // Mismo costo de red — `getOptions()` también resuelve sobre `ds.list()`.
+      organismos: this.repo.list(),
       organismo: id ? this.repo.getById(id) : of(null),
     });
   }
@@ -40,7 +42,13 @@ export class OrganismosFacade {
     return forkJoin({ orgs: this.repo.list(), tipos: this.tiposRepo.getOptions() }).pipe(
       map(({ orgs, tipos }) => {
         this.tiposMap = new Map(tipos.map((t) => [t.id, t.nombre]));
-        return orgs.map((o) => ({ ...o, tipoNombre: this.tiposMap.get(o.typeId) }));
+        // El nombre del padre se resuelve contra la misma lista: el DTO solo trae `parentId`.
+        const nombresPorId = new Map(orgs.map((o) => [o.id, o.nombre]));
+        return orgs.map((o) => ({
+          ...o,
+          tipoNombre: this.tiposMap.get(o.typeId),
+          parentNombre: o.parentId ? nombresPorId.get(o.parentId) : undefined,
+        }));
       }),
       tap((list) => this._organismos$.next(list)),
     );
@@ -52,14 +60,14 @@ export class OrganismosFacade {
 
   create(form: OrganismoFormValue): Observable<OrganismoVM> {
     return this.repo.create(form).pipe(
-      tap((o) => this._organismos$.next([...this._organismos$.value, this.withTipo(o)]))
+      tap((o) => this._organismos$.next([...this._organismos$.value, this.withEtiquetas(o)]))
     );
   }
 
   update(id: string, form: OrganismoFormValue): Observable<OrganismoVM> {
     return this.repo.update(id, form).pipe(
       tap((updated) =>
-        this._organismos$.next(this._organismos$.value.map((o) => (o.id === id ? this.withTipo(updated) : o)))
+        this._organismos$.next(this._organismos$.value.map((o) => (o.id === id ? this.withEtiquetas(updated) : o)))
       )
     );
   }
@@ -70,7 +78,19 @@ export class OrganismosFacade {
     );
   }
 
-  private withTipo(o: OrganismoVM): OrganismoVM {
-    return { ...o, tipoNombre: this.tiposMap.get(o.typeId) };
+  /**
+   * Resuelve las etiquetas derivadas (`tipoNombre`, `parentNombre`) de un organismo que
+   * vuelve de una mutación. Sin esto, una fila recién creada o editada quedaría con las
+   * columnas "Tipo" y "Depende de" en blanco hasta recargar la lista.
+   * El padre se busca en el stream ya cargado, que es donde vive el resto de la lista.
+   */
+  private withEtiquetas(o: OrganismoVM): OrganismoVM {
+    return {
+      ...o,
+      tipoNombre: this.tiposMap.get(o.typeId),
+      parentNombre: o.parentId
+        ? this._organismos$.value.find((otro) => otro.id === o.parentId)?.nombre
+        : undefined,
+    };
   }
 }

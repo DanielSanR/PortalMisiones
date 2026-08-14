@@ -4,20 +4,92 @@
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (organismosFiltrados$ | async)?.length || 0 }} organismos</span>
+@if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + contador + acciones · fila B = chips de filtro. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por nombre o sigla…"
+      ariaLabel="Buscar organismos por nombre, sigla, tipo o dependencia">
+    </app-list-search>
+
+    <div class="orglist-acciones">
+      <span class="list-toolbar-count">{{ vista.total }} organismos</span>
+      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
+      <button type="button" class="orglist-iconbtn" disabled
+              aria-label="Ordenar">
+        <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="orglist-iconbtn" disabled
+              aria-label="Exportar a CSV">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="list-toolbar__row orglist-chips">
+    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    <button type="button" class="orglist-masfiltros" disabled>
+      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
+    </button>
+  </div>
 </div>
 
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
 <app-shared-table
-    [data]="(organismosFiltrados$ | async) ?? []"
+    [data]="vista.rows"
     [columns]="columns"
     [loading]="loading"
-    emptyMessage="No hay organismos registrados"
+    [error]="error"
+    errorTitle="No pudimos cargar los organismos"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
     emptyIcon="buildings">
 
     <ng-template appTableCell="nombre" let-row>
-        <strong>{{ row.nombre }}</strong>
+        <div class="organismos-list__nombre">
+            <!-- Avatar con iniciales tintadas (Kitchen Sink §05). El tinte se deriva del id. -->
+            <span class="organismos-list__avatar" [class]="'organismos-list__avatar organismos-list__avatar--' + tinte(row.id)"
+                  aria-hidden="true">{{ iniciales(row) }}</span>
+            <div class="organismos-list__nombre-texto">
+                <span class="organismos-list__nombre-principal">
+                    {{ row.nombre }}@if (row.acronym) {<span class="text-secondary">&nbsp;({{ row.acronym }})</span>}
+                </span>
+                <!-- En mobile las columnas Tipo y "Depende de" se ocultan: acá no se pierde el dato. -->
+                <span class="organismos-list__meta">
+                    {{ row.tipoNombre || 'Sin tipo' }}@if (row.parentNombre) { · depende de {{ row.parentNombre }} }
+                </span>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template appTableCell="parentNombre" let-row>
+        @if (row.parentNombre) {
+            <span class="text-secondary">{{ row.parentNombre }}</span>
+        } @else {
+            <span class="organismos-list__raiz">Raíz</span>
+        }
     </ng-template>
 
     <ng-template appTableCell="tipoNombre" let-row>
@@ -32,15 +104,13 @@
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <div class="row-actions">
-            <button type="button" class="row-action" (click)="onEdit(row)" *appHasPermission="'UPDATE_ORGANISM'">
-                <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-            </button>
-            <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
-                *appHasPermission="'DELETE_ORGANISM'" aria-label="Eliminar organismo" matTooltip="Eliminar">
-                <i class="ph ph-trash" aria-hidden="true"></i>
-            </button>
-        </div>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="deletingId === row.id"
+            busyLabel="Eliminando organismo...">
+        </app-row-actions>
     </ng-template>
 
 </app-shared-table>
+}

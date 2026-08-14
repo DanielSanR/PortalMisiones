@@ -357,6 +357,19 @@ $breakpoint-2xl: 1440px;
   }
 }
 
+// Campo de búsqueda/select dentro del well de filtros. Fondo de card explícito
+// para que se lea sobre el `surface-sunken` del toolbar. Usado por las listas
+// que filtran sobre dato real (trámites, organismos).
+@mixin list-filter-field {
+  flex: 1;
+  min-width: 200px;
+  --mdc-outlined-text-field-container-color: var(--theme-surface-card);
+
+  @include responsive(mobile) {
+    min-width: 100%;
+  }
+}
+
 @mixin list-toolbar-count($push-right: false) {
   font-size: var(--theme-font-size-sm);
   color: var(--theme-text-tertiary);
@@ -365,6 +378,75 @@ $breakpoint-2xl: 1440px;
 
   @if $push-right {
     margin-left: auto;
+  }
+}
+
+// Botón cuadrado de 34px de la fila A del toolbar (Ordenar, Exportar). Hoy se
+// dibujan deshabilitados: el diseño los muestra y todavía no hay funcionalidad
+// detrás, así que se ven pero no fingen responder.
+@mixin list-iconbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-surface-card);
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--theme-transition-fast), color var(--theme-transition-fast);
+  @include focus-ring;
+
+  i.ph {
+    font-size: 17px;
+  }
+
+  &:hover:not([disabled]) {
+    border-color: var(--theme-border-strong);
+    color: var(--theme-primary);
+  }
+
+  &[disabled] {
+    color: var(--theme-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+// Botón con ícono + texto de la fila B ("Más filtros"), misma altura que los chips.
+@mixin list-ghost-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 var(--theme-space-md);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-surface-card);
+  font-family: inherit;
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--theme-transition-fast);
+  @include focus-ring;
+
+  i.ph {
+    font-size: 16px;
+    color: var(--theme-text-tertiary);
+  }
+
+  &:hover:not([disabled]) {
+    border-color: var(--theme-border-strong);
+  }
+
+  &[disabled] {
+    color: var(--theme-text-disabled);
+    cursor: not-allowed;
+
+    i.ph {
+      color: var(--theme-text-disabled);
+    }
   }
 }
 

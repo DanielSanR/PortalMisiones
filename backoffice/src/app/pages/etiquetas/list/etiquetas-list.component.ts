@@ -5,12 +5,12 @@ import { filter, firstValueFrom, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { todasOnlyTabs } from '@core/utils/list-filter.utils';
@@ -24,11 +24,11 @@ import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
     AsyncPipe,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -70,6 +70,21 @@ export class EtiquetasListComponent implements OnInit {
 
   onCreate(): void {
     this.router.navigate(['/dashboard/etiquetas/nuevo']);
+  }
+
+  accionEditar(etiqueta: EtiquetaVM): RowAction {
+    return { label: 'Editar', icon: 'pencil-simple', permission: 'UPDATE_TAXONOMY', run: () => this.onEdit(etiqueta) };
+  }
+
+  accionesDe(etiqueta: EtiquetaVM): RowAction[] {
+    return [{
+      label: 'Eliminar',
+      icon: 'trash',
+      permission: 'DELETE_TAXONOMY',
+      danger: true,
+      ariaLabel: 'Eliminar etiqueta',
+      run: () => this.onDelete(etiqueta),
+    }];
   }
 
   onEdit(etiqueta: EtiquetaVM): void {

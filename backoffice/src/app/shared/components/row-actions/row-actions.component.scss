@@ -1,0 +1,31 @@
+// ==========================================================================
+// RowActionsComponent — acción principal con texto + menú "⋮".
+// `.row-actions` y `.row-action` son clases globales de `_components.scss`
+// (ya coinciden con el botón del diseño: 30px, borde neutro, primary-700),
+// así que acá solo va lo propio de este componente.
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
+:host {
+  display: block;
+}
+
+.row-actions {
+
+  // Separa el grupo destructivo del resto dentro del menú (Kitchen Sink §07).
+  &__divisor {
+    margin: 5px 4px;
+    border: 0;
+    border-top: 1px solid var(--theme-border-subtle);
+  }
+
+  &__spinner {
+    display: inline-block;
+    animation: row-actions-spin 0.9s linear infinite;
+  }
+}
+
+@keyframes row-actions-spin {
+  to { transform: rotate(360deg); }
+}

@@ -18,4 +18,9 @@ import { CommonModule } from '@angular/common';
 export class FormErrorBannerComponent {
   /** Mensajes por campo, ej. `"CUIT (formato inválido)"`. */
   @Input() errors: string[] = [];
+  /**
+   * Título alternativo. Sin esto el banner asume validación client-side
+   * ("Revisá N campos"), que no aplica cuando el error viene del servidor.
+   */
+  @Input() titulo = '';
 }

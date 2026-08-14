@@ -17,7 +17,10 @@
   </div>
 
   <!-- All form controls — label overline externo (ver dynamic-form.component.html) -->
-  <ng-container *ngIf="field.type !== 'section-header' && group.contains(field.name)">
+  <!-- `group.contains()` devuelve false para controles DESHABILITADOS, así que un campo
+       con `disabled: true` no renderizaba su caja: solo quedaba el label. `get()` sí los
+       encuentra. -->
+  <ng-container *ngIf="field.type !== 'section-header' && !!group.get(field.name)">
     <ng-container [ngSwitch]="field.type">
 
       <!-- Text -->
@@ -96,7 +99,7 @@
                   [id]="field.name"
                   [attr.aria-labelledby]="field.name + '-label'"
                   cdkTextareaAutosize
-                  [cdkAutosizeMinRows]="3"
+                  [cdkAutosizeMinRows]="4"
                   [cdkAutosizeMaxRows]="16"
                   [formControlName]="field.name"
                   [placeholder]="field.placeholder || ''"
@@ -117,7 +120,9 @@
                     [placeholder]="field.placeholder || ''"
                     [required]="field.validations?.required || false">
           <mat-option *ngIf="!field.options?.length" disabled>
-            Cargando opciones...
+            {{ field.optionsLoaded
+                ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
+                : 'Cargando opciones...' }}
           </mat-option>
           <mat-option *ngFor="let option of field.options" [value]="option.id">
             {{ option.name }}
@@ -135,7 +140,9 @@
                     [required]="field.validations?.required || false"
                     multiple>
           <mat-option *ngIf="!field.options?.length" disabled>
-            Cargando opciones...
+            {{ field.optionsLoaded
+                ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
+                : 'Cargando opciones...' }}
           </mat-option>
           <mat-option *ngFor="let option of field.options" [value]="option.id">
             {{ option.name }}
@@ -165,8 +172,14 @@
         </mat-slide-toggle>
       </div>
 
-      <!-- Radio -->
-
+      <!-- Radio — opciones en línea (ver "Jurisdicción" en el diseño del form) -->
+      <mat-radio-group *ngSwitchCase="'radio'" class="radio-field"
+                       [formControlName]="field.name"
+                       [attr.aria-labelledby]="field.name + '-label'">
+        <mat-radio-button *ngFor="let option of field.options" [value]="option.id" color="primary">
+          {{ option.name }}
+        </mat-radio-button>
+      </mat-radio-group>
 
       <!-- Icon Picker -->
       <div *ngSwitchCase="'icon-picker'" class="icon-picker-field">
