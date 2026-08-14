@@ -1,254 +1,617 @@
-.detail-grid {
+// ==========================================================================
+// Detalle de Trámite — mismo lenguaje que la ficha de organismo (barra de
+// identidad + pestañas subrayadas + grid 1.6fr / 1fr de tarjetas).
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
+.tramdet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// Vuelta al listado ---------------------------------------------------------
+.tramdet-volver {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--theme-radius-sm);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--theme-font-size-xs);
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  transition: color var(--theme-transition-fast);
+  @include focus-ring;
+
+  i.ph {
+    font-size: 15px;
+  }
+
+  &:hover {
+    color: var(--theme-primary);
+  }
+}
+
+// Barra de identidad --------------------------------------------------------
+.tramdet-membrete {
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+  overflow: hidden;
+
+  &__fila {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
     gap: var(--theme-space-md);
-    max-width: var(--theme-form-max-width);
-    margin: 0 auto;
-}
+    padding: 18px 20px;
+    flex-wrap: wrap;
+  }
 
-.detail-card {
-    .mat-mdc-card-content {
-        padding: var(--theme-space-md) var(--theme-space-lg);
-    }
-
-    .mat-mdc-card-header {
-        padding: var(--theme-space-lg) var(--theme-space-lg) var(--theme-space-sm);
-    }
-
-    .mat-mdc-card-title {
-        font-size: var(--theme-font-size-md);
-        font-weight: var(--theme-font-weight-semibold);
-    }
-}
-
-.detail-row {
+  &__icono {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 0;
-    gap: var(--theme-space-md);
+    justify-content: center;
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--theme-radius-panel);
+    background: var(--theme-primary-50);
+    color: var(--theme-primary-800);
 
-    @media (max-width: 767px) {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
+    i.ph {
+      font-size: 26px;
     }
-}
+  }
 
-.detail-label {
-    font-weight: var(--theme-font-weight-medium);
-    color: var(--theme-text-secondary);
-    font-size: var(--theme-font-size-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    flex-shrink: 0;
-}
+  &__identidad {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1 1 320px;
+    min-width: 0;
+  }
 
-.link-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
-    margin-left: 4px;
-}
+  &__titulo-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
 
-.active {
-    color: #F9A825;
-}
-
-.description-text {
-    white-space: pre-wrap;
-    line-height: var(--theme-line-height-relaxed);
-    color: var(--theme-text-primary);
-}
-
-mat-divider {
+  &__titulo {
     margin: 0;
-}
+    font-size: var(--theme-font-size-lg);
+    font-weight: var(--theme-font-weight-semibold);
+    letter-spacing: -0.2px;
+    text-wrap: pretty;
+  }
 
-a {
-    color: var(--theme-text-link);
-    text-decoration: none;
-    transition: color var(--theme-transition-fast);
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex-wrap: wrap;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+  }
 
-    &:hover {
-        color: var(--theme-accent-dark);
-        text-decoration: underline;
-    }
-}
-
-.disponibilidad-provincial {
+  &__meta-item {
     display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    i.ph {
+      font-size: 15px;
+      color: var(--theme-text-tertiary);
+    }
+  }
+
+  &__separador {
+    width: 1px;
+    height: 12px;
+    background: var(--theme-border-primary);
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex: none;
+  }
+}
+
+// Marca de destacado: acompaña al badge de estado, no lo reemplaza.
+.tramdet-destacado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--theme-warning-border);
+  border-radius: var(--theme-radius-full);
+  background: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+  font-size: var(--theme-font-size-2xs);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+
+  i.ph {
+    font-size: 13px;
+    color: var(--theme-warning);
+  }
+}
+
+// Envoltorio del botón deshabilitado de vista previa: existe solo para que el
+// tooltip tenga un elemento que sí reciba el puntero.
+.tramdet-preview {
+  display: inline-flex;
+}
+
+// Pestañas subrayadas -------------------------------------------------------
+.tramdet-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 20px;
+  border-top: 1px solid var(--theme-border-subtle);
+  overflow-x: auto;
+  @include custom-scrollbar;
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 12px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    font-family: inherit;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--theme-transition-fast), border-color var(--theme-transition-fast);
+    @include focus-ring;
+
+    &.is-active {
+      border-bottom-color: var(--theme-primary);
+      color: var(--theme-primary-800);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
+}
+
+// Grid y tarjetas -----------------------------------------------------------
+.tramdet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+
+  @include responsive(tablet-down) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tramdet-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tramdet-card {
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+  overflow: hidden;
+
+  &--padded {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  &__encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 3px solid var(--theme-primary);
+    padding-left: 13px;
+  }
+
+  &__barra {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-md);
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--theme-border-subtle);
+    flex-wrap: wrap;
+  }
+
+  &__titulo {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__subtitulo {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-tertiary);
+  }
+
+  &__overline {
+    @include field-label-overline;
+  }
+}
+
+// Campos de la ficha --------------------------------------------------------
+.tramdet-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.tramdet-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+
+  &__label {
+    @include field-label-overline;
+  }
+
+  &__valor {
+    display: flex;
     align-items: center;
     gap: 6px;
     font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
-}
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 
-.disponibilidad-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-}
-
-// ── Feedback card ────────────────────────────────────────────
-
-.feedback-card {
-    .mat-mdc-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: var(--theme-space-sm);
+    i.ph {
+      font-size: 15px;
+      color: var(--theme-text-tertiary);
     }
+  }
 
-    .mat-mdc-card-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-}
-
-.section-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--theme-text-secondary);
-}
-
-.ver-todo-btn {
-    margin-left: auto;
-    font-size: var(--theme-font-size-sm);
-
-    .mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-        margin-left: 4px;
-    }
-}
-
-// Mini stats
-.feedback-stats {
-    display: flex;
-    gap: var(--theme-space-xl);
-    padding: var(--theme-space-md) 0 var(--theme-space-lg);
-    border-bottom: 1px solid var(--theme-border-primary);
-    margin-bottom: var(--theme-space-md);
-}
-
-.feedback-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-
-    &__value {
-        font-size: var(--theme-font-size-2xl);
-        font-weight: var(--theme-font-weight-bold);
-        line-height: 1;
-        color: var(--theme-text-primary);
-
-        &--util { color: #16A34A; }
-    }
-
-    &__label {
-        font-size: var(--theme-font-size-xs);
-        color: var(--theme-text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-}
-
-// Lista de respuestas
-.feedback-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-.feedback-item {
-    display: flex;
-    align-items: center;
-    gap: var(--theme-space-md);
-    padding: 12px 0;
-    border-bottom: 1px solid var(--theme-border-primary);
-
-    &:last-child { border-bottom: none; }
-}
-
-.util-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: var(--theme-radius-full);
+  // "Sin dato" tiene que leerse distinto de un valor real: es ausencia, no contenido.
+  &__vacio {
     font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
-    white-space: nowrap;
-    flex-shrink: 0;
-    border: 1px solid transparent;
-
-    &--si {
-        background: var(--theme-estado-publicado-bg);
-        color: var(--theme-estado-publicado-text);
-        border-color: #16A34A30;
-    }
-
-    &--no {
-        background: #FEE2E2;
-        color: #DC2626;
-        border-color: #F4433630;
-    }
-}
-
-.util-icon {
-    font-size: 13px;
-    width: 13px;
-    height: 13px;
-}
-
-.feedback-comentario {
-    flex: 1;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-primary);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    cursor: default;
-}
-
-.feedback-sin-comentario {
-    flex: 1;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
     font-style: italic;
+    color: var(--theme-text-tertiary);
+  }
 }
 
-.feedback-fecha {
+.tramdet-grupo,
+.tramdet-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 16px;
+  border-top: 1px solid var(--theme-border-subtle);
+
+  // El primero va pegado al encabezado de la tarjeta: no necesita divisor.
+  &:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.tramdet-bloque {
+  &__texto {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    line-height: var(--theme-line-height-relaxed);
+    color: var(--theme-text-primary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+}
+
+// Chips de clasificación y disponibilidad -----------------------------------
+.tramdet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tramdet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-full);
+  background: var(--theme-surface-sunken);
+  font-size: var(--theme-font-size-xs);
+  color: var(--theme-text-secondary);
+
+  i.ph {
+    font-size: 14px;
+    color: var(--theme-text-tertiary);
+  }
+}
+
+// Enlaces -------------------------------------------------------------------
+.tramdet-enlaces {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tramdet-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--theme-text-link);
+  font-size: var(--theme-font-size-sm);
+  text-decoration: none;
+  border-radius: var(--theme-radius-sm);
+  @include focus-ring;
+
+  i.ph {
+    flex: none;
+    font-size: 15px;
+  }
+
+  &__texto {
+    @include truncate;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Feedback ------------------------------------------------------------------
+.tramdet-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 18px 20px;
+}
+
+.tramdet-stats {
+  display: flex;
+  gap: var(--theme-space-xl);
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.tramdet-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__valor {
+    margin: 0;
+    font-size: var(--theme-font-size-2xl);
+    font-weight: var(--theme-font-weight-bold);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-primary);
+
+    &--util {
+      color: var(--theme-success);
+    }
+  }
+}
+
+.tramdet-valoraciones {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tramdet-valoracion {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-md);
+  padding: 12px 0;
+  border-top: 1px solid var(--theme-border-subtle);
+
+  &__texto {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--theme-font-size-sm);
+    @include truncate;
+  }
+
+  &__fecha {
+    flex: none;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-tertiary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+// El texto acompaña al color: útil / no útil no se distingue solo por el tinte.
+.tramdet-util {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--theme-radius-full);
+  font-size: var(--theme-font-size-2xs);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+
+  i.ph {
+    font-size: 13px;
+  }
+
+  &--si {
+    background: var(--theme-estado-publicado-bg);
+    border-color: var(--theme-estado-publicado-border);
+    color: var(--theme-estado-publicado-text);
+  }
+
+  &--no {
+    background: var(--theme-estado-despublicado-bg);
+    border-color: var(--theme-estado-despublicado-border);
+    color: var(--theme-estado-despublicado-text);
+  }
+}
+
+// Fechas --------------------------------------------------------------------
+.tramdet-fechas {
+  display: flex;
+  gap: 26px;
+  margin: 6px 0 0;
+  flex-wrap: wrap;
+
+  &--apilado {
+    flex-direction: column;
+    gap: 14px;
+    margin: 0;
+  }
+
+  dt {
+    @include field-label-overline;
+    margin-bottom: 3px;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Carga, error y vacío ------------------------------------------------------
+.tramdet-cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--theme-space-sm);
+  padding: 48px;
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-sm);
+
+  &__spinner {
+    display: inline-block;
+    font-size: 20px;
+    animation: tramdet-spin 0.9s linear infinite;
+  }
+}
+
+// Pantalla completa de desenlace: error de carga y no-encontrado comparten caja
+// pero no icono ni salidas (reintentar vs. volver).
+.tramdet-mensaje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 26px;
+  text-align: center;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+
+  &--en-card {
+    border: 0;
+    border-radius: 0;
+    padding: 34px 26px;
+  }
+
+  &__icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-surface-sunken);
+    color: var(--theme-text-tertiary);
+
+    i.ph {
+      font-size: 28px;
+    }
+  }
+
+  &__titulo {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__texto {
+    max-width: 46ch;
     font-size: var(--theme-font-size-xs);
     color: var(--theme-text-secondary);
-    white-space: nowrap;
-    flex-shrink: 0;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  &--error &__icono {
+    background: var(--theme-error-bg);
+    color: var(--theme-error);
+  }
 }
 
-// Sin feedback
-.feedback-empty {
+// Vacío legítimo (no hay nada que mostrar), deliberadamente neutro para no
+// confundirse con el bloque de error.
+.tramdet-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 34px 26px;
+  text-align: center;
+
+  &__icono {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: var(--theme-space-xl) 0;
-    color: var(--theme-text-secondary);
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-surface-sunken);
+    color: var(--theme-text-tertiary);
 
-    mat-icon {
-        font-size: 40px;
-        width: 40px;
-        height: 40px;
-        margin-bottom: var(--theme-space-sm);
-        opacity: 0.4;
+    i.ph {
+      font-size: 28px;
     }
+  }
 
-    p { margin: 0; font-size: var(--theme-font-size-sm); }
+  &__titulo {
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__texto {
+    max-width: 46ch;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+}
+
+@keyframes tramdet-spin {
+  to { transform: rotate(360deg); }
 }

@@ -4,6 +4,7 @@ import { TramitesRepository } from '../repositories/tramites.repository';
 import {
   ContenidoLocalidadFormValue,
   ContenidoLocalidadVM,
+  FeedbackResumenVM,
   TramiteCatalogos,
   TramiteConteos,
   TramiteFormData,
@@ -52,6 +53,9 @@ export class TramitesFacade {
     return forkJoin({
       catalogos: this.repo.getCatalogos(),
       tramite: id ? this.repo.getById(id) : of(null),
+      // Solo en alta: en edición el organismo lo trae el trámite, y sugerir otro
+      // sería proponer moverlo de organismo sin que nadie lo haya pedido.
+      organismoIdSugerido: id ? of(null) : this.repo.getOrganismoDelUsuario(),
     });
   }
 
@@ -65,6 +69,15 @@ export class TramitesFacade {
 
   delete(id: string): Observable<void> {
     return this.repo.delete(id);
+  }
+
+  /**
+   * Valoraciones ciudadanas del trámite, agregadas. Va aparte del `getById` a propósito:
+   * un feedback caído no puede impedir que se vea la ficha, ni la ficha puede tapar que
+   * el feedback no se pudo traer.
+   */
+  getFeedbackResumen(tramiteId: string): Observable<FeedbackResumenVM> {
+    return this.repo.getFeedbackResumen(tramiteId);
   }
 
   // ── Workflow: borrador → revisión → publicado ↔ despublicado ────────────

@@ -40,8 +40,16 @@ export class TramiteService {
     return this.http.get<PaginatedResponse<Tramite>>(this.apiUrl, { params, context });
   }
 
+  /**
+   * Se opta por fuera del diálogo global de error: las dos pantallas que llaman acá
+   * —la ficha y el formulario— ya distinguen "no existe" de "falló la carga" y ofrecen
+   * su propia salida. Con el interceptor activo el usuario recibía dos avisos, y el
+   * modal genérico tapaba justamente al que sabía qué había pasado.
+   */
   getById(id: string): Observable<Tramite> {
-    return this.http.get<Tramite>(`${this.apiUrl}/${id}`);
+    return this.http.get<Tramite>(`${this.apiUrl}/${id}`, {
+      context: new HttpContext().set(SKIP_ERROR_INTERCEPTOR, true),
+    });
   }
 
   getBySlug(slug: string): Observable<Tramite> {

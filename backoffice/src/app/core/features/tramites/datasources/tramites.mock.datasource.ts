@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, forkJoin, map, of } from 'rxjs';
 import { TramiteService } from '@core/services/tramite.service';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { FeedbackService } from '@core/services/feedback.service';
 import { OrganismoService } from '@core/services/organismo.service';
 import { LocalidadService } from '@core/services/localidad.service';
 import { CategoriaService } from '@core/services/categoria.service';
@@ -17,6 +19,7 @@ import {
 import {
   ContenidoLocalidadFormValue,
   ContenidoLocalidadVM,
+  FeedbackResumenVM,
   TramiteCatalogos,
   TramiteConteos,
   TramiteFormValue,
@@ -35,10 +38,16 @@ import {
  */
 const TRAER_TODO = 10_000;
 
+/** Cuántas valoraciones se piden para agregar el resumen, y cuántas se muestran. */
+const FEEDBACK_PAGINA = 100;
+const FEEDBACK_MUESTRA = 5;
+
 @Injectable()
 export class TramitesMockDataSource extends TramitesDataSource {
   constructor(
     private tramites: TramiteService,
+    private auth: AuthTokenService,
+    private feedback: FeedbackService,
     private organismos: OrganismoService,
     private localidades: LocalidadService,
     private categorias: CategoriaService,
@@ -65,6 +74,15 @@ export class TramitesMockDataSource extends TramitesDataSource {
       ),
       eventosDeVida: this.eventosDeVida.getAll().pipe(map((r) => r.data.map((e) => ({ id: e.id, nombre: e.nombre })))),
     });
+  }
+
+  /**
+   * Hoy el organismo del usuario viaja en el JWT. Se lee acá y no en la pantalla para
+   * que el día que venga de un endpoint —o deje de existir— no haya que tocar el
+   * formulario.
+   */
+  getOrganismoDelUsuario(): Observable<string | null> {
+    return of(this.auth.getUserOrganismoId());
   }
 
   /** Solo las hojas, prefijadas con su padre: un trámite se clasifica en una subcategoría. */
@@ -110,6 +128,36 @@ export class TramitesMockDataSource extends TramitesDataSource {
 
   delete(id: string): Observable<void> {
     return this.tramites.delete(id);
+  }
+
+  /**
+   * El endpoint de feedback no agrega por trámite, así que se pide una página y se cuenta
+   * acá. Los conteos se derivan de lo efectivamente recibido —no de `res.total`— para que
+   * útiles + no útiles siempre cierre: si algún día hay más valoraciones que las que entran
+   * en la página, un total mayor y un desglose de la muestra se contradirían en pantalla.
+   */
+  getFeedbackResumen(tramiteId: string): Observable<FeedbackResumenVM> {
+    return this.feedback.getAll({ tramiteId, pageSize: FEEDBACK_PAGINA }).pipe(
+      map((res) => {
+        const contadas = res.data.length;
+        const utiles = res.data.filter((f) => f.esUtil).length;
+        return {
+          total: contadas,
+          utiles,
+          noUtiles: contadas - utiles,
+          porcentajeUtil: contadas > 0 ? Math.round((utiles / contadas) * 100) : 0,
+          ultimas: [...res.data]
+            .sort((a, b) => (b.fechaFeedback ?? '').localeCompare(a.fechaFeedback ?? ''))
+            .slice(0, FEEDBACK_MUESTRA)
+            .map((f) => ({
+              id: f.id,
+              esUtil: f.esUtil,
+              comentario: f.comentario,
+              fecha: f.fechaFeedback,
+            })),
+        };
+      }),
+    );
   }
 
   sendToReview(id: string): Observable<TramiteVM> {

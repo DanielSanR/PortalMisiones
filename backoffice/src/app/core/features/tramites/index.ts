@@ -3,6 +3,8 @@ export { TramitesFacade } from './facades/tramites.facade';
 export type {
   ContenidoLocalidadFormValue,
   ContenidoLocalidadVM,
+  FeedbackResumenVM,
+  FeedbackVM,
   RefVM,
   TramiteCatalogos,
   TramiteConteos,

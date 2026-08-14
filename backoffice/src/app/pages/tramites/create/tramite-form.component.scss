@@ -1,192 +1,384 @@
-.tramite-tabs {
-  ::ng-deep .mat-mdc-tab-body-wrapper {
-    padding-top: var(--theme-space-md);
+// ==========================================================================
+// Formulario de Trámite (alta y edición).
+//
+// La ficha provincial la dibuja `app-dynamic-form` dentro de `.form-card`
+// (global), así que acá solo viven los estados de la pantalla —carga, error—,
+// las pestañas y el panel de contenido por localidad.
+// ==========================================================================
+
+@use '../../../../shared-styles/mixins' as *;
+
+.tramform {
+
+  // ── Estados de la pantalla ───────────────────────────────────────────────
+
+  &-cargando {
+    padding: var(--theme-space-2xl) 0;
   }
-}
 
-.tab-lock-icon {
-  font-size: 14px;
-  width: 14px;
-  height: 14px;
-  margin-left: 6px;
-  opacity: 0.5;
-}
+  // Error de carga (pantalla completa) y su variante embebida en una pestaña.
+  &-estado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    padding: var(--theme-space-2xl) var(--theme-space-lg);
+    text-align: center;
+    background-color: var(--theme-surface-card);
+    border: 1px solid var(--theme-border-primary);
+    border-radius: var(--theme-radius-panel);
 
-.tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: 10px;
-  background: var(--theme-primary);
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  margin-left: 8px;
-}
+    &--inline {
+      padding: var(--theme-space-xl) var(--theme-space-lg);
+    }
 
-// ── Tab contenido por localidad ─────────────────────
+    &__icono {
+      @include flex-center;
+      width: 56px;
+      height: 56px;
+      border-radius: var(--theme-radius-full);
+      background-color: var(--theme-error-bg);
+      color: var(--theme-error-icon);
 
-.localidad-tab-content { 
-  padding: var(--theme-space-md) 0;
-}
+      i.ph {
+        font-size: 28px;
+      }
+    }
 
-.localidad-disabled-msg {
-  display: flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  padding: var(--theme-space-lg);
-  background: var(--theme-bg-hover);
-  border-radius: var(--theme-radius-lg);
-  color: var(--theme-text-secondary);
+    &__titulo {
+      margin: 0;
+      font-size: var(--theme-font-size-md);
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-primary);
+    }
 
-  mat-icon { flex-shrink: 0; }
-  p { margin: 0; }
-}
+    &__texto {
+      max-width: 52ch;
+      margin: 0;
+      font-size: var(--theme-font-size-sm);
+      color: var(--theme-text-secondary);
+      line-height: var(--theme-line-height-relaxed);
+      text-wrap: pretty;
+    }
 
-.localidad-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: var(--theme-space-lg);
-  gap: var(--theme-space-md);
-
-  h3 {
-    margin: 0 0 4px;
-    font-size: var(--theme-font-size-lg);
-    font-weight: var(--theme-font-weight-semibold);
+    &__acciones {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--theme-space-sm);
+      margin-top: var(--theme-space-xs);
+    }
   }
-}
 
-.localidad-hint {
-  margin: 0;
-  font-size: var(--theme-font-size-sm);
-  color: var(--theme-text-secondary);
-  max-width: 500px;
-}
-
-.localidad-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--theme-space-2xl);
-  color: var(--theme-text-secondary);
-  text-align: center;
-
-  mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
-    opacity: 0.4;
+  // Qué trámite se está editando: el breadcrumb del shell solo dice "Editar trámite".
+  &-contexto {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
     margin-bottom: var(--theme-space-sm);
+    color: var(--theme-text-secondary);
+    font-size: var(--theme-font-size-sm);
+
+    i.ph {
+      font-size: 16px;
+      color: var(--theme-text-tertiary);
+    }
+
+    &__titulo {
+      @include truncate;
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-primary);
+    }
+
+    &__meta {
+      @include truncate;
+      color: var(--theme-text-tertiary);
+
+      &::before {
+        content: '·';
+        margin-right: var(--theme-space-xs);
+      }
+    }
   }
 
-  p { margin: 4px 0; }
-}
+  // ── Pestañas ─────────────────────────────────────────────────────────────
 
-.localidad-empty-hint {
-  font-size: var(--theme-font-size-sm);
-  opacity: 0.7;
-}
+  &-tabs {
+    ::ng-deep .mat-mdc-tab-body-wrapper {
+      padding-top: var(--theme-space-md);
+    }
 
-// ── Localidad cards ─────────────────────────────────
+    &__lock {
+      margin-left: var(--theme-space-2xs);
+      font-size: 14px;
+      color: var(--theme-text-tertiary);
+    }
 
-.localidad-card, .localidad-form-card {
-  background: var(--theme-bg-card);
-  border: 1px solid var(--theme-border-secondary);
-  border-radius: var(--theme-radius-lg);
-  padding: var(--theme-space-lg);
-  margin-bottom: var(--theme-space-md);
-}
+    &__badge {
+      @include flex-center;
+      min-width: 20px;
+      height: 20px;
+      margin-left: var(--theme-space-xs);
+      padding: 0 5px;
+      border-radius: var(--theme-radius-full);
+      background-color: var(--theme-primary);
+      color: var(--theme-text-on-primary);
+      font-size: var(--theme-font-size-2xs);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
 
-.localidad-form-card h4,
-.localidad-card-header h4 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 var(--theme-space-md);
-  font-size: var(--theme-font-size-md);
-  font-weight: var(--theme-font-weight-semibold);
+  // ── Panel de contenido por localidad ─────────────────────────────────────
 
-  mat-icon {
-    color: var(--theme-primary);
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
+  &-localidades {
+    padding: var(--theme-space-md) 0;
+
+    &__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--theme-space-md);
+      margin-bottom: var(--theme-space-lg);
+
+      @include responsive(mobile) {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    &__intro {
+      h3 {
+        margin: 0 0 var(--theme-space-2xs);
+        font-size: var(--theme-font-size-lg);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-text-primary);
+      }
+
+      p {
+        max-width: 62ch;
+        margin: 0;
+        font-size: var(--theme-font-size-sm);
+        color: var(--theme-text-secondary);
+        line-height: var(--theme-line-height-relaxed);
+        text-wrap: pretty;
+      }
+    }
+
+    &__cargando {
+      display: block;
+      margin-top: var(--theme-space-xs);
+      font-size: var(--theme-font-size-sm);
+      color: var(--theme-text-secondary);
+    }
+  }
+
+  // Aviso de la pestaña bloqueada (alta): explica por qué todavía no está.
+  &-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    padding: var(--theme-space-lg);
+    border: 1px solid var(--theme-info-border);
+    border-radius: var(--theme-radius-lg);
+    background-color: var(--theme-info-bg);
+    color: var(--theme-text-secondary);
+
+    i.ph {
+      flex-shrink: 0;
+      font-size: 20px;
+      color: var(--theme-info);
+    }
+
+    p {
+      max-width: 68ch;
+      margin: 0;
+      font-size: var(--theme-font-size-sm);
+      line-height: var(--theme-line-height-relaxed);
+      text-wrap: pretty;
+    }
+  }
+
+  // ── Sub-formulario reactivo (alta y edición de una localidad) ────────────
+
+  &-subform {
+    &__titulo {
+      display: flex;
+      align-items: center;
+      gap: var(--theme-space-2xs);
+      margin: 0 0 var(--theme-space-md);
+      font-size: var(--theme-font-size-md);
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-primary);
+
+      i.ph {
+        font-size: 18px;
+        color: var(--theme-primary);
+      }
+    }
+
+    // El grid del formulario es de dos columnas: estos campos ocupan la fila entera.
+    &__full {
+      grid-column: 1 / -1;
+    }
+
+    &__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--theme-space-sm);
+
+      @include responsive(mobile) {
+        flex-direction: column-reverse;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+
+  // ── Estado vacío del panel ───────────────────────────────────────────────
+
+  &-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    padding: var(--theme-space-2xl) var(--theme-space-lg);
+    text-align: center;
+    border: 1px dashed var(--theme-border-primary);
+    border-radius: var(--theme-radius-panel);
+
+    &__icono {
+      @include flex-center;
+      width: 56px;
+      height: 56px;
+      border-radius: var(--theme-radius-full);
+      background-color: var(--theme-surface-sunken);
+      color: var(--theme-text-tertiary);
+
+      i.ph {
+        font-size: 28px;
+      }
+    }
+
+    &__titulo {
+      margin: 0;
+      font-size: var(--theme-font-size-md);
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-primary);
+    }
+
+    &__texto {
+      max-width: 52ch;
+      margin: 0;
+      font-size: var(--theme-font-size-sm);
+      color: var(--theme-text-secondary);
+      line-height: var(--theme-line-height-relaxed);
+      text-wrap: pretty;
+    }
+  }
+
+  // ── Tarjeta de una localidad ─────────────────────────────────────────────
+
+  &-localidad {
+    @include theme-card;
+    padding: var(--theme-space-lg);
+    margin-bottom: var(--theme-space-md);
+
+    &.is-trabajando {
+      opacity: 0.6;
+    }
+
+    // El alta reusa la misma tarjeta; el borde de acento la distingue de las ya cargadas.
+    &--nueva {
+      border-color: var(--theme-primary-200);
+    }
+
+    &__header {
+      @include flex-between;
+      gap: var(--theme-space-sm);
+      margin-bottom: var(--theme-space-md);
+    }
+
+    &__titulo {
+      display: flex;
+      align-items: center;
+      gap: var(--theme-space-2xs);
+      margin: 0;
+      font-size: var(--theme-font-size-md);
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-primary);
+
+      i.ph {
+        font-size: 18px;
+        color: var(--theme-primary);
+      }
+    }
+
+    &__acciones {
+      display: flex;
+      gap: var(--theme-space-2xs);
+    }
+
+    &__campos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--theme-space-sm) var(--theme-space-lg);
+
+      @include responsive(mobile) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &__campo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    &__label {
+      @include field-label-overline;
+    }
+
+    &__valor {
+      font-size: var(--theme-font-size-sm);
+      color: var(--theme-text-primary);
+      white-space: pre-line;
+
+      &--link {
+        color: var(--theme-text-link);
+        word-break: break-all;
+      }
+    }
+
+    &__sin-datos {
+      grid-column: 1 / -1;
+      margin: 0;
+      font-size: var(--theme-font-size-sm);
+      font-style: italic;
+      color: var(--theme-text-secondary);
+    }
+  }
+
+  // ── Botones de ícono de la tarjeta ───────────────────────────────────────
+
+  &-iconbtn {
+    @include list-iconbtn;
+
+    &--danger:hover:not([disabled]) {
+      border-color: var(--theme-error-border);
+      color: var(--theme-error);
+    }
+  }
+
+  // Spinner de los botones en vuelo (Phosphor no anima solo).
+  &-spin {
+    display: inline-block;
+    animation: tramform-spin 0.9s linear infinite;
   }
 }
 
-.localidad-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.localidad-card-actions {
-  display: flex;
-  gap: 0;
-}
-
-.localidad-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--theme-space-sm) var(--theme-space-md);
-
-  .colspan-full {
-    grid-column: 1 / -1;
-  }
-}
-
-.localidad-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--theme-space-sm);
-  margin-top: var(--theme-space-sm);
-}
-
-// ── Localidad card body (read mode) ─────────────────
-
-.localidad-card-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--theme-space-xs) var(--theme-space-lg);
-}
-
-.localidad-field {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.field-label {
-  font-size: 11px;
-  color: var(--theme-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-weight: var(--theme-font-weight-medium);
-}
-
-.field-value {
-  font-size: var(--theme-font-size-sm);
-  color: var(--theme-text-primary);
-  white-space: pre-line;
-
-  &.link {
-    color: var(--theme-primary);
-    word-break: break-all;
-  }
-}
-
-.localidad-no-data {
-  grid-column: 1 / -1;
-  color: var(--theme-text-secondary);
-  font-size: var(--theme-font-size-sm);
-  font-style: italic;
-  margin: 0;
-}
-
-.delete-btn {
-  color: var(--theme-error) !important;
+@keyframes tramform-spin {
+  to { transform: rotate(360deg); }
 }

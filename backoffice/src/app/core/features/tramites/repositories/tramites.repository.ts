@@ -4,6 +4,7 @@ import { TRAMITES_DS, TramitesDataSource } from '../datasources/tramites.datasou
 import {
   ContenidoLocalidadFormValue,
   ContenidoLocalidadVM,
+  FeedbackResumenVM,
   TramiteCatalogos,
   TramiteConteos,
   TramiteFormValue,
@@ -25,6 +26,10 @@ export class TramitesRepository {
     return this.ds.getCatalogos();
   }
 
+  getOrganismoDelUsuario(): Observable<string | null> {
+    return this.ds.getOrganismoDelUsuario();
+  }
+
   conteos(query: TramiteListQuery): Observable<TramiteConteos> {
     return this.ds.conteos(query);
   }
@@ -43,6 +48,10 @@ export class TramitesRepository {
 
   delete(id: string): Observable<void> {
     return this.ds.delete(id);
+  }
+
+  getFeedbackResumen(tramiteId: string): Observable<FeedbackResumenVM> {
+    return this.ds.getFeedbackResumen(tramiteId);
   }
 
   sendToReview(id: string): Observable<TramiteVM> {

@@ -323,9 +323,11 @@ export class TramitesListComponent {
         run: () => this.enviarARevision(tramite),
       });
     }
-    if (tramite.estado === 'revision') {
+    // También desde `despublicado`: el workflow del proyecto es publicado ↔ despublicado,
+    // así que republicar es una transición válida y no solo una vuelta desde revisión.
+    if (tramite.estado === 'revision' || tramite.estado === 'despublicado') {
       acciones.push({
-        label: 'Publicar',
+        label: tramite.estado === 'despublicado' ? 'Volver a publicar' : 'Publicar',
         icon: 'cloud-arrow-up',
         permission: 'PUBLISH_VARIANT',
         run: () => this.publicar(tramite),

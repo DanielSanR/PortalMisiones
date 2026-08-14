@@ -129,4 +129,35 @@ export interface TramiteCatalogos {
 export interface TramiteFormData {
   catalogos: TramiteCatalogos;
   tramite: TramiteVM | null;
+  /**
+   * Organismo con el que llega pre-cargada un alta, cuando el usuario pertenece a uno.
+   * Null para quien puede crear en cualquiera (SUPERADMIN), que entonces elige.
+   *
+   * Lo resuelve el DataSource y no el componente: de dónde sale el organismo del usuario
+   * —del token hoy, de un endpoint mañana— es exactamente lo que esta capa existe para
+   * ocultar.
+   */
+  organismoIdSugerido: string | null;
+}
+
+/** Una valoración ciudadana, ya normalizada para mostrarse en la ficha. */
+export interface FeedbackVM {
+  id: number;
+  esUtil: boolean;
+  comentario: string | null;
+  fecha: string;
+}
+
+/**
+ * Resumen de valoraciones de un trámite. Los conteos vienen calculados del DataSource
+ * para que la pantalla no tenga que derivar porcentajes: si la llamada falla, no hay
+ * resumen —y por lo tanto no hay ceros que puedan leerse como "no recibió ninguna".
+ */
+export interface FeedbackResumenVM {
+  total: number;
+  utiles: number;
+  noUtiles: number;
+  porcentajeUtil: number;
+  /** Las últimas valoraciones, para la muestra de la ficha. */
+  ultimas: FeedbackVM[];
 }

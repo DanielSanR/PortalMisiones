@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import {
   ContenidoLocalidadFormValue,
   ContenidoLocalidadVM,
+  FeedbackResumenVM,
   TramiteCatalogos,
   TramiteConteos,
   TramiteFormValue,
@@ -28,12 +29,23 @@ export abstract class TramitesDataSource {
    * corresponde y no se filtra hacia arriba.
    */
   abstract getCatalogos(): Observable<TramiteCatalogos>;
+  /**
+   * Organismo al que pertenece el usuario actual, o null si puede crear en cualquiera.
+   * Sirve para pre-cargar el alta; de dónde sale ese dato es asunto de esta capa.
+   */
+  abstract getOrganismoDelUsuario(): Observable<string | null>;
   /** Conteos por estado, sin el filtro de estado aplicado: los chips no deben contar lo que ellos mismos filtran. */
   abstract conteos(query: TramiteListQuery): Observable<TramiteConteos>;
   abstract getById(id: string): Observable<TramiteVM>;
   abstract create(form: TramiteFormValue): Observable<TramiteVM>;
   abstract update(id: string, form: TramiteFormValue): Observable<TramiteVM>;
   abstract delete(id: string): Observable<void>;
+  /**
+   * Valoraciones ciudadanas del trámite, ya agregadas. Vive acá por el mismo motivo que
+   * `getCatalogos()`: el feedback todavía lo sirve un service legacy, y esta capa es la
+   * única que puede saberlo. La ficha solo consume el resumen.
+   */
+  abstract getFeedbackResumen(tramiteId: string): Observable<FeedbackResumenVM>;
 
   // ── Workflow ────────────────────────────────────────────────────────────
   abstract sendToReview(id: string): Observable<TramiteVM>;
