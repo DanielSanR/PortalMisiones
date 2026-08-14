@@ -83,8 +83,8 @@ const routes: Routes = [
       { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Nueva etiqueta'] } },
       { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Editar etiqueta'] } },
       { path: 'categorias/lista', component: CategoriasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías'] } },
-      { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Nueva categoría'] } },
-      { path: 'categorias/editar/:id', component: CategoriaFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Editar categoría'] } },
+      { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Nueva categoría'] } },
+      { path: 'categorias/editar/:id', component: CategoriaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Editar categoría'] } },
       { path: 'destinatarios/lista', component: DestinatariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_RECIPIENT', 'UPDATE_RECIPIENT', 'DELETE_RECIPIENT'] }, redirectTo: HOME, breadcrumb: ['Destinatarios'] } },
       { path: 'destinatarios/nuevo', component: DestinatarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_RECIPIENT'] }, redirectTo: HOME, breadcrumb: ['Destinatarios', 'Nuevo destinatario'] } },
       { path: 'destinatarios/editar/:id', component: DestinatarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_RECIPIENT'] }, redirectTo: HOME, breadcrumb: ['Destinatarios', 'Editar destinatario'] } },
@@ -98,16 +98,16 @@ const routes: Routes = [
       // Usuarios: listar = lectura (READ_USER: SA/AB/AO); crear/editar = SUPERADMIN por policy override
       // (el form carga /api/organism → READ_ORGANISM, solo SUPERADMIN en el seed).
       { path: 'usuarios/lista', component: UsuariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios'] } },
-      { path: 'usuarios/nuevo', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Nuevo usuario'] } },
-      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], data: { access: { permissions: ['UPDATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Editar usuario'] } },
+      { path: 'usuarios/nuevo', component: UsuarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Nuevo usuario'] } },
+      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Editar usuario'] } },
 
       // Roles y Permisos → backend autoriza por ROL (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5)
       { path: 'roles/lista', component: RolesListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles'] } },
-      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
-      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
+      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
+      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
       { path: 'permisos/lista', component: PermisosListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos'] } },
-      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Nuevo permiso'] } },
-      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Editar permiso'] } },
+      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Nuevo permiso'] } },
+      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Editar permiso'] } },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       // Cualquier /dashboard/* sin match (rutas "bare" tipo /organismos, typos, secciones aún sin

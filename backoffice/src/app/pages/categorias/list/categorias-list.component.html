@@ -1,67 +1,106 @@
 <ng-template appPageActions>
   <button mat-stroked-button type="button" (click)="toggleExpandAll()">
-    <i class="ph" [class.ph-arrows-out]="!allExpanded" [class.ph-arrows-in]="allExpanded" aria-hidden="true"></i>
-    {{ allExpanded ? 'Colapsar todo' : 'Expandir todo' }}
+    <i class="ph" [class.ph-arrows-out]="!(todoExpandido$ | async)" [class.ph-arrows-in]="(todoExpandido$ | async)" aria-hidden="true"></i>
+    {{ (todoExpandido$ | async) ? 'Colapsar todo' : 'Expandir todo' }}
   </button>
   <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
     <i class="ph ph-plus" aria-hidden="true"></i> Nueva categoría
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (total$ | async) ?? 0 }} categorías</span>
-</div>
+@if (vista$ | async; as vista) {
+  <!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+       fila A = buscador + contador · fila B = chips de filtro. -->
+  <div class="list-toolbar list-toolbar--stacked">
+    <div class="list-toolbar__row">
+      <app-list-search
+        [control]="searchCtrl"
+        placeholder="Buscar por nombre o slug…"
+        ariaLabel="Buscar categorías por nombre o slug">
+      </app-list-search>
 
-<div class="cat-table">
-  @if (loading) {
-    <!-- Skeleton (carga inicial) — mismo patrón shimmer que `SharedTable`/`LoadingComponent`,
-         reusado acá porque el árbol de categorías no usa `app-shared-table`. -->
-    <app-loading [loading]="true" variant="skeleton" [rows]="6"></app-loading>
-  } @else {
-    @if ((arbolFiltrado$ | async) ?? []; as rows) {
-      @if (rows.length === 0) {
-        <div class="cat-table__empty">
-          <i class="ph ph-folders cat-table__empty-icon" aria-hidden="true"></i>
-          <p class="cat-table__empty-title">Todavía no hay categorías</p>
-          <p class="cat-table__empty-text">Creá la primera categoría raíz para armar la navegación del portal.</p>
-          <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
-            <i class="ph ph-plus" aria-hidden="true"></i> Nueva categoría
-          </button>
-        </div>
-      } @else {
-        <div class="cat-table__grid" role="tree">
-          <div class="cat-table__head">
-            <span>Categoría</span>
-            <span>Slug</span>
-            <span class="cat-table__col-center">Sub-cat.</span>
-            <span class="cat-table__col-right">Acciones</span>
-          </div>
-          @for (root of rows; track root.id) {
-            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: root, depth: 0 }"></ng-container>
-          }
-        </div>
+      <!-- role=status: al buscar, el conteo cambia sin que nada tome foco. -->
+      <span class="list-toolbar-count" role="status">{{ vista.total }} {{ vista.etiquetaTotal }}</span>
+    </div>
 
-        <p class="cat-table__note">
-          <i class="ph ph-info" aria-hidden="true"></i>
-          Las categorías se muestran colapsadas por defecto. Desplegá una rama para ver sus sub-categorías.
-        </p>
-      }
-    }
+    <div class="list-toolbar__row">
+      <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    </div>
+  </div>
+
+  @if (vista.filtrosActivos.length) {
+    <app-active-filters
+      [filtros]="vista.filtrosActivos"
+      (quitar)="quitarFiltro($event)"
+      (limpiar)="limpiarFiltros()">
+    </app-active-filters>
   }
-</div>
 
-<!-- Fila recursiva: se renderiza a sí misma para los hijos (si el nodo está expandido) → profundidad arbitraria. -->
-<ng-template #rowTpl let-node let-depth="depth">
-  <div class="cat-table__row" role="treeitem" [attr.aria-expanded]="node.children.length ? isExpanded(node.id) : null">
+  <div class="cat-table">
+    @if (loading) {
+      <!-- Skeleton (carga inicial) — mismo patrón shimmer que `SharedTable`/`LoadingComponent`,
+           reusado acá porque el árbol de categorías no usa `app-shared-table`. -->
+      <app-loading [loading]="true" variant="skeleton" [rows]="6"></app-loading>
+    } @else if (error) {
+      <!-- Estado de error propio del árbol: el de `app-shared-table` no aplica sin tabla. -->
+      <div class="cat-table__error" role="alert">
+        <i class="ph ph-cloud-slash cat-table__error-icon" aria-hidden="true"></i>
+        <p class="cat-table__error-title">No pudimos cargar las categorías</p>
+        <p class="cat-table__error-text">Revisá tu conexión e intentá de nuevo. Si sigue pasando, avisá a Soporte.</p>
+        <button mat-stroked-button color="primary" type="button" (click)="load()">
+          <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+        </button>
+      </div>
+    } @else if (vista.raices.length === 0) {
+      <div class="cat-table__empty" role="status">
+        <i class="ph cat-table__empty-icon" [class.ph-folders]="!vista.vacioPorFiltros" [class.ph-magnifying-glass]="vista.vacioPorFiltros" aria-hidden="true"></i>
+        <p class="cat-table__empty-title">{{ vista.vacioTitulo }}</p>
+        <p class="cat-table__empty-text">{{ vista.vacioTexto }}</p>
+
+        @if (vista.vacioPorFiltros) {
+          <!-- Sin salida, un "sin resultados" es un callejón: el CTA devuelve el árbol completo. -->
+          <button mat-stroked-button color="primary" type="button" (click)="onEmptyAction()">
+            <i class="ph ph-x" aria-hidden="true"></i> {{ vista.vacioAccion }}
+          </button>
+        } @else {
+          <button mat-raised-button color="primary" type="button" (click)="onEmptyAction()" *appHasPermission="'CREATE_CATEGORY'">
+            <i class="ph ph-plus" aria-hidden="true"></i> {{ vista.vacioAccion }}
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="cat-table__grid" role="tree" aria-label="Árbol de categorías">
+        <div class="cat-table__head">
+          <span>Categoría</span>
+          <span>Slug</span>
+          <span class="cat-table__col-center">Sub-cat.</span>
+          <span class="cat-table__col-right">Acciones</span>
+        </div>
+        @for (root of vista.raices; track root.id) {
+          <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: root, depth: 0, expandidos: vista.expandidos }"></ng-container>
+        }
+      </div>
+
+      <p class="cat-table__note">
+        <i class="ph ph-info" aria-hidden="true"></i>
+        Las categorías se muestran colapsadas por defecto. Desplegá una rama para ver sus sub-categorías.
+      </p>
+    }
+  </div>
+}
+
+<!-- Fila recursiva: se renderiza a sí misma para los hijos (si el nodo está expandido) → profundidad arbitraria.
+     `expandidos` viaja por el contexto para que la fila no consulte estado mutable del componente. -->
+<ng-template #rowTpl let-node let-depth="depth" let-expandidos="expandidos">
+  <div class="cat-table__row" role="treeitem" [attr.aria-expanded]="node.children.length ? expandidos.has(node.id) : null">
     <div class="cat-table__cell cat-table__cell--name" [style.padding-left.px]="12 + depth * 20">
 
       <!-- Slot de estado: chevron (si tiene hijos), marcador de hoja (nivel > 0 sin hijos) o spacer (raíz sin hijos) -->
       @if (node.children.length > 0) {
         <button type="button" class="cat-table__toggle" (click)="toggle(node.id)"
-                [attr.aria-label]="isExpanded(node.id) ? 'Colapsar' : 'Expandir'"
-                [attr.aria-expanded]="isExpanded(node.id)">
-          <i class="ph" [class.ph-caret-down]="isExpanded(node.id)" [class.ph-caret-right]="!isExpanded(node.id)" aria-hidden="true"></i>
+                [attr.aria-label]="expandidos.has(node.id) ? 'Colapsar ' + node.nombre : 'Expandir ' + node.nombre"
+                [attr.aria-expanded]="expandidos.has(node.id)">
+          <i class="ph" [class.ph-caret-down]="expandidos.has(node.id)" [class.ph-caret-right]="!expandidos.has(node.id)" aria-hidden="true"></i>
         </button>
       } @else if (depth > 0) {
         <span class="cat-table__toggle cat-table__toggle--leaf" aria-hidden="true">
@@ -89,25 +128,19 @@
       </span>
     </div>
 
-    <div class="cat-table__cell cat-table__cell--actions row-actions">
-      <button type="button" class="row-action row-action--icon" (click)="onCreate(node.id)" matTooltip="Agregar subcategoría"
-              aria-label="Agregar subcategoría" *appHasPermission="'CREATE_CATEGORY'">
-        <i class="ph ph-plus" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="row-action row-action--icon" (click)="onEdit(node)" matTooltip="Editar"
-              aria-label="Editar categoría" *appHasPermission="'UPDATE_CATEGORY'">
-        <i class="ph ph-pencil-simple" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(node, node.children.length > 0)"
-              matTooltip="Eliminar" aria-label="Eliminar categoría" *appHasPermission="'DELETE_CATEGORY'">
-        <i class="ph ph-trash" aria-hidden="true"></i>
-      </button>
+    <div class="cat-table__cell cat-table__cell--actions">
+      <app-row-actions
+        [primary]="accionEditar(node)"
+        [actions]="accionesDe(node)"
+        [busy]="deletingId === node.id"
+        busyLabel="Eliminando categoría...">
+      </app-row-actions>
     </div>
   </div>
 
-  @if (node.children.length > 0 && isExpanded(node.id)) {
+  @if (node.children.length > 0 && expandidos.has(node.id)) {
     @for (child of node.children; track child.id) {
-      <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: child, depth: depth + 1 }"></ng-container>
+      <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: child, depth: depth + 1, expandidos: expandidos }"></ng-container>
     }
   }
 </ng-template>

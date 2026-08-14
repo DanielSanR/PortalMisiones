@@ -1,2 +1,19 @@
-// Sin estilos propios: las clases de formulario (.form-card, .section-header, .form-grid,
-// .form-actions, .spin) viven en shared-styles/_components.scss (DRY).
+// ==========================================================================
+// Alta/edición de Usuario — las clases de formulario (.form-card,
+// .section-header, .form-grid, .form-actions) viven en
+// shared-styles/_components.scss (DRY). Acá solo lo propio de la pantalla.
+// ==========================================================================
+
+.usuario-form {
+
+  // El spinner global se pinta con --theme-primary, que sobre el botón primario
+  // (verde sobre verde) queda invisible. La custom property se hereda al
+  // componente hijo, así que alcanza con redefinirla en el botón.
+  &__submit {
+    --mdc-circular-progress-active-indicator-color: var(--theme-text-on-primary);
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+  }
+}

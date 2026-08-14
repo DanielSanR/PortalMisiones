@@ -1,31 +1,99 @@
 <ng-template appPageActions>
+  <!-- Sin `*appHasPermission`: `/api/permission` autoriza por ROL (SUPERADMIN/ADMIN_BACKOFFICE,
+       §4.5) y la ruta ya lo exige con `requireRoles`. No existe un permiso atómico
+       "CREATE_PERMISSION" que gatear. -->
   <button mat-raised-button color="primary" (click)="onCreate()">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo permiso
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (permisos$ | async)?.length || 0 }} permisos</span>
+@if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + select de recurso + contador · fila B = chips de acción.
+     Los dos filtros salen del propio código `ACCION_RECURSO` (ver permiso-groups.util.ts):
+     no hay ningún otro campo en `PermisoVM` para filtrar. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por código o descripción…"
+      ariaLabel="Buscar permisos por código, descripción, recurso o acción">
+    </app-list-search>
+
+    <mat-form-field appearance="outline" class="permlist-select">
+      <mat-label>Recurso</mat-label>
+      <mat-select [formControl]="recursoCtrl">
+        <mat-option value="">Todos</mat-option>
+        @for (recurso of vista.recursos; track recurso.key) {
+          <mat-option [value]="recurso.key">{{ recurso.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <span class="list-toolbar-count">{{ vista.total }} permisos</span>
+  </div>
+
+  <div class="list-toolbar__row permlist-chips">
+    <app-filter-tabs [tabs]="vista.tabs" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($event)"></app-filter-tabs>
+  </div>
 </div>
 
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
+<!-- El CTA del vacío no lleva `[emptyActionPermission]`: esta pantalla se gatea por ROL
+     (ver el comentario del botón "Nuevo permiso"), así que no hay permiso atómico que exigir. -->
 <app-shared-table
-    [data]="(permisos$ | async) ?? []"
+    [data]="vista.rows"
     [columns]="columns"
     [loading]="loading"
-    emptyMessage="No hay permisos registrados"
+    [error]="error"
+    errorTitle="No pudimos cargar los permisos"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
     emptyIcon="key">
 
-  <ng-template appTableCell="acciones" let-row>
-    <div class="row-actions">
-      <button type="button" class="row-action" (click)="onEdit(row)">
-        <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-      </button>
-      <button type="button" class="row-action row-action--icon row-action--danger" (click)="onDelete(row)"
-              aria-label="Eliminar permiso" matTooltip="Eliminar">
-        <i class="ph ph-trash" aria-hidden="true"></i>
-      </button>
-    </div>
-  </ng-template>
+    <ng-template appTableCell="codigo" let-row>
+        <div class="permlist-codigo">
+            <span class="permlist-codigo__principal">{{ row.codigo }}</span>
+            <!-- En mobile la tabla oculta Recurso y Descripción: acá no se pierden. -->
+            <span class="permlist-codigo__meta">{{ row.recursoLabel }} · {{ row.descripcion || 'Sin descripción' }}</span>
+        </div>
+    </ng-template>
+
+    <ng-template appTableCell="recurso" let-row>
+        <span class="text-secondary">{{ row.recursoLabel }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="descripcion" let-row>
+        <span class="text-secondary">{{ row.descripcion || '—' }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="acciones" let-row>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="deletingId === row.id"
+            busyLabel="Eliminando permiso...">
+        </app-row-actions>
+    </ng-template>
 
 </app-shared-table>
+}

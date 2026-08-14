@@ -8,6 +8,17 @@
   }
 }
 
+// Bloque centrado de los estados sin filas (vacío y error), para que ambos
+// respiren igual dentro de la card.
+%cat-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--theme-space-sm);
+  padding: var(--theme-space-3xl) var(--theme-space-lg);
+}
+
 // Columnas de la tabla (compartidas entre header y filas para que alineen).
 %cat-cols {
   display: grid;
@@ -59,7 +70,9 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    &--actions { justify-content: flex-end; gap: 2px; }
+    // Las acciones las dibuja `app-row-actions` (patrón global de listados): la celda
+    // solo las empuja contra el borde derecho de la columna.
+    &--actions { justify-content: flex-end; }
   }
 
   &__col-center { justify-content: center; text-align: center; }
@@ -135,24 +148,34 @@
     }
   }
 
-  // Acciones de fila: ver `.row-action*` en `shared-styles/_components.scss`
-  // (patrón GLOBAL de listados — icon-only en Categorías: Agregar sub, Editar, Eliminar).
+  // Acciones de fila: `app-row-actions` (patrón GLOBAL de listados), con "Editar"
+  // como acción principal y el resto —Agregar subcategoría, Eliminar— en el menú.
 
-  // ── Carga / vacío ───────────────────────────────────────────
+  // ── Carga / vacío / error ───────────────────────────────────
   // Skeleton de carga: `app-loading[variant=skeleton]` (ver template), sin
   // estilos propios acá — hereda el shimmer/radios del componente compartido.
 
   &__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: var(--theme-space-sm);
-    padding: var(--theme-space-3xl) var(--theme-space-lg);
+    @extend %cat-estado;
 
     &-icon {
       font-size: 48px;
       color: var(--theme-primary-200);
+      margin-bottom: var(--theme-space-xs);
+    }
+    &-title { margin: 0; font-weight: var(--theme-font-weight-semibold); color: var(--theme-text-primary); }
+    &-text { margin: 0 0 var(--theme-space-sm); color: var(--theme-text-secondary); font-size: var(--theme-font-size-sm); max-width: 42ch; }
+  }
+
+  // El error de carga es un estado hermano del vacío, no una variante: "no pudimos
+  // cargar" y "no hay nada" cuentan cosas distintas y se pintan distinto (ícono en
+  // la escala de error, CTA "Reintentar").
+  &__error {
+    @extend %cat-estado;
+
+    &-icon {
+      font-size: 48px;
+      color: var(--theme-error);
       margin-bottom: var(--theme-space-xs);
     }
     &-title { margin: 0; font-weight: var(--theme-font-weight-semibold); color: var(--theme-text-primary); }
