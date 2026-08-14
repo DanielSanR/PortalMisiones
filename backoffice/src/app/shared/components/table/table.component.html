@@ -82,7 +82,10 @@
     </span>
     <span class="shared-table__state-title">{{ emptyTitle || emptyMessage }}</span>
     <span class="shared-table__state-text" *ngIf="emptyTitle && emptyMessage">{{ emptyMessage }}</span>
-    <button *ngIf="emptyActionLabel" type="button" mat-raised-button color="primary"
+    <!-- El CTA no se dibuja si el usuario no puede ejecutarlo: el estado vacío no debe
+         invitar a crear algo que el backend le va a rechazar. Sin `emptyActionPermission`
+         se muestra siempre, que es el caso de los CTA que solo limpian filtros. -->
+    <button *ngIf="emptyActionLabel && (puedeAccionar$ | async)" type="button" mat-raised-button color="primary"
       class="shared-table__state-cta" (click)="emptyAction.emit()">
       <i class="ph ph-{{ emptyActionIcon }}" aria-hidden="true"></i>{{ emptyActionLabel }}
     </button>

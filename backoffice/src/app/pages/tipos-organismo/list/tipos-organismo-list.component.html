@@ -60,6 +60,7 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_ORGANISM_TYPE'"
     [emptyActionLabel]="vista.emptyActionLabel"
     [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
     (emptyAction)="onEmptyAction()"

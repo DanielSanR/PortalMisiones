@@ -1,34 +1,111 @@
 <ng-template appPageActions>
-  <button *appHasPermission="'CREATE_TAXONOMY'" mat-raised-button color="primary" (click)="onCreate()">
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_TAXONOMY'">
     <i class="ph ph-plus" aria-hidden="true"></i> Nueva etiqueta
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (etiquetas$ | async)?.length || 0 }} etiquetas</span>
+@if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + contador + acciones · fila B = chips de filtro. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por nombre o slug…"
+      ariaLabel="Buscar etiquetas por nombre o slug">
+    </app-list-search>
+
+    <div class="etiqlist-acciones">
+      <span class="list-toolbar-count">{{ vista.total }} etiquetas</span>
+      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
+      <button type="button" class="etiqlist-iconbtn" disabled aria-label="Ordenar">
+        <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="etiqlist-iconbtn" disabled aria-label="Exportar a CSV">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="list-toolbar__row etiqlist-chips">
+    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    <button type="button" class="etiqlist-masfiltros" disabled>
+      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
+    </button>
+  </div>
 </div>
 
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
 <app-shared-table
-    [data]="(etiquetas$ | async) ?? []"
+    [data]="vista.rows"
     [columns]="columns"
     [loading]="loading"
-    emptyMessage="No hay etiquetas registradas"
+    [error]="error"
+    errorTitle="No pudimos cargar las etiquetas"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_TAXONOMY'"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
     emptyIcon="bookmarks-simple">
 
     <ng-template appTableCell="nombre" let-row>
-        <div class="etiqueta-name">
-            <mat-icon class="etiqueta-icon" [style.color]="row.color">{{ row.icono }}</mat-icon>
-            <strong>{{ row.nombre }}</strong>
+        <div class="etiqlist-nombre">
+            <!-- El color es el dato que identifica a la etiqueta en el portal: se muestra,
+                 no se describe. El texto de al lado ya nombra a la etiqueta. -->
+            <span class="etiqlist-nombre__color" [style.background]="row.color" aria-hidden="true"></span>
+            <div class="etiqlist-nombre__texto">
+                <span class="etiqlist-nombre__principal">{{ row.nombre }}</span>
+                <!-- En mobile la columna Slug se oculta: acá no se pierde el dato. -->
+                <span class="etiqlist-nombre__meta">/{{ row.slug }}</span>
+            </div>
         </div>
     </ng-template>
 
+    <ng-template appTableCell="slug" let-row>
+        <span class="text-secondary">/{{ row.slug }}</span>
+    </ng-template>
+
     <ng-template appTableCell="tramitesCount" let-row>
-        <strong class="count-badge">{{ row.tramitesCount || 0 }}</strong>
+        @if (row.tramitesCount) {
+            <span class="etiqlist-uso">{{ row.tramitesCount }}</span>
+        } @else {
+            <span class="etiqlist-uso etiqlist-uso--vacio">Sin uso</span>
+        }
+    </ng-template>
+
+    <ng-template appTableCell="activo" let-row>
+        <span class="bool-badge" [class.bool-badge--active]="row.activo" [class.bool-badge--inactive]="!row.activo">
+            <span class="bool-badge__dot" aria-hidden="true"></span>
+            {{ row.activo ? 'Activa' : 'Inactiva' }}
+        </span>
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <app-row-actions [primary]="accionEditar(row)" [actions]="accionesDe(row)"></app-row-actions>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="deletingId === row.id"
+            busyLabel="Eliminando etiqueta...">
+        </app-row-actions>
     </ng-template>
 
 </app-shared-table>
+}

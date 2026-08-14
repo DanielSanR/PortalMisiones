@@ -1,19 +1,40 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { filter, map, switchMap } from 'rxjs';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { SharedTableComponent, TableCellDirective, TableColumn } from '../../../shared/components/table';
+import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
+import { ListSearchComponent } from '../../../shared/components/list-search';
+import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { todasOnlyTabs } from '@core/utils/list-filter.utils';
+import { buscarEn, todasOnlyTabs } from '@core/utils/list-filter.utils';
 import { DestinatariosFacade, DestinatarioVM } from '@features/destinatarios';
+
+/** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
+interface EstadoVacio {
+  emptyTitle: string;
+  emptyMessage: string;
+  emptyActionLabel: string;
+}
+
+/** ViewModel de la pantalla: filas ya buscadas/ordenadas + los textos que corresponden. */
+interface DestinatariosVista extends EstadoVacio {
+  /** Solo la página visible. */
+  rows: DestinatarioVM[];
+  /** Total tras buscar (lo que cuenta el toolbar y alimenta al paginador). */
+  total: number;
+  pageIndex: number;
+  hayFiltros: boolean;
+  filtrosActivos: FiltroActivo[];
+}
 
 @Component({
   selector: 'app-destinatarios-list',
@@ -21,12 +42,15 @@ import { DestinatariosFacade, DestinatarioVM } from '@features/destinatarios';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe,
+    ReactiveFormsModule,
     MatButtonModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
     RowActionsComponent,
+    ListSearchComponent,
+    ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
   ],
@@ -36,13 +60,60 @@ import { DestinatariosFacade, DestinatarioVM } from '@features/destinatarios';
 export class DestinatariosListComponent implements OnInit {
   private readonly facade = inject(DestinatariosFacade);
   readonly destinatarios$ = this.facade.destinatarios$;
-  loading = true;
 
-  /** Sin campo real para filtrar (ver divergencias de la tarea): solo chip "Todas" + contador. */
-  readonly filterTabs$ = this.destinatarios$.pipe(map((destinatarios) => todasOnlyTabs(destinatarios.length)));
+  loading = true;
+  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
+  error = false;
+  /** Id del destinatario con un borrado en vuelo, para bloquear su fila mientras dura. */
+  deletingId: string | null = null;
+
+  readonly searchCtrl = new FormControl('', { nonNullable: true });
+  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
+
+  private readonly search$ = this.searchCtrl.valueChanges.pipe(
+    debounceTime(200),
+    distinctUntilChanged(),
+    startWith(this.searchCtrl.value),
+  );
+
+  /**
+   * `DestinatarioVM` solo tiene id y nombre: no hay ningún campo real por el que filtrar,
+   * así que la barra queda con el único chip "Todas" en vez de fabricar estados inexistentes.
+   * El contador se calcula sobre lo ya buscado, para que no mienta.
+   */
+  readonly filterTabs$ = combineLatest([this.destinatarios$, this.search$]).pipe(
+    map(([destinatarios, search]) => todasOnlyTabs(this.buscar(destinatarios, search).length)),
+  );
+
+  readonly pageIndex$ = new BehaviorSubject<number>(0);
+  readonly pageSize$ = new BehaviorSubject<number>(10);
+
+  readonly vista$ = combineLatest([
+    this.destinatarios$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
+  ]).pipe(
+    map(([destinatarios, search, sort, pageIndex, pageSize]): DestinatariosVista => {
+      const filtradas = this.ordenar(this.buscar(destinatarios, search), sort);
+      // Al buscar, la página actual puede quedar fuera de rango: se acota en vez de
+      // mostrar una tabla vacía con resultados que sí existen.
+      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
+      const pagina = Math.min(pageIndex, ultimaPagina);
+      const desde = pagina * pageSize;
+
+      const filtrosActivos = this.filtrosActivos(search);
+      const hayFiltros = filtrosActivos.length > 0;
+      return {
+        rows: filtradas.slice(desde, desde + pageSize),
+        total: filtradas.length,
+        pageIndex: pagina,
+        hayFiltros,
+        filtrosActivos,
+        ...this.estadoVacio(destinatarios.length, hayFiltros),
+      };
+    }),
+  );
 
   columns: TableColumn<DestinatarioVM>[] = [
-    { key: 'nombre',   label: 'Nombre' },
+    { key: 'nombre',   label: 'Nombre',   sortable: true },
     { key: 'acciones', label: 'Acciones', width: '140px' },
   ];
 
@@ -59,14 +130,48 @@ export class DestinatariosListComponent implements OnInit {
     this.load();
   }
 
-  private load(): void {
+  load(): void {
     this.loading = true;
+    this.error = false;
     this.facade.loadDestinatarios()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => { this.loading = false; this.cdr.markForCheck(); },
-        error: () => { this.loading = false; this.cdr.markForCheck(); },
+        // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
+        // destinatarios, indistinguible de una carga fallida.
+        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
       });
+  }
+
+  limpiarFiltros(): void {
+    this.searchCtrl.setValue('');
+  }
+
+  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
+  quitarFiltro(clave: string): void {
+    if (clave === 'search') this.searchCtrl.setValue('');
+  }
+
+  hayFiltrosActivos(): boolean {
+    return this.searchCtrl.value.trim().length > 0;
+  }
+
+  /** El CTA del estado vacío crea o limpia según por qué está vacío. */
+  onEmptyAction(): void {
+    if (this.hayFiltrosActivos()) {
+      this.limpiarFiltros();
+      return;
+    }
+    this.onCreate();
+  }
+
+  onSortChange(sort: TableSortEvent): void {
+    this.sort$.next(sort);
+  }
+
+  onPageChange(evento: TablePageEvent): void {
+    this.pageIndex$.next(evento.pageIndex);
+    this.pageSize$.next(evento.pageSize);
   }
 
   onCreate(): void {
@@ -74,7 +179,12 @@ export class DestinatariosListComponent implements OnInit {
   }
 
   accionEditar(destinatario: DestinatarioVM): RowAction {
-    return { label: 'Editar', icon: 'pencil-simple', permission: 'UPDATE_RECIPIENT', run: () => this.onEdit(destinatario) };
+    return {
+      label: 'Editar',
+      icon: 'pencil-simple',
+      permission: 'UPDATE_RECIPIENT',
+      run: () => this.onEdit(destinatario),
+    };
   }
 
   accionesDe(destinatario: DestinatarioVM): RowAction[] {
@@ -83,7 +193,7 @@ export class DestinatariosListComponent implements OnInit {
       icon: 'trash',
       permission: 'DELETE_RECIPIENT',
       danger: true,
-      ariaLabel: 'Eliminar destinatario',
+      ariaLabel: `Eliminar destinatario ${destinatario.nombre}`,
       run: () => this.onDelete(destinatario),
     }];
   }
@@ -93,23 +203,74 @@ export class DestinatariosListComponent implements OnInit {
   }
 
   onDelete(destinatario: DestinatarioVM): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Eliminar destinatario',
-        message: `¿Está seguro de eliminar "${destinatario.nombre}"?`,
-        confirmText: 'Eliminar',
+        title: '¿Eliminar el destinatario?',
+        // Cuenta la consecuencia, no la restricción. Que no se pueda borrar un destinatario
+        // en uso lo decide el backend y, si corresponde, vuelve como error.
+        message: `Se eliminará ${destinatario.nombre} y dejará de estar disponible para clasificar trámites. Esta acción no se puede deshacer.`,
+        highlight: destinatario.nombre,
+        danger: true,
+        confirmText: 'Sí, eliminar',
+        busyText: 'Eliminando...',
+        // El diálogo se queda abierto con el botón en spinner hasta que el backend
+        // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
+        confirmAction: () => {
+          this.deletingId = destinatario.id;
+          this.cdr.markForCheck();
+          return this.facade.delete(destinatario.id).pipe(
+            finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
+          );
+        },
       },
       panelClass: 'custom-modal-panel',
-    });
+    })
+      .afterClosed()
+      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.snackBar.open('Destinatario eliminado', 'OK', {
+        duration: 3000,
+        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+        panelClass: 'snackbar-success',
+      }));
+  }
 
-    dialogRef.afterClosed()
-      .pipe(
-        filter(Boolean),
-        switchMap(() => this.facade.delete(destinatario.id)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => this.snackBar.open('Destinatario eliminado', 'OK', { duration: 3000 }),
-      });
+  private buscar(destinatarios: DestinatarioVM[], termino: string): DestinatarioVM[] {
+    return buscarEn(destinatarios, termino, (d) => [d.nombre]);
+  }
+
+  private ordenar(destinatarios: DestinatarioVM[], sort: TableSortEvent | null): DestinatarioVM[] {
+    if (!sort?.direction) return destinatarios;
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    return [...destinatarios].sort((a, b) =>
+      this.valorDeOrden(a, sort.active)
+        .localeCompare(this.valorDeOrden(b, sort.active), 'es-AR', { sensitivity: 'base' }) * factor,
+    );
+  }
+
+  private valorDeOrden(destinatario: DestinatarioVM, key: string): string {
+    switch (key) {
+      case 'nombre': return destinatario.nombre ?? '';
+      default:       return '';
+    }
+  }
+
+  private filtrosActivos(search: string): FiltroActivo[] {
+    const termino = search.trim();
+    return termino ? [{ clave: 'search', etiqueta: `Búsqueda: ${termino}` }] : [];
+  }
+
+  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
+    if (total > 0 && hayFiltros) {
+      return {
+        emptyTitle: 'Sin resultados',
+        emptyMessage: 'Ningún destinatario coincide con la búsqueda aplicada.',
+        emptyActionLabel: 'Limpiar filtros',
+      };
+    }
+    return {
+      emptyTitle: 'Todavía no hay destinatarios',
+      emptyMessage: 'Creá el primero para poder indicar a quién está dirigido cada trámite.',
+      emptyActionLabel: 'Nuevo destinatario',
+    };
   }
 }

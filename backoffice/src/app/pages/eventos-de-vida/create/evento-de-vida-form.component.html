@@ -5,6 +5,7 @@
         cancelButtonText="Cancelar"
         [initialData]="initialData"
         [saving]="saving"
+        [serverError]="serverError"
         (formSubmit)="onSubmit($event)"
         (formCancel)="goBack()">
     </app-dynamic-form>

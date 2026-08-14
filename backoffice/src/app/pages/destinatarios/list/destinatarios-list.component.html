@@ -4,24 +4,81 @@
   </button>
 </ng-template>
 
-<div class="list-toolbar">
-  <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
-  <span class="list-toolbar-count">{{ (destinatarios$ | async)?.length || 0 }} destinatarios</span>
+@if (vista$ | async; as vista) {
+<!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
+     fila A = buscador + contador + acciones · fila B = chips de filtro. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por nombre…"
+      ariaLabel="Buscar destinatarios por nombre">
+    </app-list-search>
+
+    <div class="destinatarioslist-acciones">
+      <span class="list-toolbar-count">{{ vista.total }} destinatarios</span>
+      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
+      <button type="button" class="destinatarioslist-iconbtn" disabled aria-label="Ordenar">
+        <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="destinatarioslist-iconbtn" disabled aria-label="Exportar a CSV">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="list-toolbar__row destinatarioslist-chips">
+    <!-- Chip único "Todas": el modelo no tiene ningún campo real por el que filtrar. -->
+    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
+    <button type="button" class="destinatarioslist-masfiltros" disabled>
+      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
+    </button>
+  </div>
 </div>
 
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
 <app-shared-table
-    [data]="(destinatarios$ | async) ?? []"
+    [data]="vista.rows"
     [columns]="columns"
     [loading]="loading"
-    emptyMessage="No hay destinatarios registrados"
+    [error]="error"
+    errorTitle="No pudimos cargar los destinatarios"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_RECIPIENT'"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction()"
     emptyIcon="user-focus">
 
     <ng-template appTableCell="nombre" let-row>
-        <strong>{{ row.nombre }}</strong>
+        <span class="destinatarioslist-nombre">{{ row.nombre }}</span>
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>
-        <app-row-actions [primary]="accionEditar(row)" [actions]="accionesDe(row)"></app-row-actions>
+        <app-row-actions
+            [primary]="accionEditar(row)"
+            [actions]="accionesDe(row)"
+            [busy]="deletingId === row.id"
+            busyLabel="Eliminando destinatario...">
+        </app-row-actions>
     </ng-template>
 
 </app-shared-table>
+}

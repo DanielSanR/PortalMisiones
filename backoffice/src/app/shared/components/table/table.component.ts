@@ -1,9 +1,11 @@
-import { AfterContentInit, Component, Input, Output, EventEmitter, ViewChild, ContentChildren, QueryList, TemplateRef, Directive, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
+import { AfterContentInit, Component, Input, Output, EventEmitter, ViewChild, ContentChildren, QueryList, TemplateRef, Directive, ViewEncapsulation, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
+import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.model';
 
 // Directiva para registrar cell templates por nombre desde el consumidor.
@@ -44,6 +46,9 @@ export class TableHeaderDirective {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SharedTableComponent<T = any> implements AfterContentInit {
+  // Debe declararse antes que `puedeAccionar$`: los campos de clase se inicializan en orden.
+  private readonly auth = inject(AuthTokenService);
+
   // Inputs — Datos
   @Input() data: T[] = [];
 
@@ -66,7 +71,29 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @Input() emptyImage = ''; // fallback legado: si se define, reemplaza al icono
   @Input() emptyActionLabel = '';
   @Input() emptyActionIcon = 'plus';
+  /**
+   * Permiso que exige el CTA del estado vacío. Vacío = se muestra siempre.
+   *
+   * Existe porque el vacío ofrecía "Nuevo X" a cualquiera: quien no puede crear
+   * terminaba en un formulario que el backend le iba a rechazar. El gateo vive acá y no
+   * en cada pantalla porque el CTA es un input de este componente, y resolverlo afuera
+   * obligaba a las listas a inyectar el servicio de permisos, contra la regla de que un
+   * componente solo conoce el facade de su feature.
+   */
+  @Input() set emptyActionPermission(value: string) {
+    this.emptyActionPermission$.next(value ?? '');
+  }
   @Output() emptyAction = new EventEmitter<void>();
+
+  private readonly emptyActionPermission$ = new BehaviorSubject<string>('');
+
+  /** Reactivo a la sesión: si cambian los permisos, el CTA aparece o se va sin recargar. */
+  readonly puedeAccionar$ = combineLatest([
+    this.emptyActionPermission$,
+    this.auth.getCurrentUser$(),
+  ]).pipe(
+    map(([permiso]) => !permiso || this.auth.getPermissions().includes(permiso)),
+  );
 
   // Estado de error — círculo rojo + cloud-slash + CTA "Reintentar".
   @Input() error = false;

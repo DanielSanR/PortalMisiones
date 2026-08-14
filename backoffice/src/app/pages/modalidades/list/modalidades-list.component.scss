@@ -1,3 +1,12 @@
+// ==========================================================================
+// Listado de Modalidades — mismo toolbar de dos filas que el resto de las
+// listas (diseño "Pantallas · Backoffice Misiones", pantalla LISTA).
+//
+// La caja de búsqueda es `app-list-search` y la barra de filtros aplicados es
+// `app-active-filters`: acá solo quedan los botones de la fila A/B y la celda
+// de nombre.
+// ==========================================================================
+
 @use '../../../../shared-styles/mixins' as *;
 
 .list-toolbar {
@@ -5,5 +14,37 @@
 
   &-count {
     @include list-toolbar-count;
+  }
+}
+
+.modalidadeslist {
+  // Contador + acciones de la fila A --------------------------------------
+  &-acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex: none;
+  }
+
+  &-iconbtn {
+    @include list-iconbtn;
+  }
+
+  // Fila B — chips de filtro + "Más filtros" ------------------------------
+  &-chips {
+    justify-content: flex-start;
+    gap: var(--theme-space-xs);
+  }
+
+  &-masfiltros {
+    @include list-ghost-button;
+  }
+
+  // Celda de nombre --------------------------------------------------------
+  &-nombre {
+    display: block;
+    min-width: 0;
+    font-weight: var(--theme-font-weight-medium);
+    @include truncate;
   }
 }
