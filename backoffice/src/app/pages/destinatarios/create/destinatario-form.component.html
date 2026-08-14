@@ -1,5 +1,5 @@
 <div class="form-card">
-    <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear destinatario'"
+    <app-dynamic-form [requireChanges]="isEdit" [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear destinatario'"
         cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
         (formCancel)="goBack()">
     </app-dynamic-form>

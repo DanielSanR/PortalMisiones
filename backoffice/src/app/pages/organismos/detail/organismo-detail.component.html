@@ -118,6 +118,7 @@
          de destruirse, para no perder lo que el usuario venía escribiendo. -->
     <div class="form-card" [hidden]="(tab$ | async) !== 'datos'">
       <app-dynamic-form [fields]="config.fields!"
+                        [requireChanges]="modo === 'editar'"
                         submitButtonText="Guardar cambios"
                         cancelButtonText="Cancelar"
                         [initialData]="initialData"

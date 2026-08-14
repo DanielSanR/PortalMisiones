@@ -1,6 +1,6 @@
 @if (config){
     <div class="form-card">
-    <app-dynamic-form [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear etiqueta'"
+    <app-dynamic-form [requireChanges]="isEdit" [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear etiqueta'"
         cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
         (formCancel)="goBack()">
     </app-dynamic-form>

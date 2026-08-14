@@ -47,7 +47,7 @@
     <!-- Ficha provincial: datos generales + contenido para toda la provincia. -->
     <mat-tab label="Ficha del trámite">
       <div class="form-card">
-        <app-dynamic-form [fields]="config.fields!"
+        <app-dynamic-form [requireChanges]="isEdit" [fields]="config.fields!"
             [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear trámite'"
             cancelButtonText="Cancelar"
             [initialData]="initialData"

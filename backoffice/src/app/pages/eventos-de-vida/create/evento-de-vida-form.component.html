@@ -1,5 +1,5 @@
 <div class="form-card">
-    <app-dynamic-form
+    <app-dynamic-form [requireChanges]="isEdit"
         [fields]="config.fields!"
         [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear evento de vida'"
         cancelButtonText="Cancelar"

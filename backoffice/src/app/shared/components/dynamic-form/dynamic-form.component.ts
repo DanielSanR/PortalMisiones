@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-field.component';
 import { FormErrorBannerComponent } from '../form-error-banner/form-error-banner.component';
 import { getControlErrorMessage } from '../dynamic-form-field/form-error-messages.util';
@@ -21,6 +22,7 @@ const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'icon-picker', 'checkb
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
     DynamicFormFieldComponent,
     FormErrorBannerComponent,
   ],
@@ -35,6 +37,15 @@ export class DynamicFormComponent implements OnInit {
   @Input() initialData?: any;
   @Input() hideButtons = false;
   @Input() saving = false;
+  /**
+   * Deshabilita "Guardar" mientras no haya cambios (`flows/saving-changes`, paso 2).
+   *
+   * Es opt-in y no default: aplica a la EDICIÓN, donde un guardado sin cambios es un
+   * request al pedo y una fecha de modificación falsa. En un alta no corresponde —un
+   * formulario con todo por defecto sería imposible de enviar—, así que las pantallas
+   * lo atan a su propio `isEdit`.
+   */
+  @Input() requireChanges = false;
   /**
    * Mensaje devuelto por el backend al fallar el guardado. El contrato actual solo trae
    * `{code, message}` —sin errores por campo—, así que se muestra como banner general;
