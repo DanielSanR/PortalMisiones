@@ -12,7 +12,6 @@ export const environment = {
   // En prod, lo aún no expuesto por backend permanece mockeado hasta que exista el endpoint.
   featureOverrides: {
     usuarios: 'local',
-    tramites: 'mock',
     // Trámites reales (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
     // plantillas: /api/procedure-template real → hereda default real (fase 1).
     adopciones: 'mock',       // fase 2

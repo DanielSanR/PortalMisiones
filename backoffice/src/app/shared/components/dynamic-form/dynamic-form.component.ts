@@ -11,7 +11,7 @@ import { FormErrorBannerComponent } from '../form-error-banner/form-error-banner
 import { getControlErrorMessage } from '../dynamic-form-field/form-error-messages.util';
 
 /** Tipos de campo sin control reactivo propio ni label overline externo. */
-const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'icon-picker', 'checkbox'];
+const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox'];
 
 @Component({
   selector: 'app-dynamic-form',
@@ -115,7 +115,7 @@ export class DynamicFormComponent implements OnInit {
     return validators;
   }
 
-  /** El campo lleva label overline externo (todos salvo tip/section-header/icon-picker/checkbox). */
+  /** El campo lleva label overline externo (todos salvo tip/section-header/checkbox). */
   showExternalLabel(field: FieldConfig): boolean {
     return !NO_EXTERNAL_LABEL_TYPES.includes(field.type);
   }
@@ -145,7 +145,7 @@ export class DynamicFormComponent implements OnInit {
       }
     }
 
-    const fullWidthTypes = ['textarea', 'select', 'select-multiple', 'checkbox', 'tip', 'section-header', 'icon-picker'];
+    const fullWidthTypes = ['textarea', 'select', 'select-multiple', 'checkbox', 'tip', 'section-header'];
     if (fullWidthTypes.includes(field.type)) return 'dynamic-form-field-full';
 
     const halfWidthTypes = ['datepicker', 'number'];

@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
-import { MOCK_ETIQUETAS } from '@core/mocks/mock-data';
 import { canonicalizarSlug } from '@core/utils/slug.utils';
 import { EtiquetasDataSource } from './etiquetas.datasource';
-import { etiquetaLegadaToVM } from '../mappers/etiquetas.mapper';
+import { toEtiquetaVM } from '../mappers/etiquetas.mapper';
+import { MOCK_TAGS } from './etiquetas.mock-data';
 import { EtiquetaFormValue, EtiquetaVM } from '../models/etiqueta.vm';
 import { API_CODES } from '@core/constants/api-codes.constants';
 import { errorDeNegocio } from '@core/mocks/mock-errors';
@@ -16,7 +16,7 @@ const DELAY = 200;
  */
 @Injectable()
 export class EtiquetasMockDataSource extends EtiquetasDataSource {
-  private data: EtiquetaVM[] = MOCK_ETIQUETAS.map(etiquetaLegadaToVM);
+  private data: EtiquetaVM[] = MOCK_TAGS.map(toEtiquetaVM);
 
   list(): Observable<EtiquetaVM[]> {
     return of(this.data.map((e) => ({ ...e }))).pipe(delay(DELAY));

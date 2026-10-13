@@ -14,7 +14,6 @@ export interface FieldConfig {
   | 'email'
   | 'password'
   | 'tip'
-  | 'icon-picker'
   | 'section-header';
   placeholder?: string;
   hint?: string;

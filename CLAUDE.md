@@ -26,7 +26,7 @@ backoffice/src/app/
 │   └── errors/              # Custom error classes
 ├── pages/                   # Feature pages (lazy-loaded via PagesModule)
 │   ├── dashboard/
-│   ├── tramites/            # ABM: list, create/edit, detail
+│   ├── tramites/            # plantillas/ (provinciales), adopciones/ (del organismo), fichas/ (por localidad + puntos de atención)
 │   ├── organismos/          # ABM: list, create/edit
 │   └── usuarios/            # list
 ├── shared/
@@ -67,8 +67,10 @@ mappers + models/view = hojas · barrel index.ts = superficie pública · <featu
 - SUPERADMIN, ADMIN_BACKOFFICE, ADMIN_ORGANIZATION, AGENT, MANAGER, USER
 - El claim `roles` del JWT mezcla roles (`ROLE_*`) y permisos atómicos, coma-separados (ver `core/utils/role.utils.ts`).
 
-## Workflow de Trámites
-borrador → revisión → publicado ↔ despublicado
+## Workflow de Trámites (modelo real — ver `PLAN_TRAMITES_API.md`)
+Plantilla provincial (`/api/procedure-template`) → adopción por organismo = "Trámite del organismo" (`/api/organism-procedure`, con vigencia) → ficha por localidad (`/api/organism-procedure-location`) → puntos de atención (`/api/attention-point`). Features: `plantillas`, `adopciones`, `fichas-locales`, `puntos-atencion`.
+- Estados de la ficha: `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`. Quién publica lo decide el permiso `PUBLISH_VARIANT` (no el rol); enviar a revisión con `UPDATE_VARIANT`.
+- Plantillas en real; adopciones en mock hasta R-3; fichas y puntos en mock hasta G-1 (`PEDIDOS_BACKEND.md`).
 
 ## Commands
 - `cd backoffice && npx ng serve` — Dev server (port 4200)

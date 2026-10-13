@@ -8,9 +8,6 @@ import {
 import { UserRole } from '../core/enums/user-role.enum';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
-import { TramitesListComponent } from './tramites/list/tramites-list.component';
-import { TramiteFormComponent } from './tramites/create/tramite-form.component';
-import { TramiteDetailComponent } from './tramites/detail/tramite-detail.component';
 import { PlantillasListComponent } from './tramites/plantillas/list/plantillas-list.component';
 import { PlantillaFormComponent } from './tramites/plantillas/form/plantilla-form.component';
 import { PlantillaDetailComponent } from './tramites/plantillas/detail/plantilla-detail.component';
@@ -67,14 +64,15 @@ const routes: Routes = [
     children: [
       { path: 'home', component: DashboardComponent }, // Home sin trail: el breadcrumb queda solo "Inicio".
 
-      // Trámites (backend aún bloqueado; gating provisional por los permisos que aplicarán)
-      { path: 'tramites/lista', component: TramitesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites'] } },
-      { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Nuevo trámite'] } },
-      { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Editar trámite'] } },
-      { path: 'tramites/detalle/:id', component: TramiteDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Detalle'] } },
+      // Rutas del Trámites viejo (mock, retirado en la fase 5): quien las tenga guardadas cae en Plantillas
+      // provinciales (si no tiene READ_PROCEDURE, el accessGuard de esa ruta lo manda a home).
+      { path: 'tramites', redirectTo: 'tramites/plantillas', pathMatch: 'full' },
+      { path: 'tramites/lista', redirectTo: 'tramites/plantillas' },
+      { path: 'tramites/nuevo', redirectTo: 'tramites/plantillas' },
+      { path: 'tramites/editar/:id', redirectTo: 'tramites/plantillas' },
+      { path: 'tramites/detalle/:id', redirectTo: 'tramites/plantillas' },
 
       // Plantillas provinciales (`/api/procedure-template`, real). Alcance global; permisos `*_PROCEDURE`.
-      // Conviven con las rutas viejas `tramites/lista|nuevo|editar|detalle` (mock) hasta la fase 5.
       { path: 'tramites/plantillas', component: PlantillasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales'] } },
       { path: 'tramites/plantillas/nueva', component: PlantillaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Nueva plantilla'] } },
       { path: 'tramites/plantillas/editar/:id', component: PlantillaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Editar plantilla'] } },

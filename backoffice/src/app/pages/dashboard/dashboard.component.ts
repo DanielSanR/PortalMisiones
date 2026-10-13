@@ -109,7 +109,7 @@ export class DashboardComponent implements OnInit {
       return { icon: 'git-branch', title: '¿Cómo está el contenido?', subtitle: '63 trámites de tu organismo', gatePermission: 'READ_PROCEDURE · scope organismo' };
     }
     if (role === UserRole.AGENT) {
-      return { icon: 'git-branch', title: '¿Cómo están tus variantes?', subtitle: '22 variantes a tu cargo', gatePermission: 'READ_VARIANT · scope organismo' };
+      return { icon: 'git-branch', title: '¿Cómo están tus fichas?', subtitle: '22 fichas por localidad a tu cargo', gatePermission: 'READ_VARIANT · scope organismo' };
     }
     return { icon: 'git-branch', title: '¿Cómo está el contenido?', subtitle: '529 trámites en total', gatePermission: 'READ_PROCEDURE' };
   }

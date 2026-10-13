@@ -16,8 +16,7 @@ export type FeatureKey =
   | 'permisos'
   | 'cuenta'
   | 'storage'
-  | 'tramites'
-  // Trámites contra la API real (PLAN_TRAMITES_API.md §3): un feature por recurso del backend.
+  // Trámites (PLAN_TRAMITES_API.md §3): un feature por recurso del backend (el `tramites` mock se retiró en la fase 5).
   | 'plantillas'
   | 'adopciones'
   | 'fichas-locales'

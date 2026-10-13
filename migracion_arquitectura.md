@@ -268,13 +268,22 @@ export class UsuariosFacade {
 | `eventos-de-vida` | ✅ `/api/life-event` | **real** (local) + mock. Alineado al contrato real (`slug`+`name`). |
 | `categorias` | ✅ `/api/category` | **real** (local) + mock. Jerárquico (`parentId`); árbol derivado en el facade. Alineado al contrato real (`slug`+`name`+`parent`). |
 | `destinatarios` | ✅ `/api/recipient` | **real** (local) + mock. Catálogo `{id,name}`, hard-delete (Recipients, `0ecd14e`). ABM completo + nav. |
-| `etiquetas` | sin endpoint | mock alineado al modelo real de `Tag` (`slug` + organismo opcional ⇒ global/local); sigue sin `TagController` |
+| `etiquetas` | ✅ `/api/tag` | **real** (BO-16) + mock (semilla propia `etiquetas.mock-data.ts`, forma `TagResponseDTO`; ya no depende de `core/mocks`) |
+| `plantillas` | ✅ `/api/procedure-template` | **real** (fase 1, `c194f43`) + mock. Plantilla provincial, alcance global, `*_PROCEDURE` |
+| `adopciones` | ✅ `/api/organism-procedure` | **mock hasta R-3** (`featureOverrides.adopciones = 'mock'`, HTTP escrito; fase 2, `4d8f34c`). Facade consulta sesión solo para no pedir organismos sin `READ_ORGANISM` (excepción documentada en `.claude/rules/arquitectura-capas.md`) |
+| `fichas-locales` | ⚠️ `/api/organism-procedure-location` (response incompleto) | **mock hasta G-1** (HTTP + workflow escritos; fase 3, `bbb3b52`). Estados `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO` por `PUBLISH_VARIANT` |
+| `puntos-atencion` | ✅ `/api/attention-point` | **mock hasta G-1** (se activa junto con fichas para no mezclar ids; R-3 para los grants; fase 4, `bbb3b52`) |
+| ~~`tramites`~~ | — | **retirado en la fase 5** de `PLAN_TRAMITES_API.md` (feature, pantallas `list/create/detail`, `tramite.service`, `tramite.model`, rutas del `mockApiInterceptor`). Reemplazado por los 4 features de arriba |
 | `dashboard` | sin endpoint | mock (datos de ejemplo en el datasource; el componente solo consume el facade) |
 | `auditoria` | sin endpoint | mock (paginado server-side simulado; estado de error en la tabla) |
-| `feedback` | sin endpoint | mock (envuelve `FeedbackService`, que también usa el mock de trámites) |
+| `feedback` | sin endpoint (PPDT-5.15) | mock en memoria propio (`feedback.mock-data.ts`); el `FeedbackService` legado se borró en la fase 5 |
 
 Servicios reales inlineados y eliminados: `UserAdminService`, `RoleService`, `PermissionService`,
 `MunicipalityService`, `AccountService` (su HTTP vive en el `*.http.datasource` de cada feature).
+Servicios mock legados eliminados en la fase 5 de trámites (sin consumidores tras borrar `tramites`): `TramiteService`,
+`OrganismoService`, `CategoriaService`, `DestinatarioService`, `EventoDeVidaService`, `LocalidadService`, `FeedbackService`;
+y los modelos `tramite.model.ts` / `dashboard.model.ts`. En `core/services` queda como legado solo `UsuarioService`
+(+ `mockApiInterceptor` reducido a `/api/usuarios`; `PaginatedResponse` se movió a `usuario.model.ts`).
 
 ### Excepciones documentadas (no son violaciones)
 - **`UsuariosHttpDataSource` híbrido**: contiene delegaciones al mock (`UsuarioService`) mientras el backend no
@@ -283,13 +292,15 @@ Servicios reales inlineados y eliminados: `UserAdminService`, `RoleService`, `Pe
   Queda fuera del patrón de features por decisión del plan. `AuthTokenService` ya cumple rol de facade.
 - **`storage.service`**: wrapper real de `/api/storage` sin consumidor aún (listo para features de archivos).
 
-### Deuda pendiente (Fase 5 diferida — sin ganancia funcional hasta que el backend exponga endpoints)
-Ninguna pantalla consume mock services directo: todas pasan por su facade. Lo que falta es el
-`HttpDataSource` de **trámites, etiquetas, dashboard, auditoría, feedback** y del **listado de usuarios**
-(`GET /api/user`), cuando el backend los exponga. Ver `BACKLOG_BACKOFFICE.md`. (Taxonomía —categorías/modalidades/eventos-de-vida— y **organismos + tipos de
-organismo** ya migrados y cableados al backend real, alineados al contrato real: se removieron los campos que
-el backend no persiste —ícono/color/descripción/orden/toggle-activo/trámites en taxonomía; sitioWeb/logoUrl en
-organismos—. El `OrganismoService`/`CategoriaService`/etc. mock se conservan porque **trámites** aún los usa.)
+### Deuda pendiente (actualizada tras la fase 5 de trámites, 2026-10-13)
+Ninguna pantalla consume mock services directo: todas pasan por su facade.
+- **Activar en real (solo sacar el override de `environment*.ts`)**: `adopciones` cuando el backend corrija **R-3**;
+  `fichas-locales` + `puntos-atencion` juntos cuando cierre **G-1** (y R-3 para puntos). El HTTP ya está escrito.
+- **Sin `HttpDataSource` por falta de endpoint**: `dashboard` (PPDT-5.13), `auditoria` (PPDT-5.21), `feedback`
+  (PPDT-5.15) y el **listado/edición de usuarios** (`GET /api/user`, BO-17). Con este último se borran `UsuarioService`,
+  el `mockApiInterceptor` y `core/mocks/mock-data.ts`.
+- **Composition root**: `app.config.ts` importa cada `<feature>.providers.ts` (no el barrel) por el budget del bundle
+  inicial (837 kB / 900 kB); la medición y la decisión están en el comentario del archivo.
 
 ### Guardarraíles activos
 - `npm run check:circular` (madge) → **0 ciclos**.

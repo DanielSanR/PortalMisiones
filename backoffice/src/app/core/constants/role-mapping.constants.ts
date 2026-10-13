@@ -40,8 +40,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Contenidos',
     items: [
       { label: 'Inicio', icon: 'layout', route: '/dashboard/home' }, // todo autenticado
-      // Trámites/Variantes (backend aún bloqueado; gating provisional por los permisos que aplicarán).
-      { label: 'Trámites', icon: 'file-text', route: '/dashboard/tramites/lista', rule: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] } },
       // Organismos y Tipos: de facto solo SUPERADMIN (solo él tiene READ_ORGANISM/READ_ORGANISM_TYPE en el seed).
       { label: 'Organismos', icon: 'buildings', route: '/dashboard/organismos/lista', rule: { permissions: ['READ_ORGANISM'] } },
       { label: 'Tipos de Organismo', icon: 'path', route: '/dashboard/tipos-organismo/lista', rule: { permissions: ['READ_ORGANISM_TYPE'] } },
@@ -56,8 +54,8 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     // Trámites contra la API real (PLAN_TRAMITES_API.md §4.1, decisión P-1): plantillas, adopciones
-    // ("Trámites del organismo") y "Fichas por localidad". El ítem viejo "Trámites" (mock) sigue en
-    // Contenidos hasta la fase 5.
+    // ("Trámites del organismo") y "Fichas por localidad". Es el único acceso a trámites (el ítem viejo
+    // "Trámites" de Contenidos se retiró en la fase 5).
     label: 'Trámites',
     items: [
       { label: 'Plantillas provinciales', icon: 'files', route: '/dashboard/tramites/plantillas', rule: { permissions: ['READ_PROCEDURE'] } },

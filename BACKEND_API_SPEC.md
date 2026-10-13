@@ -23,7 +23,7 @@
 > 5. **🆕 `ADMIN_BACKOFFICE` puede gestionar roles y permisos** (`/api/role`, `/api/permission`), salvo tocar el rol
 >    `SUPERADMIN` (403 `4029`). `RoleResponseDTO` ahora expone `active`, y `active` es **obligatorio en el PUT** (§4).
 > 6. **Organismo:** el acrónimo ahora es único **globalmente** (antes solo entre activos) → 409 `4069` (§5.2).
-> 7. **Tag rediseñada** (`V2.8`): `{ id, organism, slug, local }` — sigue **sin controller** (§5.5).
+> 7. **Tag rediseñada** (`V2.8`): `{ id, organism, slug, local }` — *(controller expuesto luego en `84fde37`, §5.5/§7.0.2)*.
 >
 > **Novedades de la revisión previa (`ea65b92` → `0ecd14e`):** nuevo catálogo **Recipients** (`/api/recipient`, §5.4);
 > **LifeEvent pasó a soft-delete** (§5.3); el **bug 403→500 fue corregido** (§7); los usuarios creados por admin
@@ -58,7 +58,7 @@
   - 5.2 Organismos y Tipos de Organismo
   - 5.3 Taxonomía: Categorías, Modalidades y Eventos de Vida
   - 5.4 Destinatarios (Recipients)
-  - 5.5 Trámites (Procedure / Variant) y Tag — pendiente
+  - 5.5 Trámites y Etiquetas — API real
 - [6. Email, Almacenamiento y reCAPTCHA](#6-email-almacenamiento-y-recaptcha)
 - [7. Discrepancias y pendientes (LEER)](#7-discrepancias-y-pendientes-leer)
 - [8. Checklist de integración frontend](#8-checklist-de-integración-frontend)
@@ -671,7 +671,7 @@ Sigue exponiendo `permissions` completos anidados, **no** `permissionsIds`.
 
 > **Novedad `ea65b92`:** gran parte de lo que antes figuraba como "pendiente de exponer" **ya tiene API**.
 > Se pueden cablear los servicios `localidad`, `organismo`, `categoria`, `modalidad`, `evento-de-vida`.
-> Sigue pendiente el CRUD de **Trámites/Variantes** y **Tag** (§5.5).
+> Trámites (plantilla → adopción → ficha por localidad → puntos de atención) y Tag ya tienen API (§5.5, §7.0.2).
 >
 > Todos los endpoints usan el envelope `ResponseDTO<T>` = `{ code, details, data }` (`code` de negocio 2001/2002/2003/2013,
 > no el HTTP status). Los códigos de error de este dominio (4053, 4055, 4065–4075) están en §1.6 y en cada subsección.
@@ -831,40 +831,29 @@ Convención: **reads públicos**; 💥 **escrituras por PERMISO** (antes `hasAny
 > Igual que en taxonomía: los roles que cumplen esos permisos son `SUPERADMIN` y `ADMIN_BACKOFFICE`, así que el
 > comportamiento observable no cambia.
 
-### 5.5 Trámites (Procedure / Variant) y Tag — pendiente de exponer
+### 5.5 Trámites y Etiquetas — API real (`23fd8f9` / `84fde37`)
 
-Estas entidades existen pero **NO tienen controller/endpoint REST todavía** (siguen bloqueadas por backend):
+> Reemplaza la sección vieja "Procedure / Variant — pendiente": esas tablas (`procedures`, `procedure_variants`) ya no
+> son el modelo. El núcleo de trámites del DER se expuso en `origin/dev` @ `23fd8f9` y `Tag` en `84fde37`. Contratos,
+> permisos y roles del seed en **§7.0.2**; gaps y bugs abiertos (R-3, G-1 … G-12) en **`PEDIDOS_BACKEND.md`**; plan y
+> estado del front en **`PLAN_TRAMITES_API.md`** (§9).
 
-- **Procedure** (`procedures`): `id` UUID · `name` String UNIQUE NOT NULL · `description` TEXT ·
-  `tagIds` UUID[] (`tag_ids`) · `lifeEventIds` UUID[] (`life_event_ids`). Sin estado propio (vive en la variante).
-- **ProcedureVariant** (`procedure_variants`): `id` UUID · `procedure` (FK `procedure_id`) ·
-  `organism` (FK **`organization_id`** — nombre de columna legacy, apunta a `organisms`) · `location` (FK `location_id`) ·
-  `modality` (FK `modality_id`) · `requirements`/`paymentMethod`/`steps` TEXT · `procedureUrl` · `active` (`is_active`) ·
-  `status` String(50) = workflow `BORRADOR`/`PUBLICADO`.
-- **Tag** (`tags`) — 💥 **REDISEÑADA en `d800be0`** (migración `V2.8__create_tags.sql`, alineación con el DER):
+El trámite son **4 recursos encadenados** (plantilla → adopción → ficha por localidad → puntos de atención):
 
-  | Antes (`0ecd14e`) | Ahora (`d800be0`) |
-  |---|---|
-  | `id` UUID · `name` String UNIQUE · `description` String? · `active` bool (`is_active`) | `id` UUID · `organism` FK `organism_id` **nullable** · `slug` String NOT NULL · `local` bool (`is_local`, NOT NULL) |
+| Recurso | Ruta | Permisos | Nombre en la UI | Feature del front | Fuente hoy |
+|---|---|---|---|---|---|
+| Plantilla provincial (`ProcedureTemplate`, alcance global) | `/api/procedure-template` | `READ/CREATE/UPDATE/DELETE_PROCEDURE` | Plantillas provinciales | `plantillas` | **real** |
+| Adopción por organismo (`OrganismProcedure`, vigencia `effectiveFrom/To`) | `/api/organism-procedure` | `READ/CREATE/UPDATE/DELETE_ADOPTION` | Trámites del organismo | `adopciones` | mock hasta **R-3** (grants) |
+| Ficha por localidad (`OrganismProcedureLocation`, OTL) + workflow | `/api/organism-procedure-location` · `POST /{id}/submit-review` · `/publish` · `/unpublish` | `READ/CREATE/UPDATE_VARIANT`, `PUBLISH_VARIANT` (`DELETE` con `UPDATE_VARIANT`) | Fichas por localidad | `fichas-locales` | mock hasta **G-1** (response incompleto) |
+| Punto de atención (`AttentionPoint`, cuelga de la ficha) | `/api/attention-point` | `READ/CREATE/UPDATE/DELETE_ATTENTION_POINT` | Puntos de atención (panel del detalle de la ficha) | `puntos-atencion` | mock junto con fichas (G-1) y R-3 |
 
-  Las columnas `name`, `description` e `is_active` **fueron eliminadas** de la tabla; `slug` se generó por migración
-  a partir del `name` viejo (minúsculas, sin tildes, no-alfanumérico → `-`).
-  **Reglas de integridad** (constraints en DB + `@Check`/`@UniqueConstraint` en la entidad):
-  - `uk_tags_slug_organism` UNIQUE `(slug, organism_id)` + índice único parcial `uk_tags_slug_global` sobre `slug`
-    donde `organism_id IS NULL` (garantiza un solo tag global por slug).
-  - `chk_tags_scope_consistency`: `(organism_id IS NULL AND is_local = false)` **OR** `(organism_id IS NOT NULL AND is_local = true)`.
-    O sea: **tag global ⇔ sin organismo**; **tag local ⇔ con organismo**. No hay combinación mixta válida.
-
-  Ya existe `TagService.createTag(slug, organismId)` (canonicaliza el slug: NFD, sin diacríticos, minúsculas,
-  `[^a-z0-9]+`→`-`, sin guiones al borde) con errores `4072` (slug ya existe en ese scope, 400) y `4073`
-  (organismo inexistente, 404, entidad `Etiqueta`). **Pero sigue SIN `TagController` ni DTOs → no hay endpoint REST.**
-- Logs internos (`ProcedureVisitLog`, `SearchLog`): sin endpoints.
-
-**Todo el CRUD de trámites, variantes y tags requiere trabajo de API en el backend antes de integrarlo.**
-
-> 📌 **Para el front:** cuando se exponga el ABM de etiquetas, el modelo ya **no** es `{ id, name, description, active }`
-> sino `{ id, slug, organismId|null, local }`. Conviene ir adaptando el mock de `etiqueta.service` a esa forma:
-> el "nombre" visible es el `slug`, y el toggle "activo" **ya no existe** (se reemplazó por el scope global/local).
+- Estados de la ficha (`PublicationStatus`, `V2.21`): `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`. Quién
+  publica lo decide el permiso `PUBLISH_VARIANT`, no el rol. El `PUT` acepta `publicationStatus` (R-1): el front manda
+  siempre el estado actual y solo cambia estado por los endpoints de workflow.
+- **Tag** (`/api/tag`, PPDT-5.8): `{ id, slug, local, organismId }`, global ⇔ sin organismo. Integrado (BO-16); contrato
+  en §7.0.2. Las reglas de integridad de la tabla (`uk_tags_slug_organism`, `chk_tags_scope_consistency`) no cambiaron.
+- Logs internos (`ProcedureVisitLog`, `SearchLog`): sin endpoints de backoffice. Portal: `GET /api/procedure/{slug}`,
+  `/api/procedure/search` y feedback ciudadano (§7.0.2).
 
 ---
 
@@ -1090,11 +1079,9 @@ E. **🆕 Nuevos códigos de error** 4053, 4055, 4063, 4065–4075 (§1.6) — s
    El backend usa: `SUPERADMIN`, `ADMIN_BACKOFFICE`, `ADMIN_ORGANIZATION`, `AGENT`, `MANAGER`, `USER` (§4.2).
    Recordar: `hasRole('X')` ⇒ autoridad `ROLE_X`; en el claim `roles` y en `/api/auth/me` vienen **con** el prefijo.
 
-2. **Trámites/Variantes y Tag siguen sin API** (§5.5): `tramite.service` y `etiqueta.service` siguen **bloqueados
-   por backend**. El resto de la taxonomía y organismos **ya se puede integrar**.
-   El backend prioriza hoy el **core nuevo de procedimientos del DER** (`procedure_templates`, `organism_procedures`,
-   `organism_procedure_locations`, `otl_versions`, `attention_points`) — todos `pending` según
-   `docs/tasks/issues_pendientes.md` (corte 2026-07-28). **No esperar API de trámites en el corto plazo.**
+2. ~~Trámites/Variantes y Tag siguen sin API~~ — **superado en `23fd8f9`/`84fde37`**: los 4 recursos de trámites y
+   `/api/tag` están expuestos (§5.5, §7.0.2). El front los integró (BO-15, BO-16, BO-19); lo que sigue en mock está
+   bloqueado por R-3 / G-1 (`PEDIDOS_BACKEND.md`). `tramite.service`/`etiqueta.service` ya no existen.
 
 2-bis. **🚨 El menú del backoffice debe construirse desde `permissions`, no desde el rol.** Con el modelo nuevo,
    `AGENT`, `MANAGER` y `USER` no tienen **ningún** permiso de los ABMs del backoffice: si el menú se arma por rol,
@@ -1165,8 +1152,9 @@ Orden sugerido (lo desbloqueado por backend primero):
 - [X] **🆕 Organismos — acrónimo** (§5.2): mapear **409 `4069`** al campo `acronym` (unicidad ahora global, incluye bajas).
 - [ ] **Storage** (§6.2): descarga por clave **con token + permiso `READ_STORAGE`**; upload bloqueado por backend.
 - [ ] **reCAPTCHA** (§6.3): integrar `verify-recaptcha` donde se requiera (necesita claves reales).
-- [ ] **Bloqueado por backend** (§5.5, §7): CRUD de **trámites/variantes** y **tags** (modelo de Tag ya cambió a
-  `{ slug, organismId, local }`), listado de usuarios, upload. Coordinar con backend o mantener mocks.
+- [x] **Trámites y Tag** (§5.5): plantillas y etiquetas en real; adopciones, fichas y puntos de atención con HTTP escrito
+  y en mock hasta R-3 / G-1 (`PEDIDOS_BACKEND.md`).
+- [ ] **Bloqueado por backend** (§7): listado de usuarios, upload. Coordinar con backend o mantener mocks.
 
 ---
 

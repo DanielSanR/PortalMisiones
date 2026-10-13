@@ -370,3 +370,20 @@ permiso y no por rol, y no ofrecer acciones que el backend va a rechazar. Las qu
   workflow (mitiga R-1).
 - Los errores `5000` de fichas se muestran con un texto prudente ("Puede que la ficha haya cambiado de estado;
   recargá e intentá de nuevo").
+
+---
+
+## 9. Estado de implementación (2026-10-13)
+
+| Fase | Commit | Fuente | Qué quedó | Pendiente |
+|---|---|---|---|---|
+| **0 · Preparación** | `c194f43` | — | `FeatureKey`, permisos, `API_CODES`, pedidos G-1 a G-12 y R-3 en `PEDIDOS_BACKEND.md` | Respuestas del backend |
+| **1 · Plantillas** | `c194f43` | **real** | Feature `plantillas` (`/api/procedure-template`): lista, form, detalle, nav, rutas y comando "Crear plantilla" | G-10 (slug canónico, `4073` preciso), G-6, P-4 (`?includeInactive`) |
+| **2 · Adopciones** | `4d8f34c` | **mock** (HTTP escrito) | Feature `adopciones` (`/api/organism-procedure`): lista, detalle con vigencia, diálogo "Adoptar" (es-AR); "Adoptar" solo con `READ_ORGANISM` (P-2) | **R-3** para pasar a real; G-2 (AO adopta), G-3, G-11 |
+| **3 · Fichas + workflow** | `bbb3b52` | **mock** (HTTP escrito) | Feature `fichas-locales` (`/api/organism-procedure-location`): lista con tab "En revisión", form, detalle, badge de cuatro estados, workflow por `PUBLISH_VARIANT`; PUT con el estado actual (R-1) | **G-1** para pasar a real; G-4 (rechazar / volver a borrador), G-5 (D-3), G-9, G-12 |
+| **4 · Puntos de atención** | `bbb3b52` | **mock** (HTTP escrito) | Feature `puntos-atencion` (`/api/attention-point`): panel en el detalle de la ficha, diálogo con lat/long y "Ver en mapa" (P-8) | Se activa junto con fichas (G-1); R-3 para los grants |
+| **5 · Limpieza** | sin commitear | — | Retirados `core/features/tramites`, pantallas `pages/tramites/{list,create,detail}`, `tramite.service`/`tramite.model`/`dashboard.model`, servicios legacy huérfanos (`categoria`, `destinatario`, `evento-de-vida`, `organismo`, `localidad`, `feedback`), rutas del `mockApiInterceptor` salvo `/api/usuarios`, config `TRAMITE` + campo `icon-picker`, ítem de nav y comando viejos, `FeatureKey 'tramites'`. Rutas viejas → redirect a `tramites/plantillas`. Etiquetas mock con semilla propia. Docs actualizados (`BACKEND_API_SPEC` §5.5, `migracion_arquitectura` §12, `CLAUDE.md`, backlog, QA §14). Bundle inicial 897 → **837 kB** (sin warnings; providers importados directo en `app.config.ts`, ver comentario) | — |
+
+**Para activar en real** solo hay que borrar el override del feature en `environment.ts` y `environment.prod.ts`:
+`adopciones` cuando se corrija R-3; `fichas-locales` y `puntos-atencion` juntos cuando cierre G-1 (no mezclar ids reales
+con ids mock).

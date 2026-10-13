@@ -33,13 +33,6 @@ export interface Comando {
 export const COMANDOS: Comando[] = [
   // ── Altas ────────────────────────────────────────────────────────────────
   {
-    label: 'Crear trámite',
-    icon: 'file-plus',
-    keywords: ['nuevo', 'alta', 'agregar', 'tramite'],
-    route: '/dashboard/tramites/nuevo',
-    rule: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] },
-  },
-  {
     label: 'Crear plantilla',
     icon: 'files',
     keywords: ['nueva', 'alta', 'agregar', 'plantilla', 'provincial', 'tramite'],

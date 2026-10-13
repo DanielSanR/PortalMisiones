@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewEncapsulation } from '@angular/core';
-import { FormGroup, FormsModule } from '@angular/forms';
+import { FormGroup } from '@angular/forms';
 import { Observable, of } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
 import { FieldConfig } from '../../../core/models/field.interface';
@@ -13,11 +13,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { FormErrorMessageDirective } from './FormErrorMessage.directive';
-import { ICON_CATALOG, IconCategory } from './icon-catalog';
 
 @Component({
   selector: 'app-dynamic-form-field',
@@ -25,7 +22,6 @@ import { ICON_CATALOG, IconCategory } from './icon-catalog';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    FormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -34,8 +30,6 @@ import { ICON_CATALOG, IconCategory } from './icon-catalog';
     MatDatepickerModule,
     MatNativeDateModule,
     MatButtonModule,
-    MatIconModule,
-    MatTooltipModule,
     TextFieldModule,
     FormErrorMessageDirective,
   ],
@@ -53,21 +47,12 @@ export class DynamicFormFieldComponent implements OnInit, OnChanges {
    */
   preview$: Observable<string> = of('');
 
-  // Icon picker state
-  iconSearch = '';
-  selectedIconCategory: IconCategory = 'Todos';
-  iconCategories: IconCategory[] = ['Todos', 'Gobierno', 'Salud', 'Educación', 'Transporte', 'Documentos', 'Finanzas', 'Trabajo', 'Vivienda', 'Familia', 'General'];
-  filteredIcons: string[] = [];
-
   @Input() field!: FieldConfig;
   @Input() group!: FormGroup;
 
   ngOnInit() {
     if (!this.field || !this.group) {
       console.error('Campo o grupo no definidos en DynamicFormFieldComponent');
-    }
-    if (this.field?.type === 'icon-picker') {
-      this.filterIcons();
     }
   }
 
@@ -101,39 +86,5 @@ export class DynamicFormFieldComponent implements OnInit, OnChanges {
     if (event.key === 'e' || event.key === 'E') {
       event.preventDefault();
     }
-  }
-
-  // --- Icon picker methods ---
-
-  filterIcons(): void {
-    const search = this.iconSearch.toLowerCase().trim();
-    let icons: string[];
-
-    if (this.selectedIconCategory === 'Todos') {
-      icons = Object.values(ICON_CATALOG).flat();
-    } else {
-      icons = ICON_CATALOG[this.selectedIconCategory] || [];
-    }
-
-    if (search) {
-      icons = icons.filter(icon => icon.includes(search));
-    }
-
-    this.filteredIcons = [...new Set(icons)];
-  }
-
-  selectIconCategory(category: IconCategory): void {
-    this.selectedIconCategory = category;
-    this.filterIcons();
-  }
-
-  selectIcon(icon: string): void {
-    this.group.get(this.field.name)?.setValue(icon);
-    this.group.get(this.field.name)?.markAsTouched();
-  }
-
-  clearIcon(): void {
-    this.group.get(this.field.name)?.setValue('');
-    this.group.get(this.field.name)?.markAsTouched();
   }
 }

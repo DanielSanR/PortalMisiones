@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
   // Base de las rutas mockeadas heredadas (mockApiInterceptor). Mantener hasta que el
-  // backend exponga esos endpoints (trámites, organismos, etc. — ver §7 del API spec).
+  // backend exponga listado/edición de usuarios (único resto del mock por interceptor).
   apiUrl: 'http://localhost:3000/api',
   // Backend real (Spring Boot). Sin context-path: cada controller trae su propio prefijo /api/...
   apiBaseUrl: 'http://localhost:8080',
@@ -19,7 +19,6 @@ export const environment = {
     // Usuarios: híbrido. El datasource HTTP hace POST /api/user REAL (create) y delega
     // listado/edición al mock (el backend no expone GET /api/user ni update genérico).
     usuarios: 'local',
-    tramites: 'mock',
     // Trámites reales (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
     // plantillas: /api/procedure-template real → hereda default real (fase 1).
     adopciones: 'mock',       // fase 2

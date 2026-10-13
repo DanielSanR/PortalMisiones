@@ -83,7 +83,10 @@ Leyenda: `[ ]` pendiente · `[~]` en curso · `[x]` hecho · `[-]` descartado (c
 
 | Funcionalidad | Falta en backend | Estado front |
 |---|---|---|
-| Trámites / variantes | ✅ API expuesta en `23fd8f9` (PPDT-5.4/5.5/5.6) — falta el front (BO-15, plan en `PLAN_TRAMITES_API.md`) | mock completo |
+| Plantillas provinciales (`/api/procedure-template`) | ✅ expuesta (PPDT-5.4) | **real** (BO-15, fase 1) |
+| Trámites del organismo / adopciones (`/api/organism-procedure`) | ✅ expuesta (PPDT-5.5), pero **R-3** deja `*_ADOPTION` sin asignar; **G-2** impide que AO adopte | **mock** (HTTP escrito) hasta R-3; "Adoptar" solo con `READ_ORGANISM` (P-2) |
+| Fichas por localidad (`/api/organism-procedure-location`) | **G-1**: el response no trae adopción, localidad, URL, requisitos ni costos, y no filtra por adopción; G-4 (transiciones) | **mock** (HTTP escrito) hasta G-1 |
+| Puntos de atención (`/api/attention-point`) | ✅ expuesta (PPDT-5.7), pero **R-3** (`*_ATTENTION_POINT`) y cuelga de fichas (G-1) | **mock** (HTTP escrito); se activa junto con fichas |
 | Etiquetas | ✅ `TagController` expuesto (`84fde37`) | **real** (BO-16) |
 | Listado de usuarios | `GET /api/user` paginado — ⚠️ **no figura en el backlog de Taiga** | híbrido: alta real; listado, edición y acciones de fila en mock |
 | Feedback | moderación (Taiga **PPDT-5.15**; la tabla `procedure_feedbacks` ya existe) | mock en capas (BO-4) |
@@ -113,11 +116,21 @@ ni permisos nuevos en el seed. Detalle en `BACKEND_API_SPEC.md` §7.0.
 - [ ] ADMIN_ORGANIZATION y AGENT van a ver solo datos de su organismo. Revisar listas y selects de organismo
   (usuarios, etiquetas locales, trámites) para no ofrecer opciones que el backend va a rechazar.
 
-### BO-15 · Trámites contra la API real — cuando salgan PPDT-5.4/5.5/5.6 · Alta
-- [ ] Permisos del backend: `CREATE/READ/DELETE_PROCEDURE`. Las rutas del front hoy piden además `*_VARIANT`
-  (`pages.module.ts`): revisar contra el contrato final.
-- [ ] Modelo nuevo: plantilla maestra (backoffice provincial) → adopción por organismo → versiones (OTL) con workflow
-  de publicación. El mock actual de trámites no tiene esa forma: es una reestructura, no solo agregar un `HttpDataSource`.
+### BO-15 · Trámites contra la API real (PPDT-5.4/5.5/5.6) · Alta — ✅ hecho en front (2026-10-13), parte bloqueada por backend
+Plan y decisiones en `PLAN_TRAMITES_API.md` (§5 fases, §8 decisiones, §9 estado). Pedidos al backend en `PEDIDOS_BACKEND.md`.
+- [x] **Fase 0+1 · Plantillas provinciales** (`c194f43`): feature `plantillas` contra `/api/procedure-template` (**real**),
+  lista/form/detalle, permisos `*_PROCEDURE`, nav "Trámites", comando "Crear plantilla".
+- [x] **Fase 2 · Trámites del organismo** (`4d8f34c`): feature `adopciones` (`/api/organism-procedure`), lista, detalle con
+  vigencia, diálogo "Adoptar" (datepicker es-AR). Corre en **mock** hasta R-3; "Adoptar" oculto sin `READ_ORGANISM` (P-2, G-2).
+- [x] **Fase 3+4 · Fichas por localidad + workflow** (`bbb3b52`): feature `fichas-locales` (lista con tab "En revisión",
+  form, detalle, badge `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO` por `PUBLISH_VARIANT`). En **mock** hasta G-1.
+- [x] **Fase 5 · Limpieza** (sin commitear): retirado el Trámites viejo (feature `tramites`, pantallas `list/create/detail`,
+  `tramite.service`, `tramite.model`, rutas del mock por interceptor, config `TRAMITE` + `icon-picker`, servicios legacy
+  huérfanos). Las rutas viejas `tramites`, `tramites/lista|nuevo|editar/:id|detalle/:id` redirigen a
+  `tramites/plantillas`. Bundle inicial 897 → 837 KB (sin warnings).
+- Bloqueado por backend: **R-3** (activar adopciones y puntos en real), **G-1** (activar fichas y puntos en real; van juntos
+  para no mezclar ids), **G-2** (AO adopta), **G-3** (AO lista plantillas, AGENT ve el trámite de la ficha), **G-4**
+  (rechazar/volver a borrador, 4xx en transiciones inválidas). Activarlos es sacar el override de `environment*.ts`.
 
 ### BO-16 · Etiquetas contra la API real (PPDT-5.8, salió en `84fde37`) · Media
 - [x] `EtiquetasHttpDataSource` (`/api/tag`) + DTO + mapper; quitado el override `etiquetas: 'mock'` (dev y prod).
@@ -136,8 +149,10 @@ ni permisos nuevos en el seed. Detalle en `BACKEND_API_SPEC.md` §7.0.
   ON p.id=rp.permission_id WHERE p.code LIKE '%\_TAG' ESCAPE '';`) y pedir al backend una migración correctiva.
 - Mitigación local si hace falta: asignar los permisos a mano desde la pantalla de Roles (SA).
 
-### BO-19 · Puntos de atención (PPDT-5.7, salió en `7b5afda`) · Media
-- [ ] Sección nueva: CRUD de `/api/attention-point`, colgado de cada trámite por localidad. Va con BO-15 (ver plan).
+### BO-19 · Puntos de atención (PPDT-5.7, salió en `7b5afda`) · Media — ✅ hecho en front (`bbb3b52`, fase 4), en mock
+- [x] Feature `puntos-atencion` (`/api/attention-point`) + panel hijo en el detalle de la ficha (alta/edición en diálogo,
+  lat/long manuales con validación y link "Ver en mapa", P-8). Permisos `*_ATTENTION_POINT`.
+- Bloqueado por backend: corre en **mock** junto con fichas hasta **G-1**; en real además depende de **R-3**.
 
 ### BO-20 · Organismo del usuario en sesión para roles con alcance (AO/AGENT) · Media
 - [ ] Hace falta conocer el organismo del usuario logueado para preseleccionarlo (etiquetas locales, adopciones, trámites

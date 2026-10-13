@@ -120,10 +120,7 @@ formulario (crear / editar) pide además `READ_ORGANISM` + rol admin, porque car
 - [ ] Nada en la app usaba gráficos; si algún widget muestra un canvas vacío o error de Chart.js, avisame (no
       debería: se verificó que ningún componente usa `baseChart`).
 
-9. Regresión rápida en Trámites (tocado en la revisión)
-
-- [ ] Trámites → editar uno → Contenido por localidad → eliminar una localidad con el DELETE bloqueado: el error se ve
-      SOLO dentro del modal (antes salía además un snackbar rojo).
+9. ~~Regresión rápida en Trámites~~ — obsoleto: el Trámites viejo (mock) se retiró en la fase 5. Ver la sección 14.
 
 10. Guardarraíles (los corrí yo, repetilos si querés)
 
@@ -168,10 +165,88 @@ formulario (crear / editar) pide además `READ_ORGANISM` + rol admin, porque car
 - [ ] Con AO o AGENT: el menú muestra Etiquetas y la lista trae solo las locales de su organismo. Al crear, si el form solo
       ofrece "global", el backend responde `4073` y se marca en el campo Organismo — es el gap conocido BO-20, no un bug nuevo.
 
+14. Trámites (plantillas, adopciones, fichas, puntos de atención)
+
+▎ Plan, permisos y decisiones: `PLAN_TRAMITES_API.md` §1.6 y §8. Pedidos al backend: `PEDIDOS_BACKEND.md`.
+▎ **Qué corre en real y qué en mock** (`environment*.ts` → `featureOverrides`):
+▎ - Plantillas provinciales → **real** (`/api/procedure-template`). Se ve en Network.
+▎ - Trámites del organismo (adopciones) → **mock** hasta R-3. No hay requests a `/api/organism-procedure`.
+▎ - Fichas por localidad y puntos de atención → **mock** hasta G-1. No hay requests a `/api/organism-procedure-location`
+▎   ni a `/api/attention-point`. Los datos mock se reinician al recargar la página.
+▎ **El menú se arma por permiso.** Con R-3 sin corregir, ningún rol tiene `*_ADOPTION` ni `*_ATTENTION_POINT`: "Trámites
+▎ del organismo" y el panel de puntos no aparecen ni para SA. Para probarlos, asigná esos permisos a mano desde Roles (SA)
+▎ según la tabla de §1.6 del plan. Volvé a iniciar sesión después de cambiar permisos.
+▎ Usuarios: SA, AB y AO de la precondición. Para AGENT y MANAGER usá un usuario con ese rol (crealo con SA si no hay).
+
+Humo y navegación
+- [ ] El grupo **Trámites** del menú es el único acceso: "Plantillas provinciales", "Trámites del organismo" y "Fichas por
+      localidad". En Contenidos ya NO está el ítem viejo "Trámites".
+- [ ] Rutas viejas guardadas: `/dashboard/tramites`, `/dashboard/tramites/lista`, `/dashboard/tramites/nuevo`,
+      `/dashboard/tramites/editar/x` y `/dashboard/tramites/detalle/x` → terminan en Plantillas provinciales (o en Home si
+      el usuario no tiene `READ_PROCEDURE`, p. ej. AO).
+- [ ] Buscador de comandos: "Crear trámite" ya no existe. Están "Crear plantilla", "Adoptar trámite" y "Revisar fichas por
+      localidad", según los permisos de cada rol.
+- [ ] Breadcrumb: cada pantalla muestra su sección ("Plantillas provinciales", "Trámites del organismo", "Fichas por
+      localidad") y el paso ("Nueva plantilla", "Detalle", "Agregar localidad", "Editar ficha").
+
+SA (todo)
+- [ ] Plantillas: crear una con título "Obtener certificado de prueba" → `POST /api/procedure-template` 201. El slug se
+      sugiere desde el título y es editable. Repetir el slug → error en el campo Slug, sin diálogo modal encima.
+- [ ] Plantillas: editar (aviso "Guardar reemplaza la plantilla completa."), ver detalle y desactivar → `PUT`/`DELETE` 2xx.
+      La desactivada desaparece de la lista: el backend no lista inactivas (P-4).
+- [ ] Trámites del organismo: "Adoptar trámite" abre el diálogo (también con el comando o `?adoptar=1`). Elegir
+      plantilla, organismo y vigencia (datepicker en DD/MM/YYYY). Una vigencia que se superpone con otra adopción
+      habilitada del mismo organismo y plantilla → error del mock con la forma del backend.
+- [ ] Detalle de la adopción: badge de vigencia (vigente / programada / vencida / deshabilitada); editar fechas y salir sin
+      guardar → aviso de cambios sin guardar. "Deshabilitar" desde la lista.
+- [ ] Fichas: desde el detalle de una adopción → "Agregar localidad". Slug sugerido `slugBase-localidad`, editable; repetir
+      una localidad ya usada → "Esa localidad ya tiene una ficha de este trámite".
+- [ ] Workflow en el detalle de la ficha: `BORRADOR` → "Enviar a revisión" → `EN_REVISION` → "Publicar" → `PUBLICADO` →
+      "Despublicar" → `DESPUBLICADO` → "Republicar". El badge cambia en cada paso. No existe "Enviar y publicar" (P-3).
+- [ ] Fichas → tab "En revisión" con contador; el comando "Revisar fichas por localidad" abre esa tab.
+- [ ] Editar una ficha `PUBLICADO` muestra "Esta ficha está publicada." (los cambios se ven en el portal al guardar, P-6).
+- [ ] Puntos de atención (panel del detalle de la ficha): agregar uno con lat/long inválidas (fuera de rango o con más
+      de 6 decimales) → error en el campo; con válidas → se guarda y "Ver en mapa" abre OpenStreetMap en ese punto.
+      Editar y eliminar.
+
+AB (Administrador de Backoffice)
+- [ ] Ve "Plantillas provinciales" y gestiona plantillas (crear, editar), pero **no** tiene "Desactivar" (sin
+      `DELETE_PROCEDURE`).
+- [ ] **No** ve "Fichas por localidad" (sin `READ_VARIANT`) ni la lista de organismos.
+- [ ] "Trámites del organismo" (si R-3 está resuelto o con permisos asignados a mano): ve la lista, pero **no** ve
+      "Adoptar trámite", porque no tiene `READ_ORGANISM` para elegir organismo (P-2).
+
+AO (Administrador de Organismo)
+- [ ] **No** ve "Plantillas provinciales" (sin `READ_PROCEDURE`, G-3). Por la misma razón no ve "Adoptar trámite" (P-2/G-2).
+- [ ] Ve "Trámites del organismo" (con `*_ADOPTION`) y "Fichas por localidad". Desde una adopción, "Agregar localidad".
+- [ ] Workflow completo con su permiso `PUBLISH_VARIANT`: enviar a revisión, publicar, despublicar, republicar.
+- [ ] Gestiona puntos de atención (con `*_ATTENTION_POINT`).
+
+AGENT
+- [ ] Ve "Fichas por localidad" pero **no** "Trámites del organismo" ni "Agregar localidad" (sin `READ_ADOPTION` ni
+      `CREATE_VARIANT`).
+- [ ] Edita una ficha existente y la envía a revisión. **No** ve "Publicar" ni "Despublicar" (sin `PUBLISH_VARIANT`).
+- [ ] Gestiona puntos de atención (con `*_ATTENTION_POINT`).
+
+MANAGER
+- [ ] Solo lectura: ve "Plantillas provinciales" y "Fichas por localidad" sin "Nueva plantilla", "Editar", "Desactivar",
+      acciones de workflow ni alta de puntos. No ve "Trámites del organismo".
+
+Gaps conocidos — **no reportar como bugs**
+- **R-3** (grants de `V2.20`/`V2.23`/`V2.24`): sin permisos asignados a mano, "Trámites del organismo" y los puntos de
+  atención no aparecen para ningún rol, y Etiquetas tampoco. Adopciones siguen en mock por esto.
+- **G-1** (response de la ficha incompleto): fichas y puntos corren en mock. En real, editar borraría requisitos, costos
+  y URL, por eso no se activan todavía.
+- **G-2** (organismo del usuario en `/api/auth/me`): AO no puede adoptar; "Adoptar trámite" se le oculta.
+- **G-3**: AO no lista plantillas; AGENT no ve de qué trámite es cada ficha cuando el backend sea real.
+- **G-4**: no hay "Rechazar" (`EN_REVISION → BORRADOR`) ni "Volver a borrador" desde `DESPUBLICADO`.
+- Sin resumen de feedback por ficha (P-7) y sin plantillas/adopciones inactivas en las listas (P-4): decisiones, no bugs.
+
 Lo que NO entra en este QA (pendiente del backend)
 
 - Acciones de usuario contra el backend real (necesita `GET /api/user` para que los ids de la lista existan).
-- Etiquetas reales (`TagController`), Trámites, Dashboard/Auditoría/Feedback reales, upload de archivos, reCAPTCHA.
+- Adopciones, fichas y puntos de atención en real (R-3, G-1; ver sección 14), Dashboard/Auditoría/Feedback reales, upload
+  de archivos, reCAPTCHA.
 
 Los puntos con más chance de sorpresa (mirá primero estos):
 1. AB ahora gestiona credenciales y estado de usuarios (BO-7) — cambio intencional.

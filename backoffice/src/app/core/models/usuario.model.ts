@@ -32,3 +32,15 @@ export interface UsuarioUpdate {
   localidadId?: number;
   activo?: boolean;
 }
+
+/**
+ * Envelope paginado del mock legado (`/api/usuarios` del `mockApiInterceptor`). Lo usan solo
+ * `UsuarioService` y el mock; el backend real responde `ResponseDTO<T>` (ver api-response.model).
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}

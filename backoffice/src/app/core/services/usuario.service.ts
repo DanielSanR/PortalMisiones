@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Usuario, UsuarioCreate, UsuarioUpdate } from '../models/usuario.model';
-import { PaginatedResponse } from '../models/tramite.model';
+import { PaginatedResponse, Usuario, UsuarioCreate, UsuarioUpdate } from '../models/usuario.model';
 
 @Injectable({ providedIn: 'root' })
 export class UsuarioService {
