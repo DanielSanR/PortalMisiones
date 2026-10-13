@@ -1,0 +1,178 @@
+// ==========================================================================
+// Form de Ficha por localidad — usa .form-card / .form-grid / .form-field
+// globales; acá solo lo propio: estados de carga, contexto del trámite,
+// avisos (P-6, adopción deshabilitada), slug con "Sugerir" y su vista previa,
+// el toggle de disponibilidad y la sección de puntos de atención.
+// ==========================================================================
+
+@use '../../../../../shared-styles/mixins' as *;
+
+.fichaform-cargando {
+  padding: var(--theme-space-3xl) 0;
+}
+
+.fichaform-estado {
+  @include load-state-panel;
+}
+
+// Contexto: de qué trámite del organismo es la ficha ------------------------
+.fichaform-contexto {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--theme-space-sm) var(--theme-space-md);
+  margin-bottom: var(--theme-space-md);
+  padding: var(--theme-space-sm) var(--theme-space-md);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-surface-card);
+
+  > i.ph {
+    flex: none;
+    font-size: 20px;
+    color: var(--theme-primary);
+  }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 240px;
+    min-width: 0;
+  }
+
+  &__titulo {
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+    @include truncate;
+  }
+
+  &__organismo {
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+    @include truncate;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--theme-primary);
+    font-size: var(--theme-font-size-xs);
+    text-decoration: none;
+    border-radius: var(--theme-radius-sm);
+    @include focus-ring;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.fichaform-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+  margin-bottom: var(--theme-space-md);
+  padding: var(--theme-space-sm) var(--theme-space-md);
+  border: 1px solid var(--theme-warning-border);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+  font-size: var(--theme-font-size-sm);
+
+  i.ph {
+    flex: none;
+    margin-top: 2px;
+    font-size: 17px;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.fichaform-opcion__depto {
+  color: var(--theme-text-tertiary);
+  font-size: var(--theme-font-size-xs);
+}
+
+// Slug + botón "Sugerir" en la misma fila; en mobile se apilan.
+.fichaform-slug {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+
+  mat-form-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__sugerir {
+    flex: none;
+    margin-top: var(--theme-space-sm);
+  }
+
+  @include responsive(mobile) {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__sugerir {
+      margin-top: 0;
+    }
+  }
+}
+
+// Región viva siempre montada: el texto aparece solo si el slug cambia al canonicalizarse.
+.fichaform-preview {
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+
+    code {
+      font-family: var(--theme-font-mono);
+      color: var(--theme-text-primary);
+    }
+  }
+}
+
+.fichaform-activa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  margin-bottom: var(--theme-space-lg);
+
+  &__aviso,
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+
+  &__error {
+    color: var(--theme-error-icon);
+  }
+}
+
+// Puntos de atención (solo en edición), debajo del form -----------------------
+.fichaform-puntos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+  margin-top: var(--theme-space-lg);
+  padding: var(--theme-space-md) var(--theme-space-lg);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+
+  &__titulo {
+    margin: 0;
+    @include section-title;
+  }
+}

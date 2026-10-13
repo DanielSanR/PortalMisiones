@@ -1,0 +1,137 @@
+// ==========================================================================
+// Panel de puntos de atención de una ficha: barra (toggle de inactivos +
+// "Agregar punto") y una grilla de cards (nombre, dirección, horarios,
+// contacto, coordenadas con "Ver en mapa", acciones).
+// ==========================================================================
+
+@use '../../../../../shared-styles/mixins' as *;
+
+.puntos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+}
+
+.puntos-barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--theme-space-sm) var(--theme-space-md);
+
+  &__agregar {
+    margin-left: auto;
+  }
+}
+
+.puntos-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--theme-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include responsive(mobile) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.puntos-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  min-width: 0;
+  padding: var(--theme-space-md);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-surface-card);
+
+  &.is-inactivo {
+    background: var(--theme-surface-sunken);
+  }
+
+  &__encabezado {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-sm);
+  }
+
+  &__nombre {
+    margin: 0;
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  &__datos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-xs);
+    margin: 0;
+  }
+
+  &__fila {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+
+    dt {
+      flex: none;
+      color: var(--theme-text-tertiary);
+
+      i.ph {
+        margin-top: 2px;
+      }
+    }
+
+    dd {
+      margin: 0;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      white-space: pre-line;
+    }
+  }
+
+  &__coords {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--theme-space-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__mapa {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--theme-primary);
+    font-size: var(--theme-font-size-xs);
+    text-decoration: none;
+    border-radius: var(--theme-radius-sm);
+    @include focus-ring;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__faltante {
+    color: var(--theme-text-tertiary);
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--theme-space-xs);
+    margin-top: auto;
+  }
+}
+
+.puntos-mensaje {
+  @include inline-message;
+}

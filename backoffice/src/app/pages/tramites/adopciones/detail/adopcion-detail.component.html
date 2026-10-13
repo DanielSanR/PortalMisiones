@@ -126,18 +126,11 @@
         </section>
       </div>
 
-      <!-- Fase 3 (fichas-locales): acá va la grilla de fichas por localidad de esta adopción, con
-           "Agregar localidad" (CREAR_FICHA_ACCESS) y el editor de ficha. Ver PLAN_TRAMITES_API.md §4.2.
-           Hasta entonces, un estado vacío explícito en vez de datos de ejemplo. -->
-      <section class="adopdet-card" aria-labelledby="adopdet-fichas">
+      <!-- Fichas por localidad de esta adopción (componente hijo con su propio facade). Sin
+           `READ_VARIANT` (AB) no se muestra: el backend no le deja leer fichas. -->
+      <section class="adopdet-card" aria-labelledby="adopdet-fichas" *appHasPermission="'READ_VARIANT'">
         <h3 class="adopdet-card__titulo" id="adopdet-fichas">Fichas por localidad</h3>
-        <div class="adopdet-fichas">
-          <span class="adopdet-fichas__icono" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
-          <p class="adopdet-fichas__titulo">Se gestionan en la próxima versión</p>
-          <p class="adopdet-fichas__texto">
-            Acá vas a ver en qué localidades se ofrece este trámite, con sus requisitos, costos y puntos de atención.
-          </p>
-        </div>
+        <app-fichas-de-adopcion [adopcionId]="estado.adopcion.id" [habilitada]="estado.adopcion.habilitada"></app-fichas-de-adopcion>
       </section>
     </div>
   }

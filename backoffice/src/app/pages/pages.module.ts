@@ -3,7 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
 import { accessGuard, unsavedChangesGuard } from '../core/guards';
 import {
-  EDITAR_USUARIO_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS, LEER_ROLES_PERMISOS_ACCESS,
+  CREAR_FICHA_ACCESS, EDITAR_USUARIO_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS, LEER_ROLES_PERMISOS_ACCESS,
 } from '../core/constants/policy-overrides.constants';
 import { UserRole } from '../core/enums/user-role.enum';
 
@@ -16,6 +16,9 @@ import { PlantillaFormComponent } from './tramites/plantillas/form/plantilla-for
 import { PlantillaDetailComponent } from './tramites/plantillas/detail/plantilla-detail.component';
 import { AdopcionesListComponent } from './tramites/adopciones/list/adopciones-list.component';
 import { AdopcionDetailComponent } from './tramites/adopciones/detail/adopcion-detail.component';
+import { FichasListComponent } from './tramites/fichas/list/fichas-list.component';
+import { FichaFormComponent } from './tramites/fichas/form/ficha-form.component';
+import { FichaDetailComponent } from './tramites/fichas/detail/ficha-detail.component';
 import { OrganismosListComponent } from './organismos/list/organismos-list.component';
 import { OrganismoFormComponent } from './organismos/create/organismo-form.component';
 import { OrganismoDetailComponent } from './organismos/detail/organismo-detail.component';
@@ -82,6 +85,14 @@ const routes: Routes = [
       // vive en el detalle (con aviso de cambios sin guardar).
       { path: 'tramites/adopciones', component: AdopcionesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ADOPTION'] }, redirectTo: HOME, breadcrumb: ['Trámites del organismo'] } },
       { path: 'tramites/adopciones/detalle/:id', component: AdopcionDetailComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['READ_ADOPTION'] }, redirectTo: HOME, breadcrumb: ['Trámites del organismo', 'Detalle'] } },
+
+      // Fichas por localidad (`/api/organism-procedure-location`, en MOCK hasta G-1). Alcance por organismo en el
+      // backend; permisos `*_VARIANT` y `PUBLISH_VARIANT` (workflow, en el detalle y en la tab "En revisión").
+      // El alta cuelga de una adopción (`?adopcion=`): CREAR_FICHA_ACCESS = CREATE_VARIANT + READ_ADOPTION.
+      { path: 'tramites/fichas', component: FichasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Fichas por localidad'] } },
+      { path: 'tramites/fichas/nueva', component: FichaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: CREAR_FICHA_ACCESS, redirectTo: HOME, breadcrumb: ['Fichas por localidad', 'Agregar localidad'] } },
+      { path: 'tramites/fichas/editar/:id', component: FichaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Fichas por localidad', 'Editar ficha'] } },
+      { path: 'tramites/fichas/detalle/:id', component: FichaDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Fichas por localidad', 'Detalle'] } },
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
       { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos'] } },

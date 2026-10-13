@@ -24,6 +24,7 @@ import {
 } from '../adopcion-save-error';
 import { confirmDeshabilitar } from '../adopcion-textos';
 import { VigenciaBadgeComponent } from '../vigencia-badge/vigencia-badge.component';
+import { FichasDeAdopcionComponent } from '../../fichas/de-adopcion/fichas-de-adopcion.component';
 import { VigenciaCamposComponent } from '../vigencia-campos/vigencia-campos.component';
 import { crearVigenciaForm, rangoDeVigencia } from '../vigencia-campos/vigencia-form';
 
@@ -35,8 +36,8 @@ type EstadoDetalle =
 /**
  * Detalle de un trámite del organismo (adopción, habilitada o no: `GET /{id}` devuelve las dos).
  * Datos + edición de vigencia y "habilitada" (`UPDATE_ADOPTION`, PUT total que reenvía plantilla,
- * organismo y titular tal cual) + "Deshabilitar" (`DELETE_ADOPTION`). La sección "Fichas por
- * localidad" queda reservada para la fase 3.
+ * organismo y titular tal cual) + "Deshabilitar" (`DELETE_ADOPTION`) + "Fichas por localidad"
+ * (`app-fichas-de-adopcion`, hijo con su propio facade, con `READ_VARIANT`).
  */
 @Component({
   selector: 'app-adopcion-detail',
@@ -44,7 +45,7 @@ type EstadoDetalle =
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe, DatePipe, RouterLink, ReactiveFormsModule, MatButtonModule, MatSlideToggleModule, MatSnackBarModule,
-    HasPermissionDirective, PageActionsDirective, VigenciaBadgeComponent, VigenciaCamposComponent,
+    HasPermissionDirective, PageActionsDirective, VigenciaBadgeComponent, VigenciaCamposComponent, FichasDeAdopcionComponent,
   ],
   templateUrl: './adopcion-detail.component.html',
   styleUrl: './adopcion-detail.component.scss',

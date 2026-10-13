@@ -1,0 +1,66 @@
+@if (estado$ | async; as estado) {
+  @if (estado.tipo === 'cargando') {
+    <p class="fichasadop-mensaje" role="status">
+      <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+      Cargando las fichas por localidad...
+    </p>
+  } @else if (estado.tipo === 'error') {
+    <div class="fichasadop-mensaje fichasadop-mensaje--error" role="alert">
+      <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+      <span>No pudimos cargar las fichas por localidad.</span>
+      <button type="button" mat-button color="primary" (click)="reintentar()">
+        <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+      </button>
+    </div>
+  } @else {
+    <div class="fichasadop">
+      <div class="fichasadop-barra">
+        <span class="fichasadop-barra__texto">
+          {{ estado.fichas.length ? 'En qué localidades se ofrece, con sus requisitos, costos y puntos de atención.' : '' }}
+        </span>
+        <a mat-stroked-button color="primary" [routerLink]="rutaNueva" [queryParams]="{ adopcion: adopcionId }"
+           *appHasPermission="crearFicha">
+          <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar localidad
+        </a>
+      </div>
+
+      @if (!habilitada) {
+        <p class="fichasadop-aviso">
+          <i class="ph ph-warning" aria-hidden="true"></i>
+          El trámite del organismo está deshabilitado: sus fichas no se ven en el portal aunque estén publicadas.
+        </p>
+      }
+
+      @if (!estado.fichas.length) {
+        <div class="fichasadop-vacio">
+          <span class="fichasadop-vacio__icono" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
+          <p class="fichasadop-vacio__titulo">Todavía no se ofrece en ninguna localidad</p>
+          <p class="fichasadop-vacio__texto">
+            Agregá una ficha por cada localidad donde se hace el trámite, con sus requisitos, costos y puntos de atención.
+          </p>
+        </div>
+      } @else {
+        <ul class="fichasadop-lista">
+          @for (ficha of estado.fichas; track ficha.id) {
+            <li class="fichasadop-item" [class.is-inactiva]="!ficha.activa">
+              <a class="fichasadop-item__localidad" [routerLink]="[rutaDetalle, ficha.id]"
+                 [class.fichasadop-item__localidad--faltante]="!ficha.localidadNombre">
+                {{ ficha.localidadNombre ?? ficha.slug }}
+              </a>
+              <span class="fichasadop-item__estado">
+                <app-estado-badge [estado]="ficha.estado"></app-estado-badge>
+                @if (!ficha.activa) {
+                  <span class="bool-badge bool-badge--inactive">
+                    <span class="bool-badge__dot" aria-hidden="true"></span>
+                    Desactivada
+                  </span>
+                }
+              </span>
+              <span class="fichasadop-item__version">v{{ ficha.version }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+}

@@ -1,7 +1,7 @@
 // ==========================================================================
 // Detalle de Trámite del organismo — membrete (trámite, organismo, estado),
-// grid de dos tarjetas (Datos / Vigencia y estado) y la sección reservada
-// "Fichas por localidad" (fase 3). Misma cáscara que el detalle de plantilla.
+// grid de dos tarjetas (Datos / Vigencia y estado) y la sección "Fichas por
+// localidad" (componente hijo). Misma cáscara que el detalle de plantilla.
 // ==========================================================================
 
 @use '../../../../../shared-styles/mixins' as *;
@@ -193,25 +193,5 @@
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: var(--theme-space-sm);
-  }
-}
-
-// Fichas por localidad: estado vacío hasta la fase 3 -----------------------
-.adopdet-fichas {
-  @include state-panel;
-  padding: var(--theme-space-xl) var(--theme-space-lg);
-
-  &__icono {
-    @include state-panel-icon;
-  }
-
-  &__titulo {
-    margin: 0;
-    @include state-panel-title;
-  }
-
-  &__texto {
-    margin: 0;
-    @include state-panel-text;
   }
 }

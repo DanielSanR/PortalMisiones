@@ -536,6 +536,123 @@ $breakpoint-2xl: 1440px;
   }
 }
 
+/// Mensaje en línea dentro de una tarjeta (cargando / error con "Reintentar" / vacío corto): ícono +
+/// texto + acción opcional. Uso: `.x-mensaje { @include inline-message; }` y `&--error` para el error.
+@mixin inline-message {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--theme-space-sm);
+  margin: 0;
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-secondary);
+
+  &--error {
+    color: var(--theme-error-icon);
+  }
+}
+
+/// Diálogo con formulario (misma cáscara que el ConfirmDialog): círculo de ícono 38px, título y
+/// subtítulo, campos, error de guardado inline y acciones a la derecha.
+/// Uso: `.x-dialog { @include form-dialog; }` con hijos `__header`, `__icono`, `__encabezado`,
+/// `__titulo` (con `mat-dialog-title`), `__subtitulo`, `__campos`, `__error` y `mat-dialog-actions`.
+@mixin form-dialog($width: 560px) {
+  display: flex;
+  flex-direction: column;
+  width: $width;
+  max-width: 100%;
+  padding: var(--theme-space-lg);
+
+  @include responsive(mobile) {
+    width: auto;
+    padding: var(--theme-space-md);
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  &__icono {
+    @include flex-center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-info-bg);
+    color: var(--theme-primary);
+
+    i.ph {
+      font-size: 20px;
+    }
+  }
+
+  &__encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  // `mat-dialog-title` trae padding y alto propios: se anulan para la cáscara del proyecto.
+  &__titulo.mat-mdc-dialog-title {
+    margin: 0;
+    padding: 0;
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-semibold);
+    line-height: var(--theme-line-height-normal, 1.4);
+    color: var(--theme-text-primary);
+
+    &::before {
+      display: none;
+    }
+  }
+
+  &__subtitulo {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+
+  &__campos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+    margin-top: var(--theme-space-lg);
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: var(--theme-space-sm) 0 0;
+    padding: var(--theme-space-sm);
+    border-radius: var(--theme-radius-sm);
+    background: var(--theme-error-bg);
+    color: var(--theme-error-icon);
+    font-size: var(--theme-font-size-sm);
+    line-height: 1.4;
+
+    i.ph {
+      flex: none;
+      margin-top: 1px;
+      font-size: 16px;
+    }
+  }
+
+  .mat-mdc-dialog-actions {
+    gap: var(--theme-space-sm);
+    min-height: 0;
+    margin: 0;
+    padding: var(--theme-space-lg) 0 0;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Scrollbar styling
 // ---------------------------------------------------------------------------

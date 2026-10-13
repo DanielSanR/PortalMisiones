@@ -55,6 +55,15 @@ export const COMANDOS: Comando[] = [
     rule: ADOPTAR_ACCESS,
   },
   {
+    // Bandeja de publicación: el listado abre la tab "En revisión" con `?tab=revision`. Las fichas no
+    // tienen comando de alta: cuelgan de un trámite del organismo ("Agregar localidad" en su detalle).
+    label: 'Revisar fichas por localidad',
+    icon: 'map-pin-area',
+    keywords: ['revision', 'publicar', 'ficha', 'localidad', 'bandeja', 'pendientes'],
+    route: '/dashboard/tramites/fichas?tab=revision',
+    rule: { permissions: ['READ_VARIANT', 'PUBLISH_VARIANT'], mode: 'all' },
+  },
+  {
     label: 'Crear organismo',
     icon: 'buildings',
     keywords: ['nuevo', 'alta', 'agregar', 'organismo'],

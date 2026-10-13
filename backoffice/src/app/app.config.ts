@@ -23,8 +23,13 @@ import { provideCategoriasFeature } from './core/features/categorias';
 import { provideTiposOrganismoFeature } from './core/features/tipos-organismo';
 import { provideDestinatariosFeature } from './core/features/destinatarios';
 import { provideTramitesFeature } from './core/features/tramites';
-import { providePlantillasFeature } from './core/features/plantillas';
-import { provideAdopcionesFeature } from './core/features/adopciones';
+// Trámites: se importa el `*.providers.ts` y no el barrel. El barrel re-exporta el facade (singleton
+// `root` con muchas dependencias cross-feature) y el builder no lo descarta del chunk inicial aunque
+// acá no se use: importado así, cada facade queda en el chunk lazy de `pages` (budget inicial 900 kB).
+import { providePlantillasFeature } from './core/features/plantillas/plantillas.providers';
+import { provideAdopcionesFeature } from './core/features/adopciones/adopciones.providers';
+import { provideFichasLocalesFeature } from './core/features/fichas-locales/fichas-locales.providers';
+import { providePuntosAtencionFeature } from './core/features/puntos-atencion/puntos-atencion.providers';
 import { provideDashboardFeature } from './core/features/dashboard';
 import { provideAuditoriaFeature } from './core/features/auditoria';
 import { provideFeedbackFeature } from './core/features/feedback';
@@ -58,6 +63,8 @@ export const appConfig: ApplicationConfig = {
     ...provideTramitesFeature(),
     ...providePlantillasFeature(),
     ...provideAdopcionesFeature(),
+    ...provideFichasLocalesFeature(),
+    ...providePuntosAtencionFeature(),
     ...provideDashboardFeature(),
     ...provideAuditoriaFeature(),
     ...provideFeedbackFeature(),

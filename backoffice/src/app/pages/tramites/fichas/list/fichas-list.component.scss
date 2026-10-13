@@ -1,0 +1,74 @@
+// ==========================================================================
+// Listado de Fichas por localidad — toolbar de dos filas (buscador + selects +
+// toggle + contador; chips "Todas / En revisión" solo para quien publica).
+// Acá quedan los selects y las celdas propias.
+// ==========================================================================
+
+@use '../../../../../shared-styles/mixins' as *;
+
+.list-toolbar {
+  @include list-toolbar;
+
+  &-count {
+    @include list-toolbar-count;
+  }
+}
+
+// Selects de la fila A, con fondo de card para que se lean sobre el well.
+.fichalist-select {
+  @include list-filter-field;
+  min-width: 150px;
+  flex: 0 1 200px;
+}
+
+.fichalist-toggle {
+  flex: none;
+  font-size: var(--theme-font-size-sm);
+}
+
+// Celda del trámite: título (link al detalle) + organismo debajo ------------
+.fichalist-tramite {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-decoration: none;
+  border-radius: var(--theme-radius-sm);
+  @include focus-ring;
+
+  &__titulo {
+    color: var(--theme-text-primary);
+    font-weight: var(--theme-font-weight-medium);
+    @include truncate;
+
+    &--faltante {
+      color: var(--theme-text-tertiary);
+      font-family: var(--theme-font-mono);
+      font-weight: var(--theme-font-weight-normal);
+    }
+  }
+
+  &__organismo {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+    @include truncate;
+  }
+
+  &:hover &__titulo {
+    color: var(--theme-primary);
+    text-decoration: underline;
+  }
+}
+
+// Estado: badge del workflow + "Desactivada" si corresponde ----------------
+.fichalist-estado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--theme-space-xs);
+}
+
+.fichalist-version {
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-secondary);
+}

@@ -67,3 +67,35 @@ export const ADOPTAR_ACCESS: AccessRule = {
   permissions: ['CREATE_ADOPTION', 'READ_PROCEDURE', 'READ_ORGANISM'],
   mode: 'all',
 };
+
+/**
+ * "Agregar localidad" / alta de ficha por localidad (`POST /api/organism-procedure-location` →
+ * `CREATE_VARIANT`). La ficha cuelga de una adopción: el form la lee (`GET /api/organism-procedure/{id}`
+ * → `READ_ADOPTION`) para mostrar el trámite y sugerir el slug (P-5). Hoy: SA y AO (AGENT no crea).
+ * Va en la ruta `tramites/fichas/nueva`, en el botón del detalle del trámite del organismo y en su vacío.
+ */
+export const CREAR_FICHA_ACCESS: AccessRule = {
+  permissions: ['CREATE_VARIANT', 'READ_ADOPTION'],
+  mode: 'all',
+};
+
+/** Política de publicación de fichas (D-3). Ver `PUBLICACION_POLICY`. */
+export interface PoliticaPublicacion {
+  /**
+   * Quién aprueba la publicación. SOLO cambia textos ("la revisa y publica tu organismo" / "…la
+   * Subsecretaría"): quién puede publicar lo decide siempre el permiso `PUBLISH_VARIANT`, nunca el rol.
+   */
+  aprobador: 'organismo' | 'provincial';
+  /** Atajo "Enviar y publicar" (`submit-review` + `publish`) para quien tiene los dos permisos (P-3). */
+  permitirEnviarYPublicar: boolean;
+}
+
+/**
+ * D-3 configurable (PLAN_TRAMITES_API.md §4.3, decisión P-3 de §8): workflow explícito, sin atajo,
+ * mientras D-3/G-5 sigan abiertas. Si producto cambia D-3, el backend reasigna `PUBLISH_VARIANT` en el
+ * seed y acá solo cambian los textos. Prohibido usar `requireRoles` en el workflow.
+ */
+export const PUBLICACION_POLICY: PoliticaPublicacion = {
+  aprobador: 'organismo',
+  permitirEnviarYPublicar: false,
+};

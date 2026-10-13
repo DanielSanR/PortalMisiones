@@ -24,6 +24,7 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 | **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
 | **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
 | **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
+| **G-12** | Fichas y puntos de atención: "no existe" como 500, workflow sobre inactivas, fichas sobre adopciones deshabilitadas, `DELETE` sin versión | 🟡 importante | bug | Mensajes de error precisos y datos consistentes en fichas y puntos |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
@@ -462,6 +463,35 @@ clientes. El "no encontrado" no permite señalar qué selección está mal.
 - [ ] Desactivar una plantilla con adopciones habilitadas aplica la cascada definida (o responde un 409 con mensaje).
 - [ ] `GET /api/organism-procedure?procedureTemplateId=…` devuelve solo las de esa plantilla.
 - [ ] `ownerOrganismId` documentado en Swagger.
+
+---
+
+## G-12 · Fichas por localidad y puntos de atención: validaciones faltantes
+
+**Prioridad:** 🟡 importante · **Tipo:** bug · Detectado al integrar fichas y puntos de atención (fases 3 y 4 del front).
+
+**Problema** (todo en `origin/dev` @ `23fd8f9`)
+1. **"No existe" responde 500, no 404:** `loadOrganismProcedureLocation`, `loadLocation` y `loadOrganismProcedure`
+   (`OrganismProcedureLocationService`) lanzan `IllegalArgumentException`. El front no puede decir "esa ficha no existe".
+2. **Workflow sobre fichas desactivadas:** `transition` no mira `active`; una ficha inactiva puede quedar `PUBLICADO`.
+3. **Fichas sobre adopciones deshabilitadas o vencidas:** `loadOrganismProcedure` no valida `enabled` ni la vigencia.
+4. **El `DELETE` de la ficha no genera versión** aunque la despublique (no llama a `buildSnapshot`, a diferencia de
+   `update` y `transition`).
+5. **El listado de fichas incluye las inactivas** (`findAll`/`findAllByOrganismProcedureOrganismId` no filtran `active`).
+   Si es intencional, documentarlo; si no, filtrar o agregar `?includeInactive`.
+6. **Puntos de atención:** se pueden crear sobre una ficha inactiva (`AttentionPointService.map` no lo valida), y con más
+   de 6 decimales `NUMERIC(9,6)` redondea en silencio (validar escala o documentar).
+
+**Propuesta:** `GlobalAppException` 404 `4073` para los "no existe"; rechazar con 4xx (código propio) el workflow sobre
+fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o vencidos; snapshot en `delete`; validar
+`@Digits(integer = 3, fraction = 6)` en latitud/longitud.
+
+**Criterio de aceptación**
+- [ ] `GET/PUT /api/organism-procedure-location/<uuid-inexistente>` → 404 `4073`.
+- [ ] `POST /{id}/publish` sobre una ficha con `active=false` → 4xx con código de negocio.
+- [ ] `POST /api/organism-procedure-location` con una adopción deshabilitada o vencida → 4xx.
+- [ ] `DELETE` de una ficha incrementa `currentVersionNumber`.
+- [ ] `POST /api/attention-point` con latitud de 7 decimales → 400 `4012`.
 
 ---
 

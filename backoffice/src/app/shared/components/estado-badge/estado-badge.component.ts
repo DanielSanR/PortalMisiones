@@ -1,8 +1,8 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { EstadoBadgePipe } from '../../pipes/estado-badge.pipe';
-import { TramiteEstado } from '../../../core/models/tramite.model';
+import { ClaveEstadoBadge, EstadoBadge, EstadoBadgePipe, claveDeEstado } from '../../pipes/estado-badge.pipe';
 
-// Badge de estado de tramite (borrador/revision/publicado/despublicado).
+// Badge de estado de publicación (borrador/en revisión/publicado/despublicado).
+// Acepta la forma del mock viejo de trámites ('revision') y la del backend ('EN_REVISION').
 // Pill full + dot 6px del color del estado, tokens --theme-estado-*.
 @Component({
   selector: 'app-estado-badge',
@@ -13,5 +13,16 @@ import { TramiteEstado } from '../../../core/models/tramite.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EstadoBadgeComponent {
-  @Input() estado!: TramiteEstado;
+  /** Clave visual (`data-estado`), igual para las dos formas del estado. */
+  clave: ClaveEstadoBadge | null = null;
+  private valor!: EstadoBadge;
+
+  @Input({ required: true }) set estado(valor: EstadoBadge) {
+    this.valor = valor;
+    this.clave = claveDeEstado(valor);
+  }
+
+  get estado(): EstadoBadge {
+    return this.valor;
+  }
 }

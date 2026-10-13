@@ -1,0 +1,159 @@
+<!-- Detalle de una ficha por localidad. Las acciones van al header del shell; `appPageActions` es
+     incondicional (registra el template en su ngOnInit) y su contenido espera a la ficha. -->
+<ng-template appPageActions>
+  @if (estado$ | async; as estado) {
+    @if (estado.tipo === 'ok') {
+      @for (item of acciones$ | async; track item.accion) {
+        <button type="button" mat-raised-button
+                [color]="item.ui.danger ? 'warn' : 'primary'" (click)="ejecutar(estado.ficha, item.accion)">
+          <i [class]="'ph ph-' + item.ui.icon" aria-hidden="true"></i> {{ item.ui.label }}
+        </button>
+      }
+      <a mat-stroked-button color="primary" [routerLink]="[rutaEditar, estado.ficha.id]" *appHasPermission="'UPDATE_VARIANT'">
+        <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+      </a>
+      @if (estado.ficha.activa) {
+        <button type="button" mat-stroked-button color="warn" (click)="desactivar(estado.ficha)"
+                *appHasPermission="'UPDATE_VARIANT'">
+          <i class="ph ph-prohibit" aria-hidden="true"></i> Desactivar
+        </button>
+      }
+    }
+  }
+</ng-template>
+
+@if (estado$ | async; as estado) {
+  @if (estado.tipo === 'cargando') {
+    <div class="fichadet-cargando" role="status">
+      <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+      <span>Cargando la ficha...</span>
+    </div>
+  } @else if (estado.tipo === 'error') {
+    <div class="fichadet-estado" role="alert">
+      <span class="fichadet-estado__icono" aria-hidden="true">
+        <i class="ph" [class.ph-file-x]="estado.noExiste" [class.ph-cloud-slash]="!estado.noExiste"></i>
+      </span>
+      <h2 class="fichadet-estado__titulo">{{ estado.noExiste ? textosInexistente.titulo : textosErrorCarga.titulo }}</h2>
+      <p class="fichadet-estado__texto">{{ estado.noExiste ? textosInexistente.texto : textosErrorCarga.texto }}</p>
+      <div class="fichadet-estado__acciones">
+        @if (!estado.noExiste) {
+          <button type="button" mat-flat-button color="primary" (click)="reintentar()">
+            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+          </button>
+        }
+        <button type="button" mat-stroked-button color="primary" (click)="volverAlListado()">
+          <i class="ph ph-list-dashes" aria-hidden="true"></i> Ir al listado
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="fichadet">
+      <header class="fichadet-membrete">
+        <div class="fichadet-membrete__fila">
+          <h2 class="fichadet-membrete__titulo">{{ estado.ficha.plantillaTitulo ?? 'Trámite sin nombre disponible' }}</h2>
+          <app-estado-badge [estado]="estado.ficha.estado"></app-estado-badge>
+          @if (!estado.ficha.activa) {
+            <span class="bool-badge bool-badge--inactive">
+              <span class="bool-badge__dot" aria-hidden="true"></span>
+              Desactivada
+            </span>
+          }
+        </div>
+        <p class="fichadet-membrete__meta">
+          <span><i class="ph ph-map-pin-area" aria-hidden="true"></i> {{ estado.ficha.localidadNombre ?? 'Localidad ' + noDisponible.toLowerCase() }}</span>
+          <span><i class="ph ph-building-office" aria-hidden="true"></i> {{ estado.ficha.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}</span>
+          <span><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i> Versión {{ estado.ficha.version }}</span>
+        </p>
+        @if (!estado.ficha.activa) {
+          <p class="fichadet-membrete__aviso">
+            <i class="ph ph-info" aria-hidden="true"></i>
+            Está desactivada: no se ofrece en esta localidad. Para reactivarla, editala y marcala como activa.
+          </p>
+        }
+        @if (!estado.ficha.contenidoCompleto) {
+          <p class="fichadet-membrete__aviso">
+            <i class="ph ph-warning" aria-hidden="true"></i>
+            El servidor todavía no devuelve la localidad, la URL, los requisitos ni los costos de la ficha: por eso se ven como no disponibles y no se puede editar.
+          </p>
+        }
+      </header>
+
+      <div class="fichadet-grid">
+        <section class="fichadet-card" aria-labelledby="fichadet-publicacion">
+          <h3 class="fichadet-card__titulo" id="fichadet-publicacion">Publicación</h3>
+          <p class="fichadet-ayuda">{{ ayudaEstado[estado.ficha.estado] }}</p>
+          <dl class="fichadet-datos">
+            <div class="fichadet-datos__fila">
+              <dt>Slug público</dt>
+              <dd><code class="fichadet-datos__slug">{{ estado.ficha.slug }}</code></dd>
+            </div>
+            @if (estado.ficha.estado === 'PUBLICADO' && estado.ficha.activa) {
+              <div class="fichadet-datos__fila">
+                <dt>Vista previa pública</dt>
+                <dd>
+                  @if (urlPublica(estado.ficha); as url) {
+                    <a class="fichadet-datos__link" [href]="url" target="_blank" rel="noopener noreferrer">
+                      Ver lo que publica la API <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                      <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
+                    </a>
+                  } @else {
+                    <span class="fichadet-datos__faltante">Sin vista previa con datos de ejemplo: el portal la muestra con el slug de arriba.</span>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section class="fichadet-card" aria-labelledby="fichadet-datos">
+          <h3 class="fichadet-card__titulo" id="fichadet-datos">Datos</h3>
+          <dl class="fichadet-datos">
+            <div class="fichadet-datos__fila">
+              <dt>Trámite del organismo</dt>
+              <dd>
+                <span [class.fichadet-datos__faltante]="!estado.ficha.plantillaTitulo">{{ estado.ficha.plantillaTitulo ?? noDisponible }}</span>
+                @if (estado.ficha.adopcionId) {
+                  <a class="fichadet-datos__link" [routerLink]="[rutaAdopcion, estado.ficha.adopcionId]" *appHasPermission="'READ_ADOPTION'">
+                    Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                  </a>
+                }
+              </dd>
+            </div>
+            <div class="fichadet-datos__fila">
+              <dt>URL del trámite</dt>
+              <dd>
+                @if (estado.ficha.url) {
+                  <a class="fichadet-datos__link fichadet-datos__link--url" [href]="estado.ficha.url" target="_blank" rel="noopener noreferrer">
+                    {{ estado.ficha.url }} <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                  </a>
+                } @else {
+                  <span class="fichadet-datos__faltante">{{ estado.ficha.contenidoCompleto ? 'Sin URL' : noDisponible }}</span>
+                }
+              </dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <div class="fichadet-grid fichadet-grid--parejo">
+        <section class="fichadet-card" aria-labelledby="fichadet-requisitos">
+          <h3 class="fichadet-card__titulo" id="fichadet-requisitos">Requisitos</h3>
+          <p class="fichadet-texto" [class.fichadet-texto--faltante]="!estado.ficha.requisitos">
+            {{ estado.ficha.requisitos ?? (estado.ficha.contenidoCompleto ? 'Sin requisitos cargados.' : noDisponible) }}
+          </p>
+        </section>
+        <section class="fichadet-card" aria-labelledby="fichadet-costos">
+          <h3 class="fichadet-card__titulo" id="fichadet-costos">Costos</h3>
+          <p class="fichadet-texto" [class.fichadet-texto--faltante]="!estado.ficha.costos">
+            {{ estado.ficha.costos ?? (estado.ficha.contenidoCompleto ? 'Sin costos cargados.' : noDisponible) }}
+          </p>
+        </section>
+      </div>
+
+      <section class="fichadet-card" aria-labelledby="fichadet-puntos" *appHasPermission="'READ_ATTENTION_POINT'">
+        <h3 class="fichadet-card__titulo" id="fichadet-puntos">Puntos de atención</h3>
+        <app-puntos-atencion-panel [fichaId]="estado.ficha.id"></app-puntos-atencion-panel>
+      </section>
+    </div>
+  }
+}

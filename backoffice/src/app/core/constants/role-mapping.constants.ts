@@ -55,13 +55,15 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    // Trámites contra la API real (PLAN_TRAMITES_API.md §4.1, decisión P-1). Se suman "Trámites del
-    // organismo" (READ_ADOPTION) y "Fichas por localidad" (READ_VARIANT) en sus fases. El ítem viejo
-    // "Trámites" (mock) sigue en Contenidos hasta la fase 5.
+    // Trámites contra la API real (PLAN_TRAMITES_API.md §4.1, decisión P-1): plantillas, adopciones
+    // ("Trámites del organismo") y "Fichas por localidad". El ítem viejo "Trámites" (mock) sigue en
+    // Contenidos hasta la fase 5.
     label: 'Trámites',
     items: [
       { label: 'Plantillas provinciales', icon: 'files', route: '/dashboard/tramites/plantillas', rule: { permissions: ['READ_PROCEDURE'] } },
       { label: 'Trámites del organismo', icon: 'building-office', route: '/dashboard/tramites/adopciones', rule: { permissions: ['READ_ADOPTION'] } },
+      // Sin badge "En revisión": `NavItem` no soporta contadores; el contador vive en la tab del listado.
+      { label: 'Fichas por localidad', icon: 'map-pin-area', route: '/dashboard/tramites/fichas', rule: { permissions: ['READ_VARIANT'] } },
     ],
   },
   {
