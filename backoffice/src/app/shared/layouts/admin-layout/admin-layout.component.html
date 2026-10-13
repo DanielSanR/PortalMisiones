@@ -182,13 +182,31 @@
                     <i class="ph" [class.ph-x]="sidenav.opened" [class.ph-list]="!sidenav.opened" aria-hidden="true"></i>
                 </button>
 
+                <!-- Tramos intermedios = links a la lista de su sección; el último es la página
+                     actual (texto + aria-current). En Home, "Inicio" es la página actual. -->
                 <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación">
                     <i class="ph ph-{{ sectionIcon }} admin-layout__breadcrumb-icon" aria-hidden="true"></i>
-                    <a routerLink="/dashboard/home" class="admin-layout__breadcrumb-home">Inicio</a>
-                    <ng-container *ngFor="let crumb of breadcrumbTrail; let last = last">
-                        <i class="ph ph-caret-right admin-layout__breadcrumb-sep" aria-hidden="true"></i>
-                        <span class="admin-layout__breadcrumb-crumb" [class.is-current]="last">{{ crumb }}</span>
-                    </ng-container>
+                    <ol class="admin-layout__breadcrumb-list">
+                        <li class="admin-layout__breadcrumb-item">
+                            @if (breadcrumbTrail.length > 0) {
+                                <a routerLink="/dashboard/home" class="admin-layout__breadcrumb-link">Inicio</a>
+                            } @else {
+                                <span class="admin-layout__breadcrumb-crumb is-current" aria-current="page">Inicio</span>
+                            }
+                        </li>
+                        @for (crumb of breadcrumbTrail; track $index; let last = $last) {
+                            <li class="admin-layout__breadcrumb-item">
+                                <i class="ph ph-caret-right admin-layout__breadcrumb-sep" aria-hidden="true"></i>
+                                @if (last) {
+                                    <span class="admin-layout__breadcrumb-crumb is-current" aria-current="page">{{ crumb.label }}</span>
+                                } @else if (crumb.link) {
+                                    <a [routerLink]="crumb.link" class="admin-layout__breadcrumb-link">{{ crumb.label }}</a>
+                                } @else {
+                                    <span class="admin-layout__breadcrumb-crumb">{{ crumb.label }}</span>
+                                }
+                            </li>
+                        }
+                    </ol>
                 </nav>
 
                 <span class="admin-layout__header-spacer"></span>

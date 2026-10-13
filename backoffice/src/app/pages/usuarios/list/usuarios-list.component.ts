@@ -17,8 +17,19 @@ import { RolLabelPipe } from '../../../shared/pipes/rol-label.pipe';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
-import { ROLE_TO_SPANISH } from '@core/enums/user-role.enum';
+import { ROLE_TO_SPANISH, UserRole } from '@core/enums/user-role.enum';
+import { EDITAR_USUARIO_ACCESS } from '@core/constants/policy-overrides.constants';
 import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import {
+  CredencialModo, UsuarioCredencialDialogComponent, UsuarioCredencialDialogData,
+} from '../credencial-dialog/usuario-credencial-dialog.component';
+
+/**
+ * Roles cuya contraseña el backend no deja cambiar desde el panel (403 `4029` en
+ * `PUT /api/user/{id}/change-password`): la acción no se ofrece en esas filas.
+ */
+const ROLES_CON_PASSWORD_PROTEGIDA: readonly UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE];
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -65,6 +76,8 @@ const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
 })
 export class UsuariosListComponent implements OnInit {
   private readonly facade = inject(UsuariosFacade);
+  /** Excepción documentada (sesión): solo para reconocer la fila del usuario logueado. */
+  private readonly auth = inject(AuthTokenService);
   readonly usuarios$ = this.facade.usuarios$;
 
   loading = true;
@@ -223,34 +236,120 @@ export class UsuariosListComponent implements OnInit {
     return {
       label: 'Editar',
       icon: 'pencil-simple',
-      permission: 'UPDATE_USER',
+      rule: EDITAR_USUARIO_ACCESS,
       run: () => this.onEdit(usuario),
     };
   }
 
   /**
-   * Desactivar es lo más destructivo que ofrece el backend hoy: no hay endpoint de borrado
-   * de usuarios, así que no se muestra "Eliminar" para no prometer algo que no existe.
+   * Menú de la fila. El orden va de lo cotidiano a lo irreversible: credenciales, estado de la
+   * cuenta y, al final, el borrado definitivo (el componente agrupa las `danger` detrás de un divisor).
    */
   accionesDe(usuario: UsuarioVM): RowAction[] {
-    return [
+    const nombre = this.nombreCompleto(usuario);
+    const acciones: RowAction[] = [
+      {
+        label: 'Cambiar email',
+        icon: 'envelope-simple',
+        permission: 'UPDATE_USER',
+        ariaLabel: `Cambiar el email de ${nombre}`,
+        run: () => this.abrirCredencial(usuario, 'email'),
+      },
+    ];
+
+    if (!ROLES_CON_PASSWORD_PROTEGIDA.includes(usuario.rol)) {
+      acciones.push({
+        label: 'Cambiar contraseña',
+        icon: 'key',
+        permission: 'UPDATE_USER',
+        ariaLabel: `Cambiar la contraseña de ${nombre}`,
+        run: () => this.abrirCredencial(usuario, 'password'),
+      });
+    }
+
+    // Sobre la propia cuenta no se ofrece quitarse el acceso ni borrarse: no hay vuelta atrás
+    // desde el panel y dejaría la sesión actual sin usuario.
+    if (this.esMiCuenta(usuario)) return acciones;
+
+    acciones.push(
       usuario.activo
         ? {
             label: 'Desactivar cuenta',
             icon: 'prohibit',
             permission: 'UPDATE_USER',
             danger: true,
-            ariaLabel: `Desactivar la cuenta de ${this.nombreCompleto(usuario)}`,
+            ariaLabel: `Desactivar la cuenta de ${nombre}`,
             run: () => this.onDesactivar(usuario),
           }
         : {
             label: 'Activar cuenta',
             icon: 'check-circle',
             permission: 'UPDATE_USER',
-            ariaLabel: `Activar la cuenta de ${this.nombreCompleto(usuario)}`,
+            ariaLabel: `Activar la cuenta de ${nombre}`,
             run: () => this.onActivar(usuario),
           },
-    ];
+      {
+        label: 'Eliminar definitivamente',
+        icon: 'trash',
+        permission: 'DELETE_USER',
+        danger: true,
+        ariaLabel: `Eliminar definitivamente a ${nombre}`,
+        run: () => this.onEliminar(usuario),
+      },
+    );
+    return acciones;
+  }
+
+  /**
+   * ¿Es la fila del usuario logueado? Por id, o por email si los ids no coinciden (el listado
+   * todavía es mock). Se lee en cada detección de cambios, así que acompaña a la sesión.
+   */
+  private esMiCuenta(usuario: UsuarioVM): boolean {
+    const yo = this.auth.getCurrentUser();
+    if (!yo) return false;
+    return usuario.id === yo.id || (!!yo.email && usuario.email?.toLowerCase() === yo.email.toLowerCase());
+  }
+
+  private abrirCredencial(usuario: UsuarioVM, modo: CredencialModo): void {
+    const data: UsuarioCredencialDialogData = {
+      modo,
+      nombre: this.nombreCompleto(usuario),
+      emailActual: usuario.email,
+      guardar: (valor) => modo === 'email'
+        ? this.facade.changeEmail(usuario.id, valor)
+        : this.facade.changePassword(usuario.id, valor),
+    };
+    this.dialog.open(UsuarioCredencialDialogComponent, { data, panelClass: 'custom-modal-panel' })
+      .afterClosed()
+      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.snackBar.open(
+        modo === 'email' ? 'Email actualizado' : 'Contraseña actualizada',
+        'OK',
+        { duration: 3000, panelClass: 'snackbar-success' },
+      ));
+  }
+
+  onEliminar(usuario: UsuarioVM): void {
+    const nombre = this.nombreCompleto(usuario);
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: '¿Eliminar el usuario definitivamente?',
+        // Distinto de desactivar: acá no hay vuelta atrás, y conviene ofrecer la alternativa.
+        message: `Se borrará ${nombre} con todos sus datos y no se puede deshacer. Si solo querés quitarle el acceso, desactivá la cuenta.`,
+        highlight: nombre,
+        danger: true,
+        confirmText: 'Sí, eliminar',
+        busyText: 'Eliminando...',
+        confirmAction: () => this.conFilaOcupada(usuario, this.facade.deleteDefinitive(usuario.id)),
+      },
+      panelClass: 'custom-modal-panel',
+    })
+      .afterClosed()
+      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.snackBar.open('Usuario eliminado', 'OK', {
+        duration: 3000,
+        panelClass: 'snackbar-success',
+      }));
   }
 
   onDesactivar(usuario: UsuarioVM): void {
@@ -308,9 +407,14 @@ export class UsuariosListComponent implements OnInit {
    * mostrando el estado viejo hasta recargar.
    */
   private cambiarEstado(usuario: UsuarioVM): Observable<unknown> {
+    return this.conFilaOcupada(usuario, this.facade.toggleActive(usuario.id));
+  }
+
+  /** Bloquea la fila mientras corre la operación y la libera al terminar (éxito o error). */
+  private conFilaOcupada<T>(usuario: UsuarioVM, operacion$: Observable<T>): Observable<T> {
     this.trabajandoId = usuario.id;
     this.cdr.markForCheck();
-    return this.facade.toggleActive(usuario.id).pipe(
+    return operacion$.pipe(
       finalize(() => { this.trabajandoId = null; this.cdr.markForCheck(); }),
     );
   }

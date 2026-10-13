@@ -52,4 +52,17 @@ export class UsuariosMockDataSource extends UsuariosDataSource {
   setAccountStatus(id: string, _active: boolean): Observable<void> {
     return this.usuarios.toggleActive(id).pipe(map(() => void 0));
   }
+
+  // La contraseña no vive en el mock: basta con validar que el usuario exista.
+  changePassword(id: string, _newPassword: string): Observable<void> {
+    return this.usuarios.getById(id).pipe(map(() => void 0));
+  }
+
+  changeEmail(id: string, newEmail: string): Observable<void> {
+    return this.usuarios.changeEmail(id, newEmail.toLowerCase()).pipe(map(() => void 0));
+  }
+
+  deleteDefinitive(id: string): Observable<void> {
+    return this.usuarios.delete(id);
+  }
 }

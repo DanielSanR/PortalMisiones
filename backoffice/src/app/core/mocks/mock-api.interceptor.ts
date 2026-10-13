@@ -6,14 +6,8 @@ import {
   MOCK_MODALIDADES,
   MOCK_ETIQUETAS,
   MOCK_USUARIOS,
-  MOCK_DASHBOARD_METRICS,
-  MOCK_TOP_TRAMITES,
-  MOCK_TOP_BUSQUEDAS,
-  MOCK_AUDITORIA,
-  MOCK_TRAMITES_POR_ORGANISMO,
   MOCK_EVENTOS_DE_VIDA,
   MOCK_FEEDBACK,
-  MOCK_FEEDBACK_STATS,
   MOCK_LOCALIDADES,
   MOCK_CATEGORIAS,
   MOCK_DESTINATARIOS,
@@ -26,8 +20,6 @@ const MOCK_DELAY = 300;
 
 let tramites = [...MOCK_TRAMITES];
 let organismos = [...MOCK_ORGANISMOS];
-let etiquetas = [...MOCK_ETIQUETAS];
-let modalidades = [...MOCK_MODALIDADES];
 let usuarios = [...MOCK_USUARIOS];
 let eventosDeVida = [...MOCK_EVENTOS_DE_VIDA];
 let localidades = [...MOCK_LOCALIDADES];
@@ -252,11 +244,11 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
         icono: body['icono'] || 'description',
         estado: 'borrador',
         destacado: body['destacado'] || false,
-        etiquetas: etiquetas.filter(e => body['etiquetaIds']?.includes(e.id)),
+        etiquetas: MOCK_ETIQUETAS.filter(e => body['etiquetaIds']?.includes(e.id)),
         localidades: MOCK_LOCALIDADES.filter(l => body['localidadIds']?.includes(l.id)).map(l => ({ id: l.id, nombre: l.nombre })),
         eventosDeVida: [],
         organismo: organismos.find(o => o.id === body['organismoId']),
-        modalidad: modalidades.find(m => m.id === body['modalidadId']),
+        modalidad: MOCK_MODALIDADES.find(m => m.id === body['modalidadId']),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -298,7 +290,7 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
             ? organismos.find(o => o.id === body['organismoId'])
             : tramites[idx].organismo,
           modalidad: body['modalidadId']
-            ? modalidades.find(m => m.id === body['modalidadId'])
+            ? MOCK_MODALIDADES.find(m => m.id === body['modalidadId'])
             : tramites[idx].modalidad,
           updatedAt: new Date().toISOString(),
         };
@@ -400,86 +392,22 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
         return jsonResponse(usuarios[idx]);
       }
     }
-  }
-
-  // ── Etiquetas  ──────────────────────────────────────
-  if (matchUrl(url, '/api/etiquetas') && !matchUrl(url, '/api/etiquetas/')) {
-    if (method === 'GET') return jsonResponse(paginate(etiquetas, 1, 100));
-    if (method === 'POST') {
-      const body = req.body as Record<string, any>;
-      const newEtiqueta = {
-        id: Date.now(),
-        nombre: body['nombre'],
-        slug: body['nombre'].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        icono: body['icono'] || 'label',
-        color: body['color'] || '#607D8B',
-        activo: true,
-        tramitesCount: 0,
-      };
-      etiquetas.push(newEtiqueta);
-      return jsonResponse(newEtiqueta, 201);
-    }
-  }
-
-  if (matchUrl(url, '/api/etiquetas/')) {
-    const id = Number(extractId(url));
-    if (method === 'GET') {
-      const etiqueta = etiquetas.find(e => e.id === id);
-      return etiqueta ? jsonResponse(etiqueta) : jsonResponse({ message: 'No encontrado' }, 404);
-    }
-    if (method === 'PUT') {
-      const idx = etiquetas.findIndex(e => e.id === id);
-      if (idx >= 0) {
-        const body = req.body as Record<string, any>;
-        etiquetas[idx] = { ...etiquetas[idx], ...body } as typeof etiquetas[0];
-        return jsonResponse(etiquetas[idx]);
-      }
-      return jsonResponse({ message: 'No encontrado' }, 404);
-    }
     if (method === 'DELETE') {
-      etiquetas = etiquetas.filter(e => e.id !== id);
-      return jsonResponse(null, 204);
+      const antes = usuarios.length;
+      usuarios = usuarios.filter(u => u.id !== id);
+      return usuarios.length < antes ? jsonResponse(null, 204) : jsonResponse({ message: 'No encontrado' }, 404);
     }
   }
 
-  // ── Modalidades  ────────────────────────────────────
-  if (matchUrl(url, '/api/modalidades') && !matchUrl(url, '/api/modalidades/')) {
-    if (method === 'GET') return jsonResponse(paginate(modalidades, 1, 100));
-    if (method === 'POST') {
-      const body = req.body as Record<string, any>;
-      const newModalidad = {
-        id: Date.now(),
-        nombre: body['nombre'],
-        descripcion: body['descripcion'] || null,
-        icono: body['icono'] || 'tune',
-        color: body['color'] || '#607D8B',
-        activo: true,
-        tramitesCount: 0,
-      };
-      modalidades.push(newModalidad);
-      return jsonResponse(newModalidad, 201);
-    }
+  // ── Etiquetas / Modalidades (solo listado) ──────────
+  // Únicos consumidores: `TramiteService.getEtiquetas/getModalidades` (catálogos del form de
+  // trámites en mock). Los ABM de Etiquetas y Modalidades van por sus features (`@features/*`).
+  if (matchUrl(url, '/api/etiquetas') && !matchUrl(url, '/api/etiquetas/') && method === 'GET') {
+    return jsonResponse(paginate(MOCK_ETIQUETAS, 1, 100));
   }
 
-  if (matchUrl(url, '/api/modalidades/')) {
-    const id = Number(extractId(url));
-    if (method === 'GET') {
-      const modalidad = modalidades.find(m => m.id === id);
-      return modalidad ? jsonResponse(modalidad) : jsonResponse({ message: 'No encontrado' }, 404);
-    }
-    if (method === 'PUT') {
-      const idx = modalidades.findIndex(m => m.id === id);
-      if (idx >= 0) {
-        const body = req.body as Record<string, any>;
-        modalidades[idx] = { ...modalidades[idx], ...body } as typeof modalidades[0];
-        return jsonResponse(modalidades[idx]);
-      }
-      return jsonResponse({ message: 'No encontrado' }, 404);
-    }
-    if (method === 'DELETE') {
-      modalidades = modalidades.filter(m => m.id !== id);
-      return jsonResponse(null, 204);
-    }
+  if (matchUrl(url, '/api/modalidades') && !matchUrl(url, '/api/modalidades/') && method === 'GET') {
+    return jsonResponse(paginate(MOCK_MODALIDADES, 1, 100));
   }
 
   // ── Eventos de Vida  ────────────────────────────────
@@ -559,8 +487,9 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
     return jsonResponse(paginate(filtered, 1, 100));
   }
 
-  // ── Feedback Ciudadano ──────────────────────────────────
-  if (matchUrl(url, '/api/feedback/stats')) return jsonResponse(MOCK_FEEDBACK_STATS);
+  // ── Feedback Ciudadano (solo listado) ───────────────────
+  // Único consumidor: `FeedbackService.getAll` (resumen de valoraciones de la ficha de trámite).
+  // La pantalla de Feedback usa el mock en memoria de `@features/feedback`.
 
   if (matchUrl(url, '/api/feedback') && !matchUrl(url, '/api/feedback/')) {
     if (method === 'GET') {
@@ -597,57 +526,6 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
       return jsonResponse(paginate(filtered, page, pageSize));
     }
   }
-
-  // ── Auditoría ───────────────────────────────────────────
-  if (matchUrl(url, '/api/auditoria') && !matchUrl(url, '/api/auditoria/')) {
-    if (method === 'GET') {
-      const params = req.params;
-      let filtered = [...MOCK_AUDITORIA];
-
-      const search = params.get('search');
-      if (search) {
-        const q = search.toLowerCase();
-        filtered = filtered.filter(a =>
-          a.tramiteTitulo?.toLowerCase().includes(q) ||
-          a.usuarioNombre?.toLowerCase().includes(q)
-        );
-      }
-
-      const accion = params.get('accion');
-      if (accion) filtered = filtered.filter(a => a.accion === accion);
-
-      const usuarioId = params.get('usuarioId');
-      if (usuarioId) filtered = filtered.filter(a => a.usuarioId === usuarioId);
-
-      const fechaDesde = params.get('fechaDesde');
-      if (fechaDesde) filtered = filtered.filter(a => a.fechaAccion >= fechaDesde);
-
-      const fechaHasta = params.get('fechaHasta');
-      if (fechaHasta) filtered = filtered.filter(a => a.fechaAccion <= fechaHasta);
-
-      filtered.sort((a, b) => b.fechaAccion.localeCompare(a.fechaAccion));
-
-      const page = Number(params.get('page')) || 1;
-      const pageSize = Number(params.get('pageSize')) || 10;
-
-      return jsonResponse(paginate(filtered, page, pageSize));
-    }
-  }
-
-  if (matchUrl(url, '/api/auditoria/')) {
-    const id = Number(extractId(url));
-    if (method === 'GET') {
-      const entry = MOCK_AUDITORIA.find(a => a.id === id);
-      return entry ? jsonResponse(entry) : jsonResponse({ message: 'No encontrado' }, 404);
-    }
-  }
-
-  // ── Dashboard ───────────────────────────────────────────
-  if (matchUrl(url, '/api/dashboard/metrics')) return jsonResponse(MOCK_DASHBOARD_METRICS);
-  if (matchUrl(url, '/api/dashboard/top-tramites')) return jsonResponse(MOCK_TOP_TRAMITES);
-  if (matchUrl(url, '/api/dashboard/top-busquedas')) return jsonResponse(MOCK_TOP_BUSQUEDAS);
-  if (matchUrl(url, '/api/dashboard/auditoria')) return jsonResponse(MOCK_AUDITORIA);
-  if (matchUrl(url, '/api/dashboard/tramites-por-organismo')) return jsonResponse(MOCK_TRAMITES_POR_ORGANISMO);
 
   // ── Categorías CRUD ─────────────────────────────────────
   if (matchUrl(url, '/api/categorias') && !matchUrl(url, '/api/categorias/')) {

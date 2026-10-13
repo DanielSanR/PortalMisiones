@@ -27,6 +27,14 @@ export class UsuarioService {
     return this.http.put<Usuario>(`${this.apiUrl}/${id}`, data);
   }
 
+  changeEmail(id: string, email: string): Observable<Usuario> {
+    return this.http.put<Usuario>(`${this.apiUrl}/${id}`, { email });
+  }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
   toggleActive(id: string): Observable<Usuario> {
     return this.http.patch<Usuario>(`${this.apiUrl}/${id}/toggle-active`, {});
   }

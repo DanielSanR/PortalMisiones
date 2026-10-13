@@ -36,7 +36,19 @@ export interface FieldConfig {
    * se guarda es peor que uno ausente, porque el usuario escribe y pierde lo que puso.
    */
   pendiente?: boolean;
+  /**
+   * Vista previa derivada del valor tipeado, debajo del campo (p. ej. el slug como lo
+   * canonicaliza el backend). Solo se muestra si el valor transformado no está vacío y
+   * difiere de lo tipeado. Pensado para campos de texto; `transform` debe ser pura.
+   */
+  preview?: FieldPreview;
   validations?: FieldValidations;
+}
+
+export interface FieldPreview {
+  /** Texto que antecede al valor, p. ej. "Se guardará como:". */
+  label: string;
+  transform: (valor: string) => string;
 }
  
 export interface FieldValidations {

@@ -17,6 +17,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
 import { OrganismosFacade, OrganismoVM } from '@features/organismos';
+import { PARAM_ORIGEN_EDICION } from '../organismo-origen';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -258,7 +259,9 @@ export class OrganismosListComponent implements OnInit {
   }
 
   onEdit(organismo: OrganismoVM): void {
-    this.router.navigate(['/dashboard/organismos/editar', organismo.id]);
+    this.router.navigate(['/dashboard/organismos/editar', organismo.id], {
+      queryParams: { [PARAM_ORIGEN_EDICION]: 'lista' },
+    });
   }
 
   onDelete(organismo: OrganismoVM): void {

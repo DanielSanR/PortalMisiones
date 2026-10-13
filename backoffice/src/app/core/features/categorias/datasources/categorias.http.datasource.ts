@@ -7,6 +7,7 @@ import { CategoriasDataSource } from './categorias.datasource';
 import { CategoryResponseDTO } from '../models/categoria.dto';
 import { toCategoriaVM, toCategoryRequest } from '../mappers/categorias.mapper';
 import { CategoriaFormValue, CategoriaVM } from '../models/categoria.vm';
+import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
 /** Implementación HTTP real (`/api/category`, §5.3). */
 @Injectable()
@@ -31,19 +32,19 @@ export class CategoriasHttpDataSource extends CategoriasDataSource {
 
   create(form: CategoriaFormValue): Observable<CategoriaVM> {
     return this.http
-      .post<ResponseDTO<CategoryResponseDTO>>(this.apiUrl, toCategoryRequest(form))
+      .post<ResponseDTO<CategoryResponseDTO>>(this.apiUrl, toCategoryRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toCategoriaVM(res.data)));
   }
 
   update(id: string, form: CategoriaFormValue): Observable<CategoriaVM> {
     return this.http
-      .put<ResponseDTO<CategoryResponseDTO>>(`${this.apiUrl}/${id}`, toCategoryRequest(form))
+      .put<ResponseDTO<CategoryResponseDTO>>(`${this.apiUrl}/${id}`, toCategoryRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toCategoriaVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`)
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

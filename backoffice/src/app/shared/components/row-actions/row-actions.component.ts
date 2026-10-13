@@ -4,6 +4,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
+import { AccessRule } from '../../../core/models/access-rule.model';
 
 /** Una acción de fila. `run` la ejecuta el consumidor; el componente solo la presenta. */
 export interface RowAction {
@@ -13,6 +14,8 @@ export interface RowAction {
   run: () => void;
   /** Permiso atómico requerido. Sin él la acción no se muestra. */
   permission?: string;
+  /** Regla completa (varios permisos y/o roles), para cuando un permiso solo no alcanza. */
+  rule?: AccessRule;
   /** Destructiva: se pinta en rojo y se agrupa al final, detrás de un divisor. */
   danger?: boolean;
   disabled?: boolean;
@@ -87,6 +90,7 @@ export class RowActionsComponent {
   );
 
   private permitida(accion: RowAction): boolean {
-    return !accion.permission || this.auth.can(accion.permission);
+    return (!accion.permission || this.auth.can(accion.permission))
+      && (!accion.rule || this.auth.canAccess(accion.rule));
   }
 }

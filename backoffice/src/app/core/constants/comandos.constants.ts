@@ -1,5 +1,6 @@
 import { AccessRule } from '../models/access-rule.model';
 import { UserRole } from '../enums/user-role.enum';
+import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
 
 /**
  * Comando del buscador del shell: una acción a la que se llega escribiendo, sin
@@ -78,7 +79,7 @@ export const COMANDOS: Comando[] = [
     icon: 'bookmark-simple',
     keywords: ['nueva', 'alta', 'agregar', 'etiqueta', 'tag'],
     route: '/dashboard/etiquetas/nuevo',
-    rule: { permissions: ['CREATE_TAXONOMY'] },
+    rule: { permissions: ['CREATE_TAG'] },
   },
   {
     label: 'Crear destinatario',
@@ -99,15 +100,15 @@ export const COMANDOS: Comando[] = [
     icon: 'shield-plus',
     keywords: ['nuevo', 'alta', 'agregar', 'rol', 'permisos'],
     route: '/dashboard/roles/nuevo',
-    // Roles y Permisos se gatean por ROL (igual que sus rutas), no por permiso atómico.
-    rule: { requireRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE] },
+    // Roles y Permisos se gatean por ROL (igual que sus rutas). Crear = solo SUPERADMIN (PPDT-5.1).
+    rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
   },
   {
     label: 'Crear permiso',
     icon: 'key',
     keywords: ['nuevo', 'alta', 'agregar', 'permiso'],
     route: '/dashboard/permisos/nuevo',
-    rule: { requireRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE] },
+    rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
   },
 
   // ── Cuenta y shell ───────────────────────────────────────────────────────

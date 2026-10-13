@@ -1,18 +1,27 @@
 import { Etiqueta } from '@core/models/tramite.model';
-import { EtiquetaVM } from '../models/etiqueta.vm';
+import { TagRequestDTO, TagResponseDTO } from '../models/etiqueta.dto';
+import { EtiquetaFormValue, EtiquetaVM } from '../models/etiqueta.vm';
+
+/** `TagResponseDTO` → VM. `organismoNombre` lo completa el facade (cruce con organismos). */
+export function toEtiquetaVM(dto: TagResponseDTO): EtiquetaVM {
+  return {
+    id: dto.id,
+    slug: dto.slug,
+    organismoId: dto.organismId ?? null,
+    organismoNombre: null,
+    local: dto.local,
+  };
+}
+
+/** Form → request. `local` no se manda: el backend lo deriva del organismo. */
+export function toTagRequest(form: EtiquetaFormValue): TagRequestDTO {
+  return { slug: form.slug, organismId: form.organismoId ?? null };
+}
 
 /**
- * Mapea el modelo mock (`Etiqueta`) al VM. Cuando el backend exponga el endpoint, se reemplaza
- * la fuente por un DTO real y este mapper se ajusta sin tocar facade/componentes.
+ * Siembra del mock: el modelo legado `Etiqueta` (que sigue usando el mock de trámites) se proyecta
+ * al contrato real. Todas quedan GLOBALES (sin organismo).
  */
-export function toEtiquetaVM(e: Etiqueta): EtiquetaVM {
-  return {
-    id: e.id,
-    nombre: e.nombre,
-    slug: e.slug,
-    icono: e.icono,
-    color: e.color,
-    activo: e.activo,
-    tramitesCount: e.tramitesCount ?? 0,
-  };
+export function etiquetaLegadaToVM(e: Etiqueta): EtiquetaVM {
+  return toEtiquetaVM({ id: `tag-${e.id}`, slug: e.slug, local: false, organismId: null });
 }

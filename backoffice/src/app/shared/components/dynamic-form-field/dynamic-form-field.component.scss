@@ -265,6 +265,39 @@ mat-form-field {
 }
 
 // ==========================================================================
+// Vista previa derivada (`field.preview`) — p. ej. el slug canonicalizado
+// ==========================================================================
+// El bloque es solo la región viva (sin caja propia): vacía no ocupa lugar y el form no
+// "salta" hasta que hay algo que mostrar. El espaciado vive en `-content`.
+.field-preview {
+  &-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    margin: var(--theme-space-xs) 0 0;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+  }
+
+  &-icon {
+    font-size: var(--theme-font-size-sm);
+    line-height: 1;
+    color: var(--theme-text-tertiary);
+  }
+
+  &-value {
+    font-family: var(--theme-font-mono);
+    font-weight: var(--theme-font-weight-medium);
+    color: var(--theme-primary-dark);
+    background: var(--theme-primary-50);
+    padding: 1px var(--theme-space-xs);
+    border-radius: var(--theme-radius-sm);
+    word-break: break-all;
+  }
+}
+
+// ==========================================================================
 // Unsupported
 // ==========================================================================
 .unsupported-field {

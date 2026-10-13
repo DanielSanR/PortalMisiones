@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -12,11 +12,10 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '../../shared/components/table';
-import { FilterTabsComponent, FilterTabOption } from '../../shared/components/filter-tabs';
-import { PageActionsDirective } from '../../shared/directives/page-actions.directive';
-import { FeedbackService } from '../../core/services/feedback.service';
-import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../../core/models/dashboard.model';
+import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '@shared/components/table';
+import { FilterTabsComponent, FilterTabOption } from '@shared/components/filter-tabs';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { FeedbackFacade, FeedbackFilterVM, FeedbackPageVM, FeedbackStatsVM, FeedbackVM } from '@features/feedback';
 
 @Component({
   selector: 'app-feedback',
@@ -38,21 +37,31 @@ import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../../core/model
     PageActionsDirective,
   ],
   templateUrl: './feedback.component.html',
-  styleUrls: ['./feedback.component.scss'],
+  styleUrl: './feedback.component.scss',
 })
 export class FeedbackComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly facade = inject(FeedbackFacade);
+  /** Cada emisión dispara una consulta; `switchMap` descarta la anterior si sigue en vuelo. */
+  private readonly load$ = new Subject<FeedbackFilterVM>();
+  /** Cada emisión vuelve a pedir el resumen (carga inicial y "Reintentar"). */
+  private readonly loadStats$ = new Subject<void>();
 
-  registros: FeedbackTramite[] = [];
-  stats: FeedbackStats | null = null;
+  registros: FeedbackVM[] = [];
+  stats: FeedbackStatsVM | null = null;
+  /** Falló el resumen: en su lugar se muestra un aviso compacto con "Reintentar". */
+  statsError = false;
+  statsCargando = false;
   loading = true;
+  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
+  error = false;
   totalItems = 0;
   currentPage = 0;
   pageSize = 10;
   tramiteIdFijo: string | null = null;
 
-  columns: TableColumn<FeedbackTramite>[] = [
+  columns: TableColumn<FeedbackVM>[] = [
     { key: 'util',       label: 'Valoración', width: '120px' },
     { key: 'tramite',    label: 'Trámite' },
     { key: 'comentario', label: 'Comentario' },
@@ -62,7 +71,6 @@ export class FeedbackComponent implements OnInit {
   filterForm: FormGroup;
 
   constructor(
-    private feedbackService: FeedbackService,
     private route: ActivatedRoute,
     private fb: FormBuilder,
   ) {
@@ -77,14 +85,37 @@ export class FeedbackComponent implements OnInit {
   ngOnInit(): void {
     this.tramiteIdFijo = this.route.snapshot.queryParamMap.get('tramiteId');
 
-    this.feedbackService.getStats()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (stats) => {
-          this.stats = stats;
-          this.cdr.markForCheck();
-        },
-      });
+    this.loadStats$.pipe(
+      switchMap(() => this.facade.getStats().pipe(
+        catchError(() => of(null as FeedbackStatsVM | null)),
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((stats) => {
+      this.stats = stats;
+      this.statsError = !stats;
+      this.statsCargando = false;
+      this.cdr.markForCheck();
+    });
+
+    this.cargarStats();
+
+    this.load$.pipe(
+      switchMap((filter) => this.facade.list(filter).pipe(
+        // Un error de carga se muestra como error (no como "no hay datos") y no corta el stream.
+        catchError(() => of(null as FeedbackPageVM | null)),
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((page) => {
+      if (page) {
+        this.registros = page.items;
+        this.totalItems = page.total;
+      } else {
+        this.registros = [];
+        this.error = true;
+      }
+      this.loading = false;
+      this.cdr.markForCheck();
+    });
 
     this.loadData();
 
@@ -100,9 +131,10 @@ export class FeedbackComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
+    this.error = false;
     const v = this.filterForm.value;
 
-    const filter: FeedbackFilter = {
+    this.load$.next({
       page: this.currentPage + 1,
       pageSize: this.pageSize,
       search: v.search || undefined,
@@ -110,22 +142,12 @@ export class FeedbackComponent implements OnInit {
       fechaDesde: v.fechaDesde ? this.toISODate(v.fechaDesde) : undefined,
       fechaHasta: v.fechaHasta ? this.toISODate(v.fechaHasta) : undefined,
       tramiteId: this.tramiteIdFijo ?? undefined,
-    };
+    });
+  }
 
-    this.feedbackService.getAll(filter)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.registros = response.data;
-          this.totalItems = response.total;
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
-      });
+  cargarStats(): void {
+    this.statsCargando = true;
+    this.loadStats$.next();
   }
 
   onPageChange(event: TablePageEvent): void {

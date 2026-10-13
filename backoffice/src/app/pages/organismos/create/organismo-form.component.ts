@@ -5,7 +5,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { FormConfig } from '../../../core/models/field.interface';
-import { extractErrorMessage } from '../../../core/models/api-response.model';
+import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
+import { CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO } from '../organismo-save-error';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { OrganismosFacade, OrganismoFormValue, OrganismoVM } from '@features/organismos';
 
@@ -135,8 +136,7 @@ export class OrganismoFormComponent implements OnInit, PuedeTenerCambiosSinGuard
         },
         error: (err: unknown) => {
           this.saving = false;
-          this.serverError = extractErrorMessage((err as { error?: unknown })?.error)
-            || 'No se pudo guardar el organismo. Intentá de nuevo.';
+          this.serverError = aplicarErrorDeGuardado(err, this.dynamicForm?.form, CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO);
           this.cdr.markForCheck();
         },
       });

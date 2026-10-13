@@ -1,8 +1,6 @@
 <ng-template appPageActions>
-  <!-- Sin `*appHasPermission`: `/api/permission` autoriza por ROL (SUPERADMIN/ADMIN_BACKOFFICE,
-       §4.5) y la ruta ya lo exige con `requireRoles`. No existe un permiso atómico
-       "CREATE_PERMISSION" que gatear. -->
-  <button mat-raised-button color="primary" (click)="onCreate()">
+  <!-- `/api/permission` autoriza por ROL: crear es solo SUPERADMIN (PPDT-5.1), la misma regla que la ruta. -->
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="escribirPermisos">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo permiso
   </button>
 </ng-template>
@@ -46,8 +44,8 @@
   </app-active-filters>
 }
 
-<!-- El CTA del vacío no lleva `[emptyActionPermission]`: esta pantalla se gatea por ROL
-     (ver el comentario del botón "Nuevo permiso"), así que no hay permiso atómico que exigir. -->
+<!-- El CTA del vacío no lleva `[emptyActionPermission]`: esta pantalla se gatea por ROL. "Nuevo
+     permiso" solo se ofrece a quien puede escribir; "Limpiar filtros", a todos. -->
 <app-shared-table
     [data]="vista.rows"
     [columns]="columns"
@@ -65,7 +63,7 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
-    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionLabel]="vista.hayFiltros || (puedeEscribir$ | async) ? vista.emptyActionLabel : ''"
     [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
     (emptyAction)="onEmptyAction()"
     emptyIcon="key">

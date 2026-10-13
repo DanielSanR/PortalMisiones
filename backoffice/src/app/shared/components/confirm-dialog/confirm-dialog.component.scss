@@ -67,6 +67,25 @@
     }
   }
 
+  // Falla de `confirmAction`: se muestra en el cuerpo y el diálogo queda abierto.
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding: var(--theme-space-sm);
+    border-radius: var(--theme-radius-sm);
+    background: var(--theme-error-bg);
+    color: var(--theme-error-icon);
+    font-size: var(--theme-font-size-sm);
+    line-height: 1.4;
+
+    i.ph {
+      font-size: 16px;
+      margin-top: 1px;
+    }
+  }
+
   &--danger {
     .confirm-dialog__icon-wrapper {
       background: var(--theme-error-bg);

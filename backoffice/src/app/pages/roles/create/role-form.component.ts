@@ -100,6 +100,7 @@ export class RoleFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
               descripcion:          rol.descripcion,
               scopeTipo:            rol.scopeTipo,
               asignablePorOrgAdmin: rol.asignablePorOrgAdmin,
+              asignablePorBackoffice: rol.asignablePorBackoffice,
               // El estado real del rol: fijarlo en `true` reactivaba en silencio un rol dado de baja.
               active:               rol.activo,
               permissionsIds:       rol.permisos.map((p) => p.id),
@@ -148,6 +149,7 @@ export class RoleFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
       descripcion:          ['', [Validators.required, Validators.maxLength(255)]],
       scopeTipo:            ['global' as RoleScopeType, Validators.required],
       asignablePorOrgAdmin: [false],
+      asignablePorBackoffice: [false],
       active:               [true],
       permissionsIds:       [[] as string[]],
     });
@@ -179,6 +181,7 @@ export class RoleFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
       descripcion:          raw.descripcion,
       scopeTipo:            raw.scopeTipo,
       asignablePorOrgAdmin: raw.asignablePorOrgAdmin,
+      asignablePorBackoffice: raw.asignablePorBackoffice,
       active:               raw.active,
       permissionsIds:       raw.permissionsIds ?? [],
     };

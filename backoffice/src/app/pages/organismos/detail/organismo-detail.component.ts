@@ -14,7 +14,9 @@ import { RowAction, RowActionsComponent } from '../../../shared/components/row-a
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { FormConfig } from '../../../core/models/field.interface';
-import { extractErrorMessage } from '../../../core/models/api-response.model';
+import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
+import { CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO } from '../organismo-save-error';
+import { OrigenEdicionOrganismo, PARAM_ORIGEN_EDICION, origenEdicionDesde } from '../organismo-origen';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { OrganismoFormValue, OrganismoVM, OrganismosFacade } from '@features/organismos';
 
@@ -104,9 +106,13 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
 
   private id = '';
 
+  /** Adónde vuelve la edición al guardar o cancelar (ver `organismo-origen.ts`). */
+  private origen: OrigenEdicionOrganismo = 'ficha';
+
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? '';
     this.modo = this.route.snapshot.data['modo'] === 'editar' ? 'editar' : 'ver';
+    this.origen = origenEdicionDesde(this.route.snapshot.queryParamMap.get(PARAM_ORIGEN_EDICION));
     this.cargar();
   }
 
@@ -247,11 +253,22 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
   }
 
   onEditar(): void {
-    this.router.navigate(['/dashboard/organismos/editar', this.id]);
+    this.router.navigate(['/dashboard/organismos/editar', this.id], {
+      queryParams: { [PARAM_ORIGEN_EDICION]: 'ficha' },
+    });
   }
 
   onVerFicha(): void {
     this.router.navigate(['/dashboard/organismos/detalle', this.id]);
+  }
+
+  /** Cierra la edición (guardado o cancelación) volviendo a donde el usuario la abrió. */
+  salirDeLaEdicion(): void {
+    if (this.origen === 'lista') {
+      this.volver();
+    } else {
+      this.onVerFicha();
+    }
   }
 
   /** Lo dispara el botón del header; el form vive en el hijo. */
@@ -277,12 +294,11 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
         next: () => {
           this.snackBar.open('Organismo actualizado', 'OK',
             { duration: 3000, panelClass: 'snackbar-success' });
-          this.onVerFicha();
+          this.salirDeLaEdicion();
         },
         error: (err: unknown) => {
           this.saving = false;
-          this.serverError = extractErrorMessage((err as { error?: unknown })?.error)
-            || 'No se pudo guardar el organismo. Intentá de nuevo.';
+          this.serverError = aplicarErrorDeGuardado(err, this.dynamicForm?.form, CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO);
           this.cdr.markForCheck();
         },
       });

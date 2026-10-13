@@ -4,6 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Observable, finalize } from 'rxjs';
+import { extractErrorMessage } from '../../../core/models/api-response.model';
 
 export interface ConfirmDialogData {
   title: string;
@@ -45,6 +46,8 @@ export interface ConfirmDialogData {
 export class ConfirmDialogComponent {
   /** La acción async está en vuelo: bloquea los botones y el cierre. */
   ejecutando = false;
+  /** Por qué falló la última ejecución de `confirmAction`. El diálogo queda abierto para reintentar. */
+  errorMensaje = '';
 
   constructor(
     public dialogRef: MatDialogRef<ConfirmDialogComponent>,
@@ -80,6 +83,7 @@ export class ConfirmDialogComponent {
     }
 
     this.ejecutando = true;
+    this.errorMensaje = '';
     this.dialogRef.disableClose = true;
     this.data.confirmAction()
       .pipe(finalize(() => {
@@ -88,8 +92,12 @@ export class ConfirmDialogComponent {
       }))
       .subscribe({
         next: () => this.dialogRef.close(true),
-        // El interceptor global ya muestra el detalle del error: acá solo cerramos sin confirmar.
-        error: () => this.dialogRef.close(false),
+        // El error se cuenta acá mismo y el diálogo sigue abierto: el usuario puede reintentar o
+        // cancelar. (Las mutaciones HTTP van con `sinDialogoGlobal()` para no duplicarlo.)
+        error: (err: unknown) => {
+          this.errorMensaje = extractErrorMessage((err as { error?: unknown })?.error)
+            || 'No se pudo completar la acción. Intentá de nuevo.';
+        },
       });
   }
 }

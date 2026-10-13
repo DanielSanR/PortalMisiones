@@ -40,6 +40,10 @@ export const API_CODES = {
   ROLE_ALREADY_EXISTS: 4061,
   PERMISSION_ALREADY_EXISTS: 4062,
   REFRESH_INVALID: 4064,
+  ORGANISM_ACRONYM_TAKEN: 4069,
+  // Taxonomía (genéricos): conflicto de unicidad (ej. slug repetido en el alcance) / entidad inexistente.
+  TAXONOMY_CONFLICT: 4072,
+  TAXONOMY_NOT_FOUND: 4073,
 
   // Sistema
   UNEXPECTED: 5000,

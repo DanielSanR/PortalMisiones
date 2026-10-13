@@ -4,7 +4,7 @@
 //
 // La caja de búsqueda es `app-list-search` y la barra de filtros aplicados es
 // `app-active-filters`: acá solo quedan los botones de la fila A/B y las celdas
-// propias (nombre con muestra de color y uso en trámites).
+// propias (slug con su alcance global/local y uso en trámites).
 // ==========================================================================
 
 @use '../../../../shared-styles/mixins' as *;
@@ -39,36 +39,40 @@
   @include list-ghost-button;
 }
 
-// Celda de nombre ----------------------------------------------------------
-.etiqlist-nombre {
+// Celda de slug + alcance -------------------------------------------------
+.etiqlist-slug {
   display: flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
+  flex-direction: column;
+  gap: 1px;
   min-width: 0;
 
-  // Muestra del color con el que la etiqueta se ve en el portal. El borde
-  // interno la mantiene visible aunque el color elegido sea casi blanco.
-  &__color {
-    flex: none;
-    width: 18px;
-    height: 18px;
-    border-radius: var(--theme-radius-sm);
-    box-shadow: inset 0 0 0 1px var(--theme-border-primary);
-  }
-
-  &__texto {
+  &__fila {
     display: flex;
-    flex-direction: column;
-    gap: 1px;
+    align-items: center;
+    gap: var(--theme-space-sm);
     min-width: 0;
   }
 
-  &__principal {
+  &__texto {
     font-weight: var(--theme-font-weight-medium);
     @include truncate;
   }
 
-  // En mobile la tabla oculta "Slug": este resumen bajo el nombre recupera
+  // Global vs. local: la global (catálogo compartido) se destaca en tono info;
+  // la local queda neutra porque el organismo ya la acota en la columna de al lado.
+  &__alcance {
+    flex: none;
+
+    &--global {
+      @include estado-badge(--theme-info-bg, --theme-info, --theme-info-border);
+    }
+
+    &--local {
+      @include estado-badge(--theme-surface-sunken, --theme-text-secondary, --theme-border-primary);
+    }
+  }
+
+  // En mobile la tabla oculta "Organismo": este resumen bajo el slug recupera
   // ese dato en vez de perderlo.
   &__meta {
     display: none;
@@ -79,19 +83,5 @@
       display: block;
       @include truncate;
     }
-  }
-}
-
-// Uso en trámites ----------------------------------------------------------
-.etiqlist-uso {
-  font-weight: var(--theme-font-weight-medium);
-  font-variant-numeric: tabular-nums;
-
-  // "Sin uso" es información, no un número: se apaga para que los conteos
-  // reales sean lo que se lee primero al escanear la columna.
-  &--vacio {
-    color: var(--theme-text-tertiary);
-    font-weight: var(--theme-font-weight-normal);
-    font-size: var(--theme-font-size-sm);
   }
 }

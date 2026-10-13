@@ -1,6 +1,6 @@
 <ng-template appPageActions>
-  <!-- Sin `*appHasPermission`: Roles se autoriza por ROL y la ruta ya lo verificó (`requireRoles`). -->
-  <button mat-raised-button color="primary" (click)="onCreate()">
+  <!-- Roles se autoriza por ROL: crear es solo SUPERADMIN (PPDT-5.1), la misma regla que la ruta. -->
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="escribirRoles">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo rol
   </button>
 </ng-template>
@@ -66,7 +66,7 @@
         (rowClick)="seleccionar($event)"
         [emptyTitle]="vista.emptyTitle"
         [emptyMessage]="vista.emptyMessage"
-        [emptyActionLabel]="vista.emptyActionLabel"
+        [emptyActionLabel]="vista.hayFiltros || vista.puedeEscribir ? vista.emptyActionLabel : ''"
         [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
         [emptyActionPermission]="''"
         (emptyAction)="onEmptyAction()"
@@ -82,10 +82,8 @@
             <div class="rol-cell__name-row">
               <span class="rol-cell__name">{{ row.codigo }}</span>
               @if (esRolProtegido(row)) {
-                <!-- El tag explica por qué las acciones pueden estar bloqueadas: `app-row-actions`
-                     deshabilita, pero no tiene dónde contar el motivo. -->
                 <span class="rol-cell__tag rol-cell__tag--protected"
-                      [matTooltip]="motivoBloqueo(row, vista.puedeGestionarProtegidos) || 'Rol del sistema: solo un SUPERADMIN puede modificarlo'">
+                      matTooltip="Rol del sistema: solo un SUPERADMIN puede modificarlo">
                   Protegido
                 </span>
               } @else if (row.scopeTipo === 'global') {
@@ -115,8 +113,8 @@
         <!-- La fila entera selecciona el rol: sin esto, editar o borrar también movería el detalle. -->
         <div class="roleslist-celda-acciones" (click)="$event.stopPropagation()">
           <app-row-actions
-              [primary]="accionEditar(row, vista.puedeGestionarProtegidos)"
-              [actions]="accionesDe(row, vista.puedeGestionarProtegidos)"
+              [primary]="accionEditar(row)"
+              [actions]="accionesDe(row)"
               [busy]="deletingId === row.id"
               busyLabel="Eliminando rol...">
           </app-row-actions>
@@ -137,6 +135,9 @@
               {{ detalle.rol.permisos.length }} permisos asignados
               @if (detalle.rol.asignablePorOrgAdmin) {
                 · asignable por Admin de Organismo
+              }
+              @if (detalle.rol.asignablePorBackoffice) {
+                · asignable por Admin de Backoffice
               }
               @if (detalle.protegido) {
                 · <i class="ph ph-lock-simple" aria-hidden="true"></i> protegido

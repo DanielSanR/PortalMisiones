@@ -2,6 +2,9 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
 import { accessGuard, unsavedChangesGuard } from '../core/guards';
+import {
+  EDITAR_USUARIO_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS, LEER_ROLES_PERMISOS_ACCESS,
+} from '../core/constants/policy-overrides.constants';
 import { UserRole } from '../core/enums/user-role.enum';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -45,8 +48,9 @@ const SUPER_AB_AO = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.AD
  * Autorización de ruta vía `accessGuard` + `data.access` (AccessRule). Se gatea por **permiso** para
  * espejar el `@PreAuthorize hasAuthority(...)` del backend (§4.1/§5); las excepciones que el backend
  * autoriza por rol (Roles/Permisos) y las sin backend (Auditoría/Feedback) usan `requireRoles`. La
- * MISMA regla filtra el nav → nav y ruta nunca se desalinean. Usuarios: listar es lectura (READ_USER),
- * pero crear/editar quedan en SUPERADMIN por policy override (el form usa `/api/organism`, READ_ORGANISM).
+ * MISMA regla filtra el nav → nav y ruta nunca se desalinean. Usuarios: listar es lectura (READ_USER);
+ * crear/editar exigen además lo que el form necesita leer (`READ_ORGANISM` + rol admin) — ver
+ * `PERMISSION_PREREQUISITES` / `EDITAR_USUARIO_ACCESS` en `policy-overrides.constants.ts`.
  */
 const routes: Routes = [
   {
@@ -79,9 +83,9 @@ const routes: Routes = [
       { path: 'modalidades/nuevo', component: ModalidadFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades', 'Nueva modalidad'] } },
       { path: 'modalidades/editar/:id', component: ModalidadFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades', 'Editar modalidad'] } },
       // Etiquetas: sin controller en backend (mock) → permiso genérico de taxonomía como aproximación.
-      { path: 'etiquetas/lista', component: EtiquetasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_TAXONOMY', 'UPDATE_TAXONOMY', 'DELETE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas'] } },
-      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Nueva etiqueta'] } },
-      { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_TAXONOMY'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Editar etiqueta'] } },
+      { path: 'etiquetas/lista', component: EtiquetasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_TAG'] }, redirectTo: HOME, breadcrumb: ['Etiquetas'] } },
+      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_TAG'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Nueva etiqueta'] } },
+      { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_TAG'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Editar etiqueta'] } },
       { path: 'categorias/lista', component: CategoriasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías'] } },
       { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Nueva categoría'] } },
       { path: 'categorias/editar/:id', component: CategoriaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Editar categoría'] } },
@@ -95,19 +99,19 @@ const routes: Routes = [
       // Feedback Ciudadano → sin backend real → escape por rol
       { path: 'feedback', component: FeedbackComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME, breadcrumb: ['Feedback Ciudadano'] } },
 
-      // Usuarios: listar = lectura (READ_USER: SA/AB/AO); crear/editar = SUPERADMIN por policy override
-      // (el form carga /api/organism → READ_ORGANISM, solo SUPERADMIN en el seed).
+      // Usuarios: listar = READ_USER (SA/AB/AO). Crear = CREATE_USER + prerrequisitos del form; editar =
+      // EDITAR_USUARIO_ACCESS (UPDATE_USER + READ_ORGANISM + rol admin). Ver policy-overrides.constants.ts.
       { path: 'usuarios/lista', component: UsuariosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios'] } },
       { path: 'usuarios/nuevo', component: UsuarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Nuevo usuario'] } },
-      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Editar usuario'] } },
+      { path: 'usuarios/editar/:id', component: UsuarioFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: EDITAR_USUARIO_ACCESS, redirectTo: HOME, breadcrumb: ['Usuarios', 'Editar usuario'] } },
 
       // Roles y Permisos → backend autoriza por ROL (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5)
-      { path: 'roles/lista', component: RolesListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles'] } },
-      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
-      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
-      { path: 'permisos/lista', component: PermisosListComponent, canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos'] } },
-      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Nuevo permiso'] } },
-      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { requireRoles: SUPER_AB }, redirectTo: HOME, breadcrumb: ['Permisos', 'Editar permiso'] } },
+      { path: 'roles/lista', component: RolesListComponent, canActivate: [accessGuard], data: { access: LEER_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles'] } },
+      { path: 'roles/nuevo', component: RoleFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
+      { path: 'roles/editar/:id', component: RoleFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
+      { path: 'permisos/lista', component: PermisosListComponent, canActivate: [accessGuard], data: { access: LEER_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Permisos'] } },
+      { path: 'permisos/nuevo', component: PermisoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Permisos', 'Nuevo permiso'] } },
+      { path: 'permisos/editar/:id', component: PermisoFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Permisos', 'Editar permiso'] } },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       // Cualquier /dashboard/* sin match (rutas "bare" tipo /organismos, typos, secciones aún sin

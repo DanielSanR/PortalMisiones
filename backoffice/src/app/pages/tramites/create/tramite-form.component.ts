@@ -15,7 +15,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   BehaviorSubject, Observable, catchError, combineLatest, finalize, map, of, shareReplay,
-  startWith, switchMap, throwError,
+  startWith, switchMap,
 } from 'rxjs';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
@@ -444,16 +444,8 @@ export class TramiteFormComponent implements OnInit, PuedeTenerCambiosSinGuardar
         confirmAction: () => {
           this.localidadTrabajandoId = item.localidadId;
           this.cdr.markForCheck();
+          // El error lo muestra el propio diálogo, que queda abierto para reintentar.
           return this.facade.removeContenidoLocalidad(this.editId!, item.localidadId).pipe(
-            catchError((err: unknown) => {
-              this.snackBar.open(
-                extractErrorMessage((err as { error?: unknown })?.error)
-                  || `No se pudo eliminar el contenido de ${item.localidadNombre}.`,
-                'Cerrar',
-                { duration: 6000, panelClass: 'snackbar-error' },
-              );
-              return throwError(() => err);
-            }),
             finalize(() => { this.localidadTrabajandoId = null; this.cdr.markForCheck(); }),
           );
         },

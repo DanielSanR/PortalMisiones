@@ -34,4 +34,16 @@ export class UsuariosRepository {
   setAccountStatus(id: string, active: boolean): Observable<void> {
     return this.ds.setAccountStatus(id, active);
   }
+
+  changePassword(id: string, newPassword: string): Observable<void> {
+    return this.ds.changePassword(id, newPassword);
+  }
+
+  changeEmail(id: string, newEmail: string): Observable<void> {
+    return this.ds.changeEmail(id, newEmail);
+  }
+
+  deleteDefinitive(id: string): Observable<void> {
+    return this.ds.deleteDefinitive(id);
+  }
 }

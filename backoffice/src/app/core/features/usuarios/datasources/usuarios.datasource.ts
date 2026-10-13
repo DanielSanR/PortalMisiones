@@ -14,6 +14,12 @@ export abstract class UsuariosDataSource {
   abstract toggleActive(id: string): Observable<UsuarioVM>;
   /** Activa/desactiva la cuenta (REAL: PUT /api/user/{id}/status-account). */
   abstract setAccountStatus(id: string, active: boolean): Observable<void>;
+  /** REAL: PUT /api/user/{id}/change-password (`UPDATE_USER`). */
+  abstract changePassword(id: string, newPassword: string): Observable<void>;
+  /** REAL: PATCH /api/user/{id}/change-email (`UPDATE_USER`). El backend lo guarda en minúsculas. */
+  abstract changeEmail(id: string, newEmail: string): Observable<void>;
+  /** REAL: DELETE /api/user/{id}/admin (`DELETE_USER`). Borrado físico, irreversible. */
+  abstract deleteDefinitive(id: string): Observable<void>;
 }
 
 export const USUARIOS_DS = new InjectionToken<UsuariosDataSource>('USUARIOS_DS');

@@ -48,7 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // Taxonomía: sin permiso READ (GET públicos) → visible si tiene alguna escritura del catálogo.
       { label: 'Categorías', icon: 'folders', route: '/dashboard/categorias/lista', rule: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] } },
       // Etiquetas: sin controller en backend (mock); se aproxima con el permiso genérico de taxonomía.
-      { label: 'Etiquetas', icon: 'tag', route: '/dashboard/etiquetas/lista', rule: { permissions: ['CREATE_TAXONOMY', 'UPDATE_TAXONOMY', 'DELETE_TAXONOMY'] } },
+      { label: 'Etiquetas', icon: 'tag', route: '/dashboard/etiquetas/lista', rule: { permissions: ['READ_TAG'] } },
       { label: 'Modalidades', icon: 'sliders-horizontal', route: '/dashboard/modalidades/lista', rule: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] } },
       { label: 'Eventos de Vida', icon: 'bookmarks-simple', route: '/dashboard/eventos-de-vida/lista', rule: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] } },
       { label: 'Destinatarios', icon: 'user-focus', route: '/dashboard/destinatarios/lista', rule: { permissions: ['CREATE_RECIPIENT', 'UPDATE_RECIPIENT', 'DELETE_RECIPIENT'] } },

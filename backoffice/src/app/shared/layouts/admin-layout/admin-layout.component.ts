@@ -16,6 +16,7 @@ import { COMANDOS } from '../../../core/constants/comandos.constants';
 import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
 import { evaluateAccess } from '../../../core/utils/authorization.utils';
+import { BreadcrumbDeclarado, BreadcrumbItem, resolverBreadcrumb } from '../../../core/utils/breadcrumb.utils';
 
 /** Icono genérico cuando el primer segmento del breadcrumb no matchea ningún `NavItem`
  *  (ej. detalle de trámite, cuyo trail es ["Trámites", "Detalle"] — sí matchea; se usa
@@ -86,8 +87,11 @@ export class AdminLayoutComponent implements OnInit {
   private permisosActuales: string[] = [];
   private rolesActuales: UserRole[] = [];
 
-  /** Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio". */
-  breadcrumbTrail: string[] = [];
+  /**
+   * Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio".
+   * Los tramos intermedios traen `link` (la lista de su sección); el último es la página actual.
+   */
+  breadcrumbTrail: BreadcrumbItem[] = [];
   /** Icono de la sección activa (icono del `NavItem` cuyo label matchea `breadcrumbTrail[0]`). */
   sectionIcon = 'layout';
 
@@ -198,7 +202,8 @@ export class AdminLayoutComponent implements OnInit {
   private updateBreadcrumb(): void {
     let route = this.activatedRoute.root;
     while (route.firstChild) route = route.firstChild;
-    this.breadcrumbTrail = (route.snapshot.data['breadcrumb'] as string[] | undefined) ?? [];
+    const declarado = route.snapshot.data['breadcrumb'] as BreadcrumbDeclarado[] | undefined;
+    this.breadcrumbTrail = resolverBreadcrumb(declarado, NAV_ITEMS);
     this.sectionIcon = this.resolveSectionIcon(this.breadcrumbTrail);
     this.cdr.markForCheck();
   }
@@ -206,11 +211,11 @@ export class AdminLayoutComponent implements OnInit {
   /** Icono de la sección activa: el de "Inicio" cuando no hay trail (Home), o el del `NavItem`
    *  cuyo `label` matchea el primer segmento del trail (ej. "Roles" → shield-star). Fallback
    *  genérico si el segmento no corresponde a ningún ítem del nav. */
-  private resolveSectionIcon(trail: string[]): string {
+  private resolveSectionIcon(trail: BreadcrumbItem[]): string {
     if (trail.length === 0) {
       return NAV_ITEMS.find((item) => item.label === 'Inicio')?.icon ?? FALLBACK_SECTION_ICON;
     }
-    return NAV_ITEMS.find((item) => item.label === trail[0])?.icon ?? FALLBACK_SECTION_ICON;
+    return NAV_ITEMS.find((item) => item.label === trail[0].label)?.icon ?? FALLBACK_SECTION_ICON;
   }
 
   trackByRoute(_index: number, item: NavItem): string {

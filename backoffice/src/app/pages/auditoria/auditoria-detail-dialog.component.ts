@@ -3,7 +3,7 @@ import { DatePipe, TitleCasePipe, KeyValuePipe } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { AuditoriaTramite } from '../../core/models/dashboard.model';
+import { AuditoriaRegistroVM } from '@features/auditoria';
 
 @Component({
   selector: 'app-auditoria-detail-dialog',
@@ -24,6 +24,6 @@ export class AuditoriaDetailDialogComponent {
 
   constructor(
     public dialogRef: MatDialogRef<AuditoriaDetailDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: AuditoriaTramite,
+    @Inject(MAT_DIALOG_DATA) public data: AuditoriaRegistroVM,
   ) {}
 }

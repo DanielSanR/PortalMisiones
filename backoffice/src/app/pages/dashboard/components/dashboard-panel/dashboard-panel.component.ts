@@ -1,5 +1,5 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { GateLabelComponent } from '../../../../shared/components/gate-label';
+import { GateLabelComponent } from '@shared/components/gate-label';
 
 /**
  * Chrome común de los widgets del Home (screens-spec.md §4): ícono opcional + título (+ subtítulo

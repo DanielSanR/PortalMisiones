@@ -28,8 +28,8 @@ export class UsuariosFacade {
 
   /**
    * Resuelve en una sola llamada lo que necesita el formulario (organismos + roles + usuario en edición).
-   * Solo lo consumen las rutas usuarios/nuevo y usuarios/editar, gateadas a SUPERADMIN (ver pages.module):
-   * es el único rol que puede leer `/api/organism` y `/api/role/allowed` (SUPERADMIN-gated), así que no
+   * Solo lo consumen las rutas usuarios/nuevo y usuarios/editar, que exigen además `READ_ORGANISM` y un rol
+   * admin (`/api/role/allowed`) — ver `PERMISSION_PREREQUISITES` / `EDITAR_USUARIO_ACCESS` —, así que no
    * hace falta degradar nada.
    */
   getFormData(id: string | null): Observable<UsuarioFormData> {
@@ -60,5 +60,26 @@ export class UsuariosFacade {
   /** Activa/desactiva la cuenta (REAL: status-account). */
   setAccountStatus(id: string, active: boolean): Observable<void> {
     return this.usuarios.setAccountStatus(id, active);
+  }
+
+  changePassword(id: string, newPassword: string): Observable<void> {
+    return this.usuarios.changePassword(id, newPassword);
+  }
+
+  /** Cambia el email y lo refleja en la fila (en minúsculas, como lo persiste el backend). */
+  changeEmail(id: string, newEmail: string): Observable<void> {
+    const email = newEmail.trim().toLowerCase();
+    return this.usuarios.changeEmail(id, email).pipe(
+      tap(() =>
+        this._usuarios$.next(this._usuarios$.value.map((u) => (u.id === id ? { ...u, email } : u)))
+      )
+    );
+  }
+
+  /** Borrado físico: saca la fila del stream al confirmarse. */
+  deleteDefinitive(id: string): Observable<void> {
+    return this.usuarios.deleteDefinitive(id).pipe(
+      tap(() => this._usuarios$.next(this._usuarios$.value.filter((u) => u.id !== id)))
+    );
   }
 }

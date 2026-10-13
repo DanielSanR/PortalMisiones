@@ -2,18 +2,9 @@ import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
 import { EventosDeVidaDataSource } from './eventos-de-vida.datasource';
 import { EventoDeVidaFormValue, EventoDeVidaVM } from '../models/evento-de-vida.vm';
+import { canonicalizarSlug } from '@core/utils/slug.utils';
 
 const DELAY = 200;
-
-/** Deriva el slug desde el nombre (espeja el `generateSlug` del backend). */
-function slugify(nombre: string): string {
-  return nombre
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-)|(-$)/g, '');
-}
 
 /** Implementación mock en memoria (dev offline). */
 @Injectable()
@@ -34,7 +25,7 @@ export class EventosDeVidaMockDataSource extends EventosDeVidaDataSource {
   }
 
   create(form: EventoDeVidaFormValue): Observable<EventoDeVidaVM> {
-    const nuevo: EventoDeVidaVM = { id: `lev-${Date.now()}`, slug: slugify(form.nombre), nombre: form.nombre };
+    const nuevo: EventoDeVidaVM = { id: `lev-${Date.now()}`, slug: canonicalizarSlug(form.nombre), nombre: form.nombre };
     this.data = [...this.data, nuevo];
     return of({ ...nuevo }).pipe(delay(DELAY));
   }
@@ -42,7 +33,7 @@ export class EventosDeVidaMockDataSource extends EventosDeVidaDataSource {
   update(id: string, form: EventoDeVidaFormValue): Observable<EventoDeVidaVM> {
     const idx = this.data.findIndex((x) => x.id === id);
     if (idx < 0) return throwError(() => new Error('Evento no encontrado'));
-    const actualizado: EventoDeVidaVM = { id, slug: slugify(form.nombre), nombre: form.nombre };
+    const actualizado: EventoDeVidaVM = { id, slug: canonicalizarSlug(form.nombre), nombre: form.nombre };
     this.data = this.data.map((x) => (x.id === id ? actualizado : x));
     return of({ ...actualizado }).pipe(delay(DELAY));
   }

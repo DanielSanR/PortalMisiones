@@ -49,6 +49,16 @@
       </mat-card-content>
     </mat-card>
   </div>
+} @else if (statsError) {
+  <div class="stats-aviso" role="alert">
+    <i class="ph ph-warning-circle stats-aviso__icon" aria-hidden="true"></i>
+    <span class="stats-aviso__text">No pudimos cargar el resumen.</span>
+    <button mat-button color="primary" type="button" class="stats-aviso__cta"
+        [disabled]="statsCargando" (click)="cargarStats()">
+      <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>
+      {{ statsCargando ? 'Reintentando…' : 'Reintentar' }}
+    </button>
+  </div>
 }
 
 <!-- Toolbar de lista (well): fila A = búsqueda/fechas reales + contador · fila B = filter-tabs de valoración. -->
@@ -87,6 +97,10 @@
     [data]="registros"
     [columns]="columns"
     [loading]="loading"
+    [error]="error"
+    errorTitle="No pudimos cargar el feedback"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="loadData()"
     [paginated]="true"
     [totalItems]="totalItems"
     [pageSize]="pageSize"

@@ -252,5 +252,16 @@
       </div>
 
     </ng-container>
+
+    <!-- Vista previa derivada del valor (`field.preview`). La región viva queda montada
+         siempre que el campo la declare —si se creara junto con el texto, los lectores de
+         pantalla no anunciarían el primer cambio—; solo su contenido aparece y desaparece. -->
+    <div *ngIf="field.preview" class="field-preview" aria-live="polite">
+      <p *ngIf="preview$ | async as valorPrevisto" class="field-preview-content">
+        <i class="ph ph-arrow-bend-down-right field-preview-icon" aria-hidden="true"></i>
+        <span class="field-preview-label">{{ field.preview.label }}</span>
+        <code class="field-preview-value">{{ valorPrevisto }}</code>
+      </p>
+    </div>
   </ng-container>
 </ng-container>

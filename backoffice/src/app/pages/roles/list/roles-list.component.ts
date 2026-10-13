@@ -24,6 +24,8 @@ import { AuthTokenService } from '@core/services/auth-token.service';
 import { UserRole } from '@core/enums/user-role.enum';
 import { RolesFacade, RolVM } from '@features/roles';
 import { PermisoVM } from '@features/permisos';
+import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from '@core/constants/policy-overrides.constants';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
 
 /** Filtro por alcance del rol (campo real `scopeTipo`). */
 type ScopeFiltro = 'todos' | 'global' | 'organismo';
@@ -43,10 +45,10 @@ interface RolesVista extends EstadoVacio {
   hayFiltros: boolean;
   filtrosActivos: FiltroActivo[];
   /**
-   * Quien mira la pantalla es SUPERADMIN. Solo él puede tocar el rol SUPERADMIN: el backend
-   * corta con 403 `4029` (§4.4), así que la fila lo refleja en vez de ofrecer una acción que falla.
+   * Quien mira puede crear/editar/eliminar (solo SUPERADMIN desde PPDT-5.1). ADMIN_BACKOFFICE ve la
+   * pantalla en lectura: el backend le responde 403 a cualquier escritura.
    */
-  puedeGestionarProtegidos: boolean;
+  puedeEscribir: boolean;
 }
 
 /** Panel de detalle: el rol seleccionado con su matriz de permisos ya resuelta. */
@@ -61,6 +63,7 @@ interface RolDetalle {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    HasPermissionDirective,
     AsyncPipe,
     ReactiveFormsModule,
     MatButtonModule,
@@ -82,10 +85,8 @@ export class RolesListComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   /**
    * Excepción consciente a "el componente solo inyecta su facade": Roles NO se gatea por permiso
-   * atómico sino por ROL (`/api/role` = hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4), igual que su
-   * ruta (`pages.module.ts`, `requireRoles: SUPER_AB`). `app-row-actions` y el CTA del estado vacío
-   * gatean por permiso, que acá no aplica, así que la única regla por fila —proteger el rol
-   * SUPERADMIN— se resuelve con la sesión actual, de forma reactiva.
+   * atómico sino por ROL (`/api/role`: leer SA/AB, escribir solo SA — PPDT-5.1). El CTA del estado
+   * vacío gatea por permiso, que acá no aplica, así que `puedeEscribir` se resuelve con la sesión.
    */
   private readonly auth = inject(AuthTokenService);
 
@@ -112,10 +113,13 @@ export class RolesListComponent implements OnInit {
     startWith(this.searchCtrl.value),
   );
 
-  private readonly esSuperAdmin$ = this.auth.getCurrentUser$().pipe(
-    // `role` es el rol principal; `roles` trae el resto en sesiones multi-rol.
-    map((user) => user?.role === UserRole.SUPERADMIN || (user?.roles ?? []).includes(UserRole.SUPERADMIN)),
+  /** Reactivo a la sesión: la misma regla que la ruta de edición (`ESCRIBIR_ROLES_PERMISOS_ACCESS`). */
+  private readonly puedeEscribir$ = this.auth.getCurrentUser$().pipe(
+    map(() => this.auth.canAccess(ESCRIBIR_ROLES_PERMISOS_ACCESS)),
   );
+
+  /** Regla de las acciones de fila y del botón "Nuevo rol" (`app-row-actions` / `*appHasPermission`). */
+  readonly escribirRoles = ESCRIBIR_ROLES_PERMISOS_ACCESS;
 
   /** Los contadores de los chips se calculan sobre lo ya buscado, para que no mientan. */
   readonly filterTabs$ = combineLatest([this.roles$, this.search$]).pipe(
@@ -123,9 +127,9 @@ export class RolesListComponent implements OnInit {
   );
 
   readonly vista$ = combineLatest([
-    this.roles$, this.filtro$, this.search$, this.sort$, this.esSuperAdmin$,
+    this.roles$, this.filtro$, this.search$, this.sort$, this.puedeEscribir$,
   ]).pipe(
-    map(([roles, filtro, search, sort, esSuperAdmin]): RolesVista => {
+    map(([roles, filtro, search, sort, puedeEscribir]): RolesVista => {
       const buscados = this.buscar(roles, search);
       const rows = this.ordenar(filtro === 'todos' ? buscados : buscados.filter((r) => r.scopeTipo === filtro), sort);
       const filtrosActivos = this.filtrosActivos(search, filtro);
@@ -135,7 +139,7 @@ export class RolesListComponent implements OnInit {
         total: rows.length,
         hayFiltros,
         filtrosActivos,
-        puedeGestionarProtegidos: esSuperAdmin,
+        puedeEscribir,
         ...this.estadoVacio(roles.length, hayFiltros),
       };
     }),
@@ -167,9 +171,8 @@ export class RolesListComponent implements OnInit {
   readonly isRowSelected = (rol: RolVM): boolean => this.seleccionId$.value === rol.id;
 
   /**
-   * ¿Es el rol SUPERADMIN? A diferencia de `puedeGestionarProtegidos` (que depende de QUIÉN mira la
-   * pantalla), esto es un hecho estructural del rol: el tag "Protegido" y la nota del detalle se ven
-   * siempre, sea cual sea el usuario logueado.
+   * ¿Es el rol SUPERADMIN? Hecho estructural del rol (no de quién mira): el tag "Protegido" y la nota
+   * del detalle se ven siempre.
    */
   esRolProtegido(rol: RolVM): boolean {
     return rol.codigo.toUpperCase() === UserRole.SUPERADMIN;
@@ -259,36 +262,26 @@ export class RolesListComponent implements OnInit {
     this.router.navigate(['/dashboard/roles/editar', rol.id]);
   }
 
-  /**
-   * Las acciones no llevan `permission`: acá el permiso lo da el ROL y ya lo verificó la ruta
-   * (`requireRoles: SUPER_AB`). Lo único que se restringe por fila es el rol SUPERADMIN.
-   */
-  accionEditar(rol: RolVM, puedeGestionarProtegidos: boolean): RowAction {
+  /** Editar y eliminar: solo SUPERADMIN (PPDT-5.1). Para el resto, `app-row-actions` las oculta. */
+  accionEditar(rol: RolVM): RowAction {
     return {
       label: 'Editar',
       icon: 'pencil-simple',
-      disabled: !this.puedeModificar(rol, puedeGestionarProtegidos),
+      rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
       ariaLabel: `Editar rol ${rol.codigo}`,
       run: () => this.onEdit(rol),
     };
   }
 
-  accionesDe(rol: RolVM, puedeGestionarProtegidos: boolean): RowAction[] {
+  accionesDe(rol: RolVM): RowAction[] {
     return [{
       label: 'Eliminar',
       icon: 'trash',
       danger: true,
-      disabled: !this.puedeModificar(rol, puedeGestionarProtegidos),
+      rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
       ariaLabel: `Eliminar rol ${rol.codigo}`,
       run: () => this.onDelete(rol),
     }];
-  }
-
-  /** Motivo por el que la fila está bloqueada; vacío si no lo está (el tooltip no se dibuja). */
-  motivoBloqueo(rol: RolVM, puedeGestionarProtegidos: boolean): string {
-    return this.puedeModificar(rol, puedeGestionarProtegidos)
-      ? ''
-      : 'Solo un SUPERADMIN puede editar o eliminar el rol SUPERADMIN';
   }
 
   onDelete(rol: RolVM): void {
@@ -321,10 +314,6 @@ export class RolesListComponent implements OnInit {
         // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
         panelClass: 'snackbar-success',
       }));
-  }
-
-  private puedeModificar(rol: RolVM, puedeGestionarProtegidos: boolean): boolean {
-    return puedeGestionarProtegidos || !this.esRolProtegido(rol);
   }
 
   private buscar(roles: RolVM[], termino: string): RolVM[] {

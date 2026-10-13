@@ -8,6 +8,8 @@ export interface RolVM {
   descripcion: string;
   scopeTipo: RoleScopeType; // 'global' | 'organismo'
   asignablePorOrgAdmin: boolean;
+  /** ¿ADMIN_BACKOFFICE puede asignar este rol? */
+  asignablePorBackoffice: boolean;
   activo: boolean;
   permisos: PermisoVM[];
 }
@@ -18,6 +20,7 @@ export interface RolFormValue {
   descripcion: string;
   scopeTipo: RoleScopeType;
   asignablePorOrgAdmin: boolean;
+  asignablePorBackoffice: boolean;
   active: boolean;
   permissionsIds: string[];
 }

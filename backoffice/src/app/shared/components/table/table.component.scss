@@ -295,25 +295,11 @@
   // Estados — vacío / error (círculo 64 + icono Phosphor + título + texto + CTA)
   // ---------------------------------------------------------------------------
   &__state {
-    @include flex-center;
-    flex-direction: column;
-    gap: 12px;
-    padding: var(--theme-space-3xl) var(--theme-space-lg);
-    text-align: center;
+    @include state-panel;
   }
 
   &__state-icon {
-    @include flex-center;
-    flex: none;
-    width: 64px;
-    height: 64px;
-    border-radius: var(--theme-radius-full);
-    background-color: var(--theme-surface-sunken);
-    color: var(--theme-primary-200);
-
-    i {
-      font-size: 34px;
-    }
+    @include state-panel-icon;
   }
 
   &__state-image {
@@ -328,31 +314,19 @@
   }
 
   &__state-title {
-    font-size: var(--theme-font-size-md);
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-text-primary);
+    @include state-panel-title;
   }
 
   &__state-text {
-    max-width: 320px;
-    font-size: var(--theme-font-small-size);
-    color: var(--theme-text-secondary);
-    line-height: var(--theme-font-small-line-height);
-    text-wrap: pretty;
+    @include state-panel-text;
   }
 
   &__state-cta {
-    margin-top: 4px;
-
-    i {
-      font-size: 20px;
-      margin-right: var(--theme-space-sm);
-    }
+    @include state-panel-cta;
   }
 
   &__state--error &__state-icon {
-    background-color: var(--theme-error-bg);
-    color: var(--theme-error);
+    @include state-panel-icon-error;
   }
 
   // ---------------------------------------------------------------------------

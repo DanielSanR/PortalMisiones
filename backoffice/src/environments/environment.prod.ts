@@ -17,7 +17,7 @@ export const environment = {
     // tipos-organismo: /api/organism-type real (SUPERADMIN) → hereda default real.
     // categorias: /api/category real → hereda default real.
     // destinatarios: /api/recipient real → hereda default real.
-    etiquetas: 'mock',
+    // etiquetas: /api/tag real (PPDT-5.8) → hereda default real.
     // modalidades: /api/modality real → hereda default real.
     // eventos-de-vida: /api/life-event real → hereda default real.
     // localidades: endpoints públicos reales (/api/department, /api/location) → hereda default real.

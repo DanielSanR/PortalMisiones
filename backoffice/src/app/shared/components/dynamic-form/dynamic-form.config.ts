@@ -1,4 +1,5 @@
 import { FieldConfig, FormConfig } from '../../../core/models/field.interface';
+import { canonicalizarSlug } from '../../../core/utils/slug.utils';
 
 const FORM_CONFIGS: Record<string, FormConfig> = {
   TRAMITE: {
@@ -384,11 +385,16 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         label: 'Datos de la etiqueta',
         type: 'section-header',
       },
+      // Contrato real `Tag` (BACKEND_API_SPEC.md §5.5): solo `slug` + organismo opcional.
+      // `local` no se pide: lo deriva el alcance (con organismo ⇒ local; sin ⇒ global).
       {
-        name: 'nombre',
-        label: 'Nombre',
+        name: 'slug',
+        label: 'Slug',
         type: 'text',
-        placeholder: 'Ej: Salud, Educación, Empresas',
+        placeholder: 'Ej: salud, adultos-mayores',
+        hint: 'Se guarda en minúsculas, sin tildes y con guiones en lugar de espacios.',
+        // El backend canonicaliza (`TagService.createTag`): se muestra cómo va a quedar.
+        preview: { label: 'Se guardará como:', transform: canonicalizarSlug },
         cssClass: 'colspan-half',
         validations: {
           required: true,
@@ -396,24 +402,14 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         },
       },
       {
-        name: '_section_visual',
-        label: 'Apariencia',
-        type: 'section-header',
-      },
-      {
-        name: 'icono',
-        label: 'Ícono',
-        type: 'icon-picker',
-        placeholder: 'Seleccione un ícono',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'color',
-        label: 'Color',
-        type: 'text',
-        placeholder: '#4CAF50',
-        hint: 'Color hexadecimal para identificar la etiqueta',
+        name: 'organismoId',
+        label: 'Organismo',
+        type: 'select',
+        // Sin organismo ⇒ global; con organismo ⇒ local de ese organismo. La primera opción
+        // ("Ninguno — etiqueta global") la agrega el form al cargar el catálogo.
+        placeholder: 'Ninguno — etiqueta global',
         cssClass: 'colspan-half',
+        options: [],
       },
     ],
     submitButtonText: 'Crear etiqueta',
@@ -434,6 +430,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'text',
         placeholder: 'Ej: Nacimiento de un hijo, Iniciar un emprendimiento',
         hint: 'El identificador (slug) se genera automáticamente desde el nombre.',
+        // No hay campo `slug`: el backend lo deriva del `name` (`generateSlug`), así que la
+        // vista previa va sobre el nombre y muestra el identificador resultante.
+        preview: { label: 'Identificador (slug):', transform: canonicalizarSlug },
         cssClass: 'colspan-full',
         validations: {
           required: true,
@@ -464,6 +463,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'text',
         placeholder: 'Ej: automotor-transporte',
         hint: 'Identificador URL único (minúsculas, números y guiones)',
+        // Categoría NO canonicaliza en el backend (el slug viaja tal cual y lo filtra el
+        // `pattern`), así que no es "se guardará como" sino la forma válida sugerida.
+        preview: { label: 'Formato sugerido:', transform: canonicalizarSlug },
         cssClass: 'colspan-half',
         validations: {
           required: true,
@@ -539,6 +541,35 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
 };
 
 /**
+ * Copia profunda que preserva funciones por referencia.
+ *
+ * Los FormConfig se clonan para que un formulario no mute la config compartida de
+ * `FORM_CONFIGS` (p. ej. al cargar `options`). `structuredClone` no sirve: tira
+ * `DataCloneError` ante funciones, y la config las lleva (`FieldConfig.preview.transform`).
+ * Las funciones son puras e inmutables, así que compartirlas no rompe el aislamiento;
+ * todo lo demás (arrays y objetos planos) se copia en profundidad.
+ */
+function clonarConfig<T>(valor: T): T {
+  if (valor === null || typeof valor !== 'object') {
+    // primitivos y funciones: se devuelven tal cual
+    return valor;
+  }
+  if (Array.isArray(valor)) {
+    return valor.map((item) => clonarConfig(item)) as T;
+  }
+  const proto = Object.getPrototypeOf(valor);
+  if (proto !== Object.prototype && proto !== null) {
+    // Date, Map, etc.: no llevan funciones adentro, structuredClone los copia bien
+    return structuredClone(valor);
+  }
+  const copia: Record<string, unknown> = {};
+  for (const [clave, v] of Object.entries(valor as Record<string, unknown>)) {
+    copia[clave] = clonarConfig(v);
+  }
+  return copia as T;
+}
+
+/**
  * Devuelve una copia profunda del FormConfig para la key dada.
  */
 export function getFormConfig(key: string): FormConfig {
@@ -546,7 +577,7 @@ export function getFormConfig(key: string): FormConfig {
   if (!config) {
     throw new Error(`FormConfig '${key}' no encontrado`);
   }
-  return structuredClone(config);
+  return clonarConfig(config);
 }
 
 /**
@@ -557,7 +588,7 @@ export function updateFormConfigOptions(
   fieldName: string,
   options: { id: any; name: string }[],
 ): FormConfig {
-  const clone = structuredClone(config);
+  const clone = clonarConfig(config);
   const field = clone.fields?.find((f: FieldConfig) => f.name === fieldName);
   if (field) {
     field.options = options;

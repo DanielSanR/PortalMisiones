@@ -6,7 +6,6 @@ import { registerLocaleData } from '@angular/common';
 import { LOCALE_ID } from '@angular/core';
 import localeEsAr from '@angular/common/locales/es-AR';
 
-import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
@@ -24,6 +23,9 @@ import { provideCategoriasFeature } from './core/features/categorias';
 import { provideTiposOrganismoFeature } from './core/features/tipos-organismo';
 import { provideDestinatariosFeature } from './core/features/destinatarios';
 import { provideTramitesFeature } from './core/features/tramites';
+import { provideDashboardFeature } from './core/features/dashboard';
+import { provideAuditoriaFeature } from './core/features/auditoria';
+import { provideFeedbackFeature } from './core/features/feedback';
 
 registerLocaleData(localeEsAr, 'es-AR');
 
@@ -37,7 +39,6 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([mockApiInterceptor, httpErrorInterceptor, authInterceptor])
     ),
     { provide: LOCALE_ID, useValue: 'es-AR' },
-    provideCharts(withDefaultRegisterables()),
 
     // ── Wiring por feature (cada feature provee sus DataSources; la fuente la resuelve environment) ──
     ...provideUsuariosFeature(),
@@ -53,5 +54,8 @@ export const appConfig: ApplicationConfig = {
     ...provideTiposOrganismoFeature(),
     ...provideDestinatariosFeature(),
     ...provideTramitesFeature(),
+    ...provideDashboardFeature(),
+    ...provideAuditoriaFeature(),
+    ...provideFeedbackFeature(),
   ],
 };

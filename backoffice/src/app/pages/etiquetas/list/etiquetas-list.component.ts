@@ -15,7 +15,8 @@ import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
+import { buscarEn } from '@core/utils/list-filter.utils';
+import { FilterTabOption } from '../../../shared/components/filter-tabs';
 import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
@@ -25,12 +26,28 @@ interface EstadoVacio {
   emptyActionLabel: string;
 }
 
-/** Concordancia de género de los chips del filtro `activo`, que el helper compartido rotula en masculino. */
-const ETIQUETAS_TAB_LABELS: Record<string, string> = {
-  todos: 'Todas',
-  activos: 'Activas',
-  inactivos: 'Inactivas',
+/** Filtro por alcance del `Tag` real: global (sin organismo) o local (con organismo). */
+type AlcanceFiltro = 'todas' | 'globales' | 'locales';
+
+const ALCANCE_LABELS: Record<Exclude<AlcanceFiltro, 'todas'>, string> = {
+  globales: 'Globales',
+  locales: 'Locales',
 };
+
+function filtrarPorAlcance(etiquetas: EtiquetaVM[], filtro: AlcanceFiltro): EtiquetaVM[] {
+  if (filtro === 'globales') return etiquetas.filter((e) => !e.local);
+  if (filtro === 'locales') return etiquetas.filter((e) => e.local);
+  return etiquetas;
+}
+
+function alcanceTabs(etiquetas: EtiquetaVM[]): FilterTabOption[] {
+  const locales = etiquetas.filter((e) => e.local).length;
+  return [
+    { value: 'todas', label: 'Todas', count: etiquetas.length },
+    { value: 'globales', label: ALCANCE_LABELS.globales, count: etiquetas.length - locales },
+    { value: 'locales', label: ALCANCE_LABELS.locales, count: locales },
+  ];
+}
 
 /** ViewModel de la pantalla: filas ya buscadas/filtradas/ordenadas + los textos que corresponden. */
 interface EtiquetasVista extends EstadoVacio {
@@ -72,11 +89,11 @@ export class EtiquetasListComponent implements OnInit {
   /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
   error = false;
   /** Id de la etiqueta con un borrado en vuelo, para bloquear su fila mientras dura. */
-  deletingId: number | null = null;
+  deletingId: string | null = null;
 
   readonly searchCtrl = new FormControl('', { nonNullable: true });
-  /** Filtro "Todas/Activas/Inactivas" (campo real `activo`), client-side sobre el stream ya cargado. */
-  readonly filtro$ = new BehaviorSubject<ActivoFiltro>('todos');
+  /** Filtro "Todas/Globales/Locales" (campo real `local`), client-side sobre el stream ya cargado. */
+  readonly filtro$ = new BehaviorSubject<AlcanceFiltro>('todas');
   readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
 
   private readonly search$ = this.searchCtrl.valueChanges.pipe(
@@ -87,9 +104,7 @@ export class EtiquetasListComponent implements OnInit {
 
   /** Los contadores de los chips se calculan sobre lo ya buscado, para que no mientan. */
   readonly filterTabs$ = combineLatest([this.etiquetas$, this.search$]).pipe(
-    map(([etiquetas, search]) => activoFilterTabs(this.buscar(etiquetas, search))
-      // El helper es compartido y rotula en masculino; acá el sujeto es "etiqueta".
-      .map((tab) => ({ ...tab, label: ETIQUETAS_TAB_LABELS[tab.value] ?? tab.label }))),
+    map(([etiquetas, search]) => alcanceTabs(this.buscar(etiquetas, search))),
   );
 
   readonly pageIndex$ = new BehaviorSubject<number>(0);
@@ -99,7 +114,7 @@ export class EtiquetasListComponent implements OnInit {
     this.etiquetas$, this.filtro$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
   ]).pipe(
     map(([etiquetas, filtro, search, sort, pageIndex, pageSize]): EtiquetasVista => {
-      const filtradas = this.ordenar(filterByActivo(this.buscar(etiquetas, search), filtro), sort);
+      const filtradas = this.ordenar(filtrarPorAlcance(this.buscar(etiquetas, search), filtro), sort);
       // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de
       // mostrar una tabla vacía con resultados que sí existen.
       const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
@@ -120,11 +135,9 @@ export class EtiquetasListComponent implements OnInit {
   );
 
   columns: TableColumn<EtiquetaVM>[] = [
-    { key: 'nombre',        label: 'Etiqueta', sortable: true },
-    { key: 'slug',          label: 'Slug',     sortable: true, hideOnMobile: true },
-    { key: 'tramitesCount', label: 'Trámites', sortable: true, width: '110px' },
-    { key: 'activo',        label: 'Activa',   sortable: true, width: '110px' },
-    { key: 'acciones',      label: 'Acciones', width: '140px' },
+    { key: 'slug',          label: 'Etiqueta',  sortable: true },
+    { key: 'organismo',     label: 'Organismo', sortable: true, hideOnMobile: true },
+    { key: 'acciones',      label: 'Acciones',  width: '140px' },
   ];
 
   private readonly destroyRef = inject(DestroyRef);
@@ -155,17 +168,17 @@ export class EtiquetasListComponent implements OnInit {
 
   limpiarFiltros(): void {
     this.searchCtrl.setValue('');
-    this.filtro$.next('todos');
+    this.filtro$.next('todas');
   }
 
   /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
   quitarFiltro(clave: string): void {
     if (clave === 'search') this.searchCtrl.setValue('');
-    else this.filtro$.next('todos');
+    else this.filtro$.next('todas');
   }
 
   hayFiltrosActivos(): boolean {
-    return this.filtro$.value !== 'todos' || this.searchCtrl.value.trim().length > 0;
+    return this.filtro$.value !== 'todas' || this.searchCtrl.value.trim().length > 0;
   }
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
@@ -194,7 +207,7 @@ export class EtiquetasListComponent implements OnInit {
     return {
       label: 'Editar',
       icon: 'pencil-simple',
-      permission: 'UPDATE_TAXONOMY',
+      permission: 'UPDATE_TAG',
       run: () => this.onEdit(etiqueta),
     };
   }
@@ -203,9 +216,9 @@ export class EtiquetasListComponent implements OnInit {
     return [{
       label: 'Eliminar',
       icon: 'trash',
-      permission: 'DELETE_TAXONOMY',
+      permission: 'DELETE_TAG',
       danger: true,
-      ariaLabel: `Eliminar etiqueta ${etiqueta.nombre}`,
+      ariaLabel: `Eliminar etiqueta ${etiqueta.slug}`,
       run: () => this.onDelete(etiqueta),
     }];
   }
@@ -218,9 +231,8 @@ export class EtiquetasListComponent implements OnInit {
     this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: '¿Eliminar la etiqueta?',
-        // Cuenta la consecuencia con el dato que ya tenemos: cuántos trámites la usan.
-        message: `Se eliminará ${etiqueta.nombre} y ${this.consecuencia(etiqueta)}. Esta acción no se puede deshacer.`,
-        highlight: etiqueta.nombre,
+        message: `Se eliminará la etiqueta ${etiqueta.slug} y dejará de estar disponible para clasificar trámites. Esta acción no se puede deshacer.`,
+        highlight: etiqueta.slug,
         danger: true,
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando...',
@@ -245,15 +257,8 @@ export class EtiquetasListComponent implements OnInit {
       }));
   }
 
-  private consecuencia(etiqueta: EtiquetaVM): string {
-    if (!etiqueta.tramitesCount) return 'dejará de estar disponible para clasificar trámites';
-    return etiqueta.tramitesCount === 1
-      ? 'se quitará del trámite que la usa'
-      : `se quitará de los ${etiqueta.tramitesCount} trámites que la usan`;
-  }
-
   private buscar(etiquetas: EtiquetaVM[], termino: string): EtiquetaVM[] {
-    return buscarEn(etiquetas, termino, (e) => [e.nombre, e.slug]);
+    return buscarEn(etiquetas, termino, (e) => [e.slug, e.organismoNombre]);
   }
 
   private ordenar(etiquetas: EtiquetaVM[], sort: TableSortEvent | null): EtiquetaVM[] {
@@ -263,27 +268,25 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   private comparar(a: EtiquetaVM, b: EtiquetaVM, key: string): number {
-    // `tramitesCount` es numérico: comparado como texto, "10" quedaría antes que "2".
-    if (key === 'tramitesCount') return a.tramitesCount - b.tramitesCount;
     return this.valorDeOrden(a, key)
       .localeCompare(this.valorDeOrden(b, key), 'es-AR', { sensitivity: 'base' });
   }
 
   private valorDeOrden(etiqueta: EtiquetaVM, key: string): string {
     switch (key) {
-      case 'nombre': return etiqueta.nombre ?? '';
-      case 'slug':   return etiqueta.slug ?? '';
-      case 'activo': return etiqueta.activo ? 'Activa' : 'Inactiva';
-      default:       return '';
+      case 'slug':      return etiqueta.slug ?? '';
+      // Las globales (sin organismo) quedan juntas en un extremo en vez de mezclarse.
+      case 'organismo': return etiqueta.organismoNombre ?? '';
+      default:          return '';
     }
   }
 
-  private filtrosActivos(search: string, filtro: ActivoFiltro): FiltroActivo[] {
+  private filtrosActivos(search: string, filtro: AlcanceFiltro): FiltroActivo[] {
     const activos: FiltroActivo[] = [];
     const termino = search.trim();
     if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
-    if (filtro !== 'todos') {
-      activos.push({ clave: 'estado', etiqueta: `Estado: ${filtro === 'activos' ? 'Activas' : 'Inactivas'}` });
+    if (filtro !== 'todas') {
+      activos.push({ clave: 'alcance', etiqueta: `Alcance: ${ALCANCE_LABELS[filtro]}` });
     }
     return activos;
   }

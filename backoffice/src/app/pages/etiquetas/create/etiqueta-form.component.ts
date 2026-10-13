@@ -3,11 +3,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
-import { getFormConfig } from '../../../shared/components/dynamic-form/dynamic-form.config';
+import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { FormConfig } from '../../../core/models/field.interface';
 import { extractErrorMessage } from '../../../core/models/api-response.model';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { EtiquetasFacade, EtiquetaFormValue } from '@features/etiquetas';
+import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
+import { CONFLICTOS_ETIQUETA, FALLBACK_ETIQUETA } from '../etiqueta-save-error';
 
 @Component({
   selector: 'app-etiqueta-form',
@@ -30,8 +32,8 @@ export class EtiquetaFormComponent implements OnInit, PuedeTenerCambiosSinGuarda
 
   @ViewChild(DynamicFormComponent) private dynamicForm?: DynamicFormComponent;
 
-  /** El id de etiqueta es numérico: la ruta lo entrega como texto. */
-  private editId: number | null = null;
+  /** UUID de la etiqueta en edición (null en alta). */
+  private editId: string | null = null;
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -43,16 +45,23 @@ export class EtiquetaFormComponent implements OnInit, PuedeTenerCambiosSinGuarda
   ) {}
 
   ngOnInit(): void {
-    const rawId = this.route.snapshot.params['id'];
-    if (!rawId) return;
+    this.editId = this.route.snapshot.params['id'] ?? null;
+    this.isEdit = !!this.editId;
 
-    this.isEdit = true;
-    this.editId = Number(rawId);
-    this.facade.getById(this.editId)
+    this.facade.getFormData(this.editId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (etiqueta) => {
-          this.initialData = { nombre: etiqueta.nombre, icono: etiqueta.icono, color: etiqueta.color };
+        next: ({ etiqueta, organismos }) => {
+          // '' = sin organismo ⇒ etiqueta global. Si el catálogo no se pudo leer (sin
+          // `READ_ORGANISM`), queda solo esta opción y el form sigue sirviendo para globales.
+          this.config = updateFormConfigOptions(this.config, 'organismoId', [
+            { id: '', name: 'Ninguno — etiqueta global' },
+            ...organismos.map((o) => ({ id: o.id, name: o.nombre })),
+          ]);
+
+          if (etiqueta) {
+            this.initialData = { slug: etiqueta.slug, organismoId: etiqueta.organismoId ?? '' };
+          }
           this.cdr.markForCheck();
         },
         // Sin esto el formulario quedaba vacío y en silencio: parecía un alta,
@@ -69,9 +78,8 @@ export class EtiquetaFormComponent implements OnInit, PuedeTenerCambiosSinGuarda
     this.saving = true;
     this.serverError = '';
     const form: EtiquetaFormValue = {
-      nombre: String(data['nombre'] ?? ''),
-      icono: String(data['icono'] ?? ''),
-      color: String(data['color'] ?? ''),
+      slug: String(data['slug'] ?? ''),
+      organismoId: (data['organismoId'] as string) || null,
     };
 
     const request$ = this.isEdit
@@ -90,12 +98,9 @@ export class EtiquetaFormComponent implements OnInit, PuedeTenerCambiosSinGuarda
           );
           this.router.navigate(['/dashboard/etiquetas/lista']);
         },
-        // Antes solo apagaba `saving`: el botón volvía a su estado normal y no
-        // aparecía nada, así que un guardado fallido era indistinguible de uno bueno.
         error: (err: unknown) => {
           this.saving = false;
-          this.serverError = extractErrorMessage((err as { error?: unknown })?.error)
-            || 'No se pudo guardar la etiqueta. Intentá de nuevo.';
+          this.serverError = aplicarErrorDeGuardado(err, this.dynamicForm?.form, CONFLICTOS_ETIQUETA, FALLBACK_ETIQUETA);
           this.cdr.markForCheck();
         },
       });

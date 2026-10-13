@@ -2,9 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { FeedbackTramite, FeedbackFilter, FeedbackStats } from '../models/dashboard.model';
+import { FeedbackTramite, FeedbackFilter } from '../models/dashboard.model';
 import { PaginatedResponse } from '../models/tramite.model';
 
+/**
+ * Service legacy de feedback: lo usa solo `tramites` (resumen de valoraciones de la ficha, vía
+ * `TramitesMockDataSource`). La pantalla de Feedback va por `@features/feedback` (mock propio).
+ */
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
   private readonly apiUrl = `${environment.apiUrl}/feedback`;
@@ -21,9 +25,5 @@ export class FeedbackService {
       });
     }
     return this.http.get<PaginatedResponse<FeedbackTramite>>(this.apiUrl, { params });
-  }
-
-  getStats(): Observable<FeedbackStats> {
-    return this.http.get<FeedbackStats>(`${this.apiUrl}/stats`);
   }
 }

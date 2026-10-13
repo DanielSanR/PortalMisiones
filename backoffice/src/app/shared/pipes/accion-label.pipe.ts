@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { AuditoriaAccion } from '../../core/models/dashboard.model';
+import { AuditoriaAccion } from '@features/auditoria';
 
 const ACCION_LABELS: Record<AuditoriaAccion, string> = {
   crear: 'Creación',

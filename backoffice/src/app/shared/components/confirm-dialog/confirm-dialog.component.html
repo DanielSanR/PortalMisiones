@@ -12,6 +12,10 @@
                     <ng-container *ngIf="!parte.destacado">{{ parte.texto }}</ng-container>
                 </ng-container>
             </p>
+            <p *ngIf="errorMensaje" class="confirm-dialog__error" role="alert">
+                <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                <span>{{ errorMensaje }}</span>
+            </p>
         </div>
     </div>
     <mat-dialog-actions align="end">

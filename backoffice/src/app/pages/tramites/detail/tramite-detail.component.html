@@ -96,8 +96,8 @@
   @if (vista.tramite; as tramite) {
     <div class="tramdet">
 
-      <!-- El breadcrumb del shell no enlaza al listado (los tramos intermedios son texto),
-           así que la vuelta al contexto padre se ofrece acá. -->
+      <!-- Vuelta explícita al listado, además del tramo "Trámites" del breadcrumb del shell
+           (que se oculta en mobile). -->
       <button type="button" class="tramdet-volver" (click)="volver()">
         <i class="ph ph-arrow-left" aria-hidden="true"></i> Volver a trámites
       </button>

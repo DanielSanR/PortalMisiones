@@ -17,6 +17,34 @@
   margin-bottom: var(--theme-space-lg);
 }
 
+// Aviso compacto en el lugar del resumen cuando fallan las estadísticas.
+.stats-aviso {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--theme-space-sm);
+  margin-bottom: var(--theme-space-lg);
+  padding: var(--theme-space-sm) var(--theme-space-md);
+  border: 1px solid var(--theme-error-border);
+  border-radius: var(--theme-radius-lg);
+  background-color: var(--theme-error-bg);
+
+  &__icon {
+    font-size: 20px;
+    color: var(--theme-error-icon);
+  }
+
+  &__text {
+    flex: 1 1 auto;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-primary);
+  }
+
+  &__cta i.ph {
+    margin-right: var(--theme-space-xs);
+  }
+}
+
 .stat-card {
   .mat-mdc-card-content {
     display: flex;
@@ -69,7 +97,7 @@
 }
 
 // ── Filtros (fila A del well) — dato real (`search`, `esUtil`, fechas) ──────
-// ya persistido/consultado vía `FeedbackFacade`/`FeedbackService`. Fondo
+// ya persistido/consultado vía `FeedbackFacade`. Fondo
 // blanco explícito para que el campo se lea sobre el well sunken (#F7F9FB).
 .filter-search,
 .filter-select,

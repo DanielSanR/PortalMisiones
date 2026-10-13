@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '@env/environment';
 import { ResponseDTO } from '@core/models/api-response.model';
-import { SKIP_ERROR_INTERCEPTOR } from '@core/interceptors/http-error.interceptor';
+import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 import { UsuarioService } from '@core/services/usuario.service';
 import { UsuariosDataSource } from './usuarios.datasource';
 import { toUsuarioVM, mockUsuarioToVM } from '../mappers/usuarios.mapper';
@@ -37,10 +37,8 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
       profileDto: { firstName: form.nombre, lastName: form.apellido },
     };
     return this.http
-      .post<ResponseDTO<UserResponseDTO>>(this.apiUrl, body, {
-        // El form muestra el error inline; se salta el diálogo de error global.
-        context: new HttpContext().set(SKIP_ERROR_INTERCEPTOR, true),
-      })
+      // El form muestra el error inline; se salta el diálogo de error global.
+      .post<ResponseDTO<UserResponseDTO>>(this.apiUrl, body, sinDialogoGlobal())
       .pipe(map((res) => toUsuarioVM(res.data)));
   }
 
@@ -74,8 +72,25 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
       .put<unknown>(
         `${this.apiUrl}/${id}/status-account`,
         { accountActive: active },
-        { context: new HttpContext().set(SKIP_ERROR_INTERCEPTOR, true) }
+        sinDialogoGlobal()
       )
       .pipe(map(() => void 0));
+  }
+
+  // ── Operaciones por fila: el backend las expone (change-password, change-email, DELETE /admin),
+  // pero mientras el listado sea mock los ids de las filas no existen en el backend y cada llamada
+  // real daría 404. Van al mock, igual que `toggleActive`. Al exponerse `GET /api/user`, se pasan a
+  // HTTP real con los DTOs de `usuario.dto.ts` y `sinDialogoGlobal()`.
+  // La contraseña no vive en el mock: basta con validar que el usuario exista.
+  changePassword(id: string, _newPassword: string): Observable<void> {
+    return this.usuariosMock.getById(id).pipe(map(() => void 0));
+  }
+
+  changeEmail(id: string, newEmail: string): Observable<void> {
+    return this.usuariosMock.changeEmail(id, newEmail.toLowerCase()).pipe(map(() => void 0));
+  }
+
+  deleteDefinitive(id: string): Observable<void> {
+    return this.usuariosMock.delete(id);
   }
 }

@@ -1,5 +1,5 @@
 <ng-template appPageActions>
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_TAXONOMY'">
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_TAG'">
     <i class="ph ph-plus" aria-hidden="true"></i> Nueva etiqueta
   </button>
 </ng-template>
@@ -11,8 +11,8 @@
   <div class="list-toolbar__row">
     <app-list-search
       [control]="searchCtrl"
-      placeholder="Buscar por nombre o slug…"
-      ariaLabel="Buscar etiquetas por nombre o slug">
+      placeholder="Buscar por slug u organismo…"
+      ariaLabel="Buscar etiquetas por slug o por organismo">
     </app-list-search>
 
     <div class="etiqlist-acciones">
@@ -60,44 +60,37 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
-    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_TAXONOMY'"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_TAG'"
     [emptyActionLabel]="vista.emptyActionLabel"
     [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
     (emptyAction)="onEmptyAction()"
     emptyIcon="bookmarks-simple">
 
-    <ng-template appTableCell="nombre" let-row>
-        <div class="etiqlist-nombre">
-            <!-- El color es el dato que identifica a la etiqueta en el portal: se muestra,
-                 no se describe. El texto de al lado ya nombra a la etiqueta. -->
-            <span class="etiqlist-nombre__color" [style.background]="row.color" aria-hidden="true"></span>
-            <div class="etiqlist-nombre__texto">
-                <span class="etiqlist-nombre__principal">{{ row.nombre }}</span>
-                <!-- En mobile la columna Slug se oculta: acá no se pierde el dato. -->
-                <span class="etiqlist-nombre__meta">/{{ row.slug }}</span>
+    <ng-template appTableCell="slug" let-row>
+        <div class="etiqlist-slug">
+            <div class="etiqlist-slug__fila">
+                <span class="etiqlist-slug__texto">{{ row.slug }}</span>
+                <!-- Alcance del Tag real: global (sin organismo) o local (con organismo). -->
+                <span class="etiqlist-slug__alcance"
+                      [class.etiqlist-slug__alcance--global]="!row.local"
+                      [class.etiqlist-slug__alcance--local]="row.local">
+                    {{ row.local ? 'Local' : 'Global' }}
+                </span>
             </div>
+            <!-- En mobile la columna Organismo se oculta: acá no se pierde el dato. -->
+            @if (row.local) {
+                <span class="etiqlist-slug__meta">{{ row.organismoNombre ?? 'Organismo no disponible' }}</span>
+            }
         </div>
     </ng-template>
 
-    <ng-template appTableCell="slug" let-row>
-        <span class="text-secondary">/{{ row.slug }}</span>
-    </ng-template>
-
-    <ng-template appTableCell="tramitesCount" let-row>
-        @if (row.tramitesCount) {
-            <span class="etiqlist-uso">{{ row.tramitesCount }}</span>
+    <ng-template appTableCell="organismo" let-row>
+        @if (row.organismoNombre) {
+            <span>{{ row.organismoNombre }}</span>
         } @else {
-            <span class="etiqlist-uso etiqlist-uso--vacio">Sin uso</span>
+            <span class="text-secondary" [attr.aria-label]="row.local ? 'Organismo no disponible' : 'Sin organismo'">—</span>
         }
     </ng-template>
-
-    <ng-template appTableCell="activo" let-row>
-        <span class="bool-badge" [class.bool-badge--active]="row.activo" [class.bool-badge--inactive]="!row.activo">
-            <span class="bool-badge__dot" aria-hidden="true"></span>
-            {{ row.activo ? 'Activa' : 'Inactiva' }}
-        </span>
-    </ng-template>
-
     <ng-template appTableCell="acciones" let-row>
         <app-row-actions
             [primary]="accionEditar(row)"

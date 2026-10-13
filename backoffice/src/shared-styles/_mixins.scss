@@ -451,6 +451,61 @@ $breakpoint-2xl: 1440px;
 }
 
 // ---------------------------------------------------------------------------
+// Estado de bloque (vacío / error con "Reintentar") — patrón de `app-shared-table`
+// Círculo 64 + ícono Phosphor, título, texto y CTA. Lo reusan la tabla, el Home
+// y cualquier pantalla que necesite el mismo tono de error de carga.
+// ---------------------------------------------------------------------------
+@mixin state-panel {
+  @include flex-center;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--theme-space-3xl) var(--theme-space-lg);
+  text-align: center;
+}
+
+@mixin state-panel-icon {
+  @include flex-center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--theme-radius-full);
+  background-color: var(--theme-surface-sunken);
+  color: var(--theme-primary-200);
+
+  i {
+    font-size: 34px;
+  }
+}
+
+@mixin state-panel-icon-error {
+  background-color: var(--theme-error-bg);
+  color: var(--theme-error);
+}
+
+@mixin state-panel-title {
+  font-size: var(--theme-font-size-md);
+  font-weight: var(--theme-font-weight-semibold);
+  color: var(--theme-text-primary);
+}
+
+@mixin state-panel-text {
+  max-width: 320px;
+  font-size: var(--theme-font-small-size);
+  color: var(--theme-text-secondary);
+  line-height: var(--theme-font-small-line-height);
+  text-wrap: pretty;
+}
+
+@mixin state-panel-cta {
+  margin-top: 4px;
+
+  i {
+    font-size: 20px;
+    margin-right: var(--theme-space-sm);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Scrollbar styling
 // ---------------------------------------------------------------------------
 @mixin custom-scrollbar {

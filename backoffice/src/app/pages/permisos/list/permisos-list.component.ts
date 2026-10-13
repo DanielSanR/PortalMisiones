@@ -19,6 +19,9 @@ import { PageActionsDirective } from '../../../shared/directives/page-actions.di
 import { buscarEn } from '@core/utils/list-filter.utils';
 import { buildPermisoGroups, PERMISO_ACTION_LABELS } from '@core/utils/permiso-groups.util';
 import { PermisosFacade, PermisoVM } from '@features/permisos';
+import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from '@core/constants/policy-overrides.constants';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
 
 /** Valor "sin filtrar" de los dos filtros con dato real (acción y recurso). */
 const TODAS = 'todas';
@@ -68,6 +71,7 @@ interface PermisosVista extends EstadoVacio {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    HasPermissionDirective,
     AsyncPipe,
     ReactiveFormsModule,
     MatButtonModule,
@@ -87,6 +91,16 @@ interface PermisosVista extends EstadoVacio {
 })
 export class PermisosListComponent implements OnInit {
   private readonly facade = inject(PermisosFacade);
+  /**
+   * Excepción documentada (sesión): `/api/permission` se autoriza por ROL, no por permiso atómico,
+   * así que el CTA del estado vacío (que gatea por permiso) necesita saber si quien mira puede crear.
+   */
+  private readonly auth = inject(AuthTokenService);
+  /** Crear/editar/eliminar: solo SUPERADMIN (PPDT-5.1). ADMIN_BACKOFFICE ve la pantalla en lectura. */
+  readonly escribirPermisos = ESCRIBIR_ROLES_PERMISOS_ACCESS;
+  readonly puedeEscribir$ = this.auth.getCurrentUser$().pipe(
+    map(() => this.auth.canAccess(ESCRIBIR_ROLES_PERMISOS_ACCESS)),
+  );
   readonly permisos$ = this.facade.permisos$;
 
   loading = true;
@@ -240,6 +254,7 @@ export class PermisosListComponent implements OnInit {
     return {
       label: 'Editar',
       icon: 'pencil-simple',
+      rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
       run: () => this.onEdit(permiso),
     };
   }
@@ -249,6 +264,7 @@ export class PermisosListComponent implements OnInit {
       label: 'Eliminar',
       icon: 'trash',
       danger: true,
+      rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
       ariaLabel: `Eliminar permiso ${permiso.codigo}`,
       run: () => this.onDelete(permiso),
     }];

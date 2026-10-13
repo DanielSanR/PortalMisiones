@@ -7,6 +7,7 @@ import { ModalidadesDataSource } from './modalidades.datasource';
 import { ModalityResponseDTO } from '../models/modalidad.dto';
 import { toModalidadVM, toModalityRequest } from '../mappers/modalidades.mapper';
 import { ModalidadFormValue, ModalidadVM } from '../models/modalidad.vm';
+import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
 /** Implementación HTTP real (`/api/modality`, §5.3). */
 @Injectable()
@@ -31,19 +32,19 @@ export class ModalidadesHttpDataSource extends ModalidadesDataSource {
 
   create(form: ModalidadFormValue): Observable<ModalidadVM> {
     return this.http
-      .post<ResponseDTO<ModalityResponseDTO>>(this.apiUrl, toModalityRequest(form))
+      .post<ResponseDTO<ModalityResponseDTO>>(this.apiUrl, toModalityRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toModalidadVM(res.data)));
   }
 
   update(id: string, form: ModalidadFormValue): Observable<ModalidadVM> {
     return this.http
-      .put<ResponseDTO<ModalityResponseDTO>>(`${this.apiUrl}/${id}`, toModalityRequest(form))
+      .put<ResponseDTO<ModalityResponseDTO>>(`${this.apiUrl}/${id}`, toModalityRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toModalidadVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`)
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }
