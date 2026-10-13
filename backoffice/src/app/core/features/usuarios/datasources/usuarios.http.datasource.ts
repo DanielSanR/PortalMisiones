@@ -70,7 +70,7 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
   setAccountStatus(id: string, active: boolean): Observable<void> {
     return this.http
       .put<unknown>(
-        `${this.apiUrl}/${id}/status-account`,
+        `${this.apiUrl}/${encodeURIComponent(id)}/status-account`,
         { accountActive: active },
         sinDialogoGlobal()
       )

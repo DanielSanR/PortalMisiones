@@ -26,7 +26,7 @@ export class ModalidadesHttpDataSource extends ModalidadesDataSource {
 
   getById(id: string): Observable<ModalidadVM> {
     return this.http
-      .get<ResponseDTO<ModalityResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<ModalityResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toModalidadVM(res.data)));
   }
 
@@ -38,13 +38,13 @@ export class ModalidadesHttpDataSource extends ModalidadesDataSource {
 
   update(id: string, form: ModalidadFormValue): Observable<ModalidadVM> {
     return this.http
-      .put<ResponseDTO<ModalityResponseDTO>>(`${this.apiUrl}/${id}`, toModalityRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<ModalityResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toModalityRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toModalidadVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

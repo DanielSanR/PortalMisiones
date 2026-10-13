@@ -26,7 +26,7 @@ export class OrganismosHttpDataSource extends OrganismosDataSource {
 
   getById(id: string): Observable<OrganismoVM> {
     return this.http
-      .get<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toOrganismoVM(res.data)));
   }
 
@@ -38,13 +38,13 @@ export class OrganismosHttpDataSource extends OrganismosDataSource {
 
   update(id: string, form: OrganismoFormValue): Observable<OrganismoVM> {
     return this.http
-      .put<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${id}`, toOrganismRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toOrganismRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toOrganismoVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

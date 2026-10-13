@@ -16,7 +16,7 @@ export class UsuarioService {
   }
 
   getById(id: string): Observable<Usuario> {
-    return this.http.get<Usuario>(`${this.apiUrl}/${id}`);
+    return this.http.get<Usuario>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   create(data: UsuarioCreate): Observable<Usuario> {
@@ -24,18 +24,18 @@ export class UsuarioService {
   }
 
   update(id: string, data: UsuarioUpdate): Observable<Usuario> {
-    return this.http.put<Usuario>(`${this.apiUrl}/${id}`, data);
+    return this.http.put<Usuario>(`${this.apiUrl}/${encodeURIComponent(id)}`, data);
   }
 
   changeEmail(id: string, email: string): Observable<Usuario> {
-    return this.http.put<Usuario>(`${this.apiUrl}/${id}`, { email });
+    return this.http.put<Usuario>(`${this.apiUrl}/${encodeURIComponent(id)}`, { email });
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   toggleActive(id: string): Observable<Usuario> {
-    return this.http.patch<Usuario>(`${this.apiUrl}/${id}/toggle-active`, {});
+    return this.http.patch<Usuario>(`${this.apiUrl}/${encodeURIComponent(id)}/toggle-active`, {});
   }
 }

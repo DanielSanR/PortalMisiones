@@ -47,13 +47,13 @@ export class TramiteService {
    * modal genérico tapaba justamente al que sabía qué había pasado.
    */
   getById(id: string): Observable<Tramite> {
-    return this.http.get<Tramite>(`${this.apiUrl}/${id}`, {
+    return this.http.get<Tramite>(`${this.apiUrl}/${encodeURIComponent(id)}`, {
       context: new HttpContext().set(SKIP_ERROR_INTERCEPTOR, true),
     });
   }
 
   getBySlug(slug: string): Observable<Tramite> {
-    return this.http.get<Tramite>(`${this.apiUrl}/slug/${slug}`);
+    return this.http.get<Tramite>(`${this.apiUrl}/slug/${encodeURIComponent(slug)}`);
   }
 
   create(data: TramiteCreate): Observable<Tramite> {
@@ -61,23 +61,23 @@ export class TramiteService {
   }
 
   update(id: string, data: TramiteUpdate): Observable<Tramite> {
-    return this.http.put<Tramite>(`${this.apiUrl}/${id}`, data);
+    return this.http.put<Tramite>(`${this.apiUrl}/${encodeURIComponent(id)}`, data);
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   publish(id: string): Observable<Tramite> {
-    return this.http.patch<Tramite>(`${this.apiUrl}/${id}/publicar`, {});
+    return this.http.patch<Tramite>(`${this.apiUrl}/${encodeURIComponent(id)}/publicar`, {});
   }
 
   unpublish(id: string): Observable<Tramite> {
-    return this.http.patch<Tramite>(`${this.apiUrl}/${id}/despublicar`, {});
+    return this.http.patch<Tramite>(`${this.apiUrl}/${encodeURIComponent(id)}/despublicar`, {});
   }
 
   sendToReview(id: string): Observable<Tramite> {
-    return this.http.patch<Tramite>(`${this.apiUrl}/${id}/revision`, {});
+    return this.http.patch<Tramite>(`${this.apiUrl}/${encodeURIComponent(id)}/revision`, {});
   }
 
   private modalidades$ = this.http.get<PaginatedResponse<Modalidad>>(
@@ -105,22 +105,22 @@ export class TramiteService {
   // ── Contenido por localidad ──────────────────────────────
 
   getContenidoLocalidades(tramiteId: string): Observable<TramiteContenidoLocalidad[]> {
-    return this.http.get<TramiteContenidoLocalidad[]>(`${this.apiUrl}/${tramiteId}/localidades`);
+    return this.http.get<TramiteContenidoLocalidad[]>(`${this.apiUrl}/${encodeURIComponent(tramiteId)}/localidades`);
   }
 
   getContenidoLocalidad(tramiteId: string, localidadId: number): Observable<TramiteContenidoLocalidad> {
-    return this.http.get<TramiteContenidoLocalidad>(`${this.apiUrl}/${tramiteId}/localidades/${localidadId}`);
+    return this.http.get<TramiteContenidoLocalidad>(`${this.apiUrl}/${encodeURIComponent(tramiteId)}/localidades/${encodeURIComponent(localidadId)}`);
   }
 
   addContenidoLocalidad(tramiteId: string, data: TramiteContenidoLocalidadCreate): Observable<TramiteContenidoLocalidad> {
-    return this.http.post<TramiteContenidoLocalidad>(`${this.apiUrl}/${tramiteId}/localidades`, data);
+    return this.http.post<TramiteContenidoLocalidad>(`${this.apiUrl}/${encodeURIComponent(tramiteId)}/localidades`, data);
   }
 
   updateContenidoLocalidad(tramiteId: string, localidadId: number, data: TramiteContenidoLocalidadUpdate): Observable<TramiteContenidoLocalidad> {
-    return this.http.put<TramiteContenidoLocalidad>(`${this.apiUrl}/${tramiteId}/localidades/${localidadId}`, data);
+    return this.http.put<TramiteContenidoLocalidad>(`${this.apiUrl}/${encodeURIComponent(tramiteId)}/localidades/${encodeURIComponent(localidadId)}`, data);
   }
 
   removeContenidoLocalidad(tramiteId: string, localidadId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${tramiteId}/localidades/${localidadId}`);
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(tramiteId)}/localidades/${encodeURIComponent(localidadId)}`);
   }
 }

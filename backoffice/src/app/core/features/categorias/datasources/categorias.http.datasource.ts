@@ -26,7 +26,7 @@ export class CategoriasHttpDataSource extends CategoriasDataSource {
 
   getById(id: string): Observable<CategoriaVM> {
     return this.http
-      .get<ResponseDTO<CategoryResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<CategoryResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toCategoriaVM(res.data)));
   }
 
@@ -38,13 +38,13 @@ export class CategoriasHttpDataSource extends CategoriasDataSource {
 
   update(id: string, form: CategoriaFormValue): Observable<CategoriaVM> {
     return this.http
-      .put<ResponseDTO<CategoryResponseDTO>>(`${this.apiUrl}/${id}`, toCategoryRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<CategoryResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toCategoryRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toCategoriaVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

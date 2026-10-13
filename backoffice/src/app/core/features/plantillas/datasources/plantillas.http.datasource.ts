@@ -31,7 +31,7 @@ export class PlantillasHttpDataSource extends PlantillasDataSource {
 
   getById(id: string): Observable<PlantillaVM> {
     return this.http
-      .get<ResponseDTO<ProcedureTemplateResponseDTO>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .get<ResponseDTO<ProcedureTemplateResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map((res) => toPlantillaVM(res.data)));
   }
 
@@ -43,13 +43,13 @@ export class PlantillasHttpDataSource extends PlantillasDataSource {
 
   update(id: string, form: PlantillaFormValue): Observable<PlantillaVM> {
     return this.http
-      .put<ResponseDTO<ProcedureTemplateResponseDTO>>(`${this.apiUrl}/${id}`, toProcedureTemplateRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<ProcedureTemplateResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toProcedureTemplateRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toPlantillaVM(res.data)));
   }
 
   desactivar(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

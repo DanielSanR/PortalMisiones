@@ -15,11 +15,11 @@ export class CategoriaService {
   }
 
   getById(id: number): Observable<Categoria> {
-    return this.http.get<Categoria>(`${this.apiUrl}/${id}`);
+    return this.http.get<Categoria>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   getBySlug(slug: string): Observable<Categoria> {
-    return this.http.get<Categoria>(`${this.apiUrl}/slug/${slug}`);
+    return this.http.get<Categoria>(`${this.apiUrl}/slug/${encodeURIComponent(slug)}`);
   }
 
   create(data: CategoriaCreate): Observable<Categoria> {
@@ -27,10 +27,10 @@ export class CategoriaService {
   }
 
   update(id: number, data: CategoriaUpdate): Observable<Categoria> {
-    return this.http.put<Categoria>(`${this.apiUrl}/${id}`, data);
+    return this.http.put<Categoria>(`${this.apiUrl}/${encodeURIComponent(id)}`, data);
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 }

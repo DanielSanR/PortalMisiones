@@ -22,6 +22,7 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 | **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | Panel de puntos de atención por ficha; listados con volumen real |
 | **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | Mensajes de error consistentes sin traducciones locales |
 | **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
+| **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
@@ -407,6 +408,28 @@ Además:
 - [ ] El historial se lista respetando el alcance.
 - [ ] Cada versión trae su autor.
 - [ ] Un `PUT` con `version` desactualizada → 409.
+
+---
+
+## G-10 · Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos
+
+**Prioridad:** 🔵 mejora · **Tipo:** bug · Detectado al integrar `/api/procedure-template` (fase 1 del front).
+
+**Problema**
+- `slugBase` solo se valida con `@NotBlank` y unicidad: el backend **no lo canonicaliza**, a diferencia de `/api/tag`
+  (`TagService` sí normaliza). Otro cliente puede guardar `Obtener-DNI` y `obtener-dni` como plantillas distintas.
+- Cuando uno de los ids de catálogo (`categoryIds`, `tagIds`, `lifeEventIds`, `recipientIds`) no existe, el `4073`
+  informa siempre `ids.get(0)` (`resolveAll`), no el id que falta.
+
+**Impacto en el front:** el backoffice canonicaliza el slug antes de enviar (mitigación), pero no protege a otros
+clientes. El "no encontrado" no permite señalar qué selección está mal.
+
+**Propuesta:** aplicar a `slugBase` la misma canonicalización de `TagService` (NFD, sin diacríticos, minúsculas,
+`[^a-z0-9]+`→`-`, sin guiones al borde) y que `resolveAll` informe el id faltante y su entidad.
+
+**Criterio de aceptación**
+- [ ] `POST`/`PUT` con `slugBase: "Obtener DNI"` persiste `obtener-dni`; un segundo `obtener-DNI` devuelve `4072`.
+- [ ] Un `tagIds` con un UUID inexistente devuelve `4073` con ese UUID y la entidad en `details`.
 
 ---
 

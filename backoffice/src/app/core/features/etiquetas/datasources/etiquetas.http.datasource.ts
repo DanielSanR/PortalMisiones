@@ -29,7 +29,7 @@ export class EtiquetasHttpDataSource extends EtiquetasDataSource {
 
   getById(id: string): Observable<EtiquetaVM> {
     return this.http
-      .get<ResponseDTO<TagResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<TagResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toEtiquetaVM(res.data)));
   }
 
@@ -41,13 +41,13 @@ export class EtiquetasHttpDataSource extends EtiquetasDataSource {
 
   update(id: string, form: EtiquetaFormValue): Observable<EtiquetaVM> {
     return this.http
-      .put<ResponseDTO<TagResponseDTO>>(`${this.apiUrl}/${id}`, toTagRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<TagResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toTagRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toEtiquetaVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

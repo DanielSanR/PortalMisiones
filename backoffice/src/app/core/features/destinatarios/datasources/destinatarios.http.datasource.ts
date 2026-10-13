@@ -26,7 +26,7 @@ export class DestinatariosHttpDataSource extends DestinatariosDataSource {
 
   getById(id: string): Observable<DestinatarioVM> {
     return this.http
-      .get<ResponseDTO<RecipientResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<RecipientResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toDestinatarioVM(res.data)));
   }
 
@@ -38,13 +38,13 @@ export class DestinatariosHttpDataSource extends DestinatariosDataSource {
 
   update(id: string, form: DestinatarioFormValue): Observable<DestinatarioVM> {
     return this.http
-      .put<ResponseDTO<RecipientResponseDTO>>(`${this.apiUrl}/${id}`, toRecipientRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<RecipientResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toRecipientRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toDestinatarioVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

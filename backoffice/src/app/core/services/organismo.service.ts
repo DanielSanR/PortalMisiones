@@ -15,7 +15,7 @@ export class OrganismoService {
   }
 
   getById(id: string): Observable<Organismo> {
-    return this.http.get<Organismo>(`${this.apiUrl}/${id}`);
+    return this.http.get<Organismo>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   create(data: OrganismoCreate): Observable<Organismo> {
@@ -23,10 +23,10 @@ export class OrganismoService {
   }
 
   update(id: string, data: Partial<OrganismoCreate>): Observable<Organismo> {
-    return this.http.put<Organismo>(`${this.apiUrl}/${id}`, data);
+    return this.http.put<Organismo>(`${this.apiUrl}/${encodeURIComponent(id)}`, data);
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 }

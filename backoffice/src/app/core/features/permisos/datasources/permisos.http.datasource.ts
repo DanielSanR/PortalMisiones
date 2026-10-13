@@ -26,7 +26,7 @@ export class PermisosHttpDataSource extends PermisosDataSource {
 
   getById(id: string): Observable<PermisoVM> {
     return this.http
-      .get<ResponseDTO<PermissionResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<PermissionResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toPermisoVM(res.data)));
   }
 
@@ -38,13 +38,13 @@ export class PermisosHttpDataSource extends PermisosDataSource {
 
   update(id: string, form: PermisoFormValue): Observable<PermisoVM> {
     return this.http
-      .put<ResponseDTO<PermissionResponseDTO>>(`${this.apiUrl}/${id}`, toPermissionRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<PermissionResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toPermissionRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toPermisoVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

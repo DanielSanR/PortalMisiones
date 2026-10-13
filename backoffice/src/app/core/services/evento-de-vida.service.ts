@@ -15,7 +15,7 @@ export class EventoDeVidaService {
   }
 
   getById(id: number): Observable<EventoDeVida> {
-    return this.http.get<EventoDeVida>(`${this.apiUrl}/${id}`);
+    return this.http.get<EventoDeVida>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   create(data: EventoDeVidaCreate): Observable<EventoDeVida> {
@@ -23,14 +23,14 @@ export class EventoDeVidaService {
   }
 
   update(id: number, data: EventoDeVidaUpdate): Observable<EventoDeVida> {
-    return this.http.put<EventoDeVida>(`${this.apiUrl}/${id}`, data);
+    return this.http.put<EventoDeVida>(`${this.apiUrl}/${encodeURIComponent(id)}`, data);
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 
   toggleActive(id: number): Observable<EventoDeVida> {
-    return this.http.patch<EventoDeVida>(`${this.apiUrl}/${id}/toggle-active`, {});
+    return this.http.patch<EventoDeVida>(`${this.apiUrl}/${encodeURIComponent(id)}/toggle-active`, {});
   }
 }

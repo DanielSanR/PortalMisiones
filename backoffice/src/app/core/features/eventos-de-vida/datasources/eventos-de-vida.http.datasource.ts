@@ -26,7 +26,7 @@ export class EventosDeVidaHttpDataSource extends EventosDeVidaDataSource {
 
   getById(id: string): Observable<EventoDeVidaVM> {
     return this.http
-      .get<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toEventoDeVidaVM(res.data)));
   }
 
@@ -38,13 +38,13 @@ export class EventosDeVidaHttpDataSource extends EventosDeVidaDataSource {
 
   update(id: string, form: EventoDeVidaFormValue): Observable<EventoDeVidaVM> {
     return this.http
-      .put<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${id}`, toLifeEventRequest(form), sinDialogoGlobal())
+      .put<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toLifeEventRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toEventoDeVidaVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`, sinDialogoGlobal())
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }
