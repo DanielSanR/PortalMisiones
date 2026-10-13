@@ -40,6 +40,13 @@ export const COMANDOS: Comando[] = [
     rule: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] },
   },
   {
+    label: 'Crear plantilla',
+    icon: 'files',
+    keywords: ['nueva', 'alta', 'agregar', 'plantilla', 'provincial', 'tramite'],
+    route: '/dashboard/tramites/plantillas/nueva',
+    rule: { permissions: ['CREATE_PROCEDURE'] },
+  },
+  {
     label: 'Crear organismo',
     icon: 'buildings',
     keywords: ['nuevo', 'alta', 'agregar', 'organismo'],

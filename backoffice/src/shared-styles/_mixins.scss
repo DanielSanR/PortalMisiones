@@ -505,6 +505,37 @@ $breakpoint-2xl: 1440px;
   }
 }
 
+/// Panel de "no se pudo cargar" / "no existe" a pantalla completa (form o detalle de una entidad).
+/// Uso: `.x-estado { @include load-state-panel; }` con hijos `__icono`, `__titulo`, `__texto`, `__acciones`.
+@mixin load-state-panel {
+  @include state-panel;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+
+  &__icono {
+    @include state-panel-icon;
+    @include state-panel-icon-error;
+  }
+
+  &__titulo {
+    margin: 0;
+    @include state-panel-title;
+  }
+
+  &__texto {
+    margin: 0;
+    @include state-panel-text;
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--theme-space-sm);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Scrollbar styling
 // ---------------------------------------------------------------------------

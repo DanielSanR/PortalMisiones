@@ -1,0 +1,97 @@
+// ==========================================================================
+// Form de Plantilla provincial — usa .form-card / .form-grid / .form-field
+// globales; acá solo lo propio: estados de carga, aviso de catálogos, slug con
+// botón "Desde el título" y su vista previa, y el toggle de estado.
+// ==========================================================================
+
+@use '../../../../../shared-styles/mixins' as *;
+
+.plantform-cargando {
+  padding: var(--theme-space-3xl) 0;
+}
+
+.plantform-estado {
+  @include load-state-panel;
+}
+
+.plantform-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+  margin-bottom: var(--theme-space-lg);
+  padding: var(--theme-space-sm) var(--theme-space-md);
+  border: 1px solid var(--theme-warning-border);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+  font-size: var(--theme-font-size-sm);
+
+  i.ph {
+    flex: none;
+    margin-top: 2px;
+    font-size: 17px;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// Slug + botón "Desde el título" en la misma fila; en mobile se apilan.
+.plantform-slug {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+
+  mat-form-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__regenerar {
+    flex: none;
+    margin-top: var(--theme-space-sm);
+  }
+
+  @include responsive(mobile) {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__regenerar {
+      margin-top: 0;
+    }
+  }
+}
+
+// Región viva siempre montada: el texto aparece solo si el slug cambia al canonicalizarse.
+.plantform-preview {
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
+
+    code {
+      font-family: var(--theme-font-mono);
+      color: var(--theme-text-primary);
+    }
+  }
+}
+
+.plantform-activa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  margin-bottom: var(--theme-space-lg);
+
+  &__aviso {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+}

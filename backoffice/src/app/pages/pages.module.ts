@@ -11,6 +11,9 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { TramitesListComponent } from './tramites/list/tramites-list.component';
 import { TramiteFormComponent } from './tramites/create/tramite-form.component';
 import { TramiteDetailComponent } from './tramites/detail/tramite-detail.component';
+import { PlantillasListComponent } from './tramites/plantillas/list/plantillas-list.component';
+import { PlantillaFormComponent } from './tramites/plantillas/form/plantilla-form.component';
+import { PlantillaDetailComponent } from './tramites/plantillas/detail/plantilla-detail.component';
 import { OrganismosListComponent } from './organismos/list/organismos-list.component';
 import { OrganismoFormComponent } from './organismos/create/organismo-form.component';
 import { OrganismoDetailComponent } from './organismos/detail/organismo-detail.component';
@@ -64,6 +67,13 @@ const routes: Routes = [
       { path: 'tramites/nuevo', component: TramiteFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Nuevo trámite'] } },
       { path: 'tramites/editar/:id', component: TramiteFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_PROCEDURE', 'UPDATE_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Editar trámite'] } },
       { path: 'tramites/detalle/:id', component: TramiteDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Trámites', 'Detalle'] } },
+
+      // Plantillas provinciales (`/api/procedure-template`, real). Alcance global; permisos `*_PROCEDURE`.
+      // Conviven con las rutas viejas `tramites/lista|nuevo|editar|detalle` (mock) hasta la fase 5.
+      { path: 'tramites/plantillas', component: PlantillasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales'] } },
+      { path: 'tramites/plantillas/nueva', component: PlantillaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Nueva plantilla'] } },
+      { path: 'tramites/plantillas/editar/:id', component: PlantillaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Editar plantilla'] } },
+      { path: 'tramites/plantillas/detalle/:id', component: PlantillaDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Detalle'] } },
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
       { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos'] } },

@@ -13,6 +13,11 @@ export const environment = {
   featureOverrides: {
     usuarios: 'local',
     tramites: 'mock',
+    // Trámites reales (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
+    // plantillas: /api/procedure-template real → hereda default real (fase 1).
+    adopciones: 'mock',       // fase 2
+    'fichas-locales': 'mock', // fase 3 (bloqueado por G-1)
+    'puntos-atencion': 'mock', // fase 4 (se activa junto con fichas)
     // organismos: /api/organism real (SUPERADMIN) → hereda default real.
     // tipos-organismo: /api/organism-type real (SUPERADMIN) → hereda default real.
     // categorias: /api/category real → hereda default real.

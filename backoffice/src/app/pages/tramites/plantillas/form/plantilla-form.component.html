@@ -1,0 +1,238 @@
+<!-- Alta y edición de plantilla provincial. El breadcrumb lo pone el shell. -->
+@if (cargando) {
+  <div class="plantform-cargando" role="status" aria-live="polite">
+    <app-loading [loading]="true" [message]="isEdit ? 'Cargando la plantilla…' : 'Cargando el formulario…'"></app-loading>
+  </div>
+} @else if (errorCarga) {
+  <div class="plantform-estado" role="alert">
+    <span class="plantform-estado__icono" aria-hidden="true">
+      <i class="ph" [class.ph-file-x]="errorCarga.noExiste" [class.ph-cloud-slash]="!errorCarga.noExiste"></i>
+    </span>
+    <h2 class="plantform-estado__titulo">{{ errorCarga.titulo }}</h2>
+    <p class="plantform-estado__texto">{{ errorCarga.texto }}</p>
+    <div class="plantform-estado__acciones">
+      @if (!errorCarga.noExiste) {
+        <button type="button" mat-flat-button color="primary" (click)="cargar()">
+          <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+        </button>
+      }
+      <button type="button" mat-stroked-button color="primary" (click)="volverAlListado()">
+        <i class="ph ph-list-dashes" aria-hidden="true"></i> Ir al listado
+      </button>
+    </div>
+  </div>
+} @else if (catalogos) {
+
+  @if (serverError) {
+    <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
+  }
+  <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+
+  @if (catalogos.noDisponibles.length) {
+    <div class="plantform-aviso" role="status">
+      <i class="ph ph-warning" aria-hidden="true"></i>
+      <p>
+        No pudimos cargar: {{ catalogos.noDisponibles.join(', ') }}. Lo que la plantilla ya tenía elegido
+        se conserva al guardar, pero no vas a poder sumar opciones de esos catálogos hasta recargar.
+      </p>
+    </div>
+  }
+
+  <div class="form-card">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
+
+      <!-- ── Identificación ── -->
+      <div class="section-header">Identificación</div>
+      <div class="form-grid form-grid--full">
+
+        <div class="form-field" [class.is-invalid]="campoInvalido('titulo')">
+          <label class="form-field__label" id="titulo-label" for="titulo">Título <span class="form-field__required" aria-hidden="true">*</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <input matInput id="titulo" aria-labelledby="titulo-label" formControlName="titulo"
+                   [maxlength]="maxTextoCorto" placeholder="Ej: Obtener la licencia de conducir">
+            <mat-hint>Empezá con un verbo en infinitivo: Obtener, Inscribirse…</mat-hint>
+            @if (form.controls.titulo.hasError('required')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El título es obligatorio</span></mat-error>
+            }
+            @if (form.controls.titulo.hasError('maxlength')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo {{ maxTextoCorto }} caracteres</span></mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-field" [class.is-invalid]="campoInvalido('slug')">
+          <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
+          <div class="plantform-slug">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug"
+                     [maxlength]="maxTextoCorto" (input)="onSlugEditado()" placeholder="obtener-licencia-de-conducir">
+              <mat-hint>
+                {{ isEdit ? 'Cambiarlo cambia la dirección pública del trámite.' : 'Se arma solo desde el título; podés editarlo.' }}
+                Es único entre todas las plantillas.
+              </mat-hint>
+              @if (form.controls.slug.hasError('required')) {
+                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El slug es obligatorio</span></mat-error>
+              }
+              @if (form.controls.slug.hasError('maxlength')) {
+                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo {{ maxTextoCorto }} caracteres</span></mat-error>
+              }
+              @if (form.controls.slug.hasError('slugVacio')) {
+                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Tiene que tener letras o números</span></mat-error>
+              }
+              @if (form.controls.slug.hasError('server')) {
+                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>{{ form.controls.slug.getError('server') }}</span></mat-error>
+              }
+            </mat-form-field>
+            <button type="button" mat-stroked-button color="primary" class="plantform-slug__regenerar"
+                    [disabled]="!form.controls.titulo.value.trim()" (click)="regenerarSlug()"
+                    matTooltip="Volver a armar el slug desde el título">
+              <i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Desde el título
+            </button>
+          </div>
+          <div class="plantform-preview" aria-live="polite">
+            @if (slugPrevisto$ | async; as previsto) {
+              <p class="plantform-preview__texto">
+                <i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i>
+                Se guardará como: <code>{{ previsto }}</code>
+              </p>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Descripción ── -->
+      <div class="section-header">Descripción</div>
+      <div class="form-grid form-grid--full">
+        <div class="form-field">
+          <label class="form-field__label" id="resumen-label" for="resumen">Resumen <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <textarea matInput id="resumen" aria-labelledby="resumen-label" formControlName="resumen" rows="2"
+                      placeholder="Una o dos oraciones: qué es y para quién."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label" id="descripcion-label" for="descripcion">Descripción larga <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <textarea matInput id="descripcion" aria-labelledby="descripcion-label" formControlName="descripcionLarga" rows="5"></textarea>
+            <mat-hint>Requisitos, costos y URL no van acá: son de cada ficha por localidad.</mat-hint>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- ── Clasificación ── -->
+      <div class="section-header">Clasificación</div>
+      <div class="form-grid">
+
+        <div class="form-field">
+          <label class="form-field__label" id="modalidad-label" for="modalidad">Modalidad <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="modalidad" aria-labelledby="modalidad-label" formControlName="modalidadId">
+              <mat-option value="">Sin modalidad</mat-option>
+              @for (op of catalogos.modalidades; track op.id) {
+                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label" id="categorias-label" for="categorias">Categorías <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="categorias" aria-labelledby="categorias-label" formControlName="categoriaIds" multiple
+                        placeholder="Elegí una o más">
+              @for (op of catalogos.categorias; track op.id) {
+                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field" [class.is-invalid]="campoInvalido('categoriaPrincipalId')">
+          <label class="form-field__label" id="principal-label" for="principal">Categoría principal <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="principal" aria-labelledby="principal-label" formControlName="categoriaPrincipalId">
+              <mat-option value="">Sin categoría principal</mat-option>
+              @for (op of opcionesPrincipal$ | async; track op.id) {
+                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Se elige entre las categorías de la plantilla.</mat-hint>
+            @if (form.controls.categoriaPrincipalId.hasError('principalFuera')) {
+              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Tiene que ser una de las categorías elegidas</span></mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label" id="etiquetas-label" for="etiquetas">Etiquetas <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="etiquetas" aria-labelledby="etiquetas-label" formControlName="etiquetaIds" multiple
+                        placeholder="Elegí una o más">
+              @for (op of catalogos.etiquetas; track op.id) {
+                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label" id="destinatarios-label" for="destinatarios">Destinatarios <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="destinatarios" aria-labelledby="destinatarios-label" formControlName="destinatarioIds" multiple
+                        placeholder="Elegí uno o más">
+              @for (op of catalogos.destinatarios; track op.id) {
+                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label" id="eventos-label" for="eventos">Eventos de vida <span class="form-field__optional">(opcional)</span></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select id="eventos" aria-labelledby="eventos-label" formControlName="eventoDeVidaIds" multiple
+                        placeholder="Elegí uno o más">
+              @for (op of catalogos.eventosDeVida; track op.id) {
+                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+      </div>
+
+      <!-- ── Estado ── -->
+      <div class="section-header">Estado</div>
+      <div class="plantform-activa">
+        <mat-slide-toggle formControlName="activa" color="primary">Activa</mat-slide-toggle>
+        @if (!form.controls.activa.value) {
+          <p class="plantform-activa__aviso">
+            <i class="ph ph-info" aria-hidden="true"></i>
+            Desactivada, deja de aparecer en el listado de plantillas y no se puede adoptar.
+          </p>
+        }
+      </div>
+
+      <!-- ── Acciones ── -->
+      <div class="form-actions">
+        <span class="form-actions__help">Guardar reemplaza la plantilla completa.</span>
+        <div class="form-actions__buttons">
+          <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="cancelar()">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit"
+                  [disabled]="saving || sinCambios"
+                  [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''">
+            @if (saving) {
+              <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+            } @else {
+              <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+            }
+            <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear plantilla') }}</span>
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+}

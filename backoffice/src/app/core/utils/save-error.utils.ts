@@ -1,13 +1,16 @@
 import { FormGroup } from '@angular/forms';
 import { extractErrorCode, extractErrorMessage } from '../models/api-response.model';
 
-/** Un error de negocio que se cuenta en un campo concreto del form (ej. unicidad). */
+/**
+ * Un error de negocio con texto propio: se cuenta en un campo concreto del form (ej. unicidad) o,
+ * sin `control`, solo en el banner (ej. "algo de lo elegido ya no existe").
+ */
 export interface ConflictoDeCampo {
   /** Código de negocio del backend (`API_CODES`). */
   code: number;
-  /** Nombre del control del form donde se marca. */
-  control: string;
-  /** Texto bajo el campo. */
+  /** Nombre del control del form donde se marca. Sin él, el mensaje va directo al banner. */
+  control?: string;
+  /** Texto bajo el campo (o del banner, si no hay `control`). */
   mensaje: string;
 }
 
@@ -30,7 +33,7 @@ export function aplicarErrorDeGuardado(
   const conflicto = conflictos.find((c) => c.code === code);
 
   if (conflicto) {
-    const control = form?.get(conflicto.control);
+    const control = conflicto.control ? form?.get(conflicto.control) : null;
     if (!control) return conflicto.mensaje;
     control.setErrors({ server: conflicto.mensaje });
     control.markAsTouched();

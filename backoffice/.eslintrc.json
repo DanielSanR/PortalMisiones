@@ -75,6 +75,12 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/app/core/features/**/*.spec.ts"],
+      "rules": {
+        "boundaries/element-types": "off"
+      }
     }
   ]
 }

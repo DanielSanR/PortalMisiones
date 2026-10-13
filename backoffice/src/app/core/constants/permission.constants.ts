@@ -42,6 +42,16 @@ export const PERMISSIONS = {
   UPDATE_VARIANT: 'UPDATE_VARIANT',
   DELETE_VARIANT: 'DELETE_VARIANT',
   PUBLISH_VARIANT: 'PUBLISH_VARIANT',
+  // Adopción de una plantilla por un organismo (`/api/organism-procedure`, V2.20): SA, AB y AO en el seed.
+  CREATE_ADOPTION: 'CREATE_ADOPTION',
+  READ_ADOPTION: 'READ_ADOPTION',
+  UPDATE_ADOPTION: 'UPDATE_ADOPTION',
+  DELETE_ADOPTION: 'DELETE_ADOPTION',
+  // Punto de atención de una ficha por localidad (`/api/attention-point`, V2.23): SA, AB, AO y AGENT.
+  CREATE_ATTENTION_POINT: 'CREATE_ATTENTION_POINT',
+  READ_ATTENTION_POINT: 'READ_ATTENTION_POINT',
+  UPDATE_ATTENTION_POINT: 'UPDATE_ATTENTION_POINT',
+  DELETE_ATTENTION_POINT: 'DELETE_ATTENTION_POINT',
   // Taxonomía (genérica; los catálogos concretos usan sus propios permisos abajo)
   CREATE_TAXONOMY: 'CREATE_TAXONOMY',
   READ_TAXONOMY: 'READ_TAXONOMY',
