@@ -316,7 +316,8 @@ export class AdminLayoutComponent implements OnInit {
       case 'cerrar-sesion': this.logout(); return;
       case 'colapsar-nav': this.toggleCollapse(); return;
     }
-    if (resultado.route) this.router.navigate([resultado.route]);
+    // `navigateByUrl` y no `navigate([...])`: una ruta con query (`?adoptar=1`) se codificaría como path.
+    if (resultado.route) this.router.navigateByUrl(resultado.route);
   }
 
   limpiarBusqueda(): void {

@@ -112,6 +112,11 @@
           }
         </section>
       </div>
+
+      <section class="plantdet-card" aria-labelledby="plantdet-adopciones" *appHasPermission="'READ_ADOPTION'">
+        <h3 class="plantdet-card__titulo" id="plantdet-adopciones">Organismos que la adoptaron</h3>
+        <app-adopciones-de-plantilla [plantillaId]="estado.plantilla.id"></app-adopciones-de-plantilla>
+      </section>
     </div>
   }
 }

@@ -1,0 +1,217 @@
+// ==========================================================================
+// Detalle de Trámite del organismo — membrete (trámite, organismo, estado),
+// grid de dos tarjetas (Datos / Vigencia y estado) y la sección reservada
+// "Fichas por localidad" (fase 3). Misma cáscara que el detalle de plantilla.
+// ==========================================================================
+
+@use '../../../../../shared-styles/mixins' as *;
+
+.adopdet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+}
+
+.adopdet-cargando {
+  @include flex-center;
+  gap: var(--theme-space-sm);
+  padding: var(--theme-space-3xl) 0;
+  color: var(--theme-text-secondary);
+}
+
+.adopdet-estado {
+  @include load-state-panel;
+}
+
+// Membrete -----------------------------------------------------------------
+.adopdet-membrete {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  padding: var(--theme-space-md) var(--theme-space-lg);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+
+  &__fila {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-sm);
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: var(--theme-font-size-lg);
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__organismo {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+
+  &__aviso {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: var(--theme-space-xs) 0 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-warning-text);
+  }
+}
+
+// Tarjetas -----------------------------------------------------------------
+.adopdet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: var(--theme-space-md);
+  align-items: start;
+
+  @include responsive(tablet-down) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.adopdet-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+  min-width: 0;
+  padding: var(--theme-space-md) var(--theme-space-lg);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+
+  &__titulo {
+    margin: 0;
+    @include section-title;
+  }
+}
+
+// Datos (lista de definición) ---------------------------------------------
+.adopdet-datos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+  margin: 0;
+
+  &__fila {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-xs);
+    min-width: 0;
+
+    dt {
+      @include field-label-overline;
+    }
+
+    dd {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--theme-space-sm);
+      margin: 0;
+      color: var(--theme-text-primary);
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--theme-primary);
+    font-size: var(--theme-font-size-xs);
+    text-decoration: none;
+    border-radius: var(--theme-radius-sm);
+    @include focus-ring;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // Nombre que no se pudo resolver, o sin fecha de fin: se ve, pero apagado.
+  &__faltante {
+    color: var(--theme-text-tertiary);
+  }
+}
+
+// Form de vigencia y estado -----------------------------------------------
+.adopdet-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+
+  &__habilitada {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+  }
+
+  &__aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-warning-text);
+
+    i.ph {
+      flex: none;
+      margin-top: 2px;
+    }
+  }
+
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    padding: var(--theme-space-sm);
+    border-radius: var(--theme-radius-sm);
+    background: var(--theme-error-bg);
+    color: var(--theme-error-icon);
+    font-size: var(--theme-font-size-sm);
+    line-height: 1.4;
+
+    i.ph {
+      flex: none;
+      margin-top: 1px;
+      font-size: 16px;
+    }
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--theme-space-sm);
+  }
+}
+
+// Fichas por localidad: estado vacío hasta la fase 3 -----------------------
+.adopdet-fichas {
+  @include state-panel;
+  padding: var(--theme-space-xl) var(--theme-space-lg);
+
+  &__icono {
+    @include state-panel-icon;
+  }
+
+  &__titulo {
+    margin: 0;
+    @include state-panel-title;
+  }
+
+  &__texto {
+    margin: 0;
+    @include state-panel-text;
+  }
+}

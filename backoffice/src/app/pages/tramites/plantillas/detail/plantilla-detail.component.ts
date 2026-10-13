@@ -12,6 +12,7 @@ import { PageActionsDirective } from '../../../../shared/directives/page-actions
 import { PlantillaRef, PlantillaVM, PlantillasFacade } from '@features/plantillas';
 import { RUTA_EDITAR_PLANTILLA, RUTA_LISTA_PLANTILLAS } from '../plantillas.rutas';
 import { TEXTOS_PLANTILLA_INEXISTENTE, esPlantillaInexistente } from '../plantilla-save-error';
+import { AdopcionesDePlantillaComponent } from '../../adopciones/de-plantilla/adopciones-de-plantilla.component';
 
 /** Grupo de referencias de catálogo que se muestra como chips. */
 interface GrupoDeRefs {
@@ -28,13 +29,16 @@ type EstadoDetalle =
 
 /**
  * Detalle de una plantilla provincial (activa o no: `GET /{id}` devuelve también las inactivas).
- * La pestaña "Organismos que la adoptaron" llega con la fase 2 (adopciones).
+ * La sección "Organismos que la adoptaron" (solo con `READ_ADOPTION`) es un componente hijo del
+ * feature adopciones con su propio facade: este componente sigue inyectando solo `PlantillasFacade`.
  */
 @Component({
   selector: 'app-plantilla-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncPipe, MatButtonModule, MatSnackBarModule, HasPermissionDirective, PageActionsDirective],
+  imports: [
+    AsyncPipe, MatButtonModule, MatSnackBarModule, HasPermissionDirective, PageActionsDirective, AdopcionesDePlantillaComponent,
+  ],
   templateUrl: './plantilla-detail.component.html',
   styleUrl: './plantilla-detail.component.scss',
 })

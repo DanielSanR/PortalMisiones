@@ -6,6 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
+import { AccessRule } from '../../../core/models/access-rule.model';
 import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.model';
 
 // Directiva para registrar cell templates por nombre desde el consumidor.
@@ -80,19 +81,24 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
    * obligaba a las listas a inyectar el servicio de permisos, contra la regla de que un
    * componente solo conoce el facade de su feature.
    */
-  @Input() set emptyActionPermission(value: string) {
+  @Input() set emptyActionPermission(value: string | AccessRule) {
     this.emptyActionPermission$.next(value ?? '');
   }
   @Output() emptyAction = new EventEmitter<void>();
 
-  private readonly emptyActionPermission$ = new BehaviorSubject<string>('');
+  private readonly emptyActionPermission$ = new BehaviorSubject<string | AccessRule>('');
 
-  /** Reactivo a la sesión: si cambian los permisos, el CTA aparece o se va sin recargar. */
+  /**
+   * Reactivo a la sesión: si cambian los permisos, el CTA aparece o se va sin recargar. Acepta
+   * un permiso suelto o una `AccessRule` completa (ej. `ADOPTAR_ACCESS`: varios permisos a la vez).
+   */
   readonly puedeAccionar$ = combineLatest([
     this.emptyActionPermission$,
     this.auth.getCurrentUser$(),
   ]).pipe(
-    map(([permiso]) => !permiso || this.auth.getPermissions().includes(permiso)),
+    map(([permiso]) => typeof permiso === 'string'
+      ? !permiso || this.auth.getPermissions().includes(permiso)
+      : this.auth.canAccess(permiso)),
   );
 
   // Estado de error — círculo rojo + cloud-slash + CTA "Reintentar".

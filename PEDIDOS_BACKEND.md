@@ -23,6 +23,7 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 | **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | Mensajes de error consistentes sin traducciones locales |
 | **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
 | **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
+| **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
@@ -430,6 +431,37 @@ clientes. El "no encontrado" no permite señalar qué selección está mal.
 **Criterio de aceptación**
 - [ ] `POST`/`PUT` con `slugBase: "Obtener DNI"` persiste `obtener-dni`; un segundo `obtener-DNI` devuelve `4072`.
 - [ ] Un `tagIds` con un UUID inexistente devuelve `4073` con ese UUID y la entidad en `details`.
+
+---
+
+## G-11 · Adopciones: plantilla desactivada, filtro por plantilla y `ownerOrganismId`
+
+**Prioridad:** 🟡 importante · **Tipo:** bug + contrato · Detectado al integrar `/api/organism-procedure` (fase 2 del front).
+
+**Problema**
+1. **No se puede editar una adopción cuya plantilla está desactivada:** `OrganismProcedureService.update` vuelve a validar
+   la plantilla con `loadTemplate`, que exige `isActive`, y responde 404 `4073`. Incluye deshabilitarla por `PUT`
+   (el `DELETE` sí funciona).
+2. **Desactivar una plantilla no toca sus adopciones:** `ProcedureTemplateService.delete` solo hace `setActive(false)`;
+   las adopciones siguen listadas y habilitadas apuntando a una plantilla que ya no se lista.
+3. **`GET /api/organism-procedure` no filtra por plantilla:** con alcance global trae todo y filtra `enabled` en memoria.
+4. **`ownerOrganismId` no tiene semántica documentada** (con alcance de organismo debe ser el propio o responde `4073`).
+5. Jackson serializa `LocalDateTime` omitiendo los segundos cuando son 0 (`2026-01-01T00:00`); el front lo tolera, pero
+   conviene fijar el formato.
+
+**Propuesta**
+1. En `update`, validar que la plantilla exista (no que esté activa) cuando no cambia `procedureTemplateId`.
+2. Definir la cascada: al desactivar una plantilla, deshabilitar sus adopciones (o impedir desactivarla si tiene
+   adopciones habilitadas, con un error de negocio claro).
+3. `GET /api/organism-procedure?procedureTemplateId=<uuid>` (y `?organismId=` para el alcance global).
+4. Documentar `ownerOrganismId` (¿organismo responsable del contenido cuando difiere del que adopta?).
+5. `@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")` en los `LocalDateTime` de los DTOs.
+
+**Criterio de aceptación**
+- [ ] `PUT` de una adopción con plantilla inactiva y `enabled: false` responde 200.
+- [ ] Desactivar una plantilla con adopciones habilitadas aplica la cascada definida (o responde un 409 con mensaje).
+- [ ] `GET /api/organism-procedure?procedureTemplateId=…` devuelve solo las de esa plantilla.
+- [ ] `ownerOrganismId` documentado en Swagger.
 
 ---
 

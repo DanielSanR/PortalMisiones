@@ -14,6 +14,8 @@ import { TramiteDetailComponent } from './tramites/detail/tramite-detail.compone
 import { PlantillasListComponent } from './tramites/plantillas/list/plantillas-list.component';
 import { PlantillaFormComponent } from './tramites/plantillas/form/plantilla-form.component';
 import { PlantillaDetailComponent } from './tramites/plantillas/detail/plantilla-detail.component';
+import { AdopcionesListComponent } from './tramites/adopciones/list/adopciones-list.component';
+import { AdopcionDetailComponent } from './tramites/adopciones/detail/adopcion-detail.component';
 import { OrganismosListComponent } from './organismos/list/organismos-list.component';
 import { OrganismoFormComponent } from './organismos/create/organismo-form.component';
 import { OrganismoDetailComponent } from './organismos/detail/organismo-detail.component';
@@ -74,6 +76,12 @@ const routes: Routes = [
       { path: 'tramites/plantillas/nueva', component: PlantillaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Nueva plantilla'] } },
       { path: 'tramites/plantillas/editar/:id', component: PlantillaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Editar plantilla'] } },
       { path: 'tramites/plantillas/detalle/:id', component: PlantillaDetailComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_PROCEDURE'] }, redirectTo: HOME, breadcrumb: ['Plantillas provinciales', 'Detalle'] } },
+
+      // Trámites del organismo = adopciones (`/api/organism-procedure`). Alcance por organismo en el backend;
+      // permisos `*_ADOPTION`. "Adoptar" es un diálogo del listado (ADOPTAR_ACCESS); la edición de vigencia
+      // vive en el detalle (con aviso de cambios sin guardar).
+      { path: 'tramites/adopciones', component: AdopcionesListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ADOPTION'] }, redirectTo: HOME, breadcrumb: ['Trámites del organismo'] } },
+      { path: 'tramites/adopciones/detalle/:id', component: AdopcionDetailComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['READ_ADOPTION'] }, redirectTo: HOME, breadcrumb: ['Trámites del organismo', 'Detalle'] } },
 
       // Organismos + Tipos de Organismo → permiso (de facto solo SUPERADMIN: es el único con esos permisos en el seed)
       { path: 'organismos/lista', component: OrganismosListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_ORGANISM'] }, redirectTo: HOME, breadcrumb: ['Organismos'] } },

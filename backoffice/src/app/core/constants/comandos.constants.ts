@@ -1,6 +1,6 @@
 import { AccessRule } from '../models/access-rule.model';
 import { UserRole } from '../enums/user-role.enum';
-import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
+import { ADOPTAR_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
 
 /**
  * Comando del buscador del shell: una acción a la que se llega escribiendo, sin
@@ -45,6 +45,14 @@ export const COMANDOS: Comando[] = [
     keywords: ['nueva', 'alta', 'agregar', 'plantilla', 'provincial', 'tramite'],
     route: '/dashboard/tramites/plantillas/nueva',
     rule: { permissions: ['CREATE_PROCEDURE'] },
+  },
+  {
+    // El diálogo vive en "Trámites del organismo": `?adoptar=1` lo abre al entrar.
+    label: 'Adoptar trámite',
+    icon: 'file-arrow-down',
+    keywords: ['adoptar', 'adopcion', 'tramite', 'organismo', 'vigencia', 'nuevo', 'alta'],
+    route: '/dashboard/tramites/adopciones?adoptar=1',
+    rule: ADOPTAR_ACCESS,
   },
   {
     label: 'Crear organismo',

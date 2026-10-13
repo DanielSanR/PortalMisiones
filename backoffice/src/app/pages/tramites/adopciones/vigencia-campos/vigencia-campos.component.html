@@ -1,0 +1,41 @@
+<div class="vigencia-campos" [formGroup]="grupo">
+  <div class="form-field vigencia-campos__campo"
+       [class.is-invalid]="grupo.controls.vigenteDesde.invalid && grupo.controls.vigenteDesde.touched">
+    <label class="form-field__label" [id]="idPrefijo + '-desde-label'" [for]="idPrefijo + '-desde'">
+      Vigente desde <span class="form-field__required" aria-hidden="true">*</span>
+    </label>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <input matInput [id]="idPrefijo + '-desde'" [attr.aria-labelledby]="idPrefijo + '-desde-label'"
+             formControlName="vigenteDesde" [matDatepicker]="pickerDesde" placeholder="DD/MM/AAAA" autocomplete="off">
+      <mat-datepicker-toggle matIconSuffix [for]="pickerDesde" aria-label="Elegir la fecha de inicio"></mat-datepicker-toggle>
+      <mat-datepicker #pickerDesde></mat-datepicker>
+      <mat-hint>Desde el comienzo de ese día.</mat-hint>
+      @if (motivo(grupo.controls.vigenteDesde); as error) {
+        <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>{{ error }}</span></mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <div class="form-field vigencia-campos__campo"
+       [class.is-invalid]="grupo.controls.vigenteHasta.invalid && grupo.controls.vigenteHasta.touched">
+    <label class="form-field__label" [id]="idPrefijo + '-hasta-label'" [for]="idPrefijo + '-hasta'">
+      Vigente hasta <span class="form-field__optional">(opcional)</span>
+    </label>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <input matInput [id]="idPrefijo + '-hasta'" [attr.aria-labelledby]="idPrefijo + '-hasta-label'"
+             formControlName="vigenteHasta" [matDatepicker]="pickerHasta" [min]="grupo.controls.vigenteDesde.value"
+             placeholder="DD/MM/AAAA" autocomplete="off">
+      <mat-datepicker-toggle matIconSuffix [for]="pickerHasta" aria-label="Elegir la fecha de fin"></mat-datepicker-toggle>
+      <mat-datepicker #pickerHasta></mat-datepicker>
+      <mat-hint>Hasta el final de ese día. Vacío = sin fecha de fin.</mat-hint>
+      @if (motivo(grupo.controls.vigenteHasta); as error) {
+        <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>{{ error }}</span></mat-error>
+      }
+    </mat-form-field>
+    @if (grupo.controls.vigenteHasta.value) {
+      <button type="button" class="vigencia-campos__limpiar" (click)="limpiarHasta()">
+        <i class="ph ph-x" aria-hidden="true"></i> Quitar la fecha de fin
+      </button>
+    }
+  </div>
+</div>

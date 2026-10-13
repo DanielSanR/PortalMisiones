@@ -24,6 +24,7 @@ import { provideTiposOrganismoFeature } from './core/features/tipos-organismo';
 import { provideDestinatariosFeature } from './core/features/destinatarios';
 import { provideTramitesFeature } from './core/features/tramites';
 import { providePlantillasFeature } from './core/features/plantillas';
+import { provideAdopcionesFeature } from './core/features/adopciones';
 import { provideDashboardFeature } from './core/features/dashboard';
 import { provideAuditoriaFeature } from './core/features/auditoria';
 import { provideFeedbackFeature } from './core/features/feedback';
@@ -56,6 +57,7 @@ export const appConfig: ApplicationConfig = {
     ...provideDestinatariosFeature(),
     ...provideTramitesFeature(),
     ...providePlantillasFeature(),
+    ...provideAdopcionesFeature(),
     ...provideDashboardFeature(),
     ...provideAuditoriaFeature(),
     ...provideFeedbackFeature(),

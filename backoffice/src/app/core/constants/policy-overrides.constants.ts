@@ -54,3 +54,16 @@ export const LEER_ROLES_PERMISOS_ACCESS: AccessRule = {
 export const ESCRIBIR_ROLES_PERMISOS_ACCESS: AccessRule = {
   requireRoles: [UserRole.SUPERADMIN],
 };
+
+/**
+ * "Adoptar trámite" (`POST /api/organism-procedure` → `CREATE_ADOPTION`). El diálogo lista las
+ * plantillas activas (`GET /api/procedure-template` → `READ_PROCEDURE`) y el select de organismo
+ * (`GET /api/organism` → `READ_ORGANISM`). Decisión P-2 (PLAN_TRAMITES_API.md §8): sin `READ_ORGANISM`
+ * "Adoptar" se oculta, porque el organismo del usuario no viaja en el JWT ni en `/api/auth/me` (G-2) y
+ * el front no tiene qué mandar en `organismId`. Hoy, de facto, solo SUPERADMIN.
+ * Va en el botón del header, el CTA del vacío y el buscador de comandos.
+ */
+export const ADOPTAR_ACCESS: AccessRule = {
+  permissions: ['CREATE_ADOPTION', 'READ_PROCEDURE', 'READ_ORGANISM'],
+  mode: 'all',
+};

@@ -61,6 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Trámites',
     items: [
       { label: 'Plantillas provinciales', icon: 'files', route: '/dashboard/tramites/plantillas', rule: { permissions: ['READ_PROCEDURE'] } },
+      { label: 'Trámites del organismo', icon: 'building-office', route: '/dashboard/tramites/adopciones', rule: { permissions: ['READ_ADOPTION'] } },
     ],
   },
   {

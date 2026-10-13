@@ -25,6 +25,12 @@ mappers + models = HOJAS (no dependen de capas superiores)
 - **Mappers** son funciones puras DTO↔ViewModel; solo dependen de models.
 - Cero dependencias circulares (verificar con `npm run check:circular`).
 
+## Excepción documentada: sesión en facades
+Un facade puede consultar `AuthTokenService` (estado de sesión, `can*`) **solo para decidir si pide un catálogo
+cross-feature** que el usuario no tiene permiso de leer (p. ej. no llamar a `/api/organism` sin `READ_ORGANISM`, que
+abriría el diálogo global con un 403). Es dependencia de infraestructura de sesión, no `facade → facade`. Ejemplo:
+`AdopcionesFacade`. No se usa para decidir reglas de negocio ni para gatear UI (eso es de guards, directiva y `RowAction`).
+
 ## Foldering por feature
 Todo el feature vive en `core/features/<feature>/` con subcarpetas por capa:
 `models/`, `mappers/`, `datasources/`, `repositories/`, `facades/`, más `<feature>.providers.ts` e `index.ts` (barrel).
