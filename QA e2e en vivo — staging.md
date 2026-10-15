@@ -73,7 +73,7 @@ Si en una sección **mock** ves un request a `/api/tag`, `/api/procedure-templat
 
 ## 3. Flujos por rol
 
-Usuarios (todos con `<ver backoffice/login.data.md>`):
+Usuarios (contraseña en `backoffice/login.data.md`, local y no versionado):
 **SA** `sergio@misiones.gov.ar` · **AB** `mariquena@vicegobernacion.gov.ar` · **AO** `silvestre@silicon.gov.ar`.
 Entre rol y rol: **Cerrar sesión** desde el menú de usuario (no solo cerrar la pestaña).
 

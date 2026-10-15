@@ -5,7 +5,7 @@ QA manual — backlog backoffice (BO-1 a BO-12)
 ▎ `docker compose --env-file docker/.env.docker -f docker/docker-compose.yml -f docker/docker-compose.backend-dev.yml up --build`
 ▎ (el viejo `docker-compose.dev.yml` de la raíz ya no existe: se movió a `docker/docker-compose.backend-dev.yml`). Front con
 ▎ `cd backoffice && npx ng serve` en :4200, DevTools abierto en la pestaña Network. Usuarios en `login.data.md`:
-▎ SA = sergio@misiones.gov.ar · AB = mariquena@vicegobernacion.gov.ar · AO = silvestre@silicon.gov.ar (pass `<ver backoffice/login.data.md>`).
+▎ SA = sergio@misiones.gov.ar · AB = mariquena@vicegobernacion.gov.ar · AO = silvestre@silicon.gov.ar (contraseña en `backoffice/login.data.md`, local y no versionado).
 ▎ Detalle de cada ítem en `BACKLOG_BACKOFFICE.md`.
 
 Cómo forzar un error del backend: en Network, clic derecho sobre el request → "Block request URL", repetir la

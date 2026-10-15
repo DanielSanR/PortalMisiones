@@ -27,11 +27,34 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright, expect
 
-BASE = "http://localhost:4200"
-PASSWORD = "<ver backoffice/login.data.md>"
-SA = "sergio@misiones.gov.ar"
-AB = "mariquena@vicegobernacion.gov.ar"
-AO = "silvestre@silicon.gov.ar"
+def _cargar_env_local() -> None:
+    """Carga `e2e/.env` (KEY=valor por línea) si existe. No pisa variables ya definidas en el entorno.
+    El archivo está ignorado por git (`.env.*` / `.env` en el .gitignore del repo): ver `e2e/.env.example`."""
+    archivo = Path(__file__).resolve().parent / ".env"
+    if not archivo.exists():
+        return
+    for linea in archivo.read_text(encoding="utf-8").splitlines():
+        linea = linea.strip()
+        if not linea or linea.startswith("#") or "=" not in linea:
+            continue
+        clave, valor = linea.split("=", 1)
+        os.environ.setdefault(clave.strip(), valor.strip())
+
+
+def _requerida(nombre: str) -> str:
+    valor = os.environ.get(nombre, "").strip()
+    if not valor:
+        sys.exit(f"Falta la variable {nombre}. Definila en el entorno o en e2e/.env (ver e2e/.env.example).")
+    return valor
+
+
+_cargar_env_local()
+BASE = os.environ.get("E2E_BASE_URL", "http://localhost:4200")
+# Credenciales de los usuarios de prueba de staging: NUNCA en el código (ver e2e/.env.example).
+PASSWORD = _requerida("E2E_PASSWORD")
+SA = _requerida("E2E_SA_EMAIL")
+AB = _requerida("E2E_AB_EMAIL")
+AO = _requerida("E2E_AO_EMAIL")
 TS = str(int(time.time()))
 PFX = f"E2E-{TS}"
 ACR = f"E2E{TS[-6:]}"

@@ -4,6 +4,10 @@ Prueba de punta a punta automatizada con Playwright para Python (Firefox headles
 backend online de staging, pasando por el proxy del dev server.
 
 ## Cómo correrlo
+Credenciales: copiá `e2e/.env.example` a `e2e/.env` (ignorado por git) y completá los usuarios de prueba de staging
+(están en `backoffice/login.data.md`, local y no versionado). También se pueden pasar como variables de entorno.
+Sin ellas el script corta con un mensaje claro. **Nunca** las pongas en el código.
+
 ```bash
 cd backoffice && npm run start:staging     # dev server en :4200 con proxy a staging (dejalo corriendo)
 py -3.12 e2e/final_script.py               # desde la raíz del repo (requiere Playwright + Firefox instalados)
@@ -15,6 +19,8 @@ no responde, el script corta sin hacer nada.
 ### Variables de entorno
 | Variable | Default | Efecto |
 |---|---|---|
+| `E2E_PASSWORD`, `E2E_SA_EMAIL`, `E2E_AB_EMAIL`, `E2E_AO_EMAIL` | **requeridas** | Credenciales de los usuarios de prueba (SA, AB, AO). |
+| `E2E_BASE_URL` | `http://localhost:4200` | URL del dev server. |
 | `E2E_ALTA_USUARIO=1` | apagada | Activa CP7b, el alta real de usuario. Está apagada porque en staging `DELETE /api/user/{id}/admin` responde 500 y no se puede limpiar (B-1). |
 
 No hay variable para el ABM de Organismos y Tipos de organismo: por defecto **no crea registros** (ver "Política de
