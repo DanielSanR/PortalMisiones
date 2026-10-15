@@ -43,7 +43,8 @@ export class DynamicFormFieldComponent implements OnInit, OnChanges {
   /**
    * Valor de `field.preview` derivado del control; `''` cuando no corresponde mostrarlo
    * (sin preview declarada, transformado vacío o igual a lo tipeado). Se recalcula si
-   * cambia el campo o el grupo (el `dynamic-form` rehace el grupo al cambiar `fields`).
+   * cambia el campo o el grupo (con `fields` nuevo el `dynamic-form` conserva el grupo, pero
+   * el campo llega como objeto nuevo).
    */
   preview$: Observable<string> = of('');
 

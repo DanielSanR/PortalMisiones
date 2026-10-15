@@ -10,7 +10,8 @@
     "test": "ng test",
     "check:circular": "npx --yes madge --circular --ts-config tsconfig.json --extensions ts src/app",
     "lint": "eslint \"src/app/core/features/**/*.ts\"",
-    "lint:all": "eslint \"src/app/**/*.ts\""
+    "lint:all": "eslint \"src/app/**/*.ts\"",
+    "start:staging": "ng serve --configuration staging"
   },
   "private": true,
   "dependencies": {

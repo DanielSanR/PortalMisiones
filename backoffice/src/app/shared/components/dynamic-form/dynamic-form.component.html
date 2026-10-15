@@ -6,7 +6,7 @@
   <app-form-error-banner *ngIf="submitted" [errors]="invalidFieldMessages()"></app-form-error-banner>
 
   <div class="form-fields">
-    <div *ngFor="let field of fields"
+    <div *ngFor="let field of fields; trackBy: trackByName"
          class="form-field"
          [ngClass]="getFieldCssClass(field)">
       <label *ngIf="showExternalLabel(field)"

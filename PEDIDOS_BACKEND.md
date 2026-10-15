@@ -25,6 +25,9 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 | **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
 | **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
 | **G-12** | Fichas y puntos de atención: "no existe" como 500, workflow sobre inactivas, fichas sobre adopciones deshabilitadas, `DELETE` sin versión | 🟡 importante | bug | Mensajes de error precisos y datos consistentes en fichas y puntos |
+| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | Probar contra un backend online todo lo integrado desde julio: PPDT-5.1, etiquetas, trámites, puntos de atención |
+| **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments` | 🔴 bloquea | bug | "Eliminar definitivamente" de usuarios (BO-3) y limpieza de datos de prueba |
+| **OPS-2** | Purgar en staging los registros de prueba `E2E-*` que la API no permite borrar | 🔵 mejora | ops | Staging limpio (entorno compartido) |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
@@ -495,6 +498,91 @@ fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o v
 
 ---
 
+## OPS-1 · Desplegar `dev` en staging
+
+**Prioridad:** 🔴 bloquea · **Tipo:** ops · Verificado el 2026-10-15.
+
+**Problema**
+- El servidor online `https://tramitesmisiones.api.dev.stagemnes.net.ar` corre la rama **`staging`**: en
+  `.gitlab-ci.yml`, `build_image_stage` y `dev_deploy_stage` tienen `only: staging`. La rama `dev` solo compila
+  (`mvn compile`) y corre tests (`mvn verify`); no despliega.
+- `origin/staging` está en `f7f0d38` (2026-09-23). Su último merge de `dev` es `2b558b7`, que llega hasta `d800be0`
+  (2026-07-29, `/api/auth/me`). Después solo tiene cambios de `.gitlab-ci.yml`.
+- **`dev` tiene 42 commits que no están en `staging`**: PPDT-5.1, 5.2, 5.4–5.8, 5.10–5.12 (etiquetas, plantillas,
+  adopciones, fichas por localidad, puntos de atención, búsqueda pública, ficha pública y feedback).
+- Comprobado en el servidor: `/api-docs` publica 40 paths, sin `/api/tag`, `/api/procedure-template`,
+  `/api/organism-procedure`, `/api/organism-procedure-location` ni `/api/attention-point`, y `RoleResponseDTO` no trae
+  `assignableByBackoffice`.
+
+**Impacto en el front:** contra el backend online, Etiquetas, Plantillas, Adopciones, Fichas y Puntos de atención
+tienen que correr en mock (`environment.staging.ts`). Lo integrado desde julio solo se puede probar levantando el
+backend local con Docker.
+
+**Propuesta**
+1. Antes del merge, corregir **R-3**: si no, en staging nadie tiene `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT`.
+   Confirmado en staging: el JWT del SUPERADMIN trae 47 permisos y ninguno de esos.
+2. Merge request `dev` → `staging` con el pipeline de `dev` en verde (compile + verify), y deploy.
+3. Acordar una cadencia (p. ej. promover `dev` a `staging` al cerrar cada tarjeta PPDT) o desplegar `dev` en un
+   entorno propio.
+
+**Criterio de aceptación**
+- [ ] `GET /api-docs` de staging incluye `/api/tag`, `/api/procedure-template`, `/api/organism-procedure`,
+  `/api/organism-procedure-location` y `/api/attention-point`.
+- [ ] `GET /api/role` devuelve `assignableByBackoffice`.
+- [ ] El JWT del SUPERADMIN de staging incluye `READ_TAG`, `READ_ADOPTION` y `READ_ATTENTION_POINT`.
+
+---
+
+## G-13 · El borrado definitivo de usuario siempre falla (500)
+
+**Prioridad:** 🔴 bloquea · **Tipo:** bug · Detectado por el e2e contra staging (2026-10-15); la causa también está en `dev`.
+
+**Problema**
+- `DELETE /api/user/{id}/admin` responde **500 `5000`**. `UserService.deleteDefinitiveUserById` hace solo
+  `userRepo.delete(user)` (igual en `origin/staging` y `origin/dev`).
+- `V0.2__align_identity_access_to_der.sql:38` crea `user_role_assignments.user_id ... REFERENCES users(id) ON DELETE
+  RESTRICT`, y `User.roleAssignments` (`@OneToMany(mappedBy = "user")`) no tiene `cascade` ni `orphanRemoval`. Todo
+  usuario tiene al menos una asignación, así que la base **siempre** rechaza el `DELETE`.
+- Otras FKs a `users(id)` sin `ON DELETE` (`procedure_templates.created_by_id/updated_by_id`, `otl_versions.created_by_id`,
+  `audit_events.actor_user_id`, `metric_events.user_id`, `procedure_feedbacks.user_id/reviewed_by_id`) van a bloquear
+  el borrado de cualquier usuario que haya operado.
+- A verificar: en el mismo e2e, `POST /api/user` con el rol "User" devolvió `role: null` en la respuesta.
+
+**Impacto en el front:** la acción "Eliminar definitivamente" (BO-3, `DELETE_USER`) no puede funcionar contra el
+backend real. Los usuarios de prueba no se pueden limpiar.
+
+**Propuesta**
+1. Definir la política: ¿el borrado "definitivo" debe existir, o alcanza con la baja lógica? Si existe:
+   borrar primero las `user_role_assignments` (o `cascade = REMOVE` en la relación) y, para las referencias de
+   auditoría y autoría, anonimizar (`SET NULL`) en vez de borrar historial.
+2. Si el usuario tiene referencias que no se pueden anonimizar, responder **409** con un código de negocio claro
+   ("El usuario tiene actividad registrada; desactivalo"), no 500.
+3. Revisar por qué el alta con rol "User" devuelve `role: null`.
+
+**Criterio de aceptación**
+- [ ] `DELETE /api/user/{id}/admin` de un usuario recién creado (sin actividad) → 200 y deja de existir.
+- [ ] De un usuario con actividad → 200 con referencias anonimizadas, o 409 con código de negocio (no 500).
+- [ ] `POST /api/user` devuelve el rol asignado.
+
+---
+
+## OPS-2 · Purgar en staging los registros de prueba `E2E-*`
+
+**Prioridad:** 🔵 mejora · **Tipo:** ops.
+
+**Problema:** organismos y tipos de organismo solo tienen baja lógica, y el usuario de prueba no se puede borrar
+(G-13). Las corridas del e2e del front (2026-10-15) dejaron en staging, todos inactivos y con prefijo `E2E-`:
+4 organismos, 4 tipos de organismo y el usuario `e2e.1792075066@example.com`
+(id `1fcb47e4-7231-4989-9d7c-82a72e715513`, desactivado). Los ids están en `e2e/final_runs/run_*/final_script_log.txt`
+(líneas `CLEANUP`). El script ya se ajustó para no seguir acumulando.
+
+**Propuesta:** borrar esos registros por SQL en la base de staging (`name LIKE 'E2E-%'` en `organisms` y
+`organism_types`, y el usuario por id junto con sus `user_role_assignments`).
+
+**Criterio de aceptación:** `GET /api/organism` y `GET /api/organism-type` de staging no devuelven ningún `E2E-%`.
+
+---
+
 ## DOC-1 · Corregir `docs/frontend_integration_guide.md`
 
 **Prioridad:** 🔵 · **Tipo:** doc
@@ -520,14 +608,16 @@ fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o v
 ## Orden sugerido de atención
 
 1. **R-3:** una migración chica que habilita Etiquetas, Adopciones y Puntos de atención para todos los roles. Conviene sumar en el mismo archivo los grants que se decidan en **G-3** y **G-5**.
-2. **R-1:** cambio de una línea, y cierra un agujero de autorización.
-3. **G-1:** mapear campos que ya están en la entidad. Desbloquea toda la sección de fichas.
-4. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
-5. **BO-17:** un método de controller sobre un servicio que ya existe.
-6. **G-4:** errores 4xx y endpoints de rechazo y vuelta a borrador.
-7. **G-9:** unicidad y vigencia, antes de que haya datos reales duplicados.
-8. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación.
-9. **G-6**, **G-8** y **DOC-1**.
+2. **OPS-1:** merge de `dev` a `staging` (con R-3 adentro). Sin esto, nada de lo integrado desde julio se puede probar online.
+3. **G-13:** el borrado definitivo de usuarios nunca funciona (FK `RESTRICT`).
+4. **R-1:** cambio de una línea, y cierra un agujero de autorización.
+5. **G-1:** mapear campos que ya están en la entidad. Desbloquea toda la sección de fichas.
+6. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
+7. **BO-17:** un método de controller sobre un servicio que ya existe.
+8. **G-4:** errores 4xx y endpoints de rechazo y vuelta a borrador.
+9. **G-9:** unicidad y vigencia, antes de que haya datos reales duplicados.
+10. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación.
+11. **G-6**, **G-8**, **DOC-1** y **OPS-2**.
 
 ## Qué hace el front mientras tanto
 

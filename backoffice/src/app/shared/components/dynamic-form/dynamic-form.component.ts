@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FieldConfig } from '../../../core/models/field.interface';
 import { CommonModule } from '@angular/common';
@@ -12,6 +12,9 @@ import { getControlErrorMessage } from '../dynamic-form-field/form-error-message
 
 /** Tipos de campo sin control reactivo propio ni label overline externo. */
 const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox'];
+
+/** Tipos de campo puramente visuales: no tienen control en el `FormGroup`. */
+const NO_CONTROL_TYPES = ['tip', 'section-header'];
 
 @Component({
   selector: 'app-dynamic-form',
@@ -30,7 +33,7 @@ const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox'];
   styleUrls: ['./dynamic-form.component.scss'],
   encapsulation: ViewEncapsulation.None,
 })
-export class DynamicFormComponent implements OnInit {
+export class DynamicFormComponent implements OnInit, OnChanges {
   @Input() fields: FieldConfig[] = [];
   @Input() submitButtonText = 'Guardar';
   @Input() cancelButtonText = 'Cancelar';
@@ -68,35 +71,77 @@ export class DynamicFormComponent implements OnInit {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['fields'] && !changes['fields'].firstChange) {
-      this.initForm();
+    // Antes de `ngOnInit` (primer cambio) el form todavía no existe: lo arma `initForm`.
+    if (!this.form) return;
+
+    if (changes['fields']) {
+      this.syncControls();
     }
-    if (changes['initialData'] && !changes['initialData'].firstChange) {
-      if (this.form && changes['initialData'].currentValue) {
-        this.form.patchValue(changes['initialData'].currentValue);
-        this.form.markAsPristine();
-      }
+    if (changes['initialData'] && changes['initialData'].currentValue) {
+      this.applyInitialData(changes['initialData'].currentValue);
     }
+  }
+
+  /** `trackBy` del `*ngFor`: sin esto, cada `fields` nuevo recrea el DOM y se pierde el foco. */
+  trackByName(_index: number, field: FieldConfig): string {
+    return field.name;
   }
 
   private initForm() {
     const group = this.fb.group({});
 
     this.fields.forEach(field => {
-      if (field.type === 'tip' || field.type === 'section-header') return;
-
-      const validators = this.getValidators(field);
-      const initialValue = this.initialData?.[field.name] ?? field.value ?? '';
-
-      if (field.disabled) {
-        group.addControl(field.name, this.fb.control({ value: initialValue, disabled: true }, validators));
-      } else {
-        group.addControl(field.name, this.fb.control(initialValue, validators));
-      }
+      if (NO_CONTROL_TYPES.includes(field.type)) return;
+      group.addControl(field.name, this.createControl(field));
     });
 
     this.form = group;
     this.form.markAsPristine();
+  }
+
+  private createControl(field: FieldConfig) {
+    const initialValue = this.initialData?.[field.name] ?? field.value ?? '';
+    return this.fb.control({ value: initialValue, disabled: !!field.disabled }, this.getValidators(field));
+  }
+
+  /**
+   * Reconciliación de controles cuando cambia `fields` después del primer render (típicamente
+   * `updateFormConfigOptions` al llegar un catálogo async). Antes se rehacía el `FormGroup`
+   * entero y se perdía lo tipeado —más el estado dirty/touched— mientras cargaban las opciones.
+   * Ahora se conserva el mismo grupo y los mismos controles: solo se agregan los de campos
+   * nuevos, se quitan los que ya no están y se actualizan validadores y `disabled`. Nada de
+   * esto cambia el valor ni marca dirty, así que `requireChanges` y el guard no se ven afectados.
+   */
+  private syncControls() {
+    const conControl = this.fields.filter((field) => !NO_CONTROL_TYPES.includes(field.type));
+    const nombres = new Set(conControl.map((field) => field.name));
+
+    Object.keys(this.form.controls)
+      .filter((nombre) => !nombres.has(nombre))
+      .forEach((nombre) => this.form.removeControl(nombre, { emitEvent: false }));
+
+    conControl.forEach((field) => {
+      const control = this.form.get(field.name);
+      if (!control) {
+        this.form.addControl(field.name, this.createControl(field), { emitEvent: false });
+        return;
+      }
+      control.setValidators(this.getValidators(field));
+      if (field.disabled && control.enabled) control.disable({ emitEvent: false });
+      if (!field.disabled && control.disabled) control.enable({ emitEvent: false });
+      control.updateValueAndValidity({ emitEvent: false });
+    });
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /**
+   * Precarga lo que trae `initialData` y deja pristine solo esos controles: un `initialData`
+   * parcial (p. ej. el padre preseleccionado en un alta) no debe borrar el dirty de lo que el
+   * usuario ya escribió en los demás campos.
+   */
+  private applyInitialData(data: Record<string, unknown>) {
+    this.form.patchValue(data);
+    Object.keys(data).forEach((nombre) => this.form.get(nombre)?.markAsPristine());
   }
 
   private getValidators(field: FieldConfig) {
