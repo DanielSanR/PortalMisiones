@@ -105,7 +105,7 @@ export class TiposOrganismoListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...this.estadoVacio(tipos.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -269,8 +269,9 @@ export class TiposOrganismoListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún tipo de organismo coincide con la búsqueda o el filtro aplicado.',

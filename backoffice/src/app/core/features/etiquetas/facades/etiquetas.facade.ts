@@ -1,13 +1,21 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, forkJoin, map, of, tap } from 'rxjs';
+import { AuthTokenService } from '@core/services/auth-token.service';
 import { OrganismoOption, OrganismosRepository } from '@features/organismos';
 import { EtiquetasRepository } from '../repositories/etiquetas.repository';
 import { EtiquetaFormData, EtiquetaFormValue, EtiquetaVM } from '../models/etiqueta.vm';
+
+/** Permiso que exige `GET /api/organism` (catálogo de nombres y select del form). */
+const LEER_ORGANISMOS = 'READ_ORGANISM';
 
 /**
  * Facade de Etiquetas (`/api/tag` real o mock según `featureOverrides`). Expone Observables
  * (async pipe; NO signals). Depende solo de repositorios; el cruce con organismos es vía su
  * Repository (patrón sancionado, igual que `UsuariosFacade`).
+ *
+ * Excepción documentada de sesión (`.claude/rules/arquitectura-capas.md`, igual que `AdopcionesFacade`):
+ * `AuthTokenService` se consulta SOLO para no pedir `/api/organism` sin `READ_ORGANISM` (hoy, solo SA lo
+ * tiene): el 403 abriría el diálogo global de error aunque acá se degrade a `[]`.
  */
 @Injectable({ providedIn: 'root' })
 export class EtiquetasFacade {
@@ -20,6 +28,7 @@ export class EtiquetasFacade {
   constructor(
     private etiquetas: EtiquetasRepository,
     private organismos: OrganismosRepository,
+    private auth: AuthTokenService,
   ) {}
 
   /** Carga la lista con el nombre de organismo ya resuelto y la publica en el stream. */
@@ -64,12 +73,16 @@ export class EtiquetasFacade {
   }
 
   /**
-   * Opciones de organismo, degradadas a `[]` si fallan (p. ej. el usuario no tiene
-   * `READ_ORGANISM`): la lista muestra "—" y el form sigue permitiendo etiquetas globales.
-   * Cachea los nombres para resolver `organismoNombre` sin volver a pedir el catálogo.
+   * Opciones de organismo. Sin `READ_ORGANISM` ni se piden (se consulta la sesión en cada llamada, no al
+   * construir: el facade es singleton y los permisos pueden cambiar); si fallan, degradan a `[]`. En
+   * ambos casos la lista muestra "—" y el form solo ofrece etiquetas globales (quien no puede crearlas
+   * no llega al alta: `CREAR_ETIQUETA_ACCESS`). Cachea los nombres para resolver `organismoNombre`.
    */
   private opcionesOrganismo(): Observable<OrganismoOption[]> {
-    return this.organismos.getOptions().pipe(
+    const opciones$ = this.auth.can(LEER_ORGANISMOS)
+      ? this.organismos.getOptions()
+      : of([] as OrganismoOption[]);
+    return opciones$.pipe(
       catchError(() => of([] as OrganismoOption[])),
       tap((opciones) => { this.nombresOrganismo = new Map(opciones.map((o) => [o.id, o.nombre])); }),
     );

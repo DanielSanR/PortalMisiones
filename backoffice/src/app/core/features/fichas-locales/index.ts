@@ -1,5 +1,6 @@
 /** Superficie pública del feature fichas por localidad (`OrganismProcedureLocation`, "OTL") y su workflow. */
 export { FichasLocalesFacade } from './facades/fichas-locales.facade';
+export type { ResolverAccionesWorkflow } from './facades/fichas-locales.facade';
 export type {
   EstadoFicha, FichaLocal, FichaLocalVM, FichaLocalFormValue, FichaFormData, FichaAdopcionResumen, FichaLocalidadOpcion,
 } from './models/ficha-local.vm';

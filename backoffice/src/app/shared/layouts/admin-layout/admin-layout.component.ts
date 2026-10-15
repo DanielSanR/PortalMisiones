@@ -177,6 +177,7 @@ export class AdminLayoutComponent implements OnInit {
       this.rolesActuales = [];
       this.accessibleGroups = [];
       this.recomputeNavGroups();
+      this.updateBreadcrumb();
       return;
     }
     // El JWT NO trae nombre/apellido (ver AuthUser): con el backend real quedaban vacíos
@@ -196,14 +197,22 @@ export class AdminLayoutComponent implements OnInit {
       .map((group) => ({ label: group.label, items: group.items.filter((item) => evaluateAccess(ctx, item.rule)) }))
       .filter((group) => group.items.length > 0);
     this.recomputeNavGroups();
+    // Los links del breadcrumb dependen de qué secciones ve el usuario.
+    this.updateBreadcrumb();
   }
 
-  /** Deriva `breadcrumbTrail` de la ruta hija más profunda (la que efectivamente resuelve `router-outlet`). */
+  /**
+   * Deriva `breadcrumbTrail` de la ruta hija más profunda (la que efectivamente resuelve `router-outlet`).
+   * Los links se resuelven contra las secciones que el usuario VE (`accessibleGroups`), no contra todo
+   * `NAV_ITEMS`: un tramo de una sección a la que no tiene acceso queda como texto, en vez de llevarlo a
+   * una ruta que el guard le rechaza.
+   */
   private updateBreadcrumb(): void {
     let route = this.activatedRoute.root;
     while (route.firstChild) route = route.firstChild;
     const declarado = route.snapshot.data['breadcrumb'] as BreadcrumbDeclarado[] | undefined;
-    this.breadcrumbTrail = resolverBreadcrumb(declarado, NAV_ITEMS);
+    const visibles = this.accessibleGroups.flatMap((group) => group.items);
+    this.breadcrumbTrail = resolverBreadcrumb(declarado, visibles);
     this.sectionIcon = this.resolveSectionIcon(this.breadcrumbTrail);
     this.cdr.markForCheck();
   }

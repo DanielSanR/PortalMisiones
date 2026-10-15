@@ -21,6 +21,14 @@ export class UsuariosFacade {
     private roles: RolesRepository
   ) {}
 
+  /**
+   * ¿Se pueden ofrecer "Cambiar email", "Cambiar contraseña" y "Eliminar definitivamente"? Lo decide
+   * la fuente de datos (sin que la pantalla sepa si es mock o real): hoy, solo el mock (BO-17).
+   */
+  get accionesDeCuentaDisponibles(): boolean {
+    return this.usuarios.soportaAccionesDeCuenta;
+  }
+
   /** Carga la lista y la publica en el stream de estado. */
   loadUsuarios(): Observable<UsuarioVM[]> {
     return this.usuarios.list().pipe(tap((list) => this._usuarios$.next(list)));

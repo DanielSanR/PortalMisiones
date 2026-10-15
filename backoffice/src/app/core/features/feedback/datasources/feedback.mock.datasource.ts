@@ -31,10 +31,12 @@ export class FeedbackMockDataSource extends FeedbackDataSource {
       filtrados = filtrados.filter((f) => f.esUtil === filter.esUtil);
     }
     if (filter.tramiteId) filtrados = filtrados.filter((f) => f.tramiteId === filter.tramiteId);
-    // Comparación de strings ISO contra `YYYY-MM-DD`, igual que el mock anterior.
+    // Rango de DÍAS inclusivo en ambos extremos: se compara el día (local) de cada opinión contra
+    // `YYYY-MM-DD`. Comparar el timestamp ISO completo dejaba afuera el día final
+    // ('2026-04-10T14:32:00Z' > '2026-04-10').
     const { fechaDesde, fechaHasta } = filter;
-    if (fechaDesde) filtrados = filtrados.filter((f) => f.fechaFeedback >= fechaDesde);
-    if (fechaHasta) filtrados = filtrados.filter((f) => f.fechaFeedback <= fechaHasta);
+    if (fechaDesde) filtrados = filtrados.filter((f) => diaLocal(f.fechaFeedback) >= fechaDesde);
+    if (fechaHasta) filtrados = filtrados.filter((f) => diaLocal(f.fechaFeedback) <= fechaHasta);
 
     filtrados.sort((a, b) => b.fechaFeedback.localeCompare(a.fechaFeedback));
 
@@ -56,4 +58,11 @@ export class FeedbackMockDataSource extends FeedbackDataSource {
     };
     return of(toFeedbackStatsVM(stats)).pipe(delay(DELAY));
   }
+}
+
+/** Día calendario local (`YYYY-MM-DD`) de un timestamp ISO, el mismo formato que mandan los filtros. */
+function diaLocal(iso: string): string {
+  const fecha = new Date(iso);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}`;
 }

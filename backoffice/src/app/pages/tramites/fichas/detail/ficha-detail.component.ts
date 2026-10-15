@@ -13,9 +13,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/co
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
-import { AuthTokenService } from '@core/services/auth-token.service';
-import { PUBLICACION_POLICY } from '@core/constants/policy-overrides.constants';
-import { AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade, accionesDisponibles } from '@features/fichas-locales';
+import { AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
 import { RUTA_DETALLE_ADOPCION } from '../../adopciones/adopciones.rutas';
 import { ACCIONES_UI, AccionUI, QUIEN_PUBLICA, confirmAccion, confirmDesactivar } from '../ficha-textos';
 import {
@@ -61,7 +59,6 @@ const AYUDA_ESTADO: Record<EstadoFicha, string> = {
 })
 export class FichaDetailComponent {
   private readonly facade = inject(FichasLocalesFacade);
-  private readonly auth = inject(AuthTokenService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
@@ -102,13 +99,10 @@ export class FichaDetailComponent {
   );
 
   /** Acciones del workflow para el estado actual y los permisos de la sesión (reactivo a ambos). */
-  readonly acciones$: Observable<AccionVista[]> = combineLatest([this.estado$, this.auth.getCurrentUser$()]).pipe(
-    map(([estado]) => estado.tipo !== 'ok'
+  readonly acciones$: Observable<AccionVista[]> = combineLatest([this.estado$, this.facade.accionesWorkflow$]).pipe(
+    map(([estado, accionesWorkflow]) => estado.tipo !== 'ok'
       ? []
-      : accionesDisponibles(estado.ficha.estado, (p) => this.auth.can(p), {
-        activa: estado.ficha.activa,
-        permitirEnviarYPublicar: PUBLICACION_POLICY.permitirEnviarYPublicar,
-      }).map((accion) => ({ accion, ui: ACCIONES_UI[accion] }))),
+      : accionesWorkflow(estado.ficha).map((accion) => ({ accion, ui: ACCIONES_UI[accion] }))),
   );
 
   /** Dirección pública de la ficha publicada (`null` si la fuente no tiene: mock). */

@@ -124,10 +124,8 @@ export class AdopcionesListComponent implements OnInit {
   ]).pipe(
     map(([adopciones, organismos, search, estado, organismoId, sort, pageIndex, pageSize]): AdopcionesVista => {
       const filtradas = this.ordenar(
-        adopciones
-          .filter((a) => !estado || a.estadoVigencia === estado)
-          .filter((a) => !organismoId || a.organismoId === organismoId)
-          .filter((a) => buscarEn([a], search, (x) => [x.plantillaTitulo ?? '', x.organismoNombre ?? '']).length > 0),
+        buscarEn(adopciones, search, (x) => [x.plantillaTitulo, x.organismoNombre])
+          .filter((a) => (!estado || a.estadoVigencia === estado) && (!organismoId || a.organismoId === organismoId)),
         sort,
       );
       // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de mostrar
@@ -144,7 +142,8 @@ export class AdopcionesListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...(adopciones.length > 0 && hayFiltros
+        // Con filtros activos el CTA siempre limpia (aunque no haya adopciones); "Adoptar" solo sin filtros.
+        ...(hayFiltros
           ? {
             emptyTitle: 'Sin resultados',
             emptyMessage: 'Ningún trámite coincide con la búsqueda o los filtros aplicados.',
@@ -189,6 +188,9 @@ export class AdopcionesListComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((organismos) => {
         const elegido = this.organismoCtrl.value;
+        // Mientras recarga la lista está vacía (`loadAdopciones` la vacía al empezar): no es que el
+        // organismo haya desaparecido. Igual que en `fichas-list`.
+        if (this.loading || !organismos.length) return;
         if (elegido && !organismos.some((o) => o.id === elegido)) this.organismoCtrl.setValue('');
       });
   }

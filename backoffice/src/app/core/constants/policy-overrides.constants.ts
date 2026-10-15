@@ -69,6 +69,26 @@ export const ADOPTAR_ACCESS: AccessRule = {
 };
 
 /**
+ * "Nueva etiqueta" (`POST /api/tag` → `CREATE_TAG`; seed: SA, AB, AO, AGENT). El backend acota el
+ * alcance: SA/AB crean globales o locales de cualquier organismo; el resto (AO/AGENT) solo locales de
+ * SU organismo (global u otro organismo → `4073`). El form solo puede ofrecer un organismo con el select
+ * (`GET /api/organism` → `READ_ORGANISM`), y la sesión no trae el organismo del usuario (BO-20/G-2).
+ * Así, quien no es SA/AB ni tiene `READ_ORGANISM` no tiene ningún alcance válido para elegir: se le
+ * oculta "Crear" (botón del header, CTA del vacío, ruta `etiquetas/nuevo` y buscador de comandos).
+ * Listar, editar y borrar sus etiquetas locales siguen con `READ_TAG`/`UPDATE_TAG`/`DELETE_TAG`.
+ *
+ * TODO(BO-20): cuando `/api/auth/me` traiga el organismo del usuario, el form lo preselecciona como
+ * alcance local y esta regla vuelve a ser solo `{ permissions: ['CREATE_TAG'] }`.
+ */
+export const CREAR_ETIQUETA_ACCESS: AccessRule = {
+  permissions: ['CREATE_TAG'],
+  anyOf: [
+    { permissions: ['READ_ORGANISM'] },
+    { requireRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE] },
+  ],
+};
+
+/**
  * "Agregar localidad" / alta de ficha por localidad (`POST /api/organism-procedure-location` →
  * `CREATE_VARIANT`). La ficha cuelga de una adopción: el form la lee (`GET /api/organism-procedure/{id}`
  * → `READ_ADOPTION`) para mostrar el trámite y sugerir el slug (P-5). Hoy: SA y AO (AGENT no crea).

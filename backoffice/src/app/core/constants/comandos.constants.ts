@@ -1,6 +1,6 @@
 import { AccessRule } from '../models/access-rule.model';
 import { UserRole } from '../enums/user-role.enum';
-import { ADOPTAR_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
+import { ADOPTAR_ACCESS, CREAR_ETIQUETA_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
 
 /**
  * Comando del buscador del shell: una acción a la que se llega escribiendo, sin
@@ -96,7 +96,7 @@ export const COMANDOS: Comando[] = [
     icon: 'bookmark-simple',
     keywords: ['nueva', 'alta', 'agregar', 'etiqueta', 'tag'],
     route: '/dashboard/etiquetas/nuevo',
-    rule: { permissions: ['CREATE_TAG'] },
+    rule: CREAR_ETIQUETA_ACCESS,
   },
   {
     label: 'Crear destinatario',

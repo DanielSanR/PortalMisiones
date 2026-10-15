@@ -11,6 +11,11 @@ import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 export class UsuariosRepository {
   constructor(@Inject(USUARIOS_DS) private ds: UsuariosDataSource) {}
 
+  /** Ver `UsuariosDataSource.soportaAccionesDeCuenta`. */
+  get soportaAccionesDeCuenta(): boolean {
+    return this.ds.soportaAccionesDeCuenta;
+  }
+
   list(): Observable<UsuarioVM[]> {
     return this.ds.list();
   }

@@ -29,6 +29,10 @@ const ACCION_COLORS: Record<AuditoriaAccion, string> = {
   eliminar: '#B71C1C',
 };
 
+/**
+ * Etiqueta / ícono / color de una acción de auditoría. Vive en `pages/auditoria` (no en `shared`)
+ * porque depende del modelo del feature: `shared` no debe importar de `@features/*`.
+ */
 @Pipe({ name: 'accionLabel', standalone: true })
 export class AccionLabelPipe implements PipeTransform {
   transform(accion: AuditoriaAccion, format: 'label' | 'icon' | 'color' = 'label'): string {

@@ -107,7 +107,7 @@ export class EventosDeVidaListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...this.estadoVacio(eventos.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -261,8 +261,9 @@ export class EventosDeVidaListComponent implements OnInit {
     return termino ? [{ clave: 'search', etiqueta: `Búsqueda: ${termino}` }] : [];
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún evento de vida coincide con la búsqueda aplicada.',

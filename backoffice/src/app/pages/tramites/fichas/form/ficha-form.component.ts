@@ -63,6 +63,9 @@ type CampoConResumen = 'localidadId' | 'slug' | 'url' | 'activa';
  * - Slug sugerido `slugBase-localidad` y editable (P-5), validado contra los demás slugs activos.
  * - Sin estado: guardar NUNCA cambia el estado de publicación (R-1); eso es del workflow, en el detalle.
  * - Editar una ficha PUBLICADA cambia el portal al guardar (P-6): se avisa.
+ * - Una ficha PUBLICADA (y activa) no se desactiva desde acá: el toggle "Activa" queda bloqueado y remite
+ *   a "Desactivar" del detalle. Ese camino (DELETE) además la despublica; el PUT del form copia el estado
+ *   (R-1) y la dejaría inactiva pero PUBLICADO. Así "Guardar no cambia el estado" sigue siendo cierto.
  * - Con el response mínimo del backend (G-1) la ficha no se puede editar: el PUT total borraría
  *   requisitos, costos y URL. Se muestra un panel en vez del form.
  *
@@ -154,6 +157,11 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
     return !!this.ficha && this.ficha.estado === 'PUBLICADO' && this.ficha.activa;
   }
 
+  /** Publicada y activa: el toggle "Activa" se bloquea y remite a "Desactivar" (que también despublica). */
+  get desactivarSoloDesdeDetalle(): boolean {
+    return this.editaPublicada;
+  }
+
   ngOnInit(): void {
     this.editId = this.route.snapshot.params['id'] ?? null;
     this.isEdit = !!this.editId;
@@ -209,6 +217,8 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
               activa: datos.ficha.activa,
             });
             this.form.controls.localidadId.disable();
+            // Ver la nota de la clase: desactivar una publicada es la acción "Desactivar" del detalle.
+            if (this.desactivarSoloDesdeDetalle) this.form.controls.activa.disable();
           }
           // Los validadores de duplicados leen `datos`, que recién llegó: se re-ejecutan en cada control.
           for (const control of [this.form.controls.localidadId, this.form.controls.slug, this.form.controls.activa]) {

@@ -22,7 +22,10 @@ export interface BreadcrumbItem {
   link: string | null;
 }
 
-/** Lo mínimo del nav que hace falta para resolver los links por label. */
+/**
+ * Lo mínimo del nav que hace falta para resolver los links por label. Pasar SOLO las secciones visibles
+ * para el usuario: un label sin sección visible queda sin link (no se enlaza a algo que el guard rechaza).
+ */
 export interface SeccionNav {
   label: string;
   route: string;

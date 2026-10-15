@@ -165,7 +165,7 @@ export class PermisosListComponent implements OnInit {
         filtrosActivos,
         tabs: this.tabsDeAccion(porRecurso),
         recursos: this.recursosDe(filas),
-        ...this.estadoVacio(filas.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -413,8 +413,9 @@ export class PermisosListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún permiso coincide con la búsqueda o los filtros aplicados.',

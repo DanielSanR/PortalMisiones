@@ -183,6 +183,12 @@
             Esta localidad ya tiene otra ficha activa de este trámite: no se puede reactivar esta.
           </p>
         }
+        @if (desactivarSoloDesdeDetalle) {
+          <p class="fichaform-activa__aviso">
+            <i class="ph ph-info" aria-hidden="true"></i>
+            Está publicada: para desactivarla usá "Desactivar" en el detalle de la ficha, que además la quita del portal.
+          </p>
+        }
         @if (!form.controls.activa.value) {
           <p class="fichaform-activa__aviso">
             <i class="ph ph-info" aria-hidden="true"></i>

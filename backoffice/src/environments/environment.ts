@@ -17,7 +17,8 @@ export const environment = {
   // Override por feature. Lo bloqueado por backend (API spec §7) se mantiene en 'mock'.
   featureOverrides: {
     // Usuarios: híbrido. El datasource HTTP hace POST /api/user REAL (create) y delega
-    // listado/edición al mock (el backend no expone GET /api/user ni update genérico).
+    // listado/edición al mock (el backend no expone GET /api/user ni update genérico, BO-17).
+    // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.
     usuarios: 'local',
     // Trámites reales (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
     // plantillas: /api/procedure-template real → hereda default real (fase 1).

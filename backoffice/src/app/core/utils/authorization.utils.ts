@@ -23,7 +23,7 @@ export function canPerform(ctx: AuthzContext, permission: string): boolean {
   return permisosOk && rolesOk;
 }
 
-/** Evalúa una `AccessRule` (permiso primario + escape por rol). Sin regla = permitido. */
+/** Evalúa una `AccessRule` (permiso primario + escape por rol + alternativas `anyOf`). Sin regla = permitido. */
 export function evaluateAccess(ctx: AuthzContext, rule: AccessRule | undefined): boolean {
   if (!rule) return true;
   const perms = rule.permissions ?? [];
@@ -34,7 +34,8 @@ export function evaluateAccess(ctx: AuthzContext, rule: AccessRule | undefined):
         ? perms.every((p) => canPerform(ctx, p))
         : perms.some((p) => canPerform(ctx, p));
   const roleOk = !rule.requireRoles?.length || rule.requireRoles.some((r) => ctx.roles.includes(r));
-  return permOk && roleOk;
+  const alternativasOk = !rule.anyOf?.length || rule.anyOf.some((alt) => evaluateAccess(ctx, alt));
+  return permOk && roleOk && alternativasOk;
 }
 
 /**

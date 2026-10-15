@@ -1,5 +1,5 @@
 <ng-template appPageActions>
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_TAG'">
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="crearAccess">
     <i class="ph ph-plus" aria-hidden="true"></i> Nueva etiqueta
   </button>
 </ng-template>
@@ -60,7 +60,7 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
-    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_TAG'"
+    [emptyActionPermission]="vista.hayFiltros ? '' : crearAccess"
     [emptyActionLabel]="vista.emptyActionLabel"
     [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
     (emptyAction)="onEmptyAction()"

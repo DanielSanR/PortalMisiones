@@ -17,6 +17,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { buscarEn } from '@core/utils/list-filter.utils';
 import { FilterTabOption } from '../../../shared/components/filter-tabs';
+import { CREAR_ETIQUETA_ACCESS } from '@core/constants/policy-overrides.constants';
 import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
@@ -84,6 +85,8 @@ interface EtiquetasVista extends EstadoVacio {
 export class EtiquetasListComponent implements OnInit {
   private readonly facade = inject(EtiquetasFacade);
   readonly etiquetas$ = this.facade.etiquetas$;
+  /** "Nueva etiqueta" (botón y CTA del vacío): solo quien puede elegir un alcance válido (BO-20). */
+  readonly crearAccess = CREAR_ETIQUETA_ACCESS;
 
   loading = true;
   /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
@@ -129,7 +132,7 @@ export class EtiquetasListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...this.estadoVacio(etiquetas.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -291,8 +294,9 @@ export class EtiquetasListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ninguna etiqueta coincide con la búsqueda o el filtro aplicado.',

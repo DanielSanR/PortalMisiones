@@ -9,6 +9,9 @@ import { UserRole } from '@core/enums/user-role.enum';
 /** Implementación mock: envuelve el `UsuarioService` (mockApiInterceptor) y mapea a VM. */
 @Injectable()
 export class UsuariosMockDataSource extends UsuariosDataSource {
+  /** El mock simula las acciones de cuenta (dev/QA). */
+  readonly soportaAccionesDeCuenta = true;
+
   constructor(private usuarios: UsuarioService) {
     super();
   }

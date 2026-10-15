@@ -5,6 +5,7 @@ import {
   shareReplay, skip, switchMap, tap,
 } from 'rxjs';
 import { AuthTokenService } from '@core/services/auth-token.service';
+import { PUBLICACION_POLICY } from '@core/constants/policy-overrides.constants';
 import { canonicalizarSlug } from '@core/utils/slug.utils';
 import { Adopcion, AdopcionesRepository } from '@features/adopciones';
 import { PlantillasRepository } from '@features/plantillas';
@@ -14,12 +15,17 @@ import { FichasLocalesRepository } from '../repositories/fichas-locales.reposito
 import {
   FichaAdopcionResumen, FichaFormData, FichaLocal, FichaLocalFormValue, FichaLocalVM,
 } from '../models/ficha-local.vm';
-import { AccionWorkflow, TRANSICIONES_DE_ACCION } from '../models/workflow';
+import { AccionWorkflow, TRANSICIONES_DE_ACCION, accionesDisponibles } from '../models/workflow';
 
 /** Permisos que exige leer cada catálogo de nombres en el backend. Las localidades son públicas. */
 const LEER_ADOPCIONES = 'READ_ADOPTION';
 const LEER_PLANTILLAS = 'READ_PROCEDURE';
 const LEER_ORGANISMOS = 'READ_ORGANISM';
+/** Permiso de publicar/despublicar (D-3: decide el permiso, nunca el rol). */
+const PUBLICAR = 'PUBLISH_VARIANT';
+
+/** Acciones de workflow que se ofrecen para una ficha con la sesión vigente. */
+export type ResolverAccionesWorkflow = (ficha: Pick<FichaLocalVM, 'estado' | 'activa'>) => AccionWorkflow[];
 
 interface PlantillaNombre {
   titulo: string;
@@ -55,12 +61,26 @@ interface Lectura<T> {
  *
  * Con el response real de hoy (G-1) la ficha no trae adopción ni localidad: todos los nombres quedan
  * en `null` y el form no deja editar (`contenidoCompleto = false`).
+ *
+ * También deriva de la sesión, como Observables, lo que el workflow ofrece (`puedePublicar$`,
+ * `accionesWorkflow$`): así las pantallas consumen solo este facade y no inyectan `AuthTokenService`.
+ * La regla es `accionesDisponibles` (permiso, nunca rol: D-3) + `PUBLICACION_POLICY`; el permiso de
+ * cada acción lo vuelve a exigir el backend.
  */
 @Injectable({ providedIn: 'root' })
 export class FichasLocalesFacade {
   private readonly _fichas$ = new BehaviorSubject<FichaLocalVM[]>([]);
   /** Todas las fichas del alcance, activas e inactivas (el backend lista las dos). */
   readonly fichas$ = this._fichas$.asObservable();
+
+  /** ¿Puede publicar (`PUBLISH_VARIANT`)? Reactivo a la sesión: la bandeja "En revisión" es suya. */
+  readonly puedePublicar$: Observable<boolean>;
+
+  /**
+   * Resolver de las acciones de workflow de una ficha según estado, `activa` y permisos. Se re-emite en
+   * cada cambio de sesión (otro usuario, refresh de token con otros permisos), para que la UI se redibuje.
+   */
+  readonly accionesWorkflow$: Observable<ResolverAccionesWorkflow>;
 
   private contextoCache$: Observable<Contexto> | null = null;
   /** Permisos con los que se armó la caché: si la sesión cambia (otro rol, refresh), se rearma. */
@@ -78,6 +98,17 @@ export class FichasLocalesFacade {
     private localidades: LocalidadesRepository,
     private auth: AuthTokenService,
   ) {
+    this.puedePublicar$ = this.auth.getCurrentUser$().pipe(
+      map(() => this.auth.can(PUBLICAR)),
+      distinctUntilChanged(),
+    );
+    this.accionesWorkflow$ = this.auth.getCurrentUser$().pipe(
+      map((): ResolverAccionesWorkflow => (ficha) => accionesDisponibles(ficha.estado, (p) => this.auth.can(p), {
+        activa: ficha.activa,
+        permitirEnviarYPublicar: PUBLICACION_POLICY.permitirEnviarYPublicar,
+      })),
+    );
+
     // Cambio de sesión (logout/login, otro usuario): nada de lo leído con la sesión anterior sirve.
     // Singleton `root`: la suscripción vive lo mismo que la app.
     this.auth.getCurrentUser$()
@@ -168,10 +199,22 @@ export class FichasLocalesFacade {
    * Edición (PUT total). Antes de guardar se relee la ficha para mandar su estado ACTUAL en
    * `publicationStatus` (mitiga R-1, y evita que una edición con datos viejos revierta una
    * publicación o despublicación hecha mientras tanto). El estado nunca lo elige el usuario.
+   *
+   * Desactivar una ficha PUBLICADA va por el mismo camino que "Desactivar" (`DELETE`, que además la
+   * despublica): un PUT con `active=false` la dejaría inactiva pero `PUBLICADO`. El form ya no lo
+   * ofrece; esto cubre que se haya publicado mientras se editaba.
    */
   update(id: string, form: FichaLocalFormValue): Observable<FichaLocalVM> {
     return this.fichas.getById(id).pipe(
-      switchMap((actual) => this.fichas.update(id, form, actual.estado)),
+      switchMap((actual) => {
+        if (!(actual.estado === 'PUBLICADO' && actual.activa && !form.activa)) {
+          return this.fichas.update(id, form, actual.estado);
+        }
+        return this.fichas.update(id, { ...form, activa: true }, actual.estado).pipe(
+          switchMap(() => this.fichas.desactivar(id)),
+          switchMap(() => this.fichas.getById(id)),
+        );
+      }),
       switchMap((ficha) => this.aVM(ficha)),
       tap((actualizada) => this.reemplazar(actualizada)),
     );

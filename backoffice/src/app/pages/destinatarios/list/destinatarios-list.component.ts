@@ -107,7 +107,7 @@ export class DestinatariosListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...this.estadoVacio(destinatarios.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -259,8 +259,9 @@ export class DestinatariosListComponent implements OnInit {
     return termino ? [{ clave: 'search', etiqueta: `Búsqueda: ${termino}` }] : [];
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún destinatario coincide con la búsqueda aplicada.',

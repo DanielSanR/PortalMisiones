@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, throwError } from 'rxjs';
 import { environment } from '@env/environment';
 import { ResponseDTO } from '@core/models/api-response.model';
 import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
@@ -14,11 +14,16 @@ import { UserRole } from '@core/enums/user-role.enum';
 /**
  * DataSource híbrido de usuarios (backend parcial, BACKEND_API_SPEC.md §3 + §7):
  *  - `create` → REAL `POST /api/user` (el form provee el UUID del rol y profileDto).
- *  - `list`/`getById`/`update`/`toggleActive` → MOCK (el backend no expone `GET /api/user`
+ *  - `list`/`getById`/`update` → MOCK (el backend no expone `GET /api/user`
  *    ni update genérico). Cuando el backend los exponga, se reemplazan por HTTP real.
+ *  - `toggleActive`/`changePassword`/`changeEmail`/`deleteDefinitive` → NO DISPONIBLES (`soportaAccionesDeCuenta =
+ *    false`, la lista no las ofrece). Ver el bloque al final.
  */
 @Injectable()
 export class UsuariosHttpDataSource extends UsuariosDataSource {
+  /** Hasta BO-17 (`GET /api/user`): ver `accionDeCuentaNoDisponible`. */
+  readonly soportaAccionesDeCuenta = false;
+
   private readonly apiUrl = `${environment.apiBaseUrl}/api/user`;
 
   constructor(
@@ -62,8 +67,8 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
       .pipe(map(mockUsuarioToVM));
   }
 
-  toggleActive(id: string): Observable<UsuarioVM> {
-    return this.usuariosMock.toggleActive(id).pipe(map(mockUsuarioToVM));
+  toggleActive(_id: string): Observable<UsuarioVM> {
+    return accionDeCuentaNoDisponible('cambiar el estado de la cuenta');
   }
 
   /** REAL: PUT /api/user/{id}/status-account. */
@@ -77,20 +82,29 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
       .pipe(map(() => void 0));
   }
 
-  // ── Operaciones por fila: el backend las expone (change-password, change-email, DELETE /admin),
-  // pero mientras el listado sea mock los ids de las filas no existen en el backend y cada llamada
-  // real daría 404. Van al mock, igual que `toggleActive`. Al exponerse `GET /api/user`, se pasan a
-  // HTTP real con los DTOs de `usuario.dto.ts` y `sinDialogoGlobal()`.
-  // La contraseña no vive en el mock: basta con validar que el usuario exista.
-  changePassword(id: string, _newPassword: string): Observable<void> {
-    return this.usuariosMock.getById(id).pipe(map(() => void 0));
+  // ── Acciones de cuenta por fila: el backend las expone (change-password, change-email,
+  // DELETE /admin), pero mientras el listado sea mock (sin `GET /api/user`, BO-17) los ids de las filas
+  // no existen en el backend y cada llamada real daría 404. Antes iban al mock y reportaban éxito sin
+  // tocar el backend, lo que es peligroso (un admin cree que reseteó una contraseña comprometida). Ahora
+  // no se ofrecen (`soportaAccionesDeCuenta = false`) y, si igual se llaman, fallan explícitamente.
+  // Al exponerse `GET /api/user`: HTTP real con los DTOs de `usuario.dto.ts` + `sinDialogoGlobal()`,
+  // y `soportaAccionesDeCuenta = true`.
+  changePassword(_id: string, _newPassword: string): Observable<void> {
+    return accionDeCuentaNoDisponible('cambiar la contraseña');
   }
 
-  changeEmail(id: string, newEmail: string): Observable<void> {
-    return this.usuariosMock.changeEmail(id, newEmail.toLowerCase()).pipe(map(() => void 0));
+  changeEmail(_id: string, _newEmail: string): Observable<void> {
+    return accionDeCuentaNoDisponible('cambiar el email');
   }
 
-  deleteDefinitive(id: string): Observable<void> {
-    return this.usuariosMock.delete(id);
+  deleteDefinitive(_id: string): Observable<void> {
+    return accionDeCuentaNoDisponible('eliminar el usuario');
   }
+}
+
+/** Error explícito (nunca un éxito falso) para una acción de cuenta sin backend utilizable (BO-17). */
+function accionDeCuentaNoDisponible(accion: string): Observable<never> {
+  return throwError(() => new Error(
+    `No se puede ${accion} todavía: el listado de usuarios no viene del servidor (falta GET /api/user, BO-17).`,
+  ));
 }

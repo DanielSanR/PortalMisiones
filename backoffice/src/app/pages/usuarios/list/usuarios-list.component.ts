@@ -124,7 +124,7 @@ export class UsuariosListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...this.estadoVacio(usuarios.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -244,20 +244,25 @@ export class UsuariosListComponent implements OnInit {
   /**
    * Menú de la fila. El orden va de lo cotidiano a lo irreversible: credenciales, estado de la
    * cuenta y, al final, el borrado definitivo (el componente agrupa las `danger` detrás de un divisor).
+   * Credenciales, estado de la cuenta y borrado solo si la fuente los soporta
+   * (`accionesDeCuentaDisponibles`): si no, se ocultan en vez de simular un éxito que no ocurrió en el servidor.
    */
   accionesDe(usuario: UsuarioVM): RowAction[] {
     const nombre = this.nombreCompleto(usuario);
-    const acciones: RowAction[] = [
-      {
+    const deCuenta = this.facade.accionesDeCuentaDisponibles;
+    const acciones: RowAction[] = [];
+
+    if (deCuenta) {
+      acciones.push({
         label: 'Cambiar email',
         icon: 'envelope-simple',
         permission: 'UPDATE_USER',
         ariaLabel: `Cambiar el email de ${nombre}`,
         run: () => this.abrirCredencial(usuario, 'email'),
-      },
-    ];
+      });
+    }
 
-    if (!ROLES_CON_PASSWORD_PROTEGIDA.includes(usuario.rol)) {
+    if (deCuenta && !ROLES_CON_PASSWORD_PROTEGIDA.includes(usuario.rol)) {
       acciones.push({
         label: 'Cambiar contraseña',
         icon: 'key',
@@ -270,6 +275,10 @@ export class UsuariosListComponent implements OnInit {
     // Sobre la propia cuenta no se ofrece quitarse el acceso ni borrarse: no hay vuelta atrás
     // desde el panel y dejaría la sesión actual sin usuario.
     if (this.esMiCuenta(usuario)) return acciones;
+
+    // Activar/Desactivar también depende de la fuente: con el listado mock, la fuente real no puede
+    // cambiar el estado de una cuenta del servidor (los ids no existen allá) y un éxito sería falso.
+    if (!deCuenta) return acciones;
 
     acciones.push(
       usuario.activo
@@ -288,15 +297,15 @@ export class UsuariosListComponent implements OnInit {
             ariaLabel: `Activar la cuenta de ${nombre}`,
             run: () => this.onActivar(usuario),
           },
-      {
-        label: 'Eliminar definitivamente',
-        icon: 'trash',
-        permission: 'DELETE_USER',
-        danger: true,
-        ariaLabel: `Eliminar definitivamente a ${nombre}`,
-        run: () => this.onEliminar(usuario),
-      },
     );
+    acciones.push({
+      label: 'Eliminar definitivamente',
+      icon: 'trash',
+      permission: 'DELETE_USER',
+      danger: true,
+      ariaLabel: `Eliminar definitivamente a ${nombre}`,
+      run: () => this.onEliminar(usuario),
+    });
     return acciones;
   }
 
@@ -455,8 +464,9 @@ export class UsuariosListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún usuario coincide con la búsqueda o el filtro aplicado.',

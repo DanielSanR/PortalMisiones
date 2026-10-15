@@ -199,7 +199,7 @@ export class CategoriasListComponent implements OnInit {
         total,
         etiquetaTotal: q ? (total === 1 ? 'resultado' : 'resultados') : 'categorías',
         filtrosActivos,
-        ...this.estadoVacio(roots.length, filtrosActivos.length > 0, !!q),
+        ...this.estadoVacio(filtrosActivos.length > 0, !!q),
       };
     }),
   );
@@ -364,8 +364,9 @@ export class CategoriasListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(totalRaices: number, hayFiltros: boolean, hayBusqueda: boolean): EstadoVacio {
-    if (totalRaices > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean, hayBusqueda: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque no haya categorías): "Nueva…" solo sin filtros.
+    if (hayFiltros) {
       return {
         vacioTitulo: 'Sin resultados',
         vacioTexto: 'Ninguna categoría coincide con la búsqueda o el filtro aplicado. Probá con otro término o mirá la jerarquía completa.',

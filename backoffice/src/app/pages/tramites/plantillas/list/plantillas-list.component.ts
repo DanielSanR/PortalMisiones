@@ -111,10 +111,9 @@ export class PlantillasListComponent implements OnInit {
   ]).pipe(
     map(([plantillas, opciones, search, categoriaId, modalidadId, sort, pageIndex, pageSize]): PlantillasVista => {
       const filtradas = this.ordenar(
-        plantillas
-          .filter((p) => !categoriaId || p.categoriaPrincipal?.id === categoriaId || p.categorias.some((c) => c.id === categoriaId))
-          .filter((p) => !modalidadId || p.modalidad?.id === modalidadId)
-          .filter((p) => buscarEn([p], search, (x) => [x.titulo, x.slug]).length > 0),
+        buscarEn(plantillas, search, (x) => [x.titulo, x.slug])
+          .filter((p) => (!categoriaId || p.categoriaPrincipal?.id === categoriaId || p.categorias.some((c) => c.id === categoriaId))
+            && (!modalidadId || p.modalidad?.id === modalidadId)),
         sort,
       );
       // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de mostrar
@@ -131,7 +130,8 @@ export class PlantillasListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...(plantillas.length > 0 && hayFiltros
+        // Con filtros activos el CTA siempre limpia (aunque no haya plantillas); "Nueva" solo sin filtros.
+        ...(hayFiltros
           ? {
             emptyTitle: 'Sin resultados',
             emptyMessage: 'Ninguna plantilla coincide con la búsqueda o los filtros aplicados.',

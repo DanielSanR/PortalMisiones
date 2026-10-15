@@ -19,11 +19,11 @@ import { ListSearchComponent } from '../../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../../shared/components/active-filters';
 import { FilterTabOption, FilterTabsComponent } from '../../../../shared/components/filter-tabs';
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
-import { AuthTokenService } from '@core/services/auth-token.service';
-import { PUBLICACION_POLICY } from '@core/constants/policy-overrides.constants';
 import { ESTADOS_PUBLICACION, ETIQUETA_ESTADO_PUBLICACION } from '@core/models/estado-publicacion.model';
 import { buscarEn } from '@core/utils/list-filter.utils';
-import { AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade, accionesDisponibles } from '@features/fichas-locales';
+import {
+  AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade, ResolverAccionesWorkflow,
+} from '@features/fichas-locales';
 import { ACCIONES_UI, confirmAccion, confirmDesactivar, nombreDeFicha } from '../ficha-textos';
 import { NO_DISPONIBLE } from '../ficha-save-error';
 import { RUTA_DETALLE_FICHA, RUTA_EDITAR_FICHA } from '../fichas.rutas';
@@ -46,6 +46,8 @@ interface FichasVista {
   filtrosActivos: FiltroActivo[];
   emptyTitle: string;
   emptyMessage: string;
+  /** Acciones de workflow con la sesión vigente (del facade): las lee el menú de cada fila. */
+  accionesWorkflow: ResolverAccionesWorkflow;
 }
 
 /**
@@ -56,7 +58,7 @@ interface FichasVista {
  * - Tab "En revisión" (bandeja de publicación): solo con `PUBLISH_VARIANT`, con el contador de las
  *   activas pendientes. El nav no soporta badges: el contador vive acá.
  * - Las desactivadas (el backend las lista) se ocultan salvo con "Mostrar desactivadas".
- * - Las acciones de workflow de cada fila salen de `accionesDisponibles` (permiso, nunca rol: D-3).
+ * - Las acciones de workflow de cada fila salen de `accionesWorkflow$` del facade (permiso, nunca rol: D-3).
  * - Las fichas no se crean desde acá: cuelgan de un trámite del organismo ("Agregar localidad").
  */
 @Component({
@@ -85,7 +87,6 @@ interface FichasVista {
 })
 export class FichasListComponent implements OnInit {
   private readonly facade = inject(FichasLocalesFacade);
-  private readonly auth = inject(AuthTokenService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
@@ -115,10 +116,7 @@ export class FichasListComponent implements OnInit {
   readonly pageSize$ = new BehaviorSubject<number>(10);
 
   /** Reactivo a la sesión: la bandeja "En revisión" es de quien puede publicar (`PUBLISH_VARIANT`). */
-  readonly puedePublicar$: Observable<boolean> = this.auth.getCurrentUser$().pipe(
-    map(() => this.auth.can('PUBLISH_VARIANT')),
-    distinctUntilChanged(),
-  );
+  readonly puedePublicar$: Observable<boolean> = this.facade.puedePublicar$;
 
   private readonly search$ = this.searchCtrl.valueChanges.pipe(
     debounceTime(200),
@@ -150,16 +148,17 @@ export class FichasListComponent implements OnInit {
 
   readonly vista$: Observable<FichasVista> = combineLatest([
     this.fichas$, this.localidades$, this.tabEfectiva$, this.search$, this.estado$, this.localidad$, this.inactivas$,
-    this.sort$, this.pageIndex$, this.pageSize$,
+    this.sort$, this.pageIndex$, this.pageSize$, this.facade.accionesWorkflow$,
   ]).pipe(
-    map(([fichas, localidades, tab, search, estado, localidadId, inactivas, sort, pageIndex, pageSize]): FichasVista => {
+    map(([
+      fichas, localidades, tab, search, estado, localidadId, inactivas, sort, pageIndex, pageSize, accionesWorkflow,
+    ]): FichasVista => {
+      const buscadas = buscarEn(fichas, search, (x) => [x.plantillaTitulo, x.organismoNombre, x.localidadNombre, x.slug]);
       const filtradas = this.ordenar(
-        fichas
-          .filter((f) => inactivas || f.activa)
-          .filter((f) => tab !== 'revision' || (f.activa && f.estado === 'EN_REVISION'))
-          .filter((f) => !estado || f.estado === estado)
-          .filter((f) => !localidadId || f.localidadId === localidadId)
-          .filter((f) => buscarEn([f], search, (x) => [x.plantillaTitulo, x.organismoNombre, x.localidadNombre, x.slug]).length > 0),
+        buscadas.filter((f) => (inactivas || f.activa)
+          && (tab !== 'revision' || (f.activa && f.estado === 'EN_REVISION'))
+          && (!estado || f.estado === estado)
+          && (!localidadId || f.localidadId === localidadId)),
         sort,
       );
       // Al filtrar, la página actual puede quedar fuera de rango: se acota.
@@ -176,6 +175,7 @@ export class FichasListComponent implements OnInit {
         hayFiltros,
         filtrosActivos,
         ...this.textosVacio(fichas.length > 0, hayFiltros, tab),
+        accionesWorkflow,
       };
     }),
   );
@@ -267,11 +267,8 @@ export class FichasListComponent implements OnInit {
    * Menú de la fila: editar, las acciones de workflow que correspondan al estado y desactivar. El
    * permiso lo vuelve a filtrar `app-row-actions` (y se recalcula en cada detección de cambios).
    */
-  accionesDe(ficha: FichaLocalVM): RowAction[] {
-    const workflow = accionesDisponibles(ficha.estado, (p) => this.auth.can(p), {
-      activa: ficha.activa,
-      permitirEnviarYPublicar: PUBLICACION_POLICY.permitirEnviarYPublicar,
-    }).map((accion): RowAction => ({
+  accionesDe(ficha: FichaLocalVM, accionesWorkflow: ResolverAccionesWorkflow): RowAction[] {
+    const workflow = accionesWorkflow(ficha).map((accion): RowAction => ({
       label: ACCIONES_UI[accion].label,
       icon: ACCIONES_UI[accion].icon,
       danger: ACCIONES_UI[accion].danger,
@@ -331,7 +328,8 @@ export class FichasListComponent implements OnInit {
   }
 
   private textosVacio(hayFichas: boolean, hayFiltros: boolean, tab: Tab): { emptyTitle: string; emptyMessage: string } {
-    if (hayFichas && hayFiltros) {
+    // Con filtros activos, "Sin resultados" aunque no haya fichas: el CTA es "Limpiar filtros".
+    if (hayFiltros) {
       return { emptyTitle: 'Sin resultados', emptyMessage: 'Ninguna ficha coincide con la búsqueda o los filtros aplicados.' };
     }
     if (hayFichas && tab === 'revision') {

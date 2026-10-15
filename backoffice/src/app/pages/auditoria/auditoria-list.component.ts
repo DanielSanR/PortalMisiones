@@ -10,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '@shared/components/table';
 import { FilterTabsComponent } from '@shared/components/filter-tabs';
-import { AccionLabelPipe } from '@shared/pipes/accion-label.pipe';
+import { AccionLabelPipe } from './accion-label.pipe';
 import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { AuditoriaAccion, AuditoriaFacade, AuditoriaPaginaVM, AuditoriaRegistroVM } from '@features/auditoria';
 import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.component';

@@ -96,8 +96,10 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
     this.emptyActionPermission$,
     this.auth.getCurrentUser$(),
   ]).pipe(
+    // `can`/`canAccess` (no `getPermissions().includes`): aplican `PERMISSION_PREREQUISITES`, igual
+    // que el botón del header (`*appHasPermission`), la ruta y el nav.
     map(([permiso]) => typeof permiso === 'string'
-      ? !permiso || this.auth.getPermissions().includes(permiso)
+      ? !permiso || this.auth.can(permiso)
       : this.auth.canAccess(permiso)),
   );
 

@@ -140,7 +140,7 @@ export class RolesListComponent implements OnInit {
         hayFiltros,
         filtrosActivos,
         puedeEscribir,
-        ...this.estadoVacio(roles.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
     // Dos consumidores (el template y la reconciliación de la selección): sin esto el
@@ -353,8 +353,9 @@ export class RolesListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún rol coincide con la búsqueda o el filtro aplicado.',

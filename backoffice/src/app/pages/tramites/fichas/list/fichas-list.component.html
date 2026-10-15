@@ -113,7 +113,7 @@
     <ng-template appTableCell="acciones" let-row>
       <app-row-actions
           [primary]="accionVer(row)"
-          [actions]="accionesDe(row)"
+          [actions]="accionesDe(row, vista.accionesWorkflow)"
           [busy]="ocupadaId === row.id"
           busyLabel="Procesando...">
       </app-row-actions>

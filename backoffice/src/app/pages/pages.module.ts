@@ -3,7 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
 import { accessGuard, unsavedChangesGuard } from '../core/guards';
 import {
-  CREAR_FICHA_ACCESS, EDITAR_USUARIO_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS, LEER_ROLES_PERMISOS_ACCESS,
+  CREAR_ETIQUETA_ACCESS, CREAR_FICHA_ACCESS, EDITAR_USUARIO_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS, LEER_ROLES_PERMISOS_ACCESS,
 } from '../core/constants/policy-overrides.constants';
 import { UserRole } from '../core/enums/user-role.enum';
 
@@ -111,7 +111,7 @@ const routes: Routes = [
       { path: 'modalidades/editar/:id', component: ModalidadFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades', 'Editar modalidad'] } },
       // Etiquetas: sin controller en backend (mock) → permiso genérico de taxonomía como aproximación.
       { path: 'etiquetas/lista', component: EtiquetasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['READ_TAG'] }, redirectTo: HOME, breadcrumb: ['Etiquetas'] } },
-      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_TAG'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Nueva etiqueta'] } },
+      { path: 'etiquetas/nuevo', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: CREAR_ETIQUETA_ACCESS, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Nueva etiqueta'] } },
       { path: 'etiquetas/editar/:id', component: EtiquetaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['UPDATE_TAG'] }, redirectTo: HOME, breadcrumb: ['Etiquetas', 'Editar etiqueta'] } },
       { path: 'categorias/lista', component: CategoriasListComponent, canActivate: [accessGuard], data: { access: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías'] } },
       { path: 'categorias/nuevo', component: CategoriaFormComponent, canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['CREATE_CATEGORY'] }, redirectTo: HOME, breadcrumb: ['Categorías', 'Nueva categoría'] } },

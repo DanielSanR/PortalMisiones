@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   BehaviorSubject, Observable, catchError, defer, distinctUntilChanged, forkJoin, map, of, shareReplay, skip, switchMap, tap,
 } from 'rxjs';
@@ -58,9 +59,9 @@ export class AdopcionesFacade {
     private auth: AuthTokenService,
   ) {
     // Cambio de sesión (logout/login, otro usuario): nada de lo leído con la sesión anterior sirve.
-    // Singleton `root`: la suscripción vive lo mismo que la app.
+    // Singleton `root`: vive lo mismo que el injector raíz, y se corta con él (`takeUntilDestroyed`).
     this.auth.getCurrentUser$()
-      .pipe(map((usuario) => usuario?.id ?? null), distinctUntilChanged(), skip(1))
+      .pipe(map((usuario) => usuario?.id ?? null), distinctUntilChanged(), skip(1), takeUntilDestroyed())
       .subscribe(() => {
         this.nombresCache$ = null;
         this.nombresClave = '';
