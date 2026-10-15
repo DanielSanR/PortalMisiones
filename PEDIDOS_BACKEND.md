@@ -1,6 +1,6 @@
 # Pedidos del backoffice al backend — Portal Provincial de Trámites (Misiones)
 
-**Fecha:** 2026-10-13 · **Backend relevado:** `origin/dev` @ `23fd8f9` · **Contacto:** Daniel Romero (frontend backoffice)
+**Fecha:** 2026-10-13 · **Backend relevado:** `origin/dev` @ `23fd8f9` (código y e2e local del 2026-10-15) · **Contacto:** Daniel Romero (frontend backoffice)
 
 El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles, permisos y etiquetas, y está por integrar el núcleo de trámites: plantillas (`/api/procedure-template`), adopciones (`/api/organism-procedure`), fichas por localidad (`/api/organism-procedure-location`, "OTL") y puntos de atención (`/api/attention-point`). En este documento juntamos lo que hace falta corregir o exponer del lado del backend para cerrar esa integración. Cada pedido se verificó contra el código de `origin/dev` @ `23fd8f9`. Las rutas son relativas a `src/main/java/org/silicon/misiones/portal_misiones/` (código) y a `src/main/resources/db/` (migraciones), salvo que se indique otra cosa. Cada ítem está pensado para copiarse tal cual como tarjeta de Taiga.
 
@@ -28,11 +28,20 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 | **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | Probar contra un backend online todo lo integrado desde julio: PPDT-5.1, etiquetas, trámites, puntos de atención |
 | **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments` | 🔴 bloquea | bug | "Eliminar definitivamente" de usuarios (BO-3) y limpieza de datos de prueba |
 | **OPS-2** | Purgar en staging los registros de prueba `E2E-*` que la API no permite borrar | 🔵 mejora | ops | Staging limpio (entorno compartido) |
+| **G-14** | `V2.21` rompe el arranque sobre una base nueva: `ALTER TYPE publication_status` de un tipo que no existe | 🔴 bloquea | bug | Levantar `dev` desde cero (devs nuevos, CI, staging tras OPS-1) |
+| **G-15** | Adopciones: `POST`/`PUT /api/organism-procedure` siempre 500 (consulta de solapamiento con parámetros `null` sin tipo) | 🔴 bloquea | bug | Adoptar trámites y editar vigencias (toda la sección "Trámites del organismo") |
+| **G-16** | Borrar una categoría usada por una plantilla responde 500 (FK) en vez de 409 | 🟡 importante | bug | Mensaje claro al borrar categorías en uso |
+| **G-17** | ¿AO/AGENT deben ver las etiquetas globales? Hoy `GET /api/tag` les devuelve solo las locales de su organismo | 🔵 decisión | contrato | Etiquetar plantillas/fichas desde un organismo con etiquetas provinciales |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
 
 ## R-3 · Grants de `V2.20`, `V2.23` y `V2.24` sin efecto por el prefijo `ROLE_`
+
+> **Actualización 2026-10-15:** reproducido también en `dev` @ `23fd8f9` con base nueva: se aplican las 43
+> migraciones y ningún rol recibe `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT`. Aplicando los mismos grants con
+> `UPPER(code) IN ('SUPERADMIN','ADMIN_BACKOFFICE',…)` (sin prefijo, como `V2.16`/`V2.17`) los endpoints responden 200:
+> **el fix propuesto está validado**.
 
 **Prioridad:** 🔴 · **Tipo:** bug
 
@@ -583,6 +592,89 @@ backend real. Los usuarios de prueba no se pueden limpiar.
 
 ---
 
+## G-14 · `V2.21` impide arrancar el backend sobre una base nueva
+
+**Prioridad:** 🔴 bloquea · **Tipo:** bug · Reproducido el 2026-10-15 levantando `dev` @ `23fd8f9` con Docker y una base vacía.
+
+**Problema**
+- `V2.12__create_organism_procedure_flow.sql:21,35` declara `publication_status VARCHAR NOT NULL` (columna de texto).
+- `V2.21__expand_publication_status.sql` ejecuta `ALTER TYPE publication_status ADD VALUE IF NOT EXISTS 'EN_REVISION'`
+  sobre un **tipo enum que ninguna migración crea**.
+- En una base nueva, `MigrationQueryRunner` corta con `ERROR: type "publication_status" does not exist` y la aplicación
+  no arranca. Solo funciona en bases donde alguien creó ese tipo a mano.
+
+**Impacto:** nadie puede levantar `dev` desde cero (devs nuevos, CI con base efímera, y staging si se recrea la base
+al hacer OPS-1).
+
+**Propuesta:** si el estado es `VARCHAR`, `V2.21` sobra. Reemplazarla por una migración nueva que no toque tipos (o que
+valide los valores con un `CHECK (publication_status IN ('BORRADOR','EN_REVISION','PUBLICADO','DESPUBLICADO'))`). No
+editar `V2.21` si ya está aplicada en alguna base: agregar una migración superadora y hacer que `V2.21` no falle
+(p. ej. `DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_type WHERE typname='publication_status') THEN … END IF; END $$;`).
+
+**Mitigación usada en el front para el e2e local:** crear el tipo vacío antes del arranque
+(`CREATE TYPE publication_status AS ENUM ('BORRADOR','PUBLICADO')`); la columna sigue siendo `VARCHAR`.
+
+**Criterio de aceptación**
+- [ ] `dev` arranca sobre una base Postgres vacía sin intervención manual y aplica todas las migraciones.
+
+---
+
+## G-15 · Adopciones: crear y editar siempre responde 500
+
+**Prioridad:** 🔴 bloquea · **Tipo:** bug · Reproducido por el e2e contra `dev` @ `23fd8f9` en local (2026-10-15).
+
+**Problema**
+- `POST /api/organism-procedure` y `PUT /api/organism-procedure/{id}` responden **500 `5000`** con cualquier payload
+  válido (ej. `{"procedureTemplateId":"…","organismId":"…","ownerOrganismId":null,"enabled":true,
+  "effectiveFrom":"2026-01-01T00:00:00","effectiveTo":"2027-12-31T23:59:59"}`).
+- Causa: la consulta de solapamiento de `OrganismProcedureRepository.java:19-27` usa
+  `(:excludeId is null or op.id <> :excludeId)` y `(:effectiveTo is null or op.effectiveFrom < :effectiveTo)`.
+  Con un parámetro `null` (al crear, `excludeId` siempre lo es) PostgreSQL no puede inferir su tipo:
+  `ERROR: could not determine data type of parameter $5` (log del contenedor).
+- En consecuencia tampoco se puede probar la regla de solapamiento (`4080`).
+
+**Impacto en el front:** "Adoptar trámite" y la edición de vigencias no funcionan contra el backend real. El e2e
+local tuvo que sembrar una adopción por SQL para poder probar fichas y puntos de atención.
+
+**Propuesta:** tipar los parámetros (`cast(:excludeId as uuid) is null`, `cast(:effectiveTo as timestamp) is null`),
+o resolver los `null` en Java con dos consultas (con y sin `excludeId` / `effectiveTo`). Agregar un test de integración
+contra Postgres (Testcontainers) que cree una adopción sin `effectiveTo`: el bug no aparece con H2.
+
+**Criterio de aceptación**
+- [ ] `POST` con `effectiveTo: null` y con fecha → 201.
+- [ ] `PUT` de una adopción existente → 200.
+- [ ] Dos adopciones solapadas de la misma plantilla y organismo → 409 `4080` con mensaje.
+
+---
+
+## G-16 · Borrar una categoría usada por una plantilla responde 500
+
+**Prioridad:** 🟡 importante · **Tipo:** bug.
+
+**Problema:** `DELETE /api/category/{id}` de una categoría referenciada como `main_category_id` de una plantilla
+(aunque la plantilla esté desactivada) responde **500 `5000`** por la FK `procedure_templates_main_category_id_fkey`.
+
+**Propuesta:** validar antes de borrar y responder **409** con un código de negocio ("La categoría está en uso por N
+plantillas"), como ya hace el borrado con subcategorías (`4065`).
+
+**Criterio de aceptación:** borrar una categoría en uso → 409 con código y mensaje; el front lo muestra en el modal.
+
+---
+
+## G-17 · ¿AO y AGENT deben ver las etiquetas globales?
+
+**Prioridad:** 🔵 decisión · **Tipo:** contrato.
+
+**Situación:** `TagService.getTags` devuelve todas las etiquetas para alcance global y, para alcance de organismo,
+`findAllByOrganismId` (solo las locales de su organismo). Con el seed, un AO sin asignación a organismo recibe
+`data: []`, mientras SA y AB ven las globales (`salud`, `transito`).
+
+**Pregunta:** para etiquetar plantillas o fichas desde un organismo, ¿AO/AGENT necesitan listar también las
+globales? Si sí: que `GET /api/tag` con alcance de organismo devuelva globales + locales propias (solo lectura de las
+globales). Además, revisar el seed: el AO de prueba no tiene organismo asignado.
+
+---
+
 ## DOC-1 · Corregir `docs/frontend_integration_guide.md`
 
 **Prioridad:** 🔵 · **Tipo:** doc
@@ -608,16 +700,18 @@ backend real. Los usuarios de prueba no se pueden limpiar.
 ## Orden sugerido de atención
 
 1. **R-3:** una migración chica que habilita Etiquetas, Adopciones y Puntos de atención para todos los roles. Conviene sumar en el mismo archivo los grants que se decidan en **G-3** y **G-5**.
-2. **OPS-1:** merge de `dev` a `staging` (con R-3 adentro). Sin esto, nada de lo integrado desde julio se puede probar online.
-3. **G-13:** el borrado definitivo de usuarios nunca funciona (FK `RESTRICT`).
-4. **R-1:** cambio de una línea, y cierra un agujero de autorización.
-5. **G-1:** mapear campos que ya están en la entidad. Desbloquea toda la sección de fichas.
-6. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
-7. **BO-17:** un método de controller sobre un servicio que ya existe.
-8. **G-4:** errores 4xx y endpoints de rechazo y vuelta a borrador.
-9. **G-9:** unicidad y vigencia, antes de que haya datos reales duplicados.
-10. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación.
-11. **G-6**, **G-8**, **DOC-1** y **OPS-2**.
+2. **OPS-1:** merge de `dev` a `staging`, con R-3, G-14 y G-15 resueltos antes. Sin esto, nada de lo integrado desde julio se puede probar online.
+3. **G-14:** `V2.21` impide arrancar sobre una base nueva.
+4. **G-15:** adopciones siempre 500 al crear o editar.
+5. **G-13:** el borrado definitivo de usuarios nunca funciona (FK `RESTRICT`).
+6. **R-1:** cambio de una línea, y cierra un agujero de autorización.
+7. **G-1:** mapear campos que ya están en la entidad. Desbloquea toda la sección de fichas.
+8. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
+9. **BO-17:** un método de controller sobre un servicio que ya existe.
+10. **G-4:** errores 4xx y endpoints de rechazo y vuelta a borrador.
+11. **G-9:** unicidad y vigencia, antes de que haya datos reales duplicados.
+12. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación.
+13. **G-16**, **G-6**, **G-8**, **G-17**, **DOC-1** y **OPS-2**.
 
 ## Qué hace el front mientras tanto
 

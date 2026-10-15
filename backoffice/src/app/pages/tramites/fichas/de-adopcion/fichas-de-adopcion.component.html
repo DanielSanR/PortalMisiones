@@ -16,7 +16,7 @@
     <div class="fichasadop">
       <div class="fichasadop-barra">
         <span class="fichasadop-barra__texto">
-          {{ estado.fichas.length ? 'En qué localidades se ofrece, con sus requisitos, costos y puntos de atención.' : '' }}
+          {{ estado.tipo === 'ok' && estado.fichas.length ? 'En qué localidades se ofrece, con sus requisitos, costos y puntos de atención.' : '' }}
         </span>
         <a mat-stroked-button color="primary" [routerLink]="rutaNueva" [queryParams]="{ adopcion: adopcionId }"
            *appHasPermission="crearFicha">
@@ -31,7 +31,19 @@
         </p>
       }
 
-      @if (!estado.fichas.length) {
+      @if (estado.tipo === 'no-disponible') {
+        <div class="fichasadop-vacio" role="status">
+          <span class="fichasadop-vacio__icono" aria-hidden="true"><i class="ph ph-link-break"></i></span>
+          <p class="fichasadop-vacio__titulo">No podemos listar las fichas de este trámite todavía</p>
+          <p class="fichasadop-vacio__texto">
+            El servidor no informa a qué trámite del organismo pertenece cada ficha. Puede que ya tenga fichas:
+            buscalas en la lista general.
+          </p>
+          <a mat-button color="primary" [routerLink]="rutaLista">
+            <i class="ph ph-list-bullets" aria-hidden="true"></i> Ver Fichas por localidad
+          </a>
+        </div>
+      } @else if (!estado.fichas.length) {
         <div class="fichasadop-vacio">
           <span class="fichasadop-vacio__icono" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
           <p class="fichasadop-vacio__titulo">Todavía no se ofrece en ninguna localidad</p>

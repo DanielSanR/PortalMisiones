@@ -84,7 +84,21 @@ export interface FichaFormData {
   ocupadas: {
     /** Localidades que ya tienen una ficha activa de esta adopción. */
     localidadIds: string[];
+    /**
+     * `false` si la fuente no informa a qué adopción pertenece cada ficha (G-1): `localidadIds` queda
+     * vacío pero NO significa que estén libres; el form no puede validar el duplicado de localidad.
+     */
+    localidadesVerificables: boolean;
     /** Slugs (canónicos) de las demás fichas activas. */
     slugs: string[];
   };
+}
+
+/**
+ * Fichas de una adopción. `disponible = false` cuando la fuente no puede asociar fichas a una adopción
+ * (G-1: el response no trae `adopcionId`): `fichas` va vacío y NO significa "sin fichas".
+ */
+export interface FichasDeAdopcion {
+  disponible: boolean;
+  fichas: FichaLocalVM[];
 }

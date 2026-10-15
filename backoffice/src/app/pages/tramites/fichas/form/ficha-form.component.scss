@@ -89,6 +89,14 @@
   p {
     margin: 0;
   }
+
+  &__link {
+    color: inherit;
+    font-weight: var(--theme-font-weight-medium);
+    text-decoration: underline;
+    border-radius: var(--theme-radius-sm);
+    @include focus-ring;
+  }
 }
 
 .fichaform-opcion__depto {

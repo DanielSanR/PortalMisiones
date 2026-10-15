@@ -59,7 +59,9 @@ type CampoConResumen = 'localidadId' | 'slug' | 'url' | 'activa';
  * Alta y edición de una ficha por localidad. Formulario reactivo propio.
  *
  * - Localidad solo en alta (cambiarla sería otra ficha). Las que ya tienen ficha activa en esta
- *   adopción no se pueden elegir (G-9: el backend no tiene UNIQUE).
+ *   adopción no se pueden elegir (G-9: el backend no tiene UNIQUE). Si la fuente no dice a qué adopción
+ *   pertenece cada ficha (G-1, `ocupadas.localidadesVerificables = false`), no se afirma que estén libres:
+ *   se avisa que el duplicado no se puede validar.
  * - Slug sugerido `slugBase-localidad` y editable (P-5), validado contra los demás slugs activos.
  * - Sin estado: guardar NUNCA cambia el estado de publicación (R-1); eso es del workflow, en el detalle.
  * - Editar una ficha PUBLICADA cambia el portal al guardar (P-6): se avisa.
@@ -106,6 +108,7 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
   readonly maxSlug = MAX_SLUG;
   readonly noDisponible = NO_DISPONIBLE;
   readonly rutaAdopcion = RUTA_DETALLE_ADOPCION;
+  readonly rutaLista = RUTA_LISTA_FICHAS;
 
   readonly form = new FormGroup({
     localidadId: new FormControl('', {

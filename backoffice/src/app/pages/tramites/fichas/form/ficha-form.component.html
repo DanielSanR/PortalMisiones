@@ -63,6 +63,17 @@
     </div>
   }
 
+  @if (!isEdit && !datos.ocupadas.localidadesVerificables) {
+    <div class="fichaform-aviso" role="status">
+      <i class="ph ph-warning" aria-hidden="true"></i>
+      <p>
+        No podemos validar si la localidad ya tiene una ficha de este trámite: el servidor no informa a qué trámite
+        pertenece cada ficha. Antes de guardar, revisá la lista de
+        <a class="fichaform-aviso__link" [routerLink]="rutaLista">Fichas por localidad</a> para no duplicarla.
+      </p>
+    </div>
+  }
+
   <div class="form-card">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
 
@@ -87,7 +98,11 @@
               }
             </mat-select>
             <mat-hint>
-              {{ isEdit ? 'No se puede cambiar: otra localidad es otra ficha.' : 'Las localidades que ya tienen ficha de este trámite no se pueden elegir.' }}
+              {{ isEdit
+                ? 'No se puede cambiar: otra localidad es otra ficha.'
+                : datos.ocupadas.localidadesVerificables
+                  ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir.'
+                  : 'No podemos validar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
             </mat-hint>
             @if (form.controls.localidadId.hasError('required')) {
               <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Elegí una localidad</span></mat-error>

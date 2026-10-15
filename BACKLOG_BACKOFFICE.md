@@ -141,7 +141,7 @@ Plan y decisiones en `PLAN_TRAMITES_API.md` (§5 fases, §8 decisiones, §9 esta
   necesita `READ_ORGANISM` (que no tienen) y la sesión no trae su organismo. Hoy esos roles ven y editan sus etiquetas,
   pero al crear solo se les ofrece "global" → el backend responde `4073`.
 
-### BO-21 · Permisos `*_TAG` / `*_ADOPTION` / `*_ATTENTION_POINT` probablemente sin asignar (R-3) · 🔴 Alta (backend)
+### BO-21 · Permisos `*_TAG` / `*_ADOPTION` / `*_ATTENTION_POINT` sin asignar (R-3) · 🔴 Alta (backend) — confirmado en staging y en `dev`; fix validado en local
 - [ ] `V2.20`, `V2.23` y `V2.24` asignan con `WHERE roles.code IN ('ROLE_SUPERADMIN', …)`, pero `V0.4` quitó el prefijo
   `ROLE_` a los códigos de rol (`V2.16`/`V2.17` sí contemplan ambas formas). Si se confirma, **ningún rol tiene `READ_TAG`**:
   Etiquetas (ya real, gateada por `READ_TAG`) desaparece del menú incluso para SUPERADMIN.
@@ -162,3 +162,37 @@ Plan y decisiones en `PLAN_TRAMITES_API.md` (§5 fases, §8 decisiones, §9 esta
 ### BO-17 · Pedir `GET /api/user` al backend · Alta (coordinación)
 - [ ] No tiene tarjeta en Taiga. Desde `0ea13a0` el servicio ya existe (`UserService.findAllUserDTO()`, filtrado por organismo
   para AO): solo falta exponerlo en `UserController`. Sin ese endpoint, el listado de usuarios y las acciones de fila (BO-3) siguen en mock.
+
+
+---
+
+## Roadmap (actualizado 2026-10-15, tras el e2e final contra `dev` local)
+
+**Estado del front:** todo lo implementable está hecho y verificado (74 tests unitarios; e2e local 20 OK / 3 FALLA
+de backend / 5 no cubiertos, `e2e/final_runs/run_7`). Lo que falta depende del backend o de una decisión.
+
+### Ahora (front, sin dependencias)
+- [ ] **QA humano** con `QA e2e en vivo — staging.md` y la sección "backend local" del QA manual (`npm run start:local`).
+- [ ] Merge de `feat/abm-secciones` a `main` después del QA humano.
+- [ ] Usuario AGENT de prueba en el seed local para cubrir CP20 del e2e (hoy no hay credenciales de AGENT).
+
+### Cuando el backend entregue (en este orden; detalle en `PEDIDOS_BACKEND.md`)
+| Pedido backend | Qué destraba en el front | Trabajo front estimado |
+|---|---|---|
+| **R-3** grants | Etiquetas, Adopciones y Puntos visibles para los roles que corresponde | Ninguno (verificar con el e2e) |
+| **G-14** migración `V2.21` | Levantar `dev` desde cero sin parche manual | Quitar el paso de preparación del QA local |
+| **G-15** adopciones 500 | "Adoptar trámite" y editar vigencias reales | Sacar el seed SQL del e2e (`E2E_SEED_SQL`) y cubrir CP16 |
+| **OPS-1** deploy de `dev` a staging | Probar online sin Docker | Volver `etiquetas`/`plantillas` (y luego el resto) a real en `environment.staging.ts` y `environment.prod.ts` |
+| **G-1** response completo de la ficha | Fichas y puntos de atención en real; agrupar fichas por adopción | Quitar overrides `fichas-locales`/`puntos-atencion`; ya no hace falta el estado "no disponible" |
+| **G-2 / BO-20** organismo en `/me` | AO/AGENT crean etiquetas locales y adoptan | Revertir `CREAR_ETIQUETA_ACCESS` y la regla de "Adoptar" sin `READ_ORGANISM` |
+| **BO-17** `GET /api/user` (+ **G-13**) | Listado de usuarios real y acciones de cuenta reales | HTTP real en `UsuariosHttpDataSource` y `soportaAccionesDeCuenta = true` |
+| **R-1 / G-4** workflow de fichas | Rechazar revisiones; errores 4xx precisos | Botón "Devolver a borrador" y mensajes por código |
+| **G-9 / G-12** unicidad y validaciones | Datos consistentes | Quitar validaciones de duplicado del cliente que pasen a ser del servidor |
+| **G-7 / G-11** filtros y paginación | Listados con volumen real | Paginado server-side en listas grandes |
+| **G-16 / G-17 / G-6 / G-8 / G-10** | Mensajes, decisiones de producto, historial de versiones | Ajustes puntuales |
+| PPDT-5.13 / 5.15 / 5.21 | Dashboard, Feedback y Auditoría reales | `HttpDataSource` de cada feature (ya están en capas, en mock) |
+
+### Decisiones pendientes (producto / backend)
+- **D-3:** quién aprueba la publicación (hoy lo decide el permiso `PUBLISH_VARIANT`; la UI ya es configurable).
+- **G-17:** si AO/AGENT deben ver etiquetas globales.
+- **G-13:** si el borrado definitivo de usuarios debe existir o alcanza con la baja lógica.

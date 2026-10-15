@@ -8,11 +8,13 @@ import { HasPermissionDirective } from '../../../../shared/directives/has-permis
 import { CREAR_FICHA_ACCESS } from '@core/constants/policy-overrides.constants';
 import { FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
 import { NO_DISPONIBLE } from '../ficha-save-error';
-import { RUTA_DETALLE_FICHA, RUTA_NUEVA_FICHA } from '../fichas.rutas';
+import { RUTA_DETALLE_FICHA, RUTA_LISTA_FICHAS, RUTA_NUEVA_FICHA } from '../fichas.rutas';
 
 type EstadoLista =
   | { tipo: 'cargando' }
   | { tipo: 'error' }
+  /** La fuente no informa a qué adopción pertenece cada ficha (G-1): no hay lista que mostrar. */
+  | { tipo: 'no-disponible' }
   | { tipo: 'ok'; fichas: FichaLocalVM[] };
 
 /**
@@ -20,7 +22,8 @@ type EstadoLista =
  * (localidad, estado, versión) y "Agregar localidad" (`CREAR_FICHA_ACCESS`). Componente hijo con su
  * propio facade (PLAN_TRAMITES_API.md §3): así el detalle de la adopción no inyecta dos facades y
  * `AdopcionesFacade` no depende de fichas (fichas ya depende de adopciones: sería un ciclo).
- * El padre lo muestra solo con `READ_VARIANT`.
+ * El padre lo muestra solo con `READ_VARIANT`. Si la fuente no dice a qué adopción pertenece cada ficha
+ * (G-1), muestra un estado "no disponible" con link a la lista general en vez de un vacío engañoso.
  */
 @Component({
   selector: 'app-fichas-de-adopcion',
@@ -48,6 +51,7 @@ export class FichasDeAdopcionComponent {
 
   readonly rutaDetalle = RUTA_DETALLE_FICHA;
   readonly rutaNueva = RUTA_NUEVA_FICHA;
+  readonly rutaLista = RUTA_LISTA_FICHAS;
   readonly crearFicha = CREAR_FICHA_ACCESS;
   readonly noDisponible = NO_DISPONIBLE;
 
@@ -56,7 +60,9 @@ export class FichasDeAdopcionComponent {
     this.recargar$,
   ]).pipe(
     switchMap(([id]) => this.facade.getDeAdopcion(id).pipe(
-      map((fichas): EstadoLista => ({ tipo: 'ok', fichas: ordenar(fichas) })),
+      map(({ disponible, fichas }): EstadoLista => (disponible
+        ? { tipo: 'ok', fichas: ordenar(fichas) }
+        : { tipo: 'no-disponible' })),
       catchError(() => of<EstadoLista>({ tipo: 'error' })),
       startWith<EstadoLista>({ tipo: 'cargando' }),
     )),

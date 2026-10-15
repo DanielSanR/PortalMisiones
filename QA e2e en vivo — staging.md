@@ -2,7 +2,12 @@
 
 Pasada end-to-end del backoffice contra el backend **online** de staging, sin Docker, ordenada por rol y por flujo de
 usuario real. Para el detalle fino de cada ítem se remite a `QA manual — backlog backoffice (BO-1 a BO-12).md`
-(abajo: **QA §N**). Relevado el 2026-10-15.
+(abajo: **QA §N**). Relevado el 2026-10-15; actualizado para el front `d964a04` o posterior.
+
+> **Staging tiene el backend viejo** (sin `/api/tag`, API de trámites ni PPDT-5.1) hasta OPS-1. Para probar contra el
+> backend **actualizado** (rama `dev`: etiquetas, plantillas, adopciones, fichas con workflow real y puntos de atención en
+> real) usá el backend local en Docker + `npm run start:local`: preparación en **QA §P** y casos por rol en **QA §16**.
+> Este guion sigue sirviendo para lo que staging sí tiene (auth, organismos, taxonomías, roles, permisos).
 
 > **Staging es compartido.** Todo lo que crees lleva el prefijo `E2E-` (o `e2e-` en slugs) y se borra al final
 > (sección 4). No edites ni borres datos ajenos. No crees usuarios reales salvo que puedas borrarlos (ver 3.1.9).
@@ -58,7 +63,7 @@ datos mock se reinician al recargar (F5).
 | Destinatarios | **real** | `/api/recipient` |
 | Roles / Permisos | **real** | `/api/role`, `/api/permission`. Staging no devuelve `assignableByBackoffice` (es pre PPDT-5.1) |
 | Localidades (selects) | **real** | `/api/department`, `/api/location` |
-| Usuarios | **híbrido** | Alta real (`POST /api/user`); listado, edición y acciones de fila **mock** (no existe `GET /api/user`) |
+| Usuarios | **real** (listado mock) | Alta y detalle reales; el listado es mock (no existe `GET /api/user`, BO-17). Con la fuente real **no** se ofrecen Cambiar email/contraseña, Activar/Desactivar ni Eliminar definitivamente |
 | Etiquetas | **mock** | Staging no tiene `/api/tag`. Requiere inyectar `*_TAG` (§1) |
 | Plantillas provinciales | **mock** | Staging no tiene `/api/procedure-template` |
 | Trámites del organismo (adopciones) | **mock** | Staging no tiene `/api/organism-procedure`. Requiere inyectar `*_ADOPTION` (§1) |
@@ -68,6 +73,9 @@ datos mock se reinician al recargar (F5).
 
 Si en una sección **mock** ves un request a `/api/tag`, `/api/procedure-template`, `/api/organism-procedure*` o
 `/api/attention-point` → **es bug** (el override no se aplicó; en staging respondería 500 `5000`).
+
+El build de producción (`environment.prod.ts`) también deja etiquetas y plantillas en **mock** hasta OPS-1 (además de
+adopciones, fichas y puntos): staging todavía no tiene esa API.
 
 ---
 
@@ -96,7 +104,10 @@ Entre rol y rol: **Cerrar sesión** desde el menú de usuario (no solo cerrar la
 - [ ] Sin permisos inyectados **no** aparecen Etiquetas ni Trámites del organismo (R-3). Inyectalos (§1) → aparecen.
 - [ ] Las listas reales cargan con 200; las mock no generan requests (tabla §2).
 - [ ] Breadcrumb: en un detalle o form (ej. Organismos → Detalle) muestra `Inicio > Organismos > Detalle`; **"Inicio"
-      y "Organismos" son links** y navegan; el último tramo no es clickeable.
+      y "Organismos" son links** y navegan; el último tramo no es clickeable. Solo linkea secciones que el usuario ve en
+      el menú (se vuelve a mirar con AB y AO en 3.2/3.3).
+- [ ] Estado vacío con filtros: en cualquier lista (ej. Modalidades, Organismos) buscá `zzz-no-existe` → "Sin
+      resultados" con un único botón **"Limpiar filtros"**, que limpia la búsqueda.
 - [ ] Rutas viejas: `/dashboard/tramites`, `/dashboard/tramites/nuevo` → terminan en Plantillas provinciales.
 - [ ] Una URL inexistente dentro del dashboard (`/dashboard/xyz`) → Home (no el login).
 
@@ -147,24 +158,15 @@ Para cada una, con nombres `E2E-…`:
       dice "asignable por Admin de Backoffice" → **esperado en staging** (§5), no bug.
 - [ ] **No** edites roles ni permisos existentes (SUPERADMIN, AGENT, etc.): staging es compartido.
 
-#### 3.1.8 Usuarios — acciones de fila mock (QA §4, §11)
-Todo esto opera sobre el mock: **no** genera requests y se pierde con F5.
-- [ ] Fila AGENT/ADMIN_ORGANIZATION → "⋮": Cambiar email, Cambiar contraseña y, separados en rojo, Desactivar cuenta y
-      Eliminar definitivamente. En la fila SUPERADMIN **no** está "Cambiar contraseña".
-- [ ] Cambiar email: precargado, "Guardar" deshabilitado sin cambios ("Ingresá un email distinto al actual…");
-      `Nuevo.Mail@Misiones.gob.ar` → snackbar **"Email actualizado"** y la fila en minúsculas.
-- [ ] Cambiar contraseña: `abc` → error de largo; `abcdefgh` → mayúscula/minúscula/número; distintas → "Las contraseñas
-      no coinciden"; `Prueba123` ×2 → snackbar **"Contraseña actualizada"**. El ojo muestra/oculta ambas.
-- [ ] Eliminar definitivamente: modal rojo con el nombre en negrita → snackbar "Usuario eliminado", la fila desaparece.
-- [ ] Desactivar / Activar cuenta cambia el estado de la fila.
+#### 3.1.8 Usuarios — sin acciones de cuenta con fuente real (QA §4)
+- [ ] Usuarios: la lista carga (es mock, BO-17) y cada fila ofrece "Editar". **Ninguna** ofrece Cambiar email,
+      Cambiar contraseña, Activar/Desactivar cuenta ni Eliminar definitivamente (antes daban éxito sin tocar el backend).
+      Si alguna aparece → bug.
+- [ ] Ninguna acción de la lista genera `PUT`/`PATCH`/`DELETE` a `/api/user`.
 
-#### 3.1.9 Usuarios — alta real (opcional, crea un usuario en staging)
-Hacelo **solo** si `GET https://tramitesmisiones.api.dev.stagemnes.net.ar/api-docs` lista `DELETE /api/user/{id}/admin`
-(si no, no hay forma de borrarlo después: salteá este bloque).
-- [ ] Usuarios → Nuevo: nombre `E2E`, apellido `Usuario`, email `e2e-usuario+1015@example.com`, rol AGENT →
-      `POST /api/user` 2xx. **Copiá el `id` del response** (Network → Response).
-- [ ] El usuario **no** aparece en la lista (es mock): esperado.
-- [ ] Email repetido → error inline en el form, sin diálogo modal.
+#### 3.1.9 Usuarios — alta real: no hacerla en staging
+- [ ] No crees usuarios en staging: el borrado definitivo (`DELETE /api/user/{id}/admin`) responde 500 (G-13) y no hay
+      forma de limpiarlos. El alta real se prueba contra el backend local (base descartable).
 
 #### 3.1.10 Etiquetas (mock — con `*_TAG` inyectados) (QA §6)
 - [ ] Lista con columnas Slug (badge "Global"), Organismo ("—" en globales) y Acciones; chips Todas/Globales/Locales.
@@ -182,12 +184,14 @@ Hacelo **solo** si `GET https://tramitesmisiones.api.dev.stagemnes.net.ar/api-do
       organismo y vigencia con datepicker DD/MM/YYYY. Vigencia superpuesta con otra habilitada del mismo
       organismo+plantilla → error. Detalle: badge vigente/programada/vencida/deshabilitada; editar fechas y salir sin
       guardar → aviso. "Deshabilitar" desde la lista.
-- [ ] **Fichas**: desde el detalle de una adopción → "Agregar localidad" (localidades reales de `/api/location`); slug
-      sugerido `slugBase-localidad`; localidad repetida → "Esa localidad ya tiene una ficha de este trámite".
+- [ ] **Fichas**: el detalle de una adopción lista sus fichas en "Fichas por localidad" (o "Todavía no se ofrece en
+      ninguna localidad" si no tiene). "Agregar localidad" (localidades reales de `/api/location`); slug sugerido
+      `slugBase-localidad`; las localidades con ficha aparecen deshabilitadas ("· ya tiene ficha").
 - [ ] Workflow en el detalle: `BORRADOR` → "Enviar a revisión" → `EN_REVISION` → "Publicar" → `PUBLICADO` →
       "Despublicar" → `DESPUBLICADO` → "Republicar". Badge cambia en cada paso. No hay "Enviar y publicar" (P-3).
 - [ ] Tab "En revisión" con contador; comando "Revisar fichas por localidad" abre esa tab. Editar una ficha publicada →
-      "Esta ficha está publicada.".
+      "Esta ficha está publicada." y el toggle **"Activa" bloqueado** ("Está publicada: para desactivarla usá
+      'Desactivar' en el detalle…"). "Desactivar" desde el detalle → Desactivada y `DESPUBLICADO`.
 - [ ] **Puntos de atención** (con `*_ATTENTION_POINT`, panel del detalle de la ficha): lat `-95` o con 7 decimales →
       error en el campo; `-27.367`/`-55.896` → se guarda, "Ver en mapa" abre OpenStreetMap ahí. Editar y eliminar.
 - [ ] Ningún request a `/api/procedure-template`, `/api/organism-procedure*` ni `/api/attention-point` en todo el bloque.
@@ -210,9 +214,12 @@ Hacelo **solo** si `GET https://tramitesmisiones.api.dev.stagemnes.net.ar/api-do
       Editar/Eliminar en filas, ni "Crear rol"/"Crear permiso" en el buscador de comandos.
       ⚠️ El backend viejo de staging todavía le **permitiría** escribir; que la UI lo oculte es **intencional** (PPDT-5.1).
 - [ ] Por URL: `/dashboard/roles/nuevo`, `/dashboard/roles/editar/<id de E2E-Rol>`, `/dashboard/permisos/nuevo` → Home.
-- [ ] **Usuarios** (mock, QA §5): ve Cambiar email, Cambiar contraseña, Activar/Desactivar y Eliminar definitivamente;
-      **no** ve "Nuevo usuario" ni "Editar" (le falta `READ_ORGANISM`). Probá una acción de cada una → snackbar.
+- [ ] **Usuarios** (QA §4/§5): lista en lectura, **sin** "Nuevo usuario" ni "Editar" (le falta `READ_ORGANISM`) y sin
+      acciones de cuenta (fuente real).
 - [ ] Por URL: `/dashboard/usuarios/nuevo` y `/dashboard/usuarios/editar/usr-2` → Home.
+- [ ] Breadcrumb: en cada sección que ve, los tramos con link son solo secciones de su menú (nunca Organismos).
+- [ ] (Opcional, con `*_TAG` inyectados, §1) Etiquetas (mock): ve "Nueva etiqueta" (rol AB); el form ofrece solo
+      "Ninguno — etiqueta global"; **ningún** `GET /api/organism` y ningún diálogo de error global.
 
 ### 3.3 ADMIN_ORGANIZATION (AO)
 
@@ -223,6 +230,9 @@ Hacelo **solo** si `GET https://tramitesmisiones.api.dev.stagemnes.net.ar/api-do
       `/dashboard/roles/lista`, `/dashboard/permisos/lista`, `/dashboard/tramites/plantillas`, `/dashboard/tramites/fichas`,
       `/dashboard/auditoria`, `/dashboard/tramites` (redirige a plantillas → Home).
 - [ ] Buscador de comandos: no ofrece acciones de creación.
+- [ ] (Opcional, con `*_TAG` inyectados, §1) Etiquetas (mock): la lista carga, **sin** "Nueva etiqueta" (no tiene
+      `READ_ORGANISM` ni es SA/AB) ni "Crear etiqueta" en comandos; `/dashboard/etiquetas/nuevo` → Home; **ningún**
+      `GET /api/organism` ni diálogo de error global.
 
 ---
 
@@ -236,10 +246,7 @@ Borrá en este orden (las dependencias primero). Cada `DELETE` debe dar 2xx.
 - [ ] Categoría `E2E-Categoria`, Modalidades `E2E-Modalidad` / `E2E-Bloqueo` / `E2E-AB-Modalidad`, Evento `E2E-Evento`,
       Destinatario `E2E-Destinatario`.
 - [ ] Rol `E2E-Rol` y después permiso `E2E_PERMISO`.
-- [ ] Usuario de 3.1.9 (si lo creaste): `DELETE /api/user/<id>/admin` con el token de SA. Desde la terminal (curl no
-      manda `Origin`):
-      `curl -X DELETE "http://localhost:4200/api/user/<id>/admin" -H "Authorization: Bearer <access_token de SA>"`
-- [ ] Lo mock (etiquetas, plantillas, adopciones, fichas, puntos, acciones de usuarios) no necesita limpieza: F5.
+- [ ] Lo mock (etiquetas, plantillas, adopciones, fichas, puntos) no necesita limpieza: F5.
 - [ ] Local Storage: **Cerrar sesión** (borra `user_data` con los permisos inyectados).
 
 **Verificación:** con SA, en cada lista real (Organismos, Tipos, Categorías, Modalidades, Eventos de Vida, Destinatarios,
@@ -256,10 +263,16 @@ Roles, Permisos) buscá `E2E` → **sin resultados**. Si algo no se pudo borrar,
 - **R-3**: ningún rol tiene `*_TAG`, `*_ADOPTION`, `*_ATTENTION_POINT` → Etiquetas, Trámites del organismo y Puntos de
   atención no aparecen sin inyectar permisos (§1). Confirmado en staging.
 - **G-1**: fichas y puntos de atención en mock en todos los entornos.
-- **G-2 / BO-20**: la sesión no trae el organismo del usuario → AO no puede "Adoptar"; AO/AGENT no crean etiquetas locales.
+- **G-2 / BO-20**: la sesión no trae el organismo del usuario → AO no puede "Adoptar"; AO/AGENT no ven "Nueva etiqueta".
 - **G-6**: el `4072` de duplicados de taxonomía viene 400 (no 409).
-- **Listado de usuarios mock** (BO-17, sin `GET /api/user`): edición y acciones de fila no tocan el backend, se pierden
-  con F5; un usuario creado de verdad no aparece en la lista.
+- **BO-17** (sin `GET /api/user`): el listado de usuarios es mock; un usuario creado de verdad no aparece en la lista
+  y no se ofrecen acciones de cuenta (Cambiar email/contraseña, Activar/Desactivar, Eliminar).
+- **G-13**: el borrado definitivo de usuarios responde 500 (FK) → no crear usuarios en staging (3.1.9).
+- **OPS-1**: staging no tiene la API nueva; `environment.prod` deja etiquetas y plantillas en mock hasta el deploy.
+- Solo contra el backend local (`dev`), ver QA §16: **G-14** (base nueva no arranca sin crear el tipo
+  `publication_status`), **G-15** (adopciones `POST`/`PUT` → 500 por la consulta de solapamiento), **G-16** (borrar una
+  categoría usada por una plantilla → 500), **G-17** (AO sin organismo asignado ve la lista de etiquetas vacía) y
+  **G-1** real (sección de fichas de la adopción "No podemos listar…", edición de fichas bloqueada).
 - **Acrónimos nulos**: organismos migrados en V1.7 no tienen acrónimo; la lista y la edición lo muestran vacío.
 - Decisiones de producto (no bugs): sin "Enviar y publicar" (P-3), sin inactivas en listas (P-4), sin "Rechazar" ni
   "Volver a borrador" (G-4), sin resumen de feedback por ficha (P-7).

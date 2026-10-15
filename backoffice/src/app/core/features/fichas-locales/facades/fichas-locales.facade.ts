@@ -13,7 +13,7 @@ import { OrganismosRepository } from '@features/organismos';
 import { LocalidadVM, LocalidadesRepository } from '@features/localidades';
 import { FichasLocalesRepository } from '../repositories/fichas-locales.repository';
 import {
-  FichaAdopcionResumen, FichaFormData, FichaLocal, FichaLocalFormValue, FichaLocalVM,
+  FichaAdopcionResumen, FichaFormData, FichaLocal, FichaLocalFormValue, FichaLocalVM, FichasDeAdopcion,
 } from '../models/ficha-local.vm';
 import { AccionWorkflow, TRANSICIONES_DE_ACCION, accionesDisponibles } from '../models/workflow';
 
@@ -67,6 +67,14 @@ interface Lectura<T> {
  * La regla es `accionesDisponibles` (permiso, nunca rol: D-3) + `PUBLICACION_POLICY`; el permiso de
  * cada acción lo vuelve a exigir el backend.
  */
+/**
+ * ¿La fuente dice a qué adopción pertenece cada ficha? Con el response mínimo del backend (G-1) no:
+ * `adopcionId` llega en `null` y no se puede agrupar ni validar duplicados de localidad.
+ */
+function puedeAgruparPorAdopcion(lista: FichaLocal[]): boolean {
+  return lista.every((f) => f.adopcionId !== null);
+}
+
 @Injectable({ providedIn: 'root' })
 export class FichasLocalesFacade {
   private readonly _fichas$ = new BehaviorSubject<FichaLocalVM[]>([]);
@@ -141,12 +149,17 @@ export class FichasLocalesFacade {
   /**
    * Fichas (activas e inactivas) de una adopción, para el detalle del trámite del organismo. El
    * backend no filtra por adopción (G-1): se pide el listado completo del alcance y se filtra acá.
-   * No toca `fichas$`.
+   * Si la fuente no informa la adopción de cada ficha (response mínimo de G-1), no se puede filtrar:
+   * devuelve `disponible: false` en vez de una lista vacía engañosa. No toca `fichas$`.
    */
-  getDeAdopcion(adopcionId: string): Observable<FichaLocalVM[]> {
+  getDeAdopcion(adopcionId: string): Observable<FichasDeAdopcion> {
     return this.fichas.list().pipe(
-      map((lista) => lista.filter((f) => f.adopcionId === adopcionId)),
-      switchMap((lista) => this.aVMs(lista)),
+      switchMap((lista) => {
+        if (!puedeAgruparPorAdopcion(lista)) return of<FichasDeAdopcion>({ disponible: false, fichas: [] });
+        return this.aVMs(lista.filter((f) => f.adopcionId === adopcionId)).pipe(
+          map((fichas): FichasDeAdopcion => ({ disponible: true, fichas })),
+        );
+      }),
     );
   }
 
@@ -168,6 +181,7 @@ export class FichasLocalesFacade {
         }).pipe(
           map(({ adopcion, localidades, todas }): FichaFormData => {
             const otrasActivas = todas.filter((f) => f.activa && f.id !== ficha?.id);
+            const localidadesVerificables = puedeAgruparPorAdopcion(todas);
             return {
               ficha,
               adopcion,
@@ -175,9 +189,10 @@ export class FichasLocalesFacade {
                 .map((l) => ({ id: l.id, nombre: l.nombre, departamentoNombre: l.departamentoNombre }))
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es-AR', { sensitivity: 'base' })),
               ocupadas: {
-                localidadIds: idAdopcion
+                localidadIds: idAdopcion && localidadesVerificables
                   ? otrasActivas.filter((f) => f.adopcionId === idAdopcion && f.localidadId).map((f) => f.localidadId as string)
                   : [],
+                localidadesVerificables,
                 slugs: otrasActivas.map((f) => canonicalizarSlug(f.slug)),
               },
             };
