@@ -32,6 +32,8 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 | **G-15** | Adopciones: `POST`/`PUT /api/organism-procedure` siempre 500 (consulta de solapamiento con parámetros `null` sin tipo) | 🔴 bloquea | bug | Adoptar trámites y editar vigencias (toda la sección "Trámites del organismo") |
 | **G-16** | Borrar una categoría usada por una plantilla responde 500 (FK) en vez de 409 | 🟡 importante | bug | Mensaje claro al borrar categorías en uso |
 | **G-17** | ¿AO/AGENT deben ver las etiquetas globales? Hoy `GET /api/tag` les devuelve solo las locales de su organismo | 🔵 decisión | contrato | Etiquetar plantillas/fichas desde un organismo con etiquetas provinciales |
+| **G-18** | Un `{id}` que no es UUID responde 500 en vez de 400 (`MethodArgumentTypeMismatchException` sin manejar) | 🔵 mejora | bug | Errores precisos; no confundir un id inválido con una caída |
+| **G-19** | Seed de ejemplo para el núcleo de trámites en `dev` (plantillas, adopción, fichas) | 🔵 mejora | ops | QA y demos sobre una base nueva sin cargar todo a mano |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
@@ -675,6 +677,33 @@ globales). Además, revisar el seed: el AO de prueba no tiene organismo asignado
 
 ---
 
+## G-18 · Un `{id}` que no es UUID responde 500
+
+**Prioridad:** 🔵 mejora · **Tipo:** bug · Reproducido en `dev` local (2026-10-16).
+
+**Problema:** `GET /api/procedure-template/pt-1` responde **500 `5000`** ("Ocurrió un error inesperado"). En el log:
+`MethodArgumentTypeMismatchException: … Invalid UUID string: pt-1`. Le pasa a cualquier endpoint con `@PathVariable UUID`:
+el `GlobalExceptionHandler` no maneja esa excepción y cae en el genérico.
+
+**Propuesta:** manejar `MethodArgumentTypeMismatchException` en el `GlobalExceptionHandler` → **400** con un código de
+negocio (o `4012` validación) y el nombre del parámetro.
+
+**Criterio de aceptación:** `GET /api/<recurso>/no-es-uuid` → 400 con código y mensaje, en todos los controllers.
+
+---
+
+## G-19 · Seed de ejemplo para el núcleo de trámites
+
+**Prioridad:** 🔵 mejora · **Tipo:** ops.
+
+**Problema:** con una base nueva, `GET /api/procedure-template` devuelve `[]`: no hay plantillas, adopciones, fichas ni
+puntos de atención de ejemplo. Cada QA o demo arranca cargando todo a mano (y hoy las adopciones no se pueden crear, G-15).
+
+**Propuesta:** un seed **solo para perfiles dev/local** (no en la migración productiva) con 2–3 plantillas, una adopción
+vigente y fichas en distintos estados, usando ids fijos documentados.
+
+---
+
 ## DOC-1 · Corregir `docs/frontend_integration_guide.md`
 
 **Prioridad:** 🔵 · **Tipo:** doc
@@ -711,7 +740,7 @@ globales). Además, revisar el seed: el AO de prueba no tiene organismo asignado
 10. **G-4:** errores 4xx y endpoints de rechazo y vuelta a borrador.
 11. **G-9:** unicidad y vigencia, antes de que haya datos reales duplicados.
 12. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación.
-13. **G-16**, **G-6**, **G-8**, **G-17**, **DOC-1** y **OPS-2**.
+13. **G-16**, **G-6**, **G-8**, **G-17**, **G-18**, **G-19**, **DOC-1** y **OPS-2**.
 
 ## Qué hace el front mientras tanto
 

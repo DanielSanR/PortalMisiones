@@ -69,6 +69,10 @@ completar los secretos (no van en este guion).
       `insert into organism_procedures(id,procedure_template_id,organism_id,enabled,effective_from,effective_to) values (gen_random_uuid(),'<plantillaId>','<organismoId>',true,'2026-01-01 00:00:00+00','2027-12-31 23:59:59+00');`
       Nunca contra staging.
 
+**Datos de partida:** la base nueva no trae plantillas de ejemplo (G-19) y el e2e deja las suyas desactivadas, así que
+*Plantillas provinciales* arranca **vacía**: creá una como SA antes de probar Adopciones y Fichas.
+Usá `npm run start:local` (cadena de trámites en real). Con `ng serve` la cadena va entera en mock.
+
 **Troubleshooting — "CORS / No 'Access-Control-Allow-Origin'" al iniciar sesión**
 - Casi siempre significa que en el 8080 **no está el backend**. Verificá:
   `docker ps` (tiene que figurar `portal-tramite-backend-dev` *Up*) y `netstat -ano | findstr :8080`.

@@ -20,9 +20,12 @@ export const environment = {
     // listado/edición al mock (el backend no expone GET /api/user ni update genérico, BO-17).
     // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.
     usuarios: 'local',
-    // Trámites reales (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
-    // plantillas: /api/procedure-template real → hereda default real (fase 1).
-    adopciones: 'mock',       // fase 2
+    // Trámites (PLAN_TRAMITES_API.md): la cadena plantilla → adopción → ficha → punto de atención se referencia
+    // por ids, así que va TODA con la misma fuente. Mezclarlas (p. ej. plantillas real + adopciones mock) hace que
+    // el front pida al backend plantillas con ids del mock (`pt-1`) → 500. Para la cadena real contra el backend
+    // local: `npm run start:local` (environment.local.ts).
+    plantillas: 'mock',       // fase 1 (real en start:local)
+    adopciones: 'mock',       // fase 2 (G-15: crear/editar da 500 en dev)
     'fichas-locales': 'mock', // fase 3 (bloqueado por G-1)
     'puntos-atencion': 'mock', // fase 4 (se activa junto con fichas)
     // organismos: /api/organism real (SUPERADMIN) → hereda default real.
