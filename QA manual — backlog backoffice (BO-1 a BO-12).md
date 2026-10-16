@@ -69,6 +69,16 @@ completar los secretos (no van en este guion).
       `insert into organism_procedures(id,procedure_template_id,organism_id,enabled,effective_from,effective_to) values (gen_random_uuid(),'<plantillaId>','<organismoId>',true,'2026-01-01 00:00:00+00','2027-12-31 23:59:59+00');`
       Nunca contra staging.
 
+**Troubleshooting — "CORS / No 'Access-Control-Allow-Origin'" al iniciar sesión**
+- Casi siempre significa que en el 8080 **no está el backend**. Verificá:
+  `docker ps` (tiene que figurar `portal-tramite-backend-dev` *Up*) y `netstat -ano | findstr :8080`.
+- En esta PC el servicio de Windows **`PEMHTTPD-x64`** (Apache de PostgreSQL Enterprise Manager) también escucha en
+  el 8080 por IPv4: el navegador (`127.0.0.1`) le pega a ese Apache y Docker queda solo en IPv6. Detenelo desde una
+  terminal **como administrador**: `net stop PEMHTTPD-x64` y, para que no vuelva solo, `sc config PEMHTTPD-x64 start= demand`.
+- Los contenedores del setup viejo (`portal-tramite-db`, `-minio`, `-mailhog`) tienen reinicio automático y ocupan el
+  5450: detenelos antes de levantar el stack nuevo.
+- Desde el fix del login, ese caso se muestra como "No pudimos conectarnos con el servidor…" (no como credenciales).
+
 ---
 
 0. Humo general — hacelo primero
@@ -86,6 +96,11 @@ completar los secretos (no van en este guion).
       Desbloqueá al terminar.
 - [x] Refresh: dejá expirar el access token (o borralo a mano en Application → Local Storage → `access_token`
       con un valor viejo) y navegá → `POST /api/auth/refresh` seguido de `GET /api/auth/me`, sin volver al login.
+- [ ] Mensajes del login según la causa:
+  - Backend apagado o bloqueado (`docker stop portal-tramite-backend-dev`, o bloqueá `/api/auth/login` en Network):
+    "No pudimos conectarnos con el servidor. Revisá tu conexión…". Nunca "credenciales".
+  - Contraseña incorrecta: el mensaje del backend ("La contraseña ingresada es incorrecta.").
+  - Volvé a levantar el backend al terminar.
 
 2. BO-1 — acrónimo duplicado en Organismos (SA)
 
