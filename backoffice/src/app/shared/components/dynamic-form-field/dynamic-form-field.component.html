@@ -47,7 +47,6 @@
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [required]="field.validations?.required || false">
-        <i class="ph ph-envelope-simple dynamic-form-field__icon" matIconPrefix aria-hidden="true"></i>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
