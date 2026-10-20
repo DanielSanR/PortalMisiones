@@ -20,24 +20,29 @@ const ACCION_ICONS: Record<AuditoriaAccion, string> = {
   eliminar: 'trash',
 };
 
-const ACCION_COLORS: Record<AuditoriaAccion, string> = {
-  crear: '#4CAF50',
-  editar: '#2196F3',
-  publicar: '#1B5E20',
-  despublicar: '#F44336',
-  enviar_revision: '#FF9800',
-  eliminar: '#B71C1C',
+/**
+ * Tono de la pill global (`.pill--<tono>`, shared-styles): las acciones de publicación usan los tonos de
+ * estado (`--theme-estado-*`) para que el color diga lo mismo que en las fichas; el resto, tonos semánticos.
+ * El color nunca es lo único que distingue la acción: siempre van el ícono y el texto.
+ */
+const ACCION_TONOS: Record<AuditoriaAccion, string> = {
+  crear: 'success',
+  editar: 'neutral',
+  publicar: 'publicado',
+  despublicar: 'despublicado',
+  enviar_revision: 'revision',
+  eliminar: 'danger',
 };
 
 /**
- * Etiqueta / ícono / color de una acción de auditoría. Vive en `pages/auditoria` (no en `shared`)
+ * Etiqueta / ícono / tono de una acción de auditoría. Vive en `pages/auditoria` (no en `shared`)
  * porque depende del modelo del feature: `shared` no debe importar de `@features/*`.
  */
 @Pipe({ name: 'accionLabel', standalone: true })
 export class AccionLabelPipe implements PipeTransform {
-  transform(accion: AuditoriaAccion, format: 'label' | 'icon' | 'color' = 'label'): string {
+  transform(accion: AuditoriaAccion, format: 'label' | 'icon' | 'tone' = 'label'): string {
     if (format === 'icon') return ACCION_ICONS[accion] || 'info';
-    if (format === 'color') return ACCION_COLORS[accion] || '#607D8B';
+    if (format === 'tone') return ACCION_TONOS[accion] || 'neutral';
     return ACCION_LABELS[accion] || accion;
   }
 }

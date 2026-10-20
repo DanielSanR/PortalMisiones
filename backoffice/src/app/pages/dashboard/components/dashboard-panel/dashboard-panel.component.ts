@@ -1,5 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { GateLabelComponent } from '@shared/components/gate-label';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 
 /**
  * Chrome común de los widgets del Home (screens-spec.md §4): ícono opcional + título (+ subtítulo
@@ -16,7 +17,7 @@ import { GateLabelComponent } from '@shared/components/gate-label';
 @Component({
   selector: 'app-dashboard-panel',
   standalone: true,
-  imports: [GateLabelComponent],
+  imports: [GateLabelComponent, UnavailableDirective],
   templateUrl: './dashboard-panel.component.html',
   styleUrl: './dashboard-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +31,13 @@ export class DashboardPanelComponent {
   @Input() badgeVariant: 'warning' | 'info' = 'warning';
   /** Texto de una acción decorativa en el HEADER (ej. "Abrir bandeja"). Deshabilitada: el módulo aún no existe. */
   @Input() actionLabel = '';
+  /** Motivo (tooltip) por el que la acción del header todavía no está disponible. */
+  @Input() actionReason = 'Se habilita cuando el módulo esté disponible';
+  /**
+   * Layout del cuerpo: `rows` = filas a sangre (sin padding) con divisor en el header; `chart` = cuerpo con
+   * padding y divisor; `card` = sin divisor, el contenido respira con el padding del panel.
+   */
+  @Input() variant: 'card' | 'rows' | 'chart' = 'card';
   @Input({ required: true }) gateSource = '';
   @Input() gatePermission = '';
 }

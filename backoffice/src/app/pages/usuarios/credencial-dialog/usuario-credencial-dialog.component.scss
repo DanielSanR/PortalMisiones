@@ -1,78 +1,10 @@
 // ==========================================================================
-// Cambio de email / contraseña de un usuario. Misma cáscara que el
-// ConfirmDialog (Kitchen Sink §07): círculo de ícono 38px, título y cuerpo,
-// acciones a la derecha. Suma los campos y el error de guardado inline.
+// Cambio de email / contraseña de un usuario. La cáscara es el `.form-dialog` global (círculo de ícono,
+// título, campos, error y acciones); label externo = `.form-field`. Acá solo queda lo propio del diálogo:
+// textos de ayuda y error inline por campo.
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
-
 .credencial-dialog {
-  padding: var(--theme-space-lg);
-  width: 420px;
-  max-width: 100%;
-
-  @include responsive(mobile) {
-    width: auto;
-    padding: var(--theme-space-md);
-  }
-
-  &__header {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  &__icon-wrapper {
-    width: 38px;
-    height: 38px;
-    flex: none;
-    border-radius: var(--theme-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-info-bg);
-    color: var(--theme-primary);
-
-    i.ph {
-      font-size: 20px;
-    }
-  }
-
-  &__body {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  &__title {
-    margin: 0;
-    font-size: var(--theme-font-size-md);
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-text-primary);
-  }
-
-  &__subtitle {
-    margin: 0;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
-
-    b {
-      color: var(--theme-text-primary);
-      font-weight: var(--theme-font-weight-semibold);
-    }
-  }
-
-  &__campos {
-    display: flex;
-    flex-direction: column;
-    margin-top: var(--theme-space-lg);
-  }
-
-  &__campo {
-    width: 100%;
-  }
-
   &__ayuda {
     margin: 0;
     font-size: var(--theme-font-size-xs);
@@ -84,9 +16,9 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    margin: -8px 0 var(--theme-space-sm);
+    margin: 0;
     font-size: var(--theme-font-size-xs);
-    color: var(--theme-error);
+    color: var(--theme-error-icon);
   }
 
   &__error-campo {
@@ -96,32 +28,7 @@
   }
 
   &__ojo i.ph {
-    font-size: 18px;
+    font-size: var(--theme-icon-size-lg);
     color: var(--theme-text-secondary);
-  }
-
-  &__error {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    margin: var(--theme-space-sm) 0 0;
-    padding: var(--theme-space-sm);
-    border-radius: var(--theme-radius-sm);
-    background: var(--theme-error-bg);
-    color: var(--theme-error-icon);
-    font-size: var(--theme-font-size-sm);
-    line-height: 1.4;
-
-    i.ph {
-      font-size: 16px;
-      margin-top: 1px;
-    }
-  }
-
-  .mat-mdc-dialog-actions {
-    gap: var(--theme-space-sm);
-    padding: var(--theme-space-lg) 0 0;
-    margin: 0;
-    min-height: 0;
   }
 }

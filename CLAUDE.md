@@ -32,9 +32,13 @@ backoffice/src/app/
 ├── shared/
 │   ├── components/          # Standalone reusable components
 │   ├── layouts/             # AdminLayout (Material sidenav)
+│   ├── directives/          # appHasPermission, appPageActions, appUnavailable
 │   ├── pipes/               # EstadoBadgePipe
 │   └── shared.module.ts     # Re-exports Material modules
-└── shared-styles/           # Global SCSS: themes, mixins, responsive
+└── (../shared-styles/)      # Global SCSS en backoffice/src/shared-styles/ (fuera de app/):
+                             #   _themes (tokens --theme-*), _mixins, _components (clases globales),
+                             #   _material (overrides), _material-theme (tema de Material separado),
+                             #   _base, _responsive, _main. `_variables.scss` ya no existe.
 ```
 
 ## Key Patterns
@@ -42,7 +46,8 @@ backoffice/src/app/
 - **Functional guards & interceptors**: Modern Angular approach (CanActivateFn, HttpInterceptorFn)
 - **AuthTokenService facade**: BehaviorSubject for auth state, sync + async accessors
 - **SKIP_ERROR_INTERCEPTOR context**: Services opt-out of global error dialog
-- **CSS Variables theming**: `shared-styles/_themes.scss` — Misiones green (#1B5E20)
+- **CSS Variables theming**: `shared-styles/_themes.scss` — azul institucional Misiones (#2F6EB1). Referencia de diseño: `DESIGN.md` (fuente visual: Claude Design). **WCAG 2.2 AA gana sobre el diseño** cuando chocan.
+- **Features sin backend**: visibles con la directiva `appUnavailable` (`shared/directives/unavailable.directive.ts`: `aria-disabled` + tooltip con el motivo), nunca `disabled` nativo + `title`.
 - **RBAC**: roleGuard with route data `{ allowedRoles: [...], redirectTo: '...' }`
 
 ## Arquitectura de capas (en migración — ver `migracion_arquitectura.md`)
@@ -74,7 +79,8 @@ Plantilla provincial (`/api/procedure-template`) → adopción por organismo = "
 
 ## Commands
 - `cd backoffice && npx ng serve` — Dev server (port 4200)
-- `cd backoffice && npx ng build` — Production build
+- `cd backoffice && npm run build` — Production build (corre antes `icons:check` + `check:prod-mocks` vía `prebuild`; `npx ng build` directo los saltea)
+- `cd backoffice && npm run icons` — Regenerar el subset de Phosphor al agregar íconos (`icons:check` lo valida)
 - `cd backoffice && npm run check:circular` — madge: 0 dependencias circulares
 - `cd backoffice && npm run lint` — ESLint + boundaries (dirección de capas) sobre `core/features`
 - Node version: 20.11.0 (use `nvm use 20.11.0`)
@@ -83,5 +89,5 @@ Plantilla provincial (`/api/procedure-template`) → adopción por organismo = "
 - Spanish for UI labels and model names
 - Locale: es-AR
 - Date format: DD/MM/YYYY
-- Font: Poppins
+- Font: Oak Sans declarada (no self-hosted aún) → se renderiza Figtree
 - Titles must start with infinitive verbs (Obtener, Inscribirse)

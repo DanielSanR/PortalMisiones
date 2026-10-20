@@ -9,13 +9,13 @@
     }
 
     @case ('error') {
-      <section class="dashboard-state dashboard-state-error" role="alert">
-        <span class="dashboard-state-error-icon" aria-hidden="true">
+      <section class="dashboard-state state-panel" role="alert">
+        <span class="state-panel__icon state-panel__icon--error" aria-hidden="true">
           <i class="ph ph-cloud-slash"></i>
         </span>
-        <span class="dashboard-state-error-title">No pudimos cargar el inicio</span>
-        <span class="dashboard-state-error-text">Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.</span>
-        <button type="button" mat-stroked-button color="primary" class="dashboard-state-error-cta" (click)="reintentar()">
+        <span class="state-panel__title">No pudimos cargar el inicio</span>
+        <span class="state-panel__text">Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Gobierno Inteligente.</span>
+        <button type="button" mat-stroked-button color="primary" class="state-panel__cta" (click)="reintentar()">
           <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>Reintentar
         </button>
       </section>
@@ -37,9 +37,11 @@
                   title="Cola de revisión"
                   [badgeCount]="home.queueItems.length"
                   actionLabel="Abrir bandeja"
+                  actionReason="Se habilita cuando el módulo de trámites esté activo"
+                  variant="rows"
                   gateSource="Trámites · sin controller"
                   gatePermission="READ_PROCEDURE">
-                <div class="dashboard-queue">
+                <div>
                   @for (item of home.queueItems; track item.titulo) {
                     <div class="dashboard-queue-row">
                       <div class="dashboard-queue-row-info">
@@ -47,8 +49,8 @@
                         <span>{{ item.organismo }} · {{ item.tiempo }}</span>
                       </div>
                       <span class="dashboard-sla" [attr.data-level]="item.slaLevel">{{ item.slaLabel }}</span>
-                      <button type="button" class="dashboard-row-btn" disabled aria-disabled="true"
-                          title="Se habilita cuando el módulo de trámites esté activo">Revisar</button>
+                      <button type="button" class="dashboard-row-btn"
+                          appUnavailable="Se habilita cuando el módulo de trámites esté activo">Revisar</button>
                     </div>
                   }
                 </div>
@@ -61,22 +63,24 @@
                   title="Pendientes de completar"
                   [badgeCount]="home.myQueueItems.length"
                   actionLabel="Ver todas"
+                  actionReason="Se habilita cuando las fichas por localidad usen la API real"
+                  variant="rows"
                   gateSource="Variantes · sin API"
                   gatePermission="READ_VARIANT · scope organismo">
-                <div class="dashboard-queue">
+                <div>
                   @for (item of home.myQueueItems; track item.titulo) {
-                    <div class="dashboard-myqueue-row">
+                    <div class="dashboard-queue-row dashboard-queue-row--chips">
                       <div class="dashboard-queue-row-info">
                         <strong>{{ item.titulo }}</strong>
                         <span>{{ item.organismo }}</span>
                       </div>
-                      <div class="dashboard-myqueue-row-chips">
+                      <div class="dashboard-queue-row-chips">
                         @for (f of item.faltantes; track f) {
                           <span class="dashboard-chip-warning">falta {{ f }}</span>
                         }
                       </div>
-                      <button type="button" class="dashboard-row-btn" disabled aria-disabled="true"
-                          title="Se habilita cuando las fichas por localidad usen la API real">Completar</button>
+                      <button type="button" class="dashboard-row-btn"
+                          appUnavailable="Se habilita cuando las fichas por localidad usen la API real">Completar</button>
                     </div>
                   }
                 </div>
@@ -98,7 +102,7 @@
                           <span class="dashboard-pipeline-bar-segment" [attr.data-color]="seg.color" [style.width.%]="seg.percent"></span>
                         }
                       </div>
-                      <ul class="dashboard-pipeline-list">
+                      <ul class="dashboard-list">
                         @for (seg of home.pipelineSegments; track seg.label) {
                           <li>
                             <span class="dashboard-pipeline-list-dot" [attr.data-color]="seg.color" aria-hidden="true"></span>
@@ -118,7 +122,7 @@
                       title="Mis fichas y contactos"
                       gateSource="OrganismProcedureLocation · Contact"
                       gatePermission="READ_VARIANT · READ_CONTACT">
-                    <ul class="dashboard-mine-list">
+                    <ul class="dashboard-list">
                       @for (item of home.mineItems; track item.label) {
                         <li>
                           <span class="dashboard-mine-list-dot" [attr.data-color]="item.color" aria-hidden="true"></span>
@@ -146,6 +150,7 @@
               @if (widgets.analytics) {
                 <app-dashboard-panel
                     title="Consultas del portal"
+                    variant="chart"
                     gateSource="VisitLog · sin endpoint"
                     gatePermission="VIEW_ANALYTICS">
                   <div panelHeaderBody class="dashboard-visits-kpi-inline">
@@ -153,16 +158,26 @@
                     <span class="dashboard-visits-kpi-inline-avg">{{ home.visitsAvgPerDay | number }}/día promedio</span>
                   </div>
                   <span panelHeaderExtra class="dashboard-visits-kpi-trend">
-                    <i class="ph ph-trend-up" aria-hidden="true"></i> +12,4% vs. junio
+                    <i class="ph ph-trend-up" aria-hidden="true"></i> {{ copy.visitsTrend }}
                   </span>
                   <div class="dashboard-visits">
-                    <div class="dashboard-barchart" role="img" aria-label="Consultas diarias del último mes, tendencia ascendente">
-                      @for (bar of home.visitsDaily; track $index) {
-                        <span class="dashboard-barchart-bar" [class.dashboard-barchart-bar--recent]="$index >= home.visitsDaily.length - 3" [style.height.%]="bar"></span>
+                    <div class="dashboard-visits-axis" aria-hidden="true">
+                      @for (tick of copy.visitsAxisY; track tick) {
+                        <span>{{ tick }}</span>
                       }
                     </div>
-                    <div class="dashboard-barchart-axis">
-                      <span>1 jul</span><span>10 jul</span><span>20 jul</span><span>31 jul</span>
+                    <div class="dashboard-visits-plot">
+                      <div class="dashboard-barchart" role="img"
+                          [attr.aria-label]="'Consultas diarias del último mes: ' + (home.visitsTotal | number) + ' en total, ' + (home.visitsAvgPerDay | number) + ' por día en promedio. Tendencia ascendente, ' + copy.visitsTrend + '.'">
+                        @for (bar of home.visitsDaily; track $index) {
+                          <span class="dashboard-barchart-bar" [class.is-recent]="$index >= home.visitsDaily.length - copy.visitsRecentBars" [style.height.%]="bar"></span>
+                        }
+                      </div>
+                      <div class="dashboard-visits-axis dashboard-visits-axis--x" aria-hidden="true">
+                        @for (tick of copy.visitsAxisX; track tick) {
+                          <span>{{ tick }}</span>
+                        }
+                      </div>
                     </div>
                   </div>
                 </app-dashboard-panel>
@@ -171,7 +186,8 @@
               @if (widgets.procedures) {
                 <app-dashboard-panel
                     title="Trámites por organismo"
-                    subtitle="529 trámites cargados · top 8 de 68 organismos"
+                    variant="chart"
+                    [subtitle]="copy.orgSubtitle"
                     gateSource="Trámites · sin controller"
                     gatePermission="READ_PROCEDURE">
                   <div panelHeaderExtra class="dashboard-orgbars-legend">
@@ -179,16 +195,17 @@
                     <span><i class="dashboard-orgbars-legend-dot" data-color="muted" aria-hidden="true"></i> Borrador / revisión</span>
                   </div>
                   <div panelFooterExtra>
-                    <button type="button" class="dashboard-panel-footer-action" disabled aria-disabled="true"
-                        title="Se habilita cuando el módulo de trámites esté activo">
-                      Ver los 68 <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                    <button type="button" class="dashboard-panel-footer-action"
+                        appUnavailable="Se habilita cuando el módulo de trámites esté activo">
+                      {{ copy.orgSeeAll }} <i class="ph ph-arrow-right" aria-hidden="true"></i>
                     </button>
                   </div>
                   <div class="dashboard-orgbars">
-                    @for (org of home.orgBars; track org.organismo) {
+                    @for (org of home.orgRows; track org.organismo) {
                       <div class="dashboard-orgbars-row">
                         <span class="dashboard-orgbars-row-label">{{ org.organismo }}</span>
-                        <span class="dashboard-orgbars-row-bar">
+                        <span class="dashboard-orgbars-row-bar" role="img" [style.width.%]="org.scale"
+                            [attr.aria-label]="org.publicadosPercent + ' % publicados, ' + org.otrosPercent + ' % en borrador o revisión'">
                           <span class="dashboard-orgbars-row-bar-published" [style.width.%]="org.publicadosPercent"></span>
                           <span class="dashboard-orgbars-row-bar-other" [style.width.%]="org.otrosPercent"></span>
                         </span>
@@ -207,8 +224,8 @@
                     title="Búsquedas sin resultados"
                     gateSource="SearchLog"
                     gatePermission="VIEW_ANALYTICS">
-                  <p class="dashboard-panel-hint">Lo que la ciudadanía busca y el portal no tiene.</p>
-                  <ul class="dashboard-searchlist">
+                  <p class="dashboard-panel-hint">Lo que la ciudadanía busca y el portal no tiene. Es la lista de contenido a crear.</p>
+                  <ul class="dashboard-list">
                     @for (item of home.searchesWithoutResults; track item.termino) {
                       <li>
                         <span>"{{ item.termino }}"</span>
@@ -230,7 +247,7 @@
                           <span>{{ item.titulo }}</span>
                           <strong>{{ item.consultas | number }}</strong>
                         </div>
-                        <div class="dashboard-toplist-bar"><span [style.width.%]="item.percent"></span></div>
+                        <div class="dashboard-toplist-bar" role="img" [attr.aria-label]="item.percent + ' % respecto del trámite más consultado'"><span [style.width.%]="item.percent"></span></div>
                       </li>
                     }
                   </ul>
@@ -257,7 +274,7 @@
                     badgeVariant="info"
                     gateSource="Feedback"
                     gatePermission="VIEW_ANALYTICS · scope">
-                  <ul class="dashboard-feedback">
+                  <ul class="dashboard-list dashboard-list--top">
                     @for (item of home.feedbackItems; track item.texto) {
                       <li>
                         <i class="ph dashboard-feedback-icon"
@@ -283,9 +300,9 @@
                     gateSource="Audit"
                     gatePermission="por rol">
                   <ol class="dashboard-timeline">
-                    @for (item of home.activityItems; track item.fecha + item.objeto) {
+                    @for (item of home.activityRows; track item.fecha + item.objeto) {
                       <li>
-                        <span class="dashboard-timeline-dot" aria-hidden="true"></span>
+                        <span class="dashboard-timeline-dot" [attr.data-color]="item.dot" aria-hidden="true"></span>
                         <p><strong>{{ item.actor }}</strong> {{ item.accion }} <strong>{{ item.objeto }}</strong></p>
                         <span class="dashboard-timeline-date">{{ item.fecha }}</span>
                       </li>

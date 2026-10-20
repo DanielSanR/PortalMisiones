@@ -30,6 +30,8 @@ type EstadoDetalle =
 interface AccionVista {
   accion: AccionWorkflow;
   ui: AccionUI;
+  /** La única acción del header con botón primario (la primera no destructiva). */
+  primaria: boolean;
 }
 
 /** Qué significa cada estado y cuál es el próximo paso. */
@@ -100,9 +102,12 @@ export class FichaDetailComponent {
 
   /** Acciones del workflow para el estado actual y los permisos de la sesión (reactivo a ambos). */
   readonly acciones$: Observable<AccionVista[]> = combineLatest([this.estado$, this.facade.accionesWorkflow$]).pipe(
-    map(([estado, accionesWorkflow]) => estado.tipo !== 'ok'
-      ? []
-      : accionesWorkflow(estado.ficha).map((accion) => ({ accion, ui: ACCIONES_UI[accion] }))),
+    map(([estado, accionesWorkflow]) => {
+      if (estado.tipo !== 'ok') return [];
+      const vistas = accionesWorkflow(estado.ficha).map((accion) => ({ accion, ui: ACCIONES_UI[accion] }));
+      const primaria = vistas.find((v) => !v.ui.danger);
+      return vistas.map((v): AccionVista => ({ ...v, primaria: v === primaria }));
+    }),
   );
 
   /** Dirección pública de la ficha publicada (`null` si la fuente no tiene: mock). */

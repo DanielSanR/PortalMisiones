@@ -1,5 +1,4 @@
-@use '../../../../shared-styles/themes' as *;
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 :host {
   display: block;
@@ -33,7 +32,7 @@ mat-form-field {
   }
 
   .section-header-title {
-    font-size: 15px;
+    font-size: var(--theme-font-subtitle-size);
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
     margin: 0;
@@ -41,43 +40,31 @@ mat-form-field {
   }
 
   .section-header-description {
-    font-size: 12.5px;
-    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
     margin: 2px 0 0;
   }
 }
 
 // `.slide-toggle-field` (booleanos) vive en shared-styles/_components.scss
-// (DRY: la usan también los formularios custom de usuarios/roles).
+// (DRY: la usan también los formularios custom de usuarios/roles). Radio, select y fecha
+// tienen su propio componente (`dynamic-form-*-field`), cargado en diferido.
 
-// ==========================================================================
-// Radio
-// ==========================================================================
-.radio-field {
-  padding: var(--theme-space-sm) 0;
-
-  .radio-label {
-    display: block;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
-    margin-bottom: var(--theme-space-sm);
-  }
+// Reserva el alto de un input mientras llega el chunk diferido del campo.
+.field-placeholder {
+  min-height: var(--theme-input-height);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-skeleton-base);
 }
 
-.radio-group {
-  display: flex;
-  flex-direction: row;
-  gap: var(--theme-space-md);
-  flex-wrap: wrap;
-
-  .radio-option {
-    .mdc-radio {
-      padding: 8px;
-    }
-    .mdc-form-field {
-      align-items: center;
-    }
-  }
+// Ícono dentro del input (prefijo/sufijo): 17px tertiary, según el diseño. Compite con la regla
+// global de `.mat-mdc-form-field-icon-*` (18px) en _material.scss; se iguala la especificidad.
+i.ph.dynamic-form-field__icon {
+  font-size: var(--theme-icon-size-md);
+  width: var(--theme-icon-size-md);
+  height: var(--theme-icon-size-md);
+  line-height: 1;
+  color: var(--theme-text-tertiary);
 }
 
 // ==========================================================================
@@ -168,16 +155,3 @@ mat-form-field {
   color: var(--theme-error);
   font-size: var(--theme-font-size-sm);
 }
-
-// ==========================================================================
-// Select panel
-// ==========================================================================
-::ng-deep .custom-select-panel {
-  max-height: 400px !important;
-
-  .mat-mdc-option {
-    min-height: 48px;
-    height: auto;
-  }
-}
-

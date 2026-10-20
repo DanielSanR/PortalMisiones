@@ -1,8 +1,6 @@
-import { inject } from '@angular/core';
+import { Injector, inject } from '@angular/core';
 import { CanDeactivateFn } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
-import { map } from 'rxjs';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { from, map, switchMap } from 'rxjs';
 
 /**
  * La implementa cualquier pantalla que pueda perder trabajo al navegar fuera.
@@ -26,15 +24,30 @@ export interface PuedeTenerCambiosSinGuardar {
 export const unsavedChangesGuard: CanDeactivateFn<PuedeTenerCambiosSinGuardar> = (component) => {
   if (!component?.tieneCambiosSinGuardar?.()) return true;
 
-  return inject(MatDialog).open(ConfirmDialogComponent, {
-    data: {
-      title: 'Salir sin guardar',
-      message: 'Hay cambios sin guardar en este formulario. Si salís ahora se pierden.',
-      confirmText: 'Salir sin guardar',
-      cancelText: 'Seguir editando',
-    },
-    panelClass: 'custom-modal-panel',
-  })
-    .afterClosed()
-    .pipe(map((confirmado) => !!confirmado));
+  // `MatDialog` y el diálogo se cargan con `import()` solo cuando hay algo que confirmar: el guard
+  // vive en `pages.module` y sin esto arrastra cdk/overlay + material/dialog al chunk compartido.
+  // `inject` tiene que correr acá (contexto de inyección síncrono); el `get` va después del import.
+  const injector = inject(Injector);
+  return from(
+    Promise.all([
+      import('@angular/material/dialog'),
+      import('../../shared/components/confirm-dialog/confirm-dialog.component'),
+    ]),
+  ).pipe(
+    switchMap(([{ MatDialog }, { ConfirmDialogComponent }]) =>
+      injector
+        .get(MatDialog)
+        .open(ConfirmDialogComponent, {
+          data: {
+            title: 'Salir sin guardar',
+            message: 'Hay cambios sin guardar en este formulario. Si salís ahora se pierden.',
+            confirmText: 'Salir sin guardar',
+            cancelText: 'Seguir editando',
+          },
+          panelClass: 'custom-modal-panel',
+        })
+        .afterClosed(),
+    ),
+    map((confirmado) => !!confirmado),
+  );
 };

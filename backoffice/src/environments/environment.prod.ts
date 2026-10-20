@@ -13,6 +13,9 @@ export const environment = {
   // ⚠️ `apiBaseUrl` apunta al host de staging, que corre una versión anterior del backend (≈ julio) y NO
   // tiene `/api/tag` ni la API de trámites (ver `environment.staging.ts` y OPS-1 en PEDIDOS_BACKEND.md).
   // Lo que staging no tiene va a mock hasta OPS-1 (deploy de dev a staging); revisar en cada deploy.
+  // ⚠️ Los MockDataSource de los features que acá van por HTTP se EXCLUYEN del build (angular.json →
+  // production → fileReplacements → core/mocks/excluded-mock.datasource.ts). Si pasás un feature a 'mock',
+  // quitá su reemplazo; si pasás uno a real, agregalo. `npm run check:prod-mocks` (prebuild) lo valida.
   featureOverrides: {
     // Híbrido: alta real (POST /api/user); listado y edición en mock (no hay GET /api/user, BO-17).
     // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.

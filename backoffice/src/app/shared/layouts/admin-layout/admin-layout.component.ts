@@ -1,12 +1,13 @@
 import { Component, OnInit, DestroyRef, ElementRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
-import { filter, fromEvent } from 'rxjs';
+import { distinctUntilChanged, filter, fromEvent, map } from 'rxjs';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
+import { UserMenuComponent } from '../user-menu/user-menu.component';
+import { AppFooterComponent } from '../app-footer/app-footer.component';
+import { UnavailableDirective } from '../../directives/unavailable.directive';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -53,9 +54,10 @@ interface GrupoResultado {
     CommonModule,
     RouterModule,
     MatSidenavModule,
-    MatMenuModule,
     MatTooltipModule,
-    MatDividerModule,
+    UnavailableDirective,
+    UserMenuComponent,
+    AppFooterComponent,
   ],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.scss'],
@@ -65,6 +67,7 @@ export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('navScroll') navScrollRef?: ElementRef<HTMLElement>;
+  @ViewChild('mainContent') mainContentRef?: ElementRef<HTMLElement>;
   isMobile = false;
   isCollapsed = false;
   userName = '';
@@ -92,6 +95,10 @@ export class AdminLayoutComponent implements OnInit {
    * Los tramos intermedios traen `link` (la lista de su sección); el último es la página actual.
    */
   breadcrumbTrail: BreadcrumbItem[] = [];
+  /** Tramos previos al título (links a su sección); el último tramo es `tituloPagina`, el `<h1>`. */
+  breadcrumbPrevios: BreadcrumbItem[] = [];
+  /** Título de la página = último tramo del breadcrumb ("Inicio" en Home). */
+  tituloPagina = 'Inicio';
   /** Icono de la sección activa (icono del `NavItem` cuyo label matchea `breadcrumbTrail[0]`). */
   sectionIcon = 'layout';
 
@@ -136,6 +143,25 @@ export class AdminLayoutComponent implements OnInit {
       )
       .subscribe(() => this.updateBreadcrumb());
     this.updateBreadcrumb();
+
+    // Al cambiar de página el foco se mueve al <main>: si no, el lector de pantalla queda parado en el
+    // link del nav que se activó. Se ignora la carga inicial (el primer NavigationEnd que ve el shell) y
+    // los cambios que solo tocan query/fragment (pestañas, filtros), que no son otra página.
+    let primera = true;
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        map((event) => event.urlAfterRedirects.split(/[?#]/)[0]),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        if (primera) {
+          primera = false;
+          return;
+        }
+        this.mainContentRef?.nativeElement.focus({ preventScroll: true });
+      });
 
     // Atajo "/": foca el buscador de la sidebar, salvo que el foco ya esté en un campo editable.
     fromEvent<KeyboardEvent>(document, 'keydown')
@@ -213,6 +239,10 @@ export class AdminLayoutComponent implements OnInit {
     const declarado = route.snapshot.data['breadcrumb'] as BreadcrumbDeclarado[] | undefined;
     const visibles = this.accessibleGroups.flatMap((group) => group.items);
     this.breadcrumbTrail = resolverBreadcrumb(declarado, visibles);
+    this.breadcrumbPrevios = this.breadcrumbTrail.slice(0, -1);
+    this.tituloPagina = this.breadcrumbTrail.length > 0
+      ? this.breadcrumbTrail[this.breadcrumbTrail.length - 1].label
+      : 'Inicio';
     this.sectionIcon = this.resolveSectionIcon(this.breadcrumbTrail);
     this.cdr.markForCheck();
   }
@@ -225,6 +255,12 @@ export class AdminLayoutComponent implements OnInit {
       return NAV_ITEMS.find((item) => item.label === 'Inicio')?.icon ?? FALLBACK_SECTION_ICON;
     }
     return NAV_ITEMS.find((item) => item.label === trail[0].label)?.icon ?? FALLBACK_SECTION_ICON;
+  }
+
+  /** Skip-link: sin esto el `href="#contenido"` pasaría por el router (base href) en vez de mover el foco. */
+  irAlContenido(event: Event): void {
+    event.preventDefault();
+    this.mainContentRef?.nativeElement.focus();
   }
 
   trackByRoute(_index: number, item: NavItem): string {

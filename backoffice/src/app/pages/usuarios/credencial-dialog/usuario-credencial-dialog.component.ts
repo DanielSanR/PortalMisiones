@@ -8,7 +8,6 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Observable, finalize } from 'rxjs';
 import { extractErrorMessage } from '@core/models/api-response.model';
 import { FieldConfig } from '@core/models/field.interface';
@@ -66,7 +65,6 @@ const coinciden: ValidatorFn = (group: AbstractControl): ValidationErrors | null
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     NgIf, NgTemplateOutlet, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule,
-    MatProgressSpinnerModule,
   ],
   templateUrl: './usuario-credencial-dialog.component.html',
   styleUrl: './usuario-credencial-dialog.component.scss',

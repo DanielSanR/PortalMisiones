@@ -1,11 +1,11 @@
-<form class="adoptar-dialog" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
-  <div class="adoptar-dialog__header">
-    <div class="adoptar-dialog__icono" aria-hidden="true">
+<form class="form-dialog" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
+  <div class="form-dialog__header">
+    <div class="form-dialog__icono" aria-hidden="true">
       <i class="ph ph-file-arrow-down"></i>
     </div>
-    <div class="adoptar-dialog__encabezado">
-      <h2 class="adoptar-dialog__titulo" mat-dialog-title>Adoptar trámite</h2>
-      <p class="adoptar-dialog__subtitulo">
+    <div class="form-dialog__encabezado">
+      <h2 class="form-dialog__titulo" mat-dialog-title>Adoptar trámite</h2>
+      <p class="form-dialog__subtitulo">
         El organismo ofrece una plantilla provincial durante el período que elijas.
       </p>
     </div>
@@ -13,7 +13,7 @@
 
   @if (estado$ | async; as estado) {
     @if (estado.tipo === 'cargando') {
-      <div class="adoptar-dialog__cargando" role="status">
+      <div class="loading-inline loading-inline--compact" role="status">
         <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
         <span>Cargando plantillas y organismos...</span>
       </div>
@@ -25,13 +25,13 @@
         </button>
       </div>
     } @else {
-      <div class="adoptar-dialog__campos">
+      <div class="form-dialog__campos">
         <div class="form-field" [class.is-invalid]="form.controls.plantillaId.invalid && form.controls.plantillaId.touched">
           <label class="form-field__label" id="adoptar-plantilla-label">
             Plantilla provincial <span class="form-field__required" aria-hidden="true">*</span>
           </label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="adoptar-plantilla" aria-labelledby="adoptar-plantilla-label" formControlName="plantillaId"
+            <mat-select id="adoptar-plantilla" aria-labelledby="adoptar-plantilla-label" formControlName="plantillaId" required
                         placeholder="Elegí una plantilla">
               @for (op of estado.opciones.plantillas; track op.id) {
                 <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
@@ -51,7 +51,7 @@
             Organismo <span class="form-field__required" aria-hidden="true">*</span>
           </label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="adoptar-organismo" aria-labelledby="adoptar-organismo-label" formControlName="organismoId"
+            <mat-select id="adoptar-organismo" aria-labelledby="adoptar-organismo-label" formControlName="organismoId" required
                         placeholder="Elegí un organismo">
               @for (op of estado.opciones.organismos; track op.id) {
                 <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
@@ -69,7 +69,7 @@
         <app-vigencia-campos [grupo]="form.controls.vigencia" idPrefijo="adoptar" [intentos]="intentos"></app-vigencia-campos>
 
         @if (errorMensaje) {
-          <p class="adoptar-dialog__error" role="alert">
+          <p class="form-dialog__error" role="alert">
             <i class="ph ph-warning-circle" aria-hidden="true"></i>
             <span>{{ errorMensaje }}</span>
           </p>
@@ -82,7 +82,7 @@
     <button type="button" mat-stroked-button color="primary" [disabled]="guardando" (click)="cancelar()">Cancelar</button>
     <button type="submit" mat-flat-button color="primary" [disabled]="guardando || (estado$ | async)?.tipo !== 'ok'">
       @if (guardando) {
-        <mat-spinner diameter="18"></mat-spinner>
+        <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
       }
       <span>{{ guardando ? 'Adoptando...' : 'Adoptar' }}</span>
     </button>

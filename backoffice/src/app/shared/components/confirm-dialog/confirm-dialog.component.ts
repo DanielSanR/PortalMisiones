@@ -1,9 +1,9 @@
-import { Component, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable, finalize } from 'rxjs';
+import { Observable, Subscription, finalize, timer } from 'rxjs';
 import { extractErrorMessage } from '../../../core/models/api-response.model';
 
 export interface ConfirmDialogData {
@@ -25,7 +25,8 @@ export interface ConfirmDialogData {
   highlight?: string;
   /**
    * Acción asíncrona opcional. Si se provee, el diálogo la ejecuta al confirmar y NO cierra
-   * hasta que termina: el botón queda en spinner y no se puede cancelar mientras corre.
+   * solo hasta que termina: el botón queda en spinner. "Cancelar" sigue operable: abandona la
+   * espera (cancela la suscripción) y cierra con `false`; si tarda de más se avisa en pantalla.
    * `afterClosed()` emite `true` solo si la acción tuvo éxito.
    *
    * Sin este campo el diálogo se comporta como siempre (cierra con `true` al confirmar),
@@ -36,22 +37,30 @@ export interface ConfirmDialogData {
   busyText?: string;
 }
 
+/** Tiempo de espera de `confirmAction` antes de avisar que está tardando. */
+const DEMORA_MS = 8000;
+
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './confirm-dialog.component.html',
-  styleUrls: ['./confirm-dialog.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
   /** La acción async está en vuelo: bloquea los botones y el cierre. */
   ejecutando = false;
   /** Por qué falló la última ejecución de `confirmAction`. El diálogo queda abierto para reintentar. */
   errorMensaje = '';
+  /** La acción lleva más de {@link DEMORA_MS}: se muestra un aviso (Cancelar nunca se bloquea). */
+  lenta = false;
+  private ejecucion?: Subscription;
 
   constructor(
     public dialogRef: MatDialogRef<ConfirmDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData
+    @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData,
+    // OnPush: el estado cambia en callbacks async (timer, finalize, error) que no marcan la vista.
+    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   get esDestructivo(): boolean {
@@ -74,6 +83,12 @@ export class ConfirmDialogComponent {
     ].filter((p) => p.texto.length > 0);
   }
 
+  /** Cancelar: si hay una acción en vuelo se deja de esperarla; en ambos casos cierra con `false`. */
+  cancelar(): void {
+    this.ejecucion?.unsubscribe();
+    this.dialogRef.close(false);
+  }
+
   confirmar(): void {
     if (this.ejecutando) return;
 
@@ -83,12 +98,20 @@ export class ConfirmDialogComponent {
     }
 
     this.ejecutando = true;
+    this.lenta = false;
     this.errorMensaje = '';
     this.dialogRef.disableClose = true;
-    this.data.confirmAction()
+    const aviso = timer(DEMORA_MS).subscribe(() => {
+      this.lenta = true;
+      this.cdr.markForCheck();
+    });
+    this.ejecucion = this.data.confirmAction()
       .pipe(finalize(() => {
+        aviso.unsubscribe();
         this.ejecutando = false;
+        this.lenta = false;
         this.dialogRef.disableClose = false;
+        this.cdr.markForCheck();
       }))
       .subscribe({
         next: () => this.dialogRef.close(true),
@@ -97,6 +120,7 @@ export class ConfirmDialogComponent {
         error: (err: unknown) => {
           this.errorMensaje = extractErrorMessage((err as { error?: unknown })?.error)
             || 'No se pudo completar la acción. Intentá de nuevo.';
+          this.cdr.markForCheck();
         },
       });
   }

@@ -6,7 +6,6 @@ import { BehaviorSubject, Observable, catchError, finalize, map, of, shareReplay
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { hoy } from '@core/utils/fecha.utils';
@@ -31,7 +30,7 @@ type EstadoOpciones =
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AsyncPipe, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatProgressSpinnerModule,
+    AsyncPipe, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule,
     MatSelectModule, VigenciaCamposComponent,
   ],
   templateUrl: './adoptar-dialog.component.html',

@@ -1,9 +1,7 @@
-<section class="dashboard-panel">
+<section class="dashboard-panel" [class.is-rows]="variant === 'rows'" [class.is-chart]="variant === 'chart'">
   <header class="dashboard-panel-header">
     @if (icon) {
-      <span class="dashboard-panel-header-icon" aria-hidden="true">
-        <i class="ph ph-{{ icon }}"></i>
-      </span>
+      <i class="ph ph-{{ icon }} dashboard-panel-header-icon" aria-hidden="true"></i>
     }
 
     <div class="dashboard-panel-header-text">
@@ -23,11 +21,7 @@
     <div class="dashboard-panel-header-extra">
       <ng-content select="[panelHeaderExtra]"></ng-content>
       @if (actionLabel) {
-        <button type="button"
-            class="dashboard-panel-header-action"
-            disabled
-            aria-disabled="true"
-            title="Se habilita cuando el módulo esté disponible">
+        <button type="button" class="dashboard-panel-header-action" [appUnavailable]="actionReason">
           {{ actionLabel }}
           <i class="ph ph-arrow-right" aria-hidden="true"></i>
         </button>

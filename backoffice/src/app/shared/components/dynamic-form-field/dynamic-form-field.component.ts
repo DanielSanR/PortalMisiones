@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Observable, of } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
@@ -7,14 +7,14 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatRadioModule } from '@angular/material/radio';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { FormErrorMessageDirective } from './FormErrorMessage.directive';
+// Solo se usan dentro de bloques `@defer` del template: Angular los separa en chunks lazy, así
+// MatSelect / MatDatepicker / MatRadio / MatSlideToggle no entran al bundle de un form que no los usa.
+import { DynamicFormSelectFieldComponent } from '../dynamic-form-select-field/dynamic-form-select-field.component';
+import { DynamicFormDateFieldComponent } from '../dynamic-form-date-field/dynamic-form-date-field.component';
+import { DynamicFormChoiceFieldComponent } from '../dynamic-form-choice-field/dynamic-form-choice-field.component';
 
 @Component({
   selector: 'app-dynamic-form-field',
@@ -24,18 +24,16 @@ import { FormErrorMessageDirective } from './FormErrorMessage.directive';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
-    MatSlideToggleModule,
-    MatRadioModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
     MatButtonModule,
     TextFieldModule,
     FormErrorMessageDirective,
+    DynamicFormSelectFieldComponent,
+    DynamicFormDateFieldComponent,
+    DynamicFormChoiceFieldComponent,
   ],
   templateUrl: './dynamic-form-field.component.html',
   styleUrls: ['./dynamic-form-field.component.scss'],
-  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicFormFieldComponent implements OnInit, OnChanges {
   showPassword = false;
@@ -50,6 +48,11 @@ export class DynamicFormFieldComponent implements OnInit, OnChanges {
 
   @Input() field!: FieldConfig;
   @Input() group!: FormGroup;
+  /**
+   * Sube cada vez que el formulario cambia el estado de sus controles desde afuera de los campos
+   * (`markAllAsTouched()` al enviar). Es un input solo para que los campos OnPush se revisen.
+   */
+  @Input() revision = 0;
 
   ngOnInit() {
     if (!this.field || !this.group) {

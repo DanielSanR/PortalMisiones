@@ -14,11 +14,14 @@
     aria-label="Cargando datos">
   </mat-progress-bar>
 
+  <!-- Carga inicial: el skeleton es aria-hidden, así que un lector de pantalla necesita este texto vivo. -->
+  <span class="cdk-visually-hidden" role="status" *ngIf="showSkeleton">Cargando…</span>
+
   <!-- Table / Skeleton -->
   <div class="shared-table__wrapper" [class.shared-table__wrapper--loading]="loading && data && data.length > 0"
     *ngIf="showTable">
     <table mat-table [dataSource]="data" matSort (matSortChange)="onSortChange($event)"
-      class="shared-table__mat-table" role="grid">
+      class="shared-table__mat-table">
 
       <!-- Dynamic columns -->
       <ng-container *ngFor="let column of columns" [matColumnDef]="column.key">
@@ -34,7 +37,7 @@
           </ng-container>
           <ng-template #defaultHeader>
             <span class="shared-table__th">
-              <span class="shared-table__th-label">{{ column.label }}</span>
+              <span>{{ column.label }}</span>
               <i class="ph ph-arrow-up shared-table__sort-icon" aria-hidden="true"
                 *ngIf="sortable && column.sortable && sort?.active === column.key"
                 [class.shared-table__sort-icon--desc]="sort?.direction === 'desc'"></i>
@@ -56,16 +59,21 @@
 
       <!-- Rows -->
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <!-- Solo la fila clickable es focusable (tabindex) y se activa con Enter/Espacio; la fila
+           seleccionada se anuncia con aria-current (aria-selected no aplica a role=row de una tabla). -->
       <tr mat-row *matRowDef="let row; columns: displayedColumns" (click)="onRowClick(row)"
         [class.shared-table__row--clickable]="rowClick.observed"
         [class.shared-table__row--selected]="rowIsSelected(row)"
-        tabindex="0" (keydown.enter)="onRowClick(row)">
+        [attr.tabindex]="rowClick.observed ? 0 : null"
+        [attr.aria-current]="rowIsSelected(row) ? 'true' : null"
+        (keydown.enter)="onRowKeydown($event, row)" (keydown.space)="onRowKeydown($event, row)">
       </tr>
     </table>
 
     <!-- Skeleton — filas fantasma mientras se resuelve la carga inicial -->
-    <div class="shared-table__skeleton" *ngIf="showSkeleton" aria-hidden="true" role="presentation">
+    <div *ngIf="showSkeleton" aria-hidden="true" role="presentation">
       <div class="shared-table__skeleton-row" *ngFor="let r of skeletonRowsArray">
+        <span class="shared-table__skeleton-avatar"></span>
         <div class="shared-table__skeleton-cell" *ngFor="let column of columns"
           [style.width]="column.width" [class.shared-table__cell--hide-mobile]="column.hideOnMobile">
           <span class="shared-table__skeleton-bar"></span>
@@ -74,31 +82,31 @@
     </div>
   </div>
 
-  <!-- Empty state -->
-  <div class="shared-table__state shared-table__state--empty" *ngIf="showEmpty" role="status">
+  <!-- Empty state — clases globales `.state-panel*` (_components.scss) -->
+  <div class="state-panel" *ngIf="showEmpty" role="status">
     <img *ngIf="emptyImage" [src]="emptyImage" alt="" class="shared-table__state-image" aria-hidden="true" />
-    <span *ngIf="!emptyImage" class="shared-table__state-icon" aria-hidden="true">
+    <span *ngIf="!emptyImage" class="state-panel__icon" aria-hidden="true">
       <i class="ph ph-{{ emptyIcon }}"></i>
     </span>
-    <span class="shared-table__state-title">{{ emptyTitle || emptyMessage }}</span>
-    <span class="shared-table__state-text" *ngIf="emptyTitle && emptyMessage">{{ emptyMessage }}</span>
+    <p class="state-panel__title">{{ emptyTitle || emptyMessage }}</p>
+    <p class="state-panel__text" *ngIf="emptyTitle && emptyMessage">{{ emptyMessage }}</p>
     <!-- El CTA no se dibuja si el usuario no puede ejecutarlo: el estado vacío no debe
          invitar a crear algo que el backend le va a rechazar. Sin `emptyActionPermission`
          se muestra siempre, que es el caso de los CTA que solo limpian filtros. -->
     <button *ngIf="emptyActionLabel && (puedeAccionar$ | async)" type="button" mat-raised-button color="primary"
-      class="shared-table__state-cta" (click)="emptyAction.emit()">
+      class="state-panel__cta" (click)="emptyAction.emit()">
       <i class="ph ph-{{ emptyActionIcon }}" aria-hidden="true"></i>{{ emptyActionLabel }}
     </button>
   </div>
 
   <!-- Error state -->
-  <div class="shared-table__state shared-table__state--error" *ngIf="showError" role="alert">
-    <span class="shared-table__state-icon" aria-hidden="true">
+  <div class="state-panel" *ngIf="showError" role="alert">
+    <span class="state-panel__icon state-panel__icon--error" aria-hidden="true">
       <i class="ph ph-cloud-slash"></i>
     </span>
-    <span class="shared-table__state-title">{{ errorTitle }}</span>
-    <span class="shared-table__state-text">{{ errorMessage }}</span>
-    <button type="button" mat-stroked-button color="primary" class="shared-table__state-cta"
+    <p class="state-panel__title">{{ errorTitle }}</p>
+    <p class="state-panel__text">{{ errorMessage }}</p>
+    <button type="button" mat-stroked-button color="primary" class="state-panel__cta"
       (click)="retry.emit()">
       <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>{{ errorRetryLabel }}
     </button>
@@ -108,7 +116,7 @@
        carets y chips numerados a la derecha. Sin selector de tamaño de página. -->
   <nav class="shared-table__paginador" *ngIf="paginated && showTable && !showSkeleton"
     aria-label="Paginación de la tabla">
-    <span class="shared-table__paginador-rango">{{ rangoTexto }}</span>
+    <span class="shared-table__paginador-rango" aria-live="polite" aria-atomic="true">{{ rangoTexto }}</span>
 
     <div class="shared-table__paginador-controles">
       <button type="button" class="shared-table__pagina shared-table__pagina--nav"

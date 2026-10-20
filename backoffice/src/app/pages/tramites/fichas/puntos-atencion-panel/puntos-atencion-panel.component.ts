@@ -11,6 +11,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
 import { PuntoDialogComponent, PuntoDialogData } from './punto-dialog/punto-dialog.component';
@@ -36,7 +37,10 @@ type EstadoPanel =
   selector: 'app-puntos-atencion-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncPipe, ReactiveFormsModule, MatButtonModule, MatSlideToggleModule, MatSnackBarModule, HasPermissionDirective],
+  imports: [
+    AsyncPipe, ReactiveFormsModule, MatButtonModule, MatSlideToggleModule, MatSnackBarModule, HasPermissionDirective,
+    RowActionsComponent,
+  ],
   templateUrl: './puntos-atencion-panel.component.html',
   styleUrl: './puntos-atencion-panel.component.scss',
 })
@@ -93,6 +97,31 @@ export class PuntosAtencionPanelComponent {
 
   coordenadas(punto: PuntoAtencionVM): string {
     return `${formatearCoordenada(punto.latitud)}; ${formatearCoordenada(punto.longitud)}`;
+  }
+
+  /** Acción principal de la card (con permiso `UPDATE_ATTENTION_POINT`). */
+  accionEditar(punto: PuntoAtencionVM): RowAction {
+    return {
+      label: 'Editar',
+      icon: 'pencil-simple',
+      permission: 'UPDATE_ATTENTION_POINT',
+      ariaLabel: `Editar ${punto.nombre}`,
+      run: () => this.editar(punto),
+    };
+  }
+
+  /** Resto de acciones (menú ⋮): desactivar, solo si el punto está activo y con `DELETE_ATTENTION_POINT`. */
+  accionesDe(punto: PuntoAtencionVM): RowAction[] {
+    return punto.activo
+      ? [{
+        label: 'Desactivar',
+        icon: 'prohibit',
+        permission: 'DELETE_ATTENTION_POINT',
+        danger: true,
+        ariaLabel: `Desactivar ${punto.nombre}`,
+        run: () => this.desactivar(punto),
+      }]
+      : [];
   }
 
   agregar(): void {

@@ -3,7 +3,7 @@
 // una fila por adopción — organismo (link), vigencia y estado.
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 .adopplant {
   display: flex;
@@ -69,15 +69,5 @@
 }
 
 .adopplant-mensaje {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--theme-space-sm);
-  margin: 0;
-  font-size: var(--theme-font-size-sm);
-  color: var(--theme-text-secondary);
-
-  &--error {
-    color: var(--theme-error-icon);
-  }
+  @include inline-message;
 }

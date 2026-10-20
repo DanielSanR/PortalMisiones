@@ -3,11 +3,18 @@
 <ng-template appPageActions>
   @if (estado$ | async; as estado) {
     @if (estado.tipo === 'ok') {
+      <!-- Un solo botón primario: la acción de workflow principal. El resto, secundarios. -->
       @for (item of acciones$ | async; track item.accion) {
-        <button type="button" mat-raised-button
-                [color]="item.ui.danger ? 'warn' : 'primary'" (click)="ejecutar(estado.ficha, item.accion)">
-          <i [class]="'ph ph-' + item.ui.icon" aria-hidden="true"></i> {{ item.ui.label }}
-        </button>
+        @if (item.primaria) {
+          <button type="button" mat-flat-button color="primary" (click)="ejecutar(estado.ficha, item.accion)">
+            <i [class]="'ph ph-' + item.ui.icon" aria-hidden="true"></i> {{ item.ui.label }}
+          </button>
+        } @else {
+          <button type="button" mat-stroked-button [color]="item.ui.danger ? 'warn' : 'primary'"
+                  (click)="ejecutar(estado.ficha, item.accion)">
+            <i [class]="'ph ph-' + item.ui.icon" aria-hidden="true"></i> {{ item.ui.label }}
+          </button>
+        }
       }
       <a mat-stroked-button color="primary" [routerLink]="[rutaEditar, estado.ficha.id]" *appHasPermission="'UPDATE_VARIANT'">
         <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
@@ -24,18 +31,18 @@
 
 @if (estado$ | async; as estado) {
   @if (estado.tipo === 'cargando') {
-    <div class="fichadet-cargando" role="status">
+    <div class="loading-inline" role="status">
       <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
       <span>Cargando la ficha...</span>
     </div>
   } @else if (estado.tipo === 'error') {
-    <div class="fichadet-estado" role="alert">
-      <span class="fichadet-estado__icono" aria-hidden="true">
+    <div class="load-state" role="alert">
+      <span class="load-state__icono" aria-hidden="true">
         <i class="ph" [class.ph-file-x]="estado.noExiste" [class.ph-cloud-slash]="!estado.noExiste"></i>
       </span>
-      <h2 class="fichadet-estado__titulo">{{ estado.noExiste ? textosInexistente.titulo : textosErrorCarga.titulo }}</h2>
-      <p class="fichadet-estado__texto">{{ estado.noExiste ? textosInexistente.texto : textosErrorCarga.texto }}</p>
-      <div class="fichadet-estado__acciones">
+      <h2 class="load-state__titulo">{{ estado.noExiste ? textosInexistente.titulo : textosErrorCarga.titulo }}</h2>
+      <p class="load-state__texto">{{ estado.noExiste ? textosInexistente.texto : textosErrorCarga.texto }}</p>
+      <div class="load-state__acciones">
         @if (!estado.noExiste) {
           <button type="button" mat-flat-button color="primary" (click)="reintentar()">
             <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
@@ -47,57 +54,57 @@
       </div>
     </div>
   } @else {
-    <div class="fichadet">
-      <header class="fichadet-membrete">
-        <div class="fichadet-membrete__fila">
-          <h2 class="fichadet-membrete__titulo">{{ estado.ficha.plantillaTitulo ?? 'Trámite sin nombre disponible' }}</h2>
-          <app-estado-badge [estado]="estado.ficha.estado"></app-estado-badge>
+    <div class="detail-col">
+      <header class="detail-header">
+        <div class="detail-header__row">
+          <h2 class="detail-header__title">{{ estado.ficha.plantillaTitulo ?? 'Trámite sin nombre disponible' }}</h2>
+          <app-estado-badge [estado]="estado.ficha.estado" [bordered]="true"></app-estado-badge>
           @if (!estado.ficha.activa) {
-            <span class="bool-badge bool-badge--inactive">
-              <span class="bool-badge__dot" aria-hidden="true"></span>
-              Desactivada
+            <span class="pill pill--inactive pill--bordered">
+              <span class="pill__dot" aria-hidden="true"></span>
+              <span class="pill__label">Desactivada</span>
             </span>
           }
         </div>
-        <p class="fichadet-membrete__meta">
+        <p class="detail-header__meta">
           <span><i class="ph ph-map-pin-area" aria-hidden="true"></i> {{ estado.ficha.localidadNombre ?? 'Localidad ' + noDisponible.toLowerCase() }}</span>
           <span><i class="ph ph-building-office" aria-hidden="true"></i> {{ estado.ficha.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}</span>
           <span><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i> Versión {{ estado.ficha.version }}</span>
         </p>
         @if (!estado.ficha.activa) {
-          <p class="fichadet-membrete__aviso">
+          <p class="detail-header__notice">
             <i class="ph ph-info" aria-hidden="true"></i>
             Está desactivada: no se ofrece en esta localidad. Para reactivarla, editala y marcala como activa.
           </p>
         }
         @if (!estado.ficha.contenidoCompleto) {
-          <p class="fichadet-membrete__aviso">
+          <p class="detail-header__notice">
             <i class="ph ph-warning" aria-hidden="true"></i>
-            El servidor todavía no devuelve la localidad, la URL, los requisitos ni los costos de la ficha: por eso se ven como no disponibles y no se puede editar.
+            Hay datos de esta ficha que todavía no están disponibles (localidad, URL, requisitos y costos). Por eso no se puede editar.
           </p>
         }
       </header>
 
-      <div class="fichadet-grid">
-        <section class="fichadet-card" aria-labelledby="fichadet-publicacion">
-          <h3 class="fichadet-card__titulo" id="fichadet-publicacion">Publicación</h3>
+      <div class="detail-grid detail-grid--aside">
+        <section class="detail-card" aria-labelledby="fichadet-publicacion">
+          <h3 class="detail-card__title" id="fichadet-publicacion">Publicación</h3>
           <p class="fichadet-ayuda">{{ ayudaEstado[estado.ficha.estado] }}</p>
-          <dl class="fichadet-datos">
-            <div class="fichadet-datos__fila">
-              <dt>Slug público</dt>
-              <dd><code class="fichadet-datos__slug">{{ estado.ficha.slug }}</code></dd>
+          <dl class="detail-fields">
+            <div class="detail-field">
+              <dt class="detail-field__label">Slug público</dt>
+              <dd class="detail-field__value"><code class="fichadet-slug">{{ estado.ficha.slug }}</code></dd>
             </div>
             @if (estado.ficha.estado === 'PUBLICADO' && estado.ficha.activa) {
-              <div class="fichadet-datos__fila">
-                <dt>Vista previa pública</dt>
-                <dd>
+              <div class="detail-field">
+                <dt class="detail-field__label">Vista previa pública</dt>
+                <dd class="detail-field__value">
                   @if (urlPublica(estado.ficha); as url) {
-                    <a class="fichadet-datos__link" [href]="url" target="_blank" rel="noopener noreferrer">
+                    <a class="detail-link" [href]="url" target="_blank" rel="noopener noreferrer">
                       Ver lo que publica la API <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
                       <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
                     </a>
                   } @else {
-                    <span class="fichadet-datos__faltante">Sin vista previa con datos de ejemplo: el portal la muestra con el slug de arriba.</span>
+                    <span class="detail-field__value--muted">La vista previa todavía no está disponible. El portal muestra la ficha con el slug de arriba.</span>
                   }
                 </dd>
               </div>
@@ -105,29 +112,30 @@
           </dl>
         </section>
 
-        <section class="fichadet-card" aria-labelledby="fichadet-datos">
-          <h3 class="fichadet-card__titulo" id="fichadet-datos">Datos</h3>
-          <dl class="fichadet-datos">
-            <div class="fichadet-datos__fila">
-              <dt>Trámite del organismo</dt>
-              <dd>
-                <span [class.fichadet-datos__faltante]="!estado.ficha.plantillaTitulo">{{ estado.ficha.plantillaTitulo ?? noDisponible }}</span>
+        <section class="detail-card" aria-labelledby="fichadet-datos">
+          <h3 class="detail-card__title" id="fichadet-datos">Datos</h3>
+          <dl class="detail-fields">
+            <div class="detail-field">
+              <dt class="detail-field__label">Trámite del organismo</dt>
+              <dd class="detail-field__value">
+                <span [class.detail-field__value--muted]="!estado.ficha.plantillaTitulo">{{ estado.ficha.plantillaTitulo ?? noDisponible }}</span>
                 @if (estado.ficha.adopcionId) {
-                  <a class="fichadet-datos__link" [routerLink]="[rutaAdopcion, estado.ficha.adopcionId]" *appHasPermission="'READ_ADOPTION'">
+                  <a class="detail-link" [routerLink]="[rutaAdopcion, estado.ficha.adopcionId]" *appHasPermission="'READ_ADOPTION'">
                     Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
                   </a>
                 }
               </dd>
             </div>
-            <div class="fichadet-datos__fila">
-              <dt>URL del trámite</dt>
-              <dd>
+            <div class="detail-field">
+              <dt class="detail-field__label">URL del trámite</dt>
+              <dd class="detail-field__value">
                 @if (estado.ficha.url) {
-                  <a class="fichadet-datos__link fichadet-datos__link--url" [href]="estado.ficha.url" target="_blank" rel="noopener noreferrer">
+                  <a class="detail-link fichadet-url" [href]="estado.ficha.url" target="_blank" rel="noopener noreferrer">
                     {{ estado.ficha.url }} <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                    <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
                   </a>
                 } @else {
-                  <span class="fichadet-datos__faltante">{{ estado.ficha.contenidoCompleto ? 'Sin URL' : noDisponible }}</span>
+                  <span class="detail-field__value--muted">{{ estado.ficha.contenidoCompleto ? 'Sin URL' : noDisponible }}</span>
                 }
               </dd>
             </div>
@@ -135,23 +143,23 @@
         </section>
       </div>
 
-      <div class="fichadet-grid fichadet-grid--parejo">
-        <section class="fichadet-card" aria-labelledby="fichadet-requisitos">
-          <h3 class="fichadet-card__titulo" id="fichadet-requisitos">Requisitos</h3>
-          <p class="fichadet-texto" [class.fichadet-texto--faltante]="!estado.ficha.requisitos">
+      <div class="detail-grid detail-grid--even">
+        <section class="detail-card" aria-labelledby="fichadet-requisitos">
+          <h3 class="detail-card__title" id="fichadet-requisitos">Requisitos</h3>
+          <p class="detail-field__value detail-field__value--pre" [class.detail-field__value--muted]="!estado.ficha.requisitos">
             {{ estado.ficha.requisitos ?? (estado.ficha.contenidoCompleto ? 'Sin requisitos cargados.' : noDisponible) }}
           </p>
         </section>
-        <section class="fichadet-card" aria-labelledby="fichadet-costos">
-          <h3 class="fichadet-card__titulo" id="fichadet-costos">Costos</h3>
-          <p class="fichadet-texto" [class.fichadet-texto--faltante]="!estado.ficha.costos">
+        <section class="detail-card" aria-labelledby="fichadet-costos">
+          <h3 class="detail-card__title" id="fichadet-costos">Costos</h3>
+          <p class="detail-field__value detail-field__value--pre" [class.detail-field__value--muted]="!estado.ficha.costos">
             {{ estado.ficha.costos ?? (estado.ficha.contenidoCompleto ? 'Sin costos cargados.' : noDisponible) }}
           </p>
         </section>
       </div>
 
-      <section class="fichadet-card" aria-labelledby="fichadet-puntos" *appHasPermission="'READ_ATTENTION_POINT'">
-        <h3 class="fichadet-card__titulo" id="fichadet-puntos">Puntos de atención</h3>
+      <section class="detail-card" aria-labelledby="fichadet-puntos" *appHasPermission="'READ_ATTENTION_POINT'">
+        <h3 class="detail-card__title" id="fichadet-puntos">Puntos de atención</h3>
         <app-puntos-atencion-panel [fichaId]="estado.ficha.id"></app-puntos-atencion-panel>
       </section>
     </div>

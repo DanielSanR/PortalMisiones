@@ -9,36 +9,7 @@
 // rol y el panel de detalle.
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
-
-.list-toolbar {
-  @include list-toolbar;
-
-  &-count {
-    @include list-toolbar-count;
-  }
-}
-
-// Toolbar — fila A (contador + acciones) y fila B (chips) ------------------
-.roleslist-acciones {
-  display: flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  flex: none;
-}
-
-.roleslist-iconbtn {
-  @include list-iconbtn;
-}
-
-.roleslist-chips {
-  justify-content: flex-start;
-  gap: var(--theme-space-xs);
-}
-
-.roleslist-masfiltros {
-  @include list-ghost-button;
-}
+@use 'shared-styles/mixins' as *;
 
 // Envoltorio que corta la propagación del click de la celda de acciones hacia la
 // fila (que selecciona el rol). Sin caja propia: la fila se sigue viendo igual.
@@ -51,46 +22,38 @@
   display: grid;
   grid-template-columns: 1.35fr 1fr;
   gap: var(--theme-space-md);
-  align-items: start;
+  align-items: stretch;
 
   @include responsive(tablet-down) {
     grid-template-columns: 1fr;
   }
 
+  // El alto de la fila lo pone SOLO la tabla: el panel se posiciona absoluto dentro de su celda, así no
+  // aporta alto propio y termina midiendo lo mismo que la tabla (crece y se achica con ella); lo que no
+  // entra scrollea dentro de `.rol-detail__groups`. `min-height` cubre tablas muy cortas (1-2 roles).
   &__detail {
-    position: sticky;
-    top: var(--theme-space-md);
+    position: relative;
+    min-height: 320px;
 
+    > .rol-detail {
+      position: absolute;
+      inset: 0;
+    }
+
+    // Apilado (tablet-down) no hay tabla al lado de la cual medir: alto natural con techo de viewport.
     @include responsive(tablet-down) {
-      position: static;
+      min-height: 0;
+
+      > .rol-detail {
+        position: static;
+        max-height: calc(100vh - 200px);
+      }
     }
   }
 }
 
-// ── Celda "Rol" (master) — ícono tint + nombre + tag + descripción ─────────
+// ── Celda "Rol" (master) — tile (`.cell-avatar`) + nombre + tag + descripción ──────────
 .rol-cell {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--theme-space-sm);
-  min-width: 0;
-
-  &__icon {
-    @include flex-center;
-    flex: none;
-    width: 30px;
-    height: 30px;
-    border-radius: var(--theme-radius-md);
-    background: var(--theme-primary-50);
-    color: var(--theme-primary-600);
-
-    i.ph { font-size: 16px; }
-
-    &--protected {
-      background: var(--theme-error-bg);
-      color: var(--theme-error-icon);
-    }
-  }
-
   &__text {
     min-width: 0;
   }
@@ -98,41 +61,40 @@
   &__name-row {
     display: flex;
     align-items: center;
-    gap: var(--theme-space-xs);
-    flex-wrap: wrap;
+    gap: 7px;
+    min-width: 0;
   }
 
   &__name {
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
+    @include truncate;
   }
 
   &__desc {
     display: block;
-    margin-top: 2px;
     color: var(--theme-text-tertiary);
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-caption-size);
     @include truncate;
     max-width: 280px;
   }
 
+  // Tag de la fila (diseño): alto 18, pad 0 7, 10.5 / 600, sin mayúsculas. 10.5 no tiene token.
   &__tag {
     display: inline-flex;
     align-items: center;
-    padding: 1px var(--theme-space-xs);
+    flex: none;
+    height: 18px;
+    padding: 0 7px;
     border-radius: var(--theme-radius-full);
-    font-size: var(--theme-font-size-2xs);
+    font-size: 10.5px;
     font-weight: var(--theme-font-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    white-space: nowrap;
 
-    // Colores calcados del diseño (Claude Design, pantalla Roles): mismo par bg/texto que
-    // `estado-despublicado` (rojo) para "Protegido" y el tint `primary-800` sobre `info-bg`
-    // (azul, igual al chip de rol del user-menu) para "Sistema" — no un azul-info genérico.
+    // Mismo par bg/texto que `estado-despublicado` para "Protegido" y primary-800 sobre info-bg para "Sistema".
     &--protected {
       background: var(--theme-error-bg);
       color: var(--theme-warn-dark);
-      cursor: help; // lleva tooltip con el motivo del bloqueo
     }
 
     &--system {
@@ -142,25 +104,15 @@
   }
 }
 
-// Columna numérica (nº de permisos) — texto tabular simple, igual al resto de columnas
-// numéricas de las listas del backoffice (no un pill de color propio de esta pantalla).
-.count-badge {
-  font-size: var(--theme-font-size-sm);
-  font-weight: var(--theme-font-weight-semibold);
-  color: var(--theme-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
 // ── Detail: matriz de permisos (read-friendly) ─────────────────────────────
+// Diseño: card plana; header `16 18` con borde `border-primary`; cuerpo con padding 18 y grupos separados 18.
 .rol-detail {
   @include theme-card;
-  // Panel = alto de `.roles-layout__detail` (techado por viewport, ver arriba) repartido en columna:
-  // el header queda fijo (flex: none) y solo `&__groups` scrollea, para que la cantidad de grupos de
-  // permisos no estire el panel por encima de la tabla master.
+  // Panel = alto de la tabla master (ver `.roles-layout__detail`) repartido en columna: el header queda
+  // fijo (flex: none) y solo `&__groups` scrollea, para que la cantidad de grupos de permisos no estire
+  // el panel por encima de la tabla.
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 200px);
-  padding: var(--theme-space-lg);
   overflow: hidden;
 
   &--empty {
@@ -170,36 +122,36 @@
     padding: var(--theme-space-3xl) var(--theme-space-lg);
     text-align: center;
     color: var(--theme-text-tertiary);
-    max-height: none;
 
     i.ph { font-size: 40px; color: var(--theme-primary-200); }
     p { margin: 0; font-size: var(--theme-font-size-sm); max-width: 32ch; }
   }
 
   &__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--theme-space-md);
     flex: none;
-    margin-bottom: var(--theme-space-lg);
-    padding-bottom: var(--theme-space-md);
-    border-bottom: 1px solid var(--theme-border-secondary);
+    padding: 16px var(--theme-space-card);
+    border-bottom: 1px solid var(--theme-border-primary);
   }
 
-  &__heading { min-width: 0; }
+  &__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
 
+  // Divergencia de escala: el diseño pide 14.5 / 600 y no hay token (card-title es 13.5).
   &__title {
     margin: 0;
-    font-size: var(--theme-font-size-lg);
+    font-size: 14.5px;
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
   }
 
   &__meta {
-    margin: 4px 0 0;
+    margin: 0;
     color: var(--theme-text-tertiary);
-    font-size: var(--theme-font-size-sm);
+    font-size: var(--theme-font-small-size);
 
     i.ph { font-size: 13px; vertical-align: -1px; }
   }
@@ -209,9 +161,9 @@
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0; // permite que el flex item se achique por debajo de su contenido y habilite el scroll
-    gap: var(--theme-space-md);
+    gap: var(--theme-space-card);
     overflow-y: auto;
-    padding-right: var(--theme-space-xs); // separa los chips de la scrollbar
+    padding: var(--theme-space-card);
     @include custom-scrollbar;
   }
 
@@ -222,20 +174,22 @@
     font-size: var(--theme-font-size-sm);
   }
 
+  // Nota (diseño): pad 11 13, radio 8, borde, 12.5; ícono 17 en text-secondary.
   &__note {
     display: flex;
     align-items: center;
-    gap: var(--theme-space-sm);
+    gap: 9px;
     flex: none;
-    margin-top: var(--theme-space-lg);
-    padding: var(--theme-space-sm) var(--theme-space-md);
+    margin: 0 var(--theme-space-card) var(--theme-space-card);
+    padding: 11px 13px;
     background: var(--theme-surface-sunken);
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-md);
     color: var(--theme-text-secondary);
-    font-size: var(--theme-font-size-sm);
+    font-size: var(--theme-font-small-size);
+    line-height: 1.5;
 
-    i.ph { flex-shrink: 0; font-size: 16px; color: var(--theme-primary); }
+    i.ph { flex-shrink: 0; font-size: var(--theme-icon-size-md); color: var(--theme-text-secondary); }
   }
 }
 

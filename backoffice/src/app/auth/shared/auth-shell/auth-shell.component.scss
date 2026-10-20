@@ -1,0 +1,208 @@
+@use 'shared-styles/mixins' as *;
+
+// Layout split (diseño "Pantallas · Backoffice Misiones"): hero navy a la izquierda y panel claro con la
+// tarjeta a la derecha. En tablet/mobile se apilan.
+.auth-shell {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 100vh;
+  background: var(--theme-surface-card);
+  font-family: var(--theme-font-family);
+
+  @include responsive(tablet-down) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  // ── Hero ──
+  &__hero {
+    // Blanco translúcido sobre el navy (--theme-surface-inverse). Contrastes medidos: bajada .78 ≈ 9:1,
+    // © .55 ≈ 4.9:1, enlaces .75 ≈ 8:1 (todos ≥ 4.5:1 AA).
+    --auth-on-dark-bajada: color-mix(in srgb, var(--theme-text-on-primary) 78%, transparent);
+    --auth-on-dark-legal: color-mix(in srgb, var(--theme-text-on-primary) 55%, transparent);
+    --auth-on-dark-enlace: color-mix(in srgb, var(--theme-text-on-primary) 75%, transparent);
+    --auth-on-dark-linea: color-mix(in srgb, var(--theme-text-on-primary) 20%, transparent);
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 40px;
+    padding: var(--theme-space-2xl) 52px;
+    background: var(--theme-surface-inverse);
+    overflow: hidden;
+
+    // Barra de acento vertical que se desvanece hacia abajo.
+    &::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--theme-primary-400), var(--theme-primary-600) 55%, transparent);
+    }
+
+    @include responsive(tablet-down) {
+      gap: var(--theme-space-lg);
+      padding: var(--theme-space-xl) var(--theme-space-lg);
+    }
+  }
+
+  &__emblema {
+    position: absolute;
+    right: -70px;
+    bottom: 40px;
+    width: 520px;
+    max-width: 115%;
+    opacity: 0.11;
+    pointer-events: none;
+
+    @include responsive(tablet-down) {
+      bottom: -40px;
+      width: 320px;
+    }
+  }
+
+  &__marca {
+    position: relative;
+    align-self: flex-start;
+    height: 44px;
+    width: auto;
+  }
+
+  &__intro {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 480px;
+
+    @include responsive(tablet-down) {
+      gap: var(--theme-space-sm);
+    }
+  }
+
+  &__overline {
+    font-size: var(--theme-font-overline-size);
+    font-weight: var(--theme-font-overline-weight);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--theme-primary-200);
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: 2.25rem; // 36px — título hero, fuera de la escala de página (display = 26px)
+    font-weight: var(--theme-font-weight-semibold);
+    line-height: 1.18;
+    letter-spacing: -0.6px;
+    color: var(--theme-text-on-primary);
+    text-wrap: pretty;
+
+    @include responsive(tablet-down) {
+      font-size: var(--theme-font-display-size);
+    }
+  }
+
+  &__bajada {
+    margin: 0;
+    font-size: 0.90625rem; // 14.5px del diseño (entre body 13.5 y subtitle 15)
+    line-height: 1.6;
+    color: var(--auth-on-dark-bajada);
+    text-wrap: pretty;
+
+    @include responsive(mobile) {
+      display: none;
+    }
+  }
+
+  &__pie {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    @include responsive(tablet-down) {
+      display: none;
+    }
+  }
+
+  &__copyright {
+    font-size: var(--theme-font-caption-size);
+    color: var(--auth-on-dark-legal);
+  }
+
+  &__pie-divisor {
+    width: 1px;
+    height: 12px;
+    background: var(--auth-on-dark-linea);
+  }
+
+  &__enlace {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: var(--theme-font-caption-size);
+    border-radius: var(--theme-radius-sm);
+    @include focus-ring {
+      outline-color: var(--theme-text-on-primary);
+    }
+
+    // Aun sin destino (appUnavailable) se mantiene legible sobre el navy: el gris de
+    // `.is-unavailable` no alcanza contraste acá. Mayor especificidad que la clase global.
+    &,
+    &.is-unavailable {
+      color: var(--auth-on-dark-enlace) !important;
+    }
+  }
+
+  // ── Panel y tarjeta ──
+  &__panel {
+    @include flex-center;
+    padding: var(--theme-space-2xl) 40px;
+    background: var(--theme-surface-sunken);
+
+    @include responsive(mobile) {
+      align-items: flex-start;
+      padding: var(--theme-space-lg) var(--theme-space-md);
+    }
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100%;
+    max-width: 408px;
+    padding: var(--theme-space-xl) 30px;
+    background: var(--theme-surface-card);
+    border: 1px solid var(--theme-border-primary);
+    border-radius: var(--theme-radius-panel);
+    box-shadow: var(--theme-elevation-1);
+
+    @include responsive(mobile) {
+      padding: var(--theme-space-lg) var(--theme-space-md);
+    }
+  }
+
+  &__encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  &__card-titulo {
+    margin: 0;
+    font-size: var(--theme-font-size-xl);
+    font-weight: var(--theme-font-weight-semibold);
+    letter-spacing: -0.2px;
+    color: var(--theme-text-primary);
+  }
+
+  &__card-subtitulo {
+    margin: 0;
+    font-size: var(--theme-font-body-size);
+    color: var(--theme-text-secondary);
+  }
+}

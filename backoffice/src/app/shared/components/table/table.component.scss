@@ -3,11 +3,13 @@
 // ==========================================================================
 // Estilos para la tabla reutilizable. Usa CSS variables de _themes.scss
 // y mixins de _mixins.scss para mantener coherencia con el design system.
-// Header: --theme-surface-sunken + overline. Filas: --theme-table-row-height
-// (56px). Skeleton: shimmer. Empty/Error: círculo 64 + icono Phosphor.
+// Header y celdas: lo base (sentence case 11.5/600 tertiary, pad 11×18, divisor
+// border-subtle) viene de `.mat-mdc-table` en _material.scss; acá solo lo propio.
+// Empty/Error: clases globales `.state-panel*` (_components.scss).
+// Skeleton: círculo 30 + barras 11px (mixin `skeleton-bar`).
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 .shared-table {
   @include theme-card;
@@ -41,12 +43,13 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 11px 18px;
+    padding: 11px var(--theme-space-card);
+    border-top: 1px solid var(--theme-border-subtle);
   }
 
   &__paginador-rango {
     font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-tertiary);
+    color: var(--theme-text-secondary);
     font-variant-numeric: tabular-nums;
   }
 
@@ -59,7 +62,7 @@
   &__paginador-elipsis {
     min-width: 18px;
     text-align: center;
-    color: var(--theme-text-tertiary);
+    color: var(--theme-text-secondary);
     font-size: var(--theme-font-size-xs);
   }
 
@@ -67,11 +70,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 30px;
-    height: 30px;
+    min-width: var(--theme-control-height-sm);
+    height: var(--theme-control-height-sm);
     padding: 0 6px;
     border: 0;
-    border-radius: 7px;
+    border-radius: var(--theme-radius-md);
     background: transparent;
     color: var(--theme-text-secondary);
     font-family: inherit;
@@ -82,7 +85,7 @@
     @include focus-ring;
 
     i.ph {
-      font-size: 16px;
+      font-size: var(--theme-icon-size-sm);
     }
 
     &:hover:not([disabled]):not(.is-active) {
@@ -96,7 +99,7 @@
     }
 
     &[disabled] {
-      color: var(--theme-border-strong);
+      color: var(--theme-text-disabled);
       cursor: not-allowed;
     }
   }
@@ -120,64 +123,33 @@
   }
 
   // ---------------------------------------------------------------------------
-  // MatTable overrides dentro del componente
+  // MatTable — solo lo que no cubre el estilo global de `.mat-mdc-table`
   // ---------------------------------------------------------------------------
   &__mat-table {
     width: 100%;
 
-    // Header row
-    .mat-mdc-header-row {
-      background-color: var(--theme-table-header-bg);
-      height: auto;
+    .mat-mdc-header-row .mat-mdc-header-cell {
+      white-space: nowrap;
 
-      .mat-mdc-header-cell {
-        font-size: var(--theme-font-overline-size);
-        font-weight: var(--theme-font-overline-weight);
-        letter-spacing: var(--theme-font-overline-track);
-        line-height: var(--theme-font-overline-line-height);
-        color: var(--theme-text-secondary);
-        text-transform: uppercase;
-        border-bottom: 1px solid var(--theme-border-primary);
-        padding: 14px 20px;
-        white-space: nowrap;
+      // El indicador de orden nativo de MatSort se reemplaza por un
+      // icono Phosphor propio (ver .shared-table__sort-icon); se oculta
+      // la flecha SVG por defecto sin perder la semántica/accesibilidad.
+      .mat-sort-header-arrow {
+        display: none;
+      }
 
-        // El indicador de orden nativo de MatSort se reemplaza por un
-        // icono Phosphor propio (ver .shared-table__sort-icon); se oculta
-        // la flecha SVG por defecto sin perder la semántica/accesibilidad.
-        .mat-sort-header-arrow {
-          display: none;
-        }
-
-        .mat-sort-header-container {
-          align-items: center;
-        }
+      .mat-sort-header-container {
+        align-items: center;
       }
     }
 
-    // Data rows
-    .mat-mdc-row {
-      min-height: var(--theme-table-row-height);
-      transition: background-color var(--theme-transition-fast);
-
-      &:hover {
-        background-color: var(--theme-table-hover-bg);
-      }
-
-      &:last-child .mat-mdc-cell {
-        border-bottom: none;
-      }
-
-      .mat-mdc-cell {
-        font-size: var(--theme-font-body-size);
-        color: var(--theme-text-primary);
-        padding: 10px 20px;
-        border-bottom-color: var(--theme-border-secondary);
-      }
+    .mat-mdc-row .mat-mdc-cell {
+      font-size: var(--theme-font-body-size);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Header — label + icono de orden (Phosphor)
+  // Header — label + icono de orden (Phosphor, arrow-up 13px primary)
   // ---------------------------------------------------------------------------
   &__th {
     display: inline-flex;
@@ -186,7 +158,7 @@
   }
 
   &__sort-icon {
-    font-size: 16px;
+    font-size: 13px;
     color: var(--theme-primary);
     transition: transform var(--theme-transition-fast);
 
@@ -196,16 +168,8 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Celdas numéricas — modificador opcional vía TableColumn.cellClass/headerClass
-  // ---------------------------------------------------------------------------
-  &__cell--numeric {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    font-weight: var(--theme-font-weight-medium);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Clickable rows
+  // Filas clickables — únicas con tabindex (ver html), así que el anillo de foco
+  // aplica a toda fila focusable.
   // ---------------------------------------------------------------------------
   &__row--clickable {
     cursor: pointer;
@@ -217,6 +181,7 @@
   }
 
   // Fila activa en layouts master-detail (ej. Roles) — barra de acento izquierda + fondo tinte.
+  // Se anuncia con `aria-current="true"` (ver html).
   &__row--selected {
     background-color: var(--theme-info-bg) !important;
     box-shadow: inset 3px 0 0 var(--theme-primary);
@@ -249,19 +214,28 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Skeleton — filas fantasma (carga inicial sin datos previos)
+  // Skeleton — filas fantasma (carga inicial sin datos previos).
+  // Diseño: círculo 30 + barras 11px con shimmer.
   // ---------------------------------------------------------------------------
   &__skeleton-row {
     display: flex;
     align-items: center;
-    gap: var(--theme-space-md);
-    min-height: var(--theme-table-row-height);
-    padding: 0 20px;
-    border-bottom: 1px solid var(--theme-border-secondary);
+    gap: 14px;
+    height: var(--theme-table-row-height);
+    padding: 0 var(--theme-space-card);
+    border-bottom: 1px solid var(--theme-border-subtle);
 
     &:last-child {
       border-bottom: none;
     }
+  }
+
+  &__skeleton-avatar {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-skeleton-base);
   }
 
   &__skeleton-cell {
@@ -274,13 +248,8 @@
   }
 
   &__skeleton-bar {
-    display: block;
-    height: 12px;
+    @include skeleton-bar;
     width: 70%;
-    border-radius: var(--theme-radius-full);
-    background-image: linear-gradient(90deg, #EEF1F4 0%, #F7F9FA 40%, #EEF1F4 80%);
-    background-size: 420px 100%;
-    animation: shared-table-shimmer 1.4s linear infinite;
   }
 
   &__skeleton-cell:nth-child(3n+2) .shared-table__skeleton-bar {
@@ -291,17 +260,7 @@
     width: 36%;
   }
 
-  // ---------------------------------------------------------------------------
-  // Estados — vacío / error (círculo 64 + icono Phosphor + título + texto + CTA)
-  // ---------------------------------------------------------------------------
-  &__state {
-    @include state-panel;
-  }
-
-  &__state-icon {
-    @include state-panel-icon;
-  }
-
+  // Imagen legada del estado vacío (`emptyImage`); el resto del estado usa `.state-panel*`.
   &__state-image {
     width: 160px;
     height: auto;
@@ -313,33 +272,6 @@
     }
   }
 
-  &__state-title {
-    @include state-panel-title;
-  }
-
-  &__state-text {
-    @include state-panel-text;
-  }
-
-  &__state-cta {
-    @include state-panel-cta;
-  }
-
-  &__state--error &__state-icon {
-    @include state-panel-icon-error;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Paginator — hereda estilos globales de _material.scss,
-  // pero ajustamos bordes dentro del card
-  // ---------------------------------------------------------------------------
-  .mat-mdc-paginator {
-    border-top: 1px solid var(--theme-border-secondary);
-    background-color: var(--theme-bg-card);
-    font-size: var(--theme-font-small-size);
-    color: var(--theme-text-secondary);
-  }
-
   // ---------------------------------------------------------------------------
   // Responsive — tabla scroll horizontal en pantallas chicas
   // ---------------------------------------------------------------------------
@@ -349,18 +281,5 @@
     &__mat-table {
       min-width: 600px;
     }
-  }
-}
-
-@keyframes shared-table-shimmer {
-  0% { background-position: -420px 0; }
-  100% { background-position: 420px 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .shared-table__skeleton-bar {
-    animation: none;
-    background-image: none;
-    background-color: #EEF1F4;
   }
 }

@@ -1,55 +1,35 @@
 // ==========================================================================
-// DashboardComponent — Home role-aware (screens-spec.md §4)
+// DashboardComponent — Home role-aware (vista Home de pantallas-backoffice)
 // Bandas: Núcleo operativo / Analítica del portal / Seguimiento (placeholders
 // honestos, `app-dashboard-panel` da el chrome común; ver
 // `dashboard-panel.component.scss`).
 // ==========================================================================
 
-@use '../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--theme-space-xl);
+  gap: var(--theme-space-band);
 }
 
 // ── Estados de carga y error del Home (mismo patrón que `app-shared-table`) ──
 .dashboard-state {
   @include theme-card;
   overflow: hidden;
-
-  &-error {
-    @include state-panel;
-
-    &-icon {
-      @include state-panel-icon;
-      @include state-panel-icon-error;
-    }
-
-    &-title {
-      @include state-panel-title;
-    }
-
-    &-text {
-      @include state-panel-text;
-    }
-
-    &-cta {
-      @include state-panel-cta;
-    }
-  }
 }
 
 // ── Bandas (Núcleo operativo / Analítica del portal / Seguimiento) ────────
 .dashboard-band {
   display: flex;
   flex-direction: column;
-  gap: var(--theme-space-md);
+  gap: var(--theme-space-gap);
 
   &-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--theme-space-sm);
+    gap: 10px;
   }
 
   &-title {
@@ -57,25 +37,27 @@
     font-size: var(--theme-font-section-size);
     font-weight: var(--theme-font-section-weight);
     line-height: var(--theme-font-section-line-height);
+    letter-spacing: var(--theme-font-section-tracking);
     color: var(--theme-text-primary);
   }
 
   &-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: var(--theme-space-md);
-    align-items: stretch;
+    gap: var(--theme-space-gap);
+    align-items: start;
   }
 }
 
 .dashboard-panel-hint {
   margin: 0 0 var(--theme-space-sm);
-  font-size: var(--theme-font-size-xs);
-  color: var(--theme-text-tertiary);
+  font-size: var(--theme-font-small-size);
+  line-height: var(--theme-font-small-line-height);
+  color: var(--theme-text-secondary);
 }
 
-// Acción de footer estilo link (ej. "Ver los 68" en Trámites por organismo,
-// proyectada vía `[panelFooterExtra]`). Deshabilitada: el módulo aún no existe.
+// Acción de footer estilo link ("Ver los 68", proyectada vía `[panelFooterExtra]`).
+// No disponible: `appUnavailable` aporta el estado atenuado y el tooltip.
 .dashboard-panel-footer-action {
   display: inline-flex;
   align-items: center;
@@ -83,143 +65,179 @@
   border: none;
   background: transparent;
   padding: 0;
-  color: var(--theme-text-disabled);
+  color: var(--theme-text-link);
   font-family: inherit;
-  font-size: var(--theme-font-size-xs);
+  font-size: var(--theme-font-small-size);
   font-weight: var(--theme-font-weight-semibold);
-  cursor: not-allowed;
   white-space: nowrap;
-
-  i.ph {
-    font-size: 13px;
-  }
 }
 
-// ── Cola de revisión / Pendientes de completar ─────────────────────────
-.dashboard-queue {
-  display: flex;
-  flex-direction: column;
-}
-
+// ── Cola de revisión / Pendientes de completar (filas a sangre) ─────────
 .dashboard-queue-row {
   display: grid;
-  grid-template-columns: 1fr 96px 92px;
+  grid-template-columns: minmax(0, 1fr) 120px 92px;
   align-items: center;
   gap: var(--theme-space-sm);
-  padding: 12px 0;
+  min-height: 52px;
+  padding: var(--theme-space-sm) var(--theme-space-card);
   border-bottom: 1px solid var(--theme-border-subtle);
+  transition: background var(--theme-transition-fast) ease;
 
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+  &:hover {
+    background: var(--theme-table-hover-bg);
   }
-}
 
-.dashboard-myqueue-row {
-  display: grid;
-  grid-template-columns: 1fr 220px 96px;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  padding: 12px 0;
-  border-bottom: 1px solid var(--theme-border-subtle);
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+  &--chips {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 240px) 104px;
   }
 
   &-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 5px;
+  }
+
+  &-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+
+    strong {
+      font-size: var(--theme-font-size-sm);
+      font-weight: var(--theme-font-weight-medium);
+      color: var(--theme-text-primary);
+      @include truncate;
+    }
+
+    span {
+      font-size: var(--theme-font-caption-size);
+      color: var(--theme-text-tertiary);
+      @include truncate;
+    }
   }
 }
 
-.dashboard-queue-row-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-
-  strong {
-    font-size: var(--theme-font-size-sm);
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-text-primary);
-    @include truncate;
-  }
-
-  span {
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-tertiary);
-  }
+.dashboard-chip-warning,
+.dashboard-sla {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--theme-radius-full);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
 }
 
 .dashboard-chip-warning {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: var(--theme-radius-full);
+  min-height: 20px;
+  padding: 2px 8px;
   background: var(--theme-warning-bg);
   color: var(--theme-warning-text);
   font-size: var(--theme-font-size-2xs);
-  font-weight: var(--theme-font-weight-semibold);
-  white-space: nowrap;
 }
 
 .dashboard-sla {
   justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: var(--theme-radius-full);
-  font-size: var(--theme-font-size-xs);
-  font-weight: var(--theme-font-weight-semibold);
-  white-space: nowrap;
+  height: 22px;
+  padding: 0 9px;
+  font-size: var(--theme-font-caption-size);
 
-  &[data-level='danger'] {
-    background: var(--theme-error-bg);
-    color: var(--theme-error-icon);
-    border: 1px solid var(--theme-error-border);
-  }
-
-  &[data-level='warning'] {
-    background: var(--theme-warning-bg);
-    color: var(--theme-warning-text);
-    border: 1px solid var(--theme-warning-border);
-  }
-
-  &[data-level='success'] {
-    background: var(--theme-success-bg);
-    color: var(--theme-success);
-    border: 1px solid var(--theme-success-border);
-  }
+  &[data-level='danger']  { background: var(--theme-error-bg);   color: var(--theme-error-icon); }
+  &[data-level='warning'] { background: var(--theme-warning-bg); color: var(--theme-warning-text); }
+  &[data-level='success'] { background: var(--theme-success-bg); color: var(--theme-success-text); }
 }
 
 .dashboard-row-btn {
   justify-self: end;
-  height: 30px;
-  padding: 0 12px;
+  height: 28px;
+  padding: 0 11px;
   border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-md);
+  border-radius: calc(var(--theme-radius-md) - 1px);
   background: var(--theme-bg-card);
-  color: var(--theme-text-disabled);
+  color: var(--theme-primary-700);
   font-family: inherit;
   font-size: var(--theme-font-size-xs);
   font-weight: var(--theme-font-weight-semibold);
-  cursor: not-allowed;
   white-space: nowrap;
 }
 
-// ── Pipeline por estado / Mis fichas y contactos ────────────────────
-.dashboard-pipeline-bar {
+// ── Listas de filas con divisor (pipeline, mis fichas, búsquedas, feedback) ──
+.dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 7px 0;
+    border-top: 1px solid var(--theme-border-subtle);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-primary);
+  }
+
+  &--top li {
+    align-items: flex-start;
+    padding: 9px 0;
+  }
+
+  strong {
+    font-weight: var(--theme-font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Cantidad al final de la fila (búsquedas, pipeline, mis fichas).
+  li > span:first-child:not([class]) {
+    flex: 1;
+    @include truncate;
+  }
+}
+
+.dashboard-pipeline {
   display: flex;
-  height: 10px;
-  border-radius: var(--theme-radius-full);
-  overflow: hidden;
-  background: var(--theme-surface-sunken);
-  margin-bottom: var(--theme-space-md);
+  flex-direction: column;
+  gap: 14px;
+
+  &-bar {
+    display: flex;
+    gap: 2px;
+    height: 10px;
+    border-radius: var(--theme-radius-full);
+    overflow: hidden;
+  }
+
+  &-list-label,
+  &-list-percent {
+    font-size: var(--theme-font-small-size);
+  }
+
+  &-list-label {
+    flex: 1;
+    min-width: 0;
+    @include truncate;
+  }
+
+  &-list-percent {
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &-list-value {
+    min-width: 34px;
+    text-align: right;
+  }
+}
+
+.dashboard-mine-list-label {
+  flex: 1;
+  min-width: 0;
+  @include truncate;
+}
+
+.dashboard-mine-list-value {
+  text-align: right;
 }
 
 .dashboard-pipeline-bar-segment,
@@ -235,74 +253,30 @@
   height: 100%;
 }
 
-.dashboard-pipeline-list,
-.dashboard-mine-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  li {
-    display: grid;
-    grid-template-columns: 8px 1fr auto auto;
-    align-items: center;
-    gap: 8px;
-  }
-}
-
 .dashboard-pipeline-list-dot,
 .dashboard-mine-list-dot {
+  flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
 
-.dashboard-pipeline-list-label,
-.dashboard-mine-list-label {
-  font-size: var(--theme-font-size-sm);
-  color: var(--theme-text-secondary);
-  @include truncate;
-}
-
-.dashboard-pipeline-list-percent {
-  font-size: var(--theme-font-size-xs);
-  color: var(--theme-text-tertiary);
-  font-variant-numeric: tabular-nums;
-}
-
-.dashboard-pipeline-list-value,
-.dashboard-mine-list-value {
-  min-width: 26px;
-  text-align: right;
-  font-size: var(--theme-font-size-sm);
-  font-weight: var(--theme-font-weight-semibold);
-  color: var(--theme-text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.dashboard-mine-list li {
-  grid-template-columns: 8px 1fr auto;
-}
-
-// ── Consultas del portal (KPI en el header + sparkbar) ──────────────────
-// El valor total + promedio diario se proyectan en `[panelHeaderBody]` (debajo
-// del título, mismo bloque de texto) y la tendencia en `[panelHeaderExtra]`
-// (misma línea del título, alineada a la derecha — ver dashboard-panel).
+// ── Consultas del portal (KPI en el header + columnas punteadas) ────────
+// Total + promedio se proyectan en `[panelHeaderBody]` y la tendencia en `[panelHeaderExtra]`.
 .dashboard-visits-kpi-inline {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--theme-space-sm);
-  margin-top: 4px;
+  gap: 7px;
+  margin-top: 3px;
 
   &-value {
-    font-size: var(--theme-font-size-2xl);
-    font-weight: var(--theme-font-weight-bold);
+    font-size: var(--theme-font-metric-size);
+    font-weight: var(--theme-font-metric-weight);
+    line-height: 1;
     color: var(--theme-text-primary);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.5px;
   }
 
   &-avg {
@@ -314,183 +288,201 @@
 .dashboard-visits-kpi-trend {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   height: 24px;
   padding: 0 10px;
   border-radius: var(--theme-radius-full);
   background: var(--theme-success-bg);
-  color: var(--theme-success);
-  font-size: var(--theme-font-size-2xs);
+  color: var(--theme-success-text);
+  font-size: var(--theme-font-caption-size);
   font-weight: var(--theme-font-weight-semibold);
   white-space: nowrap;
 
   i.ph {
-    font-size: 12px;
+    font-size: 13px;
   }
 }
 
 .dashboard-visits {
-  padding-top: var(--theme-space-sm);
+  display: flex;
+  gap: 10px;
+
+  // Eje Y (4k…0) y eje X (fechas): texto, así que usa tertiary (≥4,5:1) y no el gris decorativo del diseño.
+  &-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: none;
+    height: 168px;
+    font-size: var(--theme-font-size-2xs);
+    color: var(--theme-text-tertiary);
+    font-variant-numeric: tabular-nums;
+
+    &--x {
+      flex-direction: row;
+      height: auto;
+    }
+  }
+
+  &-plot {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+  }
 }
 
 .dashboard-barchart {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
-  height: 120px;
+  gap: 2px;
+  height: 168px;
+  padding: 0 1px;
+  border-bottom: 1px solid var(--theme-border-primary);
+  border-left: 1px solid var(--theme-border-subtle);
 
+  // Columnas punteadas (patrón del diseño). Serie histórica `chart-historic` (3,05:1 sobre blanco,
+  // cumple 1.4.11); últimas barras en `chart-2`.
   &-bar {
+    --bar-color: var(--theme-chart-historic);
     flex: 1 1 0;
-    min-width: 3px;
-    border-radius: 2px 2px 0 0;
-    background: var(--theme-primary-300);
+    min-width: 0;
+    border-radius: var(--theme-radius-xs) var(--theme-radius-xs) 0 0;
+    background-image: radial-gradient(circle at center, var(--bar-color) 1.1px, transparent 1.3px);
+    background-size: 5px 5px;
 
-    &--recent {
-      background: var(--theme-primary-600);
+    &.is-recent {
+      --bar-color: var(--theme-chart-2);
     }
-  }
-
-  &-axis {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 6px;
-    font-size: var(--theme-font-size-2xs);
-    color: var(--theme-text-tertiary);
   }
 }
 
-// ── Trámites por organismo (barras apiladas) ────────────────────────────
-// Leyenda proyectada en `[panelHeaderExtra]` (misma línea que título/subtítulo)
-// y acción "Ver los N" proyectada en `[panelFooterExtra]` (ver dashboard-panel).
+// ── Trámites por organismo (barras apiladas, sin pista) ─────────────────
+// Leyenda en `[panelHeaderExtra]`, acción "Ver los N" en `[panelFooterExtra]`.
+// Tramo "borrador / revisión": `chart-4` no llega a 3:1 sobre blanco (1.4.11) → se le suma un contorno
+// `chart-historic`. Desviación documentada respecto del diseño (relleno liso).
 .dashboard-orgbars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-gap);
+
   &-legend {
     display: flex;
-    gap: var(--theme-space-md);
+    gap: var(--theme-space-gap);
     flex-wrap: wrap;
 
     span {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: var(--theme-font-size-xs);
+      font-size: var(--theme-font-caption-size);
       color: var(--theme-text-secondary);
       white-space: nowrap;
     }
+  }
+
+  &-legend-dot,
+  &-row-bar-other {
+    background: var(--theme-chart-4);
+    box-shadow: inset 0 0 0 1px var(--theme-chart-historic);
   }
 
   &-legend-dot {
     display: inline-block;
     width: 8px;
     height: 8px;
-    border-radius: 2px;
+    border-radius: var(--theme-radius-xs);
 
-    &[data-color='info']  { background: var(--theme-primary); }
-    &[data-color='muted'] { background: var(--theme-primary-100); }
+    &[data-color='info'] {
+      background: var(--theme-chart-2);
+      box-shadow: none;
+    }
   }
 
   &-row {
     display: grid;
-    grid-template-columns: 132px 1fr 40px;
+    grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 54px;
     align-items: center;
-    gap: var(--theme-space-sm);
-    padding: 7px 0;
+    gap: var(--theme-space-gap);
   }
 
   &-row-label {
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
     @include truncate;
   }
 
   &-row-bar {
+    --bar-radius: calc(var(--theme-radius-sm) - 1px);
     display: flex;
-    height: 10px;
-    border-radius: var(--theme-radius-full);
-    overflow: hidden;
-    background: var(--theme-surface-sunken);
+    gap: 2px;
+    height: 20px;
+    min-width: 0;
+  }
+
+  &-row-bar-published,
+  &-row-bar-other {
+    height: 100%;
   }
 
   &-row-bar-published {
-    height: 100%;
-    background: var(--theme-primary);
+    background: var(--theme-chart-2);
+    border-radius: var(--bar-radius) 0 0 var(--bar-radius);
   }
 
   &-row-bar-other {
-    height: 100%;
-    background: var(--theme-primary-100);
+    border-radius: 0 var(--bar-radius) var(--bar-radius) 0;
   }
 
   &-row-total {
     text-align: right;
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
     font-variant-numeric: tabular-nums;
   }
 }
 
-// ── Búsquedas sin resultados / Trámites más consultados ────────────────
-.dashboard-searchlist {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-
-  li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--theme-space-sm);
-    padding: 9px 0;
-    border-bottom: 1px solid var(--theme-border-subtle);
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
-
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-  }
-
-  strong {
-    color: var(--theme-text-primary);
-    font-variant-numeric: tabular-nums;
-  }
-}
-
+// ── Trámites más consultados ────────────────────────────────────────────
 .dashboard-toplist {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 11px;
 
   li {
-    padding: 9px 0;
-    border-bottom: 1px solid var(--theme-border-subtle);
-
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
   }
 
   &-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--theme-space-sm);
-    margin-bottom: 6px;
-    font-size: var(--theme-font-size-sm);
+    gap: 10px;
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-primary);
 
+    span {
+      flex: 1;
+      min-width: 0;
+      @include truncate;
+    }
+
     strong {
+      font-size: var(--theme-font-size-xs);
+      font-weight: var(--theme-font-weight-semibold);
       font-variant-numeric: tabular-nums;
-      color: var(--theme-text-primary);
+      color: var(--theme-text-secondary);
     }
   }
 
   &-bar {
-    height: 6px;
+    height: 5px;
     border-radius: var(--theme-radius-full);
     background: var(--theme-surface-sunken);
     overflow: hidden;
@@ -498,33 +490,15 @@
     span {
       display: block;
       height: 100%;
-      background: var(--theme-primary-400);
+      background: var(--theme-chart-historic);
     }
   }
 }
 
 // ── Feedback pendiente ──────────────────────────────────────────────────
-.dashboard-feedback {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-
-  li {
-    display: flex;
-    gap: var(--theme-space-sm);
-    padding: 10px 0;
-    border-bottom: 1px solid var(--theme-border-subtle);
-
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-  }
-}
-
 .dashboard-feedback-icon {
   flex: none;
-  font-size: 20px;
+  font-size: var(--theme-icon-size-sm);
   margin-top: 1px;
 
   &[data-sentiment='negativo'] { color: var(--theme-error-icon); }
@@ -533,18 +507,20 @@
 }
 
 .dashboard-feedback-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 
   p {
-    margin: 0 0 2px;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-primary);
-    line-height: 1.4;
+    margin: 0;
+    line-height: 1.45;
   }
 
   span {
-    font-size: var(--theme-font-size-2xs);
+    font-size: var(--theme-font-caption-size);
     color: var(--theme-text-tertiary);
+    @include truncate;
   }
 }
 
@@ -556,7 +532,7 @@
 
   li {
     position: relative;
-    padding: 0 0 var(--theme-space-md) 18px;
+    padding: 0 0 14px 18px;
     border-left: 1px solid var(--theme-border-primary);
 
     &:last-child {
@@ -566,9 +542,9 @@
 
     p {
       margin: 0;
-      font-size: var(--theme-font-size-sm);
+      font-size: var(--theme-font-small-size);
       color: var(--theme-text-secondary);
-      line-height: 1.5;
+      line-height: 1.45;
 
       strong {
         color: var(--theme-text-primary);
@@ -578,6 +554,7 @@
   }
 }
 
+// Punto por tipo de evento: publicar = success, el resto = primary.
 .dashboard-timeline-dot {
   position: absolute;
   left: -4px;
@@ -586,28 +563,24 @@
   height: 8px;
   border-radius: 50%;
   background: var(--theme-primary);
-  border: 2px solid var(--theme-surface-card);
+
+  &[data-color='success'] { background: var(--theme-success); }
 }
 
 .dashboard-timeline-date {
   display: block;
   margin-top: 2px;
-  font-size: var(--theme-font-size-2xs);
+  font-size: var(--theme-font-caption-size);
   color: var(--theme-text-tertiary);
 }
 
 // ── Responsive ───────────────────────────────────────────────────────────
 @include responsive(mobile) {
   .dashboard-queue-row,
-  .dashboard-myqueue-row {
+  .dashboard-queue-row--chips {
     grid-template-columns: 1fr;
     justify-items: start;
     gap: 6px;
-  }
-
-  .dashboard-row-btn,
-  .dashboard-sla {
-    justify-self: start;
   }
 
   .dashboard-orgbars-row {

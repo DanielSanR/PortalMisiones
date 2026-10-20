@@ -1,19 +1,11 @@
 // ==========================================================================
 // Form de Ficha por localidad — usa .form-card / .form-grid / .form-field
-// globales; acá solo lo propio: estados de carga, contexto del trámite,
+// globales; acá solo lo propio: contexto del trámite,
 // avisos (P-6, adopción deshabilitada), slug con "Sugerir" y su vista previa,
 // el toggle de disponibilidad y la sección de puntos de atención.
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
-
-.fichaform-cargando {
-  padding: var(--theme-space-3xl) 0;
-}
-
-.fichaform-estado {
-  @include load-state-panel;
-}
+@use 'shared-styles/mixins' as *;
 
 // Contexto: de qué trámite del organismo es la ficha ------------------------
 .fichaform-contexto {
@@ -29,7 +21,7 @@
 
   > i.ph {
     flex: none;
-    font-size: 20px;
+    font-size: var(--theme-icon-size-lg);
     color: var(--theme-primary);
   }
 
@@ -51,21 +43,6 @@
     color: var(--theme-text-secondary);
     @include truncate;
   }
-
-  &__link {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    color: var(--theme-primary);
-    font-size: var(--theme-font-size-xs);
-    text-decoration: none;
-    border-radius: var(--theme-radius-sm);
-    @include focus-ring;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
 }
 
 .fichaform-aviso {
@@ -83,7 +60,7 @@
   i.ph {
     flex: none;
     margin-top: 2px;
-    font-size: 17px;
+    font-size: var(--theme-icon-size-md);
   }
 
   p {
@@ -101,7 +78,7 @@
 
 .fichaform-opcion__depto {
   color: var(--theme-text-tertiary);
-  font-size: var(--theme-font-size-xs);
+  font-size: var(--theme-font-small-size);
 }
 
 // Slug + botón "Sugerir" en la misma fila; en mobile se apilan.
@@ -137,7 +114,7 @@
     align-items: center;
     gap: var(--theme-space-sm);
     margin: 0;
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
 
     code {

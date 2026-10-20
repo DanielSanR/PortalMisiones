@@ -1,21 +1,40 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatDialog } from '@angular/material/dialog';
-import { ErrorDialogComponent } from '../../shared/components/error-dialog/error-dialog.component';
 import { extractErrorMessage } from '../models/api-response.model';
 import { API_CODES } from '../constants/api-codes.constants';
 
 @Injectable({ providedIn: 'root' })
 export class HttpErrorService {
-  constructor(private dialog: MatDialog) {}
+  private readonly injector = inject(Injector);
 
+  /**
+   * `MatDialog` y el componente del diálogo se cargan con `import()` recién al primer error: así
+   * cdk/overlay + material/dialog (~75 kB) no viajan en el bundle inicial (el interceptor que usa
+   * este servicio está en el composition root, antes del login).
+   */
   handleHttpError(error: HttpErrorResponse): void {
     const { title, message } = this.resolve(error);
 
-    this.dialog.open(ErrorDialogComponent, {
-      data: { title, message },
-      panelClass: 'custom-modal-panel',
-      width: '400px',
+    void Promise.all([
+      import('@angular/material/dialog'),
+      import('../../shared/components/error-dialog/error-dialog.component'),
+    ]).then(([{ MatDialog }, { ErrorDialogComponent }]) => {
+      this.injector.get(MatDialog).open(ErrorDialogComponent, {
+        data: { title, message },
+        role: 'alertdialog',
+        panelClass: 'custom-modal-panel',
+        width: '400px',
+      });
+    }).catch(() => {
+      // Sin red el chunk del diálogo puede no estar cacheado: el error no puede quedar mudo.
+      console.error(`[${title}] ${message}`);
+      try {
+        window.alert(`${title}
+
+${message}`);
+      } catch {
+        /* entorno sin window (SSR/tests) */
+      }
     });
   }
 

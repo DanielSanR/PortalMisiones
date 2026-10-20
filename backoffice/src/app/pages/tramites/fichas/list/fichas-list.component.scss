@@ -4,15 +4,7 @@
 // Acá quedan los selects y las celdas propias.
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
-
-.list-toolbar {
-  @include list-toolbar;
-
-  &-count {
-    @include list-toolbar-count;
-  }
-}
+@use 'shared-styles/mixins' as *;
 
 // Selects de la fila A, con fondo de card para que se lean sobre el well.
 .fichalist-select {

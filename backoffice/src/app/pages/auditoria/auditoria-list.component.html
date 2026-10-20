@@ -10,13 +10,13 @@
 <!-- Toolbar de lista (well): fila A = búsqueda/select reales + contador · fila B = filter-tabs (única, informativa). -->
 <div class="list-toolbar list-toolbar--stacked">
   <form [formGroup]="filterForm" class="list-toolbar__row">
-    <mat-form-field appearance="outline" class="filter-search">
-      <mat-label>Buscar</mat-label>
-      <input matInput formControlName="search" placeholder="Trámite o usuario...">
-      <i class="ph ph-magnifying-glass" matPrefix aria-hidden="true"></i>
-    </mat-form-field>
+    <app-list-search
+      [control]="filterForm.controls.search"
+      placeholder="Buscar por trámite o usuario…"
+      ariaLabel="Buscar registros de auditoría por trámite o por usuario">
+    </app-list-search>
 
-    <mat-form-field appearance="outline" class="filter-select">
+    <mat-form-field appearance="outline" class="filter-select" subscriptSizing="dynamic">
       <mat-label>Acción</mat-label>
       <mat-select formControlName="accion">
         <mat-option value="">Todas</mat-option>
@@ -26,7 +26,7 @@
       </mat-select>
     </mat-form-field>
 
-    <span class="list-toolbar-count">{{ pagina.total }} registros</span>
+    <span class="list-toolbar-count list-toolbar-count--end">{{ pagina.total }} registros</span>
   </form>
 
   <div class="list-toolbar__row">
@@ -52,12 +52,9 @@
     (pageChange)="onPageChange($event)">
 
     <ng-template appTableCell="accion" let-row>
-        <span class="accion-chip"
-            [style.color]="row.accion | accionLabel:'color'"
-            [style.borderColor]="row.accion | accionLabel:'color'">
-            <i class="ph ph-{{ row.accion | accionLabel:'icon' }} accion-icon"
-                [style.color]="row.accion | accionLabel:'color'" aria-hidden="true"></i>
-            {{ row.accion | accionLabel }}
+        <span class="pill pill--{{ row.accion | accionLabel:'tone' }}">
+            <i class="ph ph-{{ row.accion | accionLabel:'icon' }} pill__icon" aria-hidden="true"></i>
+            <span class="pill__label">{{ row.accion | accionLabel }}</span>
         </span>
     </ng-template>
 
@@ -74,7 +71,9 @@
     </ng-template>
 
     <ng-template appTableCell="detalle" let-row>
-        <button mat-icon-button matTooltip="Ver detalle de cambios" (click)="onViewDetail(row)">
+        <button type="button" class="row-action row-action--icon" matTooltip="Ver detalle de cambios"
+                [attr.aria-label]="'Ver detalle de ' + (row.accion | accionLabel | lowercase) + ' de ' + row.tramiteTitulo"
+                (click)="onViewDetail(row)">
             <i class="ph ph-eye" aria-hidden="true"></i>
         </button>
     </ng-template>

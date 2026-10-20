@@ -1,100 +1,56 @@
 // ==========================================================================
 // Responsive Utilities — Portal Provincial de Tramites Misiones
 // ==========================================================================
-// Breakpoints: mobile (<768), tablet (768-1023), desktop (>=1024), wide (>=1280)
+// Breakpoints (mixin `responsive()` de _mixins): mobile (<768), tablet (768-1023),
+// desktop (>=1024), wide (>=1280). Nada de `@media` con px literales acá.
 // ==========================================================================
+
+@use 'mixins' as *;
 
 // ---------------------------------------------------------------------------
 // Visibility Helpers
 // ---------------------------------------------------------------------------
-@media (max-width: 767px) {
+@include responsive(mobile) {
   .hide-mobile {
     display: none !important;
   }
 }
 
-@media (min-width: 768px) {
-  .hide-desktop {
-    display: none !important;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .hide-tablet {
-    display: none !important;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Mobile Table Adjustments
+// El prefijo `table.` sube la especificidad por encima de las reglas de _material.scss
+// (`.mat-mdc-table .mat-mdc-row .mat-mdc-cell`), que si no pisaban estos ajustes.
 // ---------------------------------------------------------------------------
-@media (max-width: 767px) {
-  .mat-mdc-table {
+@include responsive(mobile) {
+  table.mat-mdc-table {
     font-size: var(--theme-font-size-sm);
-
-    .mat-mdc-header-cell,
-    .mat-mdc-cell {
-      padding: 0 8px;
-    }
 
     .mat-mdc-header-row {
       height: 44px;
+
+      .mat-mdc-header-cell {
+        padding: 0 var(--theme-space-sm);
+      }
     }
 
     .mat-mdc-row {
       height: 48px;
-    }
-  }
 
-  .mat-mdc-paginator {
-    .mat-mdc-paginator-container {
-      justify-content: center;
-      flex-wrap: wrap;
-      padding: 8px;
+      .mat-mdc-cell {
+        padding: 0 var(--theme-space-sm);
+      }
     }
-
-    .mat-mdc-paginator-range-label {
-      margin: 0 8px;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Mobile Layout — Header height adjustment
-// ---------------------------------------------------------------------------
-@media (max-width: 767px) {
-  .admin-layout__container {
-    margin-top: var(--theme-header-height-mobile) !important;
   }
 }
 
 // ---------------------------------------------------------------------------
 // Mobile Form Adjustments
 // ---------------------------------------------------------------------------
-@media (max-width: 767px) {
+@include responsive(mobile) {
   .mat-mdc-form-field {
     .mdc-text-field {
       font-size: 16px; // prevents iOS zoom on focus
-    }
-  }
-
-  .form-row {
-    grid-template-columns: 1fr !important;
-    gap: 0 !important;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Mobile Card Adjustments
-// ---------------------------------------------------------------------------
-@media (max-width: 767px) {
-  .mat-mdc-card {
-    .mat-mdc-card-header {
-      padding: var(--theme-space-md) var(--theme-space-md) 0;
-    }
-
-    .mat-mdc-card-content {
-      padding: var(--theme-space-md);
     }
   }
 }
@@ -102,7 +58,7 @@
 // ---------------------------------------------------------------------------
 // Mobile Dialog Adjustments
 // ---------------------------------------------------------------------------
-@media (max-width: 767px) {
+@include responsive(mobile) {
   .cdk-overlay-pane {
     max-width: 95vw !important;
   }
@@ -129,87 +85,17 @@
 }
 
 // ---------------------------------------------------------------------------
-// Responsive Grid Helpers
-// ---------------------------------------------------------------------------
-.grid-responsive {
-  display: grid;
-  gap: var(--theme-space-md);
-
-  &--2 {
-    grid-template-columns: repeat(2, 1fr);
-
-    @media (max-width: 767px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  &--3 {
-    grid-template-columns: repeat(3, 1fr);
-
-    @media (max-width: 1023px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 767px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  &--4 {
-    grid-template-columns: repeat(4, 1fr);
-
-    @media (max-width: 1023px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 767px) {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Container Widths
-// ---------------------------------------------------------------------------
-.container-narrow {
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.container-medium {
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.container-wide {
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-// ---------------------------------------------------------------------------
 // Print Styles
 // ---------------------------------------------------------------------------
 @media print {
   .admin-layout__header,
   .admin-layout__sidenav,
-  .mat-mdc-paginator,
-  .mat-mdc-fab,
-  .mat-mdc-mini-fab,
-  .page-header__actions {
+  app-footer,
+  .admin-layout__skip-link {
     display: none !important;
   }
 
   .admin-layout__content {
     margin-left: 0 !important;
-    
-  }
- 
-
-  .mat-mdc-card {
-    box-shadow: none !important;
-    border: 1px solid #ddd !important;
   }
 }

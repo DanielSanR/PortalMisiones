@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -22,6 +22,7 @@ import { PermisosFacade, PermisoVM } from '@features/permisos';
 import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from '@core/constants/policy-overrides.constants';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 
 /** Valor "sin filtrar" de los dos filtros con dato real (acción y recurso). */
 const TODAS = 'todas';
@@ -179,6 +180,7 @@ export class PermisosListComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor(
     private router: Router,
@@ -275,6 +277,8 @@ export class PermisosListComponent implements OnInit {
   }
 
   onDelete(permiso: PermisoFilaVM): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host);
     this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: '¿Eliminar el permiso?',
@@ -299,11 +303,14 @@ export class PermisosListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Permiso eliminado', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef);
+        this.snackBar.open('Permiso eliminado', 'OK', {
+          duration: 3000,
+          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   /**

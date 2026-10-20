@@ -66,7 +66,7 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @Input() loading = false;
 
   // Estado vacío — círculo + icono Phosphor + título/texto + CTA opcional.
-  @Input() emptyIcon = 'inbox'; // nombre Phosphor sin prefijo (ej. "buildings")
+  @Input() emptyIcon = 'tray'; // nombre Phosphor sin prefijo (ej. "buildings")
   @Input() emptyTitle = '';
   @Input() emptyMessage = 'No se encontraron resultados';
   @Input() emptyImage = ''; // fallback legado: si se define, reemplaza al icono
@@ -236,6 +236,16 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
 
   onRowClick(row: T): void {
     this.rowClick.emit(row);
+  }
+
+  /**
+   * Enter/Espacio sobre la fila clickable. Solo si el foco está en la fila misma: una tecla
+   * pulsada sobre un botón de la celda (Editar, ⋮) burbujea hasta acá y no debe abrir el detalle.
+   */
+  onRowKeydown(event: Event, row: T): void {
+    if (!this.rowClick.observed || event.target !== event.currentTarget) return;
+    event.preventDefault(); // Espacio no debe scrollear la página
+    this.onRowClick(row);
   }
 
   rowIsSelected(row: T): boolean {

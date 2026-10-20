@@ -1,52 +1,45 @@
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
-.list-toolbar {
-  @include list-toolbar;
+// Tabla de categorías (diseño "Pantallas · Backoffice Misiones", Categorías): card plana + nota como caja
+// separada debajo. Columnas compartidas entre header y filas para que alineen.
+// Divergencia: el diseño suma "Evento de vida", "Estado" y "Trámites"; `CategoriaVM` no los trae (ver html).
+%cat-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 128px;
+  align-items: center;
 
-  &-count {
-    @include list-toolbar-count;
+  @include responsive(mobile) {
+    grid-template-columns: minmax(0, 1fr) 72px 116px;
   }
 }
 
-// Bloque centrado de los estados sin filas (vacío y error), para que ambos
-// respiren igual dentro de la card.
-%cat-estado {
+.cat-view {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: var(--theme-space-sm);
-  padding: var(--theme-space-3xl) var(--theme-space-lg);
-}
-
-// Columnas de la tabla (compartidas entre header y filas para que alineen).
-%cat-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 2.4fr) minmax(120px, 1fr) 96px 140px;
-  align-items: center;
+  gap: 14px;
 }
 
 .cat-table {
   @include theme-card;
   overflow: hidden;
 
-  // ── Header de columnas ──────────────────────────────────────
+  // ── Header de columnas (pad 11 18, sentence case 11.5/600 tertiary) ─────────
   &__head {
     @extend %cat-cols;
-    padding: var(--theme-space-sm) var(--theme-space-md);
     background-color: var(--theme-surface-sunken);
     border-bottom: 1px solid var(--theme-border-primary);
-    font-size: var(--theme-font-overline-size);
-    font-weight: var(--theme-font-overline-weight);
-    letter-spacing: var(--theme-font-overline-track);
-    text-transform: uppercase;
-    color: var(--theme-text-secondary);
+  }
+
+  &__th {
+    padding: 11px var(--theme-space-card);
+    font-size: var(--theme-font-caption-size);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-tertiary);
   }
 
   // ── Filas ───────────────────────────────────────────────────
   &__row {
     @extend %cat-cols;
-    padding: 0 var(--theme-space-md);
     min-height: 52px;
     border-bottom: 1px solid var(--theme-border-subtle);
     transition: background var(--theme-transition-fast);
@@ -59,26 +52,15 @@
     display: flex;
     align-items: center;
     min-width: 0;
-    padding: var(--theme-space-xs) 0;
+    padding: 9px var(--theme-space-card);
 
-    &--name { gap: 6px; }
-    &--slug {
-      font-family: var(--theme-font-mono);
-      font-size: var(--theme-font-size-sm);
-      color: var(--theme-text-tertiary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    // Las acciones las dibuja `app-row-actions` (patrón global de listados): la celda
-    // solo las empuja contra el borde derecho de la columna.
-    &--actions { justify-content: flex-end; }
+    &--name { gap: 8px; padding-right: var(--theme-space-gap); }
+
+    // Las acciones son tres `.row-action--icon` globales; la celda las empuja a la derecha.
+    &--actions { justify-content: flex-end; padding-inline: 14px; }
   }
 
-  &__col-center { justify-content: center; text-align: center; }
-  &__col-right { text-align: right; justify-content: flex-end; }
-
-  // Chevron de expandir/colapsar + marcador de hoja + spacer de alineación
+  // Chevron de expandir/colapsar + marcador de hoja + spacer de alineación (24px, radio 6)
   &__toggle {
     display: inline-flex;
     align-items: center;
@@ -88,122 +70,73 @@
     flex-shrink: 0;
     border: none;
     background: transparent;
-    border-radius: var(--theme-radius-sm);
+    border-radius: 6px;
     cursor: pointer;
     color: var(--theme-text-secondary);
     transition: background var(--theme-transition-fast);
+    @include focus-ring;
 
-    i.ph { font-size: 16px; }
+    i.ph { font-size: var(--theme-icon-size-sm); }
 
-    &:hover { background: var(--theme-surface-sunken); color: var(--theme-primary); }
+    &:hover { background: var(--theme-bg-sidebar-hover); color: var(--theme-primary); }
 
+    // Hoja: el diseño usa #D7DBE0; el token más cercano es `border-strong` (decorativo, aria-hidden).
     &--leaf {
       cursor: default;
-      color: var(--theme-neutral-300);
-      &:hover { background: transparent; }
+      color: var(--theme-border-strong);
+      &:hover { background: transparent; color: var(--theme-border-strong); }
     }
 
-    &--spacer { display: inline-block; width: 24px; flex-shrink: 0; }
+    &--spacer { cursor: default; &:hover { background: transparent; } }
   }
 
-  // Ícono de tipo de nodo: carpeta en la raíz, "elbow" en los hijos
+  // Ícono de tipo de nodo: carpeta en la raíz, "elbow" (17) en los hijos
   &__type-icon {
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: var(--theme-icon-size-md);
     color: var(--theme-text-tertiary);
 
-    &--root {
-      font-size: 17px;
-      color: var(--theme-accent);
-    }
+    &--root { color: var(--theme-accent); }
   }
 
+  // Nombre: la estructura es `.cell-name` (global); acá el peso por nivel.
   &__name {
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 
     &--child { font-weight: var(--theme-font-weight-normal); }
   }
 
-  &__badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 22px;
-    padding: 0 8px;
-    border-radius: var(--theme-radius-full);
-    background: var(--theme-primary-50);
-    color: var(--theme-primary-700);
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
-    font-variant-numeric: tabular-nums;
-
-    &--zero {
-      background: transparent;
-      color: var(--theme-text-tertiary);
-    }
+  // Slug mono 11.5 DEBAJO del nombre (no columna).
+  &__slug {
+    font-family: var(--theme-font-mono);
+    font-size: var(--theme-font-caption-size);
   }
 
-  // Acciones de fila: `app-row-actions` (patrón GLOBAL de listados), con "Editar"
-  // como acción principal y el resto —Agregar subcategoría, Eliminar— en el menú.
+  &__count {
+    font-size: var(--theme-font-body-size);
+    color: var(--theme-text-primary);
+
+    &--zero { color: var(--theme-text-tertiary); }
+  }
 
   // ── Carga / vacío / error ───────────────────────────────────
-  // Skeleton de carga: `app-loading[variant=skeleton]` (ver template), sin
-  // estilos propios acá — hereda el shimmer/radios del componente compartido.
+  // Sin estilos propios: el skeleton es `app-loading[variant=skeleton]` y el
+  // vacío/error usan el `.state-panel` global (mismo patrón que `app-shared-table`).
+}
 
-  &__empty {
-    @extend %cat-estado;
+// Nota al pie como caja separada (diseño): pad 11 14, radio 8, borde, 12.5, ícono 17.
+.cat-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 11px 14px;
+  background: var(--theme-surface-sunken);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-md);
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-small-size);
 
-    &-icon {
-      font-size: 48px;
-      color: var(--theme-primary-200);
-      margin-bottom: var(--theme-space-xs);
-    }
-    &-title { margin: 0; font-weight: var(--theme-font-weight-semibold); color: var(--theme-text-primary); }
-    &-text { margin: 0 0 var(--theme-space-sm); color: var(--theme-text-secondary); font-size: var(--theme-font-size-sm); max-width: 42ch; }
-  }
-
-  // El error de carga es un estado hermano del vacío, no una variante: "no pudimos
-  // cargar" y "no hay nada" cuentan cosas distintas y se pintan distinto (ícono en
-  // la escala de error, CTA "Reintentar").
-  &__error {
-    @extend %cat-estado;
-
-    &-icon {
-      font-size: 48px;
-      color: var(--theme-error);
-      margin-bottom: var(--theme-space-xs);
-    }
-    &-title { margin: 0; font-weight: var(--theme-font-weight-semibold); color: var(--theme-text-primary); }
-    &-text { margin: 0 0 var(--theme-space-sm); color: var(--theme-text-secondary); font-size: var(--theme-font-size-sm); max-width: 42ch; }
-  }
-
-  // Nota informativa al pie de la tabla-árbol (colapso por defecto).
-  // Divergencia: el diseño original agrega "arrastrá para reordenar"; se omite porque no hay
-  // endpoint de reordenamiento en el backend (ver resumen de la tarea).
-  &__note {
-    display: flex;
-    align-items: center;
-    gap: var(--theme-space-sm);
-    margin: 0;
-    padding: var(--theme-space-sm) var(--theme-space-md);
-    background: var(--theme-surface-sunken);
-    border-top: 1px solid var(--theme-border-primary);
-    color: var(--theme-text-secondary);
-    font-size: var(--theme-font-size-sm);
-
-    i.ph { flex-shrink: 0; font-size: 16px; color: var(--theme-text-tertiary); }
-  }
-
-  // Responsive: en mobile ocultamos la columna slug para no romper el layout.
-  @include responsive(mobile) {
-    &__head,
-    &__row { grid-template-columns: minmax(0, 1fr) 72px 116px; }
-    &__cell--slug,
-    &__head > span:nth-child(2) { display: none; }
-  }
+  i.ph { flex-shrink: 0; font-size: var(--theme-icon-size-md); }
 }

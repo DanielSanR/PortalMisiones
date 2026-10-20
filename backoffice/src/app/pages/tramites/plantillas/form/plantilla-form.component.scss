@@ -1,18 +1,10 @@
 // ==========================================================================
 // Form de Plantilla provincial — usa .form-card / .form-grid / .form-field
-// globales; acá solo lo propio: estados de carga, aviso de catálogos, slug con
+// globales; acá solo lo propio: aviso de catálogos, slug con
 // botón "Desde el título" y su vista previa, y el toggle de estado.
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
-
-.plantform-cargando {
-  padding: var(--theme-space-3xl) 0;
-}
-
-.plantform-estado {
-  @include load-state-panel;
-}
+@use 'shared-styles/mixins' as *;
 
 .plantform-aviso {
   display: flex;
@@ -29,7 +21,7 @@
   i.ph {
     flex: none;
     margin-top: 2px;
-    font-size: 17px;
+    font-size: var(--theme-icon-size-md);
   }
 
   p {
@@ -70,7 +62,7 @@
     align-items: center;
     gap: var(--theme-space-sm);
     margin: 0;
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
 
     code {

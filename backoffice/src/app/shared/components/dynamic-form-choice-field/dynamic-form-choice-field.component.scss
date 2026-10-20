@@ -1,0 +1,11 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.radio-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--theme-space-md);
+  padding: var(--theme-space-sm) 0;
+}

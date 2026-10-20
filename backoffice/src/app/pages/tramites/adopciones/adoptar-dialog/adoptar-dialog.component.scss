@@ -1,32 +1,18 @@
 // ==========================================================================
-// Diálogo "Adoptar trámite". Cáscara compartida (`form-dialog`: círculo de
-// ícono 38px, título y cuerpo, error inline, acciones a la derecha); acá solo
-// los estados de carga de las opciones.
+// Diálogo "Adoptar trámite". La cáscara es `.form-dialog` (global, shared-styles);
+// acá solo el estado de error al cargar las opciones.
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
+.adoptar-dialog__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+  margin-top: var(--theme-space-lg);
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-sm);
 
-.adoptar-dialog {
-  @include form-dialog;
-
-  &__cargando {
-    @include flex-center;
-    gap: var(--theme-space-sm);
-    padding: var(--theme-space-xl) 0;
-    color: var(--theme-text-secondary);
-  }
-
-  &__estado {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--theme-space-sm);
-    margin-top: var(--theme-space-lg);
-    color: var(--theme-text-secondary);
-    font-size: var(--theme-font-size-sm);
-
-    p {
-      margin: 0;
-    }
+  p {
+    margin: 0;
   }
 }

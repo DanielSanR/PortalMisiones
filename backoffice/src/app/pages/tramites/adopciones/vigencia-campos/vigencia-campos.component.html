@@ -6,7 +6,7 @@
     </label>
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <input matInput [id]="idPrefijo + '-desde'" [attr.aria-labelledby]="idPrefijo + '-desde-label'"
-             formControlName="vigenteDesde" [matDatepicker]="pickerDesde" placeholder="DD/MM/AAAA" autocomplete="off">
+             formControlName="vigenteDesde" required [matDatepicker]="pickerDesde" placeholder="DD/MM/AAAA" autocomplete="off">
       <mat-datepicker-toggle matIconSuffix [for]="pickerDesde" aria-label="Elegir la fecha de inicio"></mat-datepicker-toggle>
       <mat-datepicker #pickerDesde></mat-datepicker>
       <mat-hint>Desde el comienzo de ese día.</mat-hint>

@@ -1,20 +1,17 @@
-@use '../../../shared-styles/mixins' as *;
-
-.list-toolbar {
-  @include list-toolbar;
-
-  &-count {
-    @include list-toolbar-count(true);
-  }
-}
+@use 'shared-styles/mixins' as *;
 
 // ── Stats Cards ─────────────────────────────────────────────
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--theme-space-md);
+  gap: var(--theme-space-gap);
   margin-bottom: var(--theme-space-lg);
+
+  @include responsive(mobile) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--theme-space-sm);
+  }
 }
 
 // Aviso compacto en el lugar del resumen cuando fallan las estadísticas.
@@ -26,11 +23,11 @@
   margin-bottom: var(--theme-space-lg);
   padding: var(--theme-space-sm) var(--theme-space-md);
   border: 1px solid var(--theme-error-border);
-  border-radius: var(--theme-radius-lg);
+  border-radius: var(--theme-radius-panel);
   background-color: var(--theme-error-bg);
 
   &__icon {
-    font-size: 20px;
+    font-size: var(--theme-icon-size-lg);
     color: var(--theme-error-icon);
   }
 
@@ -45,143 +42,124 @@
   }
 }
 
+// Card plana del diseño (mismo radio y borde que el resto de las cards).
 .stat-card {
-  .mat-mdc-card-content {
-    display: flex;
-    align-items: center;
-    gap: var(--theme-space-md);
-    padding: 18px var(--theme-space-md);
-  }
+  @include theme-card;
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-md);
+  min-width: 0;
+  padding: var(--theme-space-card) var(--theme-space-md);
 
+  // Ícono sobre el fondo tonal de su estado; el glifo usa el color de ícono (no de texto).
   &__icon {
+    @include flex-center;
+    flex: none;
     width: 48px;
     height: 48px;
-    border-radius: var(--theme-radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    border-radius: var(--theme-radius-md);
 
     i.ph {
-      font-size: 26px;
+      font-size: var(--theme-font-size-3xl);
     }
 
-    &--total     { background: #3B82F618; color: #3B82F6; }
-    &--util      { background: #16A34A18; color: #16A34A; }
-    &--noUtil    { background: #F4433618; color: #F44336; }
-    &--comentario { background: #F59E0B18; color: #F59E0B; }
+    &--total      { background: var(--theme-info-bg);    color: var(--theme-primary); }
+    &--util       { background: var(--theme-success-bg); color: var(--theme-success); }
+    &--noUtil     { background: var(--theme-error-bg);   color: var(--theme-error-icon); }
+    &--comentario { background: var(--theme-warning-bg); color: var(--theme-warning); }
   }
 
   &__info {
     display: flex;
     flex-direction: column;
+    gap: var(--theme-space-xs);
     min-width: 0;
   }
 
   &__value {
-    font-size: var(--theme-font-size-2xl);
-    font-weight: var(--theme-font-weight-bold);
+    font-size: var(--theme-font-metric-size);
+    font-weight: var(--theme-font-metric-weight);
     line-height: 1;
     color: var(--theme-text-primary);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
 
   &__label {
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-secondary);
-    margin-top: 6px;
+    font-size: var(--theme-font-caption-size);
     font-weight: var(--theme-font-weight-medium);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    color: var(--theme-text-secondary);
   }
 }
 
 // ── Filtros (fila A del well) — dato real (`search`, `esUtil`, fechas) ──────
-// ya persistido/consultado vía `FeedbackFacade`. Fondo
-// blanco explícito para que el campo se lea sobre el well sunken (#F7F9FB).
-.filter-search,
-.filter-select,
+// ya persistido/consultado vía `FeedbackFacade`. Fondo blanco explícito para que
+// el campo se lea sobre el well sunken.
 .filter-date {
   --mdc-outlined-text-field-container-color: var(--theme-surface-card);
-}
+  width: 170px;
 
-.filter-search {
-  flex: 1;
-  min-width: 250px;
+  @include responsive(mobile) {
+    width: 100%;
+  }
 }
-
-.filter-select { width: 160px; }
-.filter-date   { width: 170px; }
 
 // ── Tabla ────────────────────────────────────────────────────
-
-// Chip útil/no útil
-.util-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: var(--theme-radius-full);
-  font-size: var(--theme-font-size-xs);
-  font-weight: var(--theme-font-weight-semibold);
-  border: 1px solid transparent;
-
-  &--si {
-    background: var(--theme-estado-publicado-bg);
-    color: var(--theme-estado-publicado-text);
-    border-color: #16A34A30;
-  }
-
-  &--no {
-    background: var(--theme-estado-error-bg, #FEE2E2);
-    color: var(--theme-error, #DC2626);
-    border-color: #F4433630;
-  }
-}
-
-.util-icon {
-  font-size: 14px;
-}
 
 // Tramite cell
 .tramite-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--theme-space-2xs);
 }
 
 .organismo-label {
-  font-size: var(--theme-font-size-xs);
+  font-size: var(--theme-font-caption-size);
   color: var(--theme-text-secondary);
 }
 
-// Comentario
+// Comentario: 2 líneas y, si es largo, un botón para verlo completo (el tooltip no llega a teclado ni a táctil).
+.comentario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--theme-space-2xs);
+  max-width: 440px;
+  padding: var(--theme-space-xs) 0;
+}
+
 .comentario-text {
   font-size: var(--theme-font-size-sm);
   color: var(--theme-text-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  max-width: 440px;
-  cursor: default;
+  @include line-clamp(2);
+
+  &.is-expandido {
+    display: block;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+  }
+}
+
+.comentario-toggle {
+  min-height: var(--theme-space-lg);
+  padding: 0;
+  border: 0;
+  border-radius: var(--theme-radius-sm);
+  background: none;
+  color: var(--theme-primary);
+  font: inherit;
+  font-size: var(--theme-font-small-size);
+  font-weight: var(--theme-font-weight-semibold);
+  cursor: pointer;
+  @include focus-ring;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .sin-comentario {
   color: var(--theme-text-secondary);
   font-size: var(--theme-font-size-sm);
-}
-
-// ── Responsive ───────────────────────────────────────────────
-
-@media (max-width: 767px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--theme-space-sm);
-  }
-
-  .filter-select,
-  .filter-date {
-    width: 100%;
-  }
 }

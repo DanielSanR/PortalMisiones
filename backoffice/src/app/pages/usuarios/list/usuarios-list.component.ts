@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -15,12 +15,15 @@ import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { RolLabelPipe } from '../../../shared/pipes/rol-label.pipe';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
 import { ROLE_TO_SPANISH, UserRole } from '@core/enums/user-role.enum';
 import { EDITAR_USUARIO_ACCESS } from '@core/constants/policy-overrides.constants';
 import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
 import { AuthTokenService } from '@core/services/auth-token.service';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { tinteDeAvatar } from '@shared/utils/avatar-tinte';
 import {
   CredencialModo, UsuarioCredencialDialogComponent, UsuarioCredencialDialogData,
 } from '../credencial-dialog/usuario-credencial-dialog.component';
@@ -49,9 +52,6 @@ interface UsuariosVista extends EstadoVacio {
   filtrosActivos: FiltroActivo[];
 }
 
-/** Paleta de tintes de los avatares de la tabla (Kitchen Sink §05). */
-const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
-
 @Component({
   selector: 'app-usuarios-list',
   standalone: true,
@@ -70,6 +70,7 @@ const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
     RolLabelPipe,
     HasPermissionDirective,
     PageActionsDirective,
+    UnavailableDirective,
   ],
   templateUrl: './usuarios-list.component.html',
   styleUrl: './usuarios-list.component.scss',
@@ -140,6 +141,7 @@ export class UsuariosListComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor(
     private router: Router,
@@ -227,9 +229,7 @@ export class UsuariosListComponent implements OnInit {
 
   /** Tinte estable por id: el mismo usuario conserva su color entre cargas. */
   tinte(id: string): string {
-    let acumulado = 0;
-    for (const caracter of id ?? '') acumulado = (acumulado + caracter.charCodeAt(0)) % 997;
-    return TINTES[acumulado % TINTES.length];
+    return tinteDeAvatar(id);
   }
 
   accionEditar(usuario: UsuarioVM): RowAction {
@@ -339,6 +339,8 @@ export class UsuariosListComponent implements OnInit {
   }
 
   onEliminar(usuario: UsuarioVM): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host);
     const nombre = this.nombreCompleto(usuario);
     this.dialog.open(ConfirmDialogComponent, {
       data: {
@@ -355,10 +357,13 @@ export class UsuariosListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Usuario eliminado', 'OK', {
-        duration: 3000,
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef);
+        this.snackBar.open('Usuario eliminado', 'OK', {
+          duration: 3000,
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   onDesactivar(usuario: UsuarioVM): void {

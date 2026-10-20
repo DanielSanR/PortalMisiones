@@ -1,9 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FieldConfig } from '../../../core/models/field.interface';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-field.component';
@@ -23,7 +22,6 @@ const NO_CONTROL_TYPES = ['tip', 'section-header'];
     CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
-    MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
     DynamicFormFieldComponent,
@@ -31,11 +29,13 @@ const NO_CONTROL_TYPES = ['tip', 'section-header'];
   ],
   templateUrl: './dynamic-form.component.html',
   styleUrls: ['./dynamic-form.component.scss'],
-  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicFormComponent implements OnInit, OnChanges {
   @Input() fields: FieldConfig[] = [];
   @Input() submitButtonText = 'Guardar';
+  /** Texto del botón mientras `saving` (se conserva junto al spinner). */
+  @Input() savingButtonText = 'Guardando…';
   @Input() cancelButtonText = 'Cancelar';
   @Input() initialData?: any;
   @Input() hideButtons = false;
@@ -63,8 +63,21 @@ export class DynamicFormComponent implements OnInit, OnChanges {
   form!: FormGroup;
   /** true luego del primer intento de envío inválido: habilita el banner resumen. */
   submitted = false;
+  /**
+   * Se incrementa al enviar: `markAllAsTouched()` no emite eventos ni cambia inputs, así que los
+   * campos (OnPush) no se revisarían y sus errores no aparecerían. Viaja como `[revision]`.
+   */
+  revision = 0;
 
-  constructor(private fb: FormBuilder) {}
+  /** Banner de resumen de validación: se enfoca al enviar un formulario inválido. */
+  @ViewChild(FormErrorBannerComponent) private resumen?: FormErrorBannerComponent;
+
+  constructor(private fb: FormBuilder, private cdr: ChangeDetectorRef) {}
+
+  /** "Guardar" bloqueado porque es edición sin cambios (`requireChanges`). */
+  get sinCambios(): boolean {
+    return this.requireChanges && !!this.form?.pristine;
+  }
 
   ngOnInit() {
     this.initForm();
@@ -206,6 +219,10 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     } else {
       this.form.markAllAsTouched();
       this.submitted = true;
+      this.revision++;
+      // Render del banner y recién después el foco (sin esto `focus()` corre con el banner aún ausente).
+      this.cdr.detectChanges();
+      this.resumen?.focus();
     }
   }
 }

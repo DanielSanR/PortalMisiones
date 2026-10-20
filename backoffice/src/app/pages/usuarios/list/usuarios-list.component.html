@@ -15,21 +15,23 @@
       ariaLabel="Buscar usuarios por nombre, email, rol u organismo">
     </app-list-search>
 
-    <div class="usuarioslist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} usuarios</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="usuarioslist-iconbtn" disabled aria-label="Ordenar">
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} usuarios</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
+              aria-label="Ordenar">
         <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-      <button type="button" class="usuarioslist-iconbtn" disabled aria-label="Exportar a CSV">
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
+              aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row usuarioslist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <button type="button" class="usuarioslist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -67,14 +69,13 @@
     emptyIcon="users">
 
     <ng-template appTableCell="nombre" let-row>
-        <div class="usuarios-list__nombre">
+        <div class="cell-person">
             <!-- Avatar con iniciales tintadas (Kitchen Sink §05). El tinte se deriva del id. -->
-            <span class="usuarios-list__avatar" [class]="'usuarios-list__avatar usuarios-list__avatar--' + tinte(row.id)"
-                  aria-hidden="true">{{ iniciales(row) }}</span>
-            <div class="usuarios-list__nombre-texto">
-                <span class="usuarios-list__nombre-principal">{{ nombreCompleto(row) }}</span>
+            <span [class]="'cell-avatar cell-avatar--round cell-avatar--' + tinte(row.id)" aria-hidden="true">{{ iniciales(row) }}</span>
+            <div class="cell-name">
+                <span class="cell-name__principal">{{ nombreCompleto(row) }}</span>
                 <!-- En mobile las columnas Email y Organismo se ocultan: acá no se pierde el dato. -->
-                <span class="usuarios-list__meta">
+                <span class="cell-name__meta">
                     {{ row.email }}@if (row.organismoNombre) { · {{ row.organismoNombre }} }
                 </span>
             </div>
@@ -93,7 +94,7 @@
         @if (row.organismoNombre) {
             <span class="text-secondary">{{ row.organismoNombre }}</span>
         } @else {
-            <span class="usuarios-list__sin-organismo">Sin organismo</span>
+            <span class="cell-muted">Sin organismo</span>
         }
     </ng-template>
 

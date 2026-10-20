@@ -1,5 +1,5 @@
 import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, TitleStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { registerLocaleData } from '@angular/common';
@@ -10,6 +10,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { mockApiInterceptor } from './core/mocks/mock-api.interceptor';
+import { AppTitleStrategy } from './core/services/app-title.strategy';
 // Wiring de features: el composition root importa cada `<feature>.providers.ts` y NO el barrel
 // `@features/<x>`. El barrel re-exporta el facade (`providedIn: 'root'`, con dependencias cross-feature)
 // y esbuild no lo descarta del chunk inicial aunque acá no se use; importando el providers, cada facade
@@ -50,6 +51,9 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([mockApiInterceptor, httpErrorInterceptor, authInterceptor])
     ),
     { provide: LOCALE_ID, useValue: 'es-AR' },
+    // `<title>` por ruta (último tramo del breadcrumb). Los textos del calendario en es-AR van en
+    // `provideFechaArDatepicker()` (provider de componente) para no meter el datepicker en el initial.
+    { provide: TitleStrategy, useClass: AppTitleStrategy },
 
     // ── Wiring por feature (cada feature provee sus DataSources; la fuente la resuelve environment) ──
     ...provideUsuariosFeature(),

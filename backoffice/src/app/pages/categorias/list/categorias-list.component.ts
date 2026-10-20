@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -14,12 +14,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
-import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { CategoriasFacade, CategoriaNode, CategoriaVM } from '@features/categorias';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+
+/** Fila del árbol (div con role=row): el selector por defecto de `foco-lista` es el de mat-table. */
+const FILA_ARBOL = '.cat-table__row';
 
 /** Cuenta recursiva de nodos (raíces + todos los descendientes), para el contador de la toolbar. */
 function contarNodos(nodes: CategoriaNode[]): number {
@@ -132,7 +135,6 @@ interface CategoriasVista extends EstadoVacio {
     MatSnackBarModule,
     LoadingComponent,
     FilterTabsComponent,
-    RowActionsComponent,
     ListSearchComponent,
     ActiveFiltersComponent,
     HasPermissionDirective,
@@ -206,6 +208,7 @@ export class CategoriasListComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor(
     private router: Router,
@@ -288,37 +291,9 @@ export class CategoriasListComponent implements OnInit {
     this.router.navigate(['/dashboard/categorias/editar', categoria.id]);
   }
 
-  accionEditar(node: CategoriaNode): RowAction {
-    return {
-      label: 'Editar',
-      icon: 'pencil-simple',
-      permission: 'UPDATE_CATEGORY',
-      ariaLabel: `Editar categoría ${node.nombre}`,
-      run: () => this.onEdit(node),
-    };
-  }
-
-  accionesDe(node: CategoriaNode): RowAction[] {
-    return [
-      {
-        label: 'Agregar subcategoría',
-        icon: 'plus',
-        permission: 'CREATE_CATEGORY',
-        ariaLabel: `Agregar subcategoría dentro de ${node.nombre}`,
-        run: () => this.onCreate(node.id),
-      },
-      {
-        label: 'Eliminar',
-        icon: 'trash',
-        permission: 'DELETE_CATEGORY',
-        danger: true,
-        ariaLabel: `Eliminar categoría ${node.nombre}`,
-        run: () => this.onDelete(node),
-      },
-    ];
-  }
-
   onDelete(node: CategoriaNode): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host, FILA_ARBOL);
     const hijas = node.children.length;
     this.dialog.open(ConfirmDialogComponent, {
       data: {
@@ -347,11 +322,14 @@ export class CategoriasListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Categoría eliminada', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef, FILA_ARBOL);
+        this.snackBar.open(  'Categoría eliminada', 'OK', {
+          duration: 3000,
+          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   private filtrosActivos(search: string, filtro: ArbolFiltro): FiltroActivo[] {

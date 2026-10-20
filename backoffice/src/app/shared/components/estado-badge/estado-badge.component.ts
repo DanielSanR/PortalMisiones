@@ -3,7 +3,7 @@ import { ClaveEstadoBadge, EstadoBadge, EstadoBadgePipe, claveDeEstado } from '.
 
 // Badge de estado de publicación (borrador/en revisión/publicado/despublicado).
 // Recibe el `PublicationStatus` del backend ('EN_REVISION') y lo pinta con su clave visual ('revision').
-// Pill full + dot 6px del color del estado, tokens --theme-estado-*.
+// Solo mapea el estado al tono de la pill global (`.pill--borrador|revision|publicado|despublicado`, tokens --theme-estado-*).
 @Component({
   selector: 'app-estado-badge',
   standalone: true,
@@ -13,7 +13,10 @@ import { ClaveEstadoBadge, EstadoBadge, EstadoBadgePipe, claveDeEstado } from '.
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EstadoBadgeComponent {
-  /** Clave visual (`data-estado`) del estado. */
+  /** Con borde y un punto más grande: para membretes de detalle (en tablas va sin borde). */
+  @Input() bordered = false;
+
+  /** Clave visual del estado (modificador `pill--<clave>`). */
   clave: ClaveEstadoBadge | null = null;
   private valor!: EstadoBadge;
 

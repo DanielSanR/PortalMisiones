@@ -1,13 +1,11 @@
 // ==========================================================================
-// Diálogo de alta/edición de punto de atención. Cáscara compartida
-// (`form-dialog`); acá solo la fila latitud/longitud y el link "Ver en mapa".
+// Diálogo de alta/edición de punto de atención. La cáscara es `.form-dialog`
+// (global, shared-styles); acá solo la fila latitud/longitud y el link "Ver en mapa".
 // ==========================================================================
 
-@use '../../../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 .punto-dialog {
-  @include form-dialog(600px);
-
   &__fila {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -24,7 +22,7 @@
     align-items: center;
     gap: var(--theme-space-xs);
     margin: 0 0 var(--theme-space-sm);
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
 
     a {

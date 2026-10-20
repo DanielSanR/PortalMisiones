@@ -7,7 +7,6 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { PuntoAtencionFormValue, PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
@@ -37,7 +36,7 @@ const MAX_NOMBRE = 255;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatProgressSpinnerModule, MatSlideToggleModule,
+    MatSlideToggleModule,
   ],
   templateUrl: './punto-dialog.component.html',
   styleUrl: './punto-dialog.component.scss',

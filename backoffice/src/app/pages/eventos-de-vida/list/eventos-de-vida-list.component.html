@@ -15,22 +15,24 @@
       ariaLabel="Buscar eventos de vida por nombre o slug">
     </app-list-search>
 
-    <div class="eventoslist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} eventos de vida</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="eventoslist-iconbtn" disabled aria-label="Ordenar">
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} eventos de vida</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
+              aria-label="Ordenar">
         <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-      <button type="button" class="eventoslist-iconbtn" disabled aria-label="Exportar a CSV">
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
+              aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row eventoslist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <!-- Chip único "Todas": el modelo no tiene ningún campo por el que segmentar. -->
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
-    <button type="button" class="eventoslist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -68,10 +70,10 @@
     emptyIcon="calendar-x">
 
     <ng-template appTableCell="nombre" let-row>
-        <div class="eventoslist-nombre">
-            <span class="eventoslist-nombre__principal">{{ row.nombre }}</span>
+        <div class="cell-name">
+            <span class="cell-name__principal">{{ row.nombre }}</span>
             <!-- En mobile la columna Slug se oculta: acá no se pierde el dato. -->
-            <span class="eventoslist-nombre__meta">{{ row.slug }}</span>
+            <span class="cell-name__meta">{{ row.slug }}</span>
         </div>
     </ng-template>
 

@@ -1,26 +1,26 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatCardModule } from '@angular/material/card';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '@shared/components/table';
 import { FilterTabsComponent, FilterTabOption } from '@shared/components/filter-tabs';
+import { ListSearchComponent } from '@shared/components/list-search';
 import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { provideFechaArDatepicker } from '@shared/adapters/fecha-ar-date-adapter';
 import { FeedbackFacade, FeedbackFilterVM, FeedbackPageVM, FeedbackStatsVM, FeedbackVM } from '@features/feedback';
 
 @Component({
   selector: 'app-feedback',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [provideFechaArDatepicker()],
   imports: [
     DatePipe,
     ReactiveFormsModule,
@@ -29,11 +29,10 @@ import { FeedbackFacade, FeedbackFilterVM, FeedbackPageVM, FeedbackStatsVM, Feed
     MatInputModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatCardModule,
-    MatTooltipModule,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
+    ListSearchComponent,
     PageActionsDirective,
   ],
   templateUrl: './feedback.component.html',
@@ -68,19 +67,19 @@ export class FeedbackComponent implements OnInit {
     { key: 'fecha',      label: 'Fecha',      width: '150px', hideOnMobile: true },
   ];
 
-  filterForm: FormGroup;
+  readonly filterForm = new FormGroup({
+    search: new FormControl('', { nonNullable: true }),
+    esUtil: new FormControl<boolean | ''>('', { nonNullable: true }),
+    fechaDesde: new FormControl<Date | null>(null),
+    fechaHasta: new FormControl<Date | null>(null),
+  });
 
-  constructor(
-    private route: ActivatedRoute,
-    private fb: FormBuilder,
-  ) {
-    this.filterForm = this.fb.group({
-      search: [''],
-      esUtil: [''],
-      fechaDesde: [null],
-      fechaHasta: [null],
-    });
-  }
+  /** Comentarios que el usuario expandió (por id de opinión). */
+  private readonly expandidos = new Set<number>();
+  /** Largo desde el cual el comentario no entra en las 2 líneas de la celda y ofrece "Ver comentario completo". */
+  private readonly largoColapsado = 90;
+
+  constructor(private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.tramiteIdFijo = this.route.snapshot.queryParamMap.get('tramiteId');
@@ -132,7 +131,7 @@ export class FeedbackComponent implements OnInit {
   loadData(): void {
     this.loading = true;
     this.error = false;
-    const v = this.filterForm.value;
+    const v = this.filterForm.getRawValue();
 
     this.load$.next({
       page: this.currentPage + 1,
@@ -156,18 +155,31 @@ export class FeedbackComponent implements OnInit {
     this.loadData();
   }
 
+  esLargo(comentario: string): boolean {
+    return comentario.length > this.largoColapsado;
+  }
+
+  estaExpandido(registro: FeedbackVM): boolean {
+    return this.expandidos.has(registro.id);
+  }
+
+  alternarComentario(registro: FeedbackVM): void {
+    if (!this.expandidos.delete(registro.id)) this.expandidos.add(registro.id);
+    this.cdr.markForCheck();
+  }
+
   clearFilters(): void {
     this.filterForm.reset({ search: '', esUtil: '', fechaDesde: null, fechaHasta: null });
   }
 
   hasFilters(): boolean {
-    const v = this.filterForm.value;
+    const v = this.filterForm.getRawValue();
     return !!(v.search || v.esUtil !== '' || v.fechaDesde || v.fechaHasta);
   }
 
   /** Filtro real "Todas/Útil/No útil" (campo `esUtil`): reusa el mismo `filterForm` reactivo, sin llamadas nuevas. */
   get valoracionActiva(): string {
-    const esUtil = this.filterForm.value.esUtil;
+    const esUtil = this.filterForm.getRawValue().esUtil;
     return esUtil === true ? 'util' : esUtil === false ? 'no-util' : 'todas';
   }
 

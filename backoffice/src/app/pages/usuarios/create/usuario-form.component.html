@@ -31,12 +31,12 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
         <!-- ── Datos personales ── -->
-        <div class="section-header">Datos personales</div>
+        <h2 class="section-header">Datos personales</h2>
         <div class="form-grid">
             <div class="form-field" [class.is-invalid]="fieldError('nombre', 'required') || fieldError('nombre', 'maxlength')">
               <label class="form-field__label" id="nombre-label" for="nombre">Nombre <span class="form-field__required" aria-hidden="true">*</span></label>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <input matInput id="nombre" aria-labelledby="nombre-label" formControlName="nombre" placeholder="Ej: María">
+                  <input matInput id="nombre" aria-labelledby="nombre-label" required formControlName="nombre" placeholder="Ej: María">
                   @if (fieldError('nombre', 'required')) {
                     <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El nombre es obligatorio</span></mat-error>
                   }
@@ -49,7 +49,7 @@
             <div class="form-field" [class.is-invalid]="fieldError('apellido', 'required') || fieldError('apellido', 'maxlength')">
               <label class="form-field__label" id="apellido-label" for="apellido">Apellido <span class="form-field__required" aria-hidden="true">*</span></label>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <input matInput id="apellido" aria-labelledby="apellido-label" formControlName="apellido" placeholder="Ej: González">
+                  <input matInput id="apellido" aria-labelledby="apellido-label" required formControlName="apellido" placeholder="Ej: González">
                   @if (fieldError('apellido', 'required')) {
                     <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El apellido es obligatorio</span></mat-error>
                   }
@@ -61,13 +61,12 @@
         </div>
 
         <!-- ── Acceso ── -->
-        <div class="section-header">Acceso</div>
+        <h2 class="section-header">Acceso</h2>
         <div class="form-grid">
             <div class="form-field" [class.is-invalid]="fieldError('email', 'required') || fieldError('email', 'email')">
               <label class="form-field__label" id="email-label" for="email">Email <span class="form-field__required" aria-hidden="true">*</span></label>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <input matInput id="email" aria-labelledby="email-label" formControlName="email" type="email" placeholder="usuario@misiones.gob.ar">
-                  <i class="ph ph-envelope-simple" matPrefix aria-hidden="true"></i>
+                  <input matInput id="email" aria-labelledby="email-label" required formControlName="email" type="email" placeholder="usuario@misiones.gob.ar">
                   @if (isEdit) {
                     <mat-hint>El email no puede modificarse</mat-hint>
                   }
@@ -84,7 +83,7 @@
               <div class="form-field" [class.is-invalid]="fieldError('password', 'required') || fieldError('password', 'minlength')">
                 <label class="form-field__label" id="password-label" for="password">Contraseña <span class="form-field__required" aria-hidden="true">*</span></label>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <input matInput id="password" aria-labelledby="password-label" formControlName="password"
+                    <input matInput id="password" aria-labelledby="password-label" required formControlName="password"
                         [type]="hidePassword ? 'password' : 'text'"
                         placeholder="Mínimo 8 caracteres">
                     <button mat-icon-button matSuffix type="button"
@@ -104,12 +103,12 @@
         </div>
 
         <!-- ── Rol y organismo ── -->
-        <div class="section-header">Rol y ubicación</div>
+        <h2 class="section-header">Rol y ubicación</h2>
         <div class="form-grid">
             <div class="form-field" [class.is-invalid]="fieldError('rol', 'required')">
               <label class="form-field__label" id="rol-label" for="rol">Rol <span class="form-field__required" aria-hidden="true">*</span></label>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-select id="rol" aria-labelledby="rol-label" formControlName="rol">
+                  <mat-select id="rol" aria-labelledby="rol-label" required formControlName="rol">
                       @for (r of rolesDisponibles; track r.value) {
                         <mat-option [value]="r.value">{{ r.label }}</mat-option>
                       }
@@ -125,7 +124,7 @@
               <div class="form-field" [class.is-invalid]="organismoError">
                 <label class="form-field__label" id="organismoId-label" for="organismoId">Organismo <span class="form-field__required" aria-hidden="true">*</span></label>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-select id="organismoId" aria-labelledby="organismoId-label" formControlName="organismoId">
+                    <mat-select id="organismoId" aria-labelledby="organismoId-label" required formControlName="organismoId">
                         <mat-option [value]="null">— Sin organismo —</mat-option>
                         @for (org of organismos; track org.id) {
                           <mat-option [value]="org.id">{{ org.nombre }}</mat-option>
@@ -140,7 +139,7 @@
         </div>
 
         @if (!isEdit) {
-          <div class="section-header">Estado</div>
+          <h2 class="section-header">Estado</h2>
           <div class="form-grid form-grid--full">
             <div class="slide-toggle-field">
               <mat-slide-toggle formControlName="activo" color="primary">
@@ -155,18 +154,22 @@
             <span class="form-actions__help">Los cambios se publican al guardar.</span>
             <div class="form-actions__buttons">
               <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="goBack()">Cancelar</button>
-              <button mat-raised-button color="primary" type="submit" class="usuario-form__submit"
-                      [disabled]="saving || sinCambios"
-                      [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''">
-                  @if (saving) {
-                    <mat-spinner diameter="20"></mat-spinner>
-                  } @else {
-                    <i class="ph ph-floppy-disk" aria-hidden="true"></i>
-                  }
-                  <!-- El texto se mantiene mientras guarda: un botón con solo el spinner
-                       se queda sin nombre accesible. -->
-                  <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear usuario') }}</span>
-              </button>
+              <!-- El tooltip no puede colgar de un `disabled` nativo (no recibe foco ni hover): va en un contenedor
+                   focusable solo mientras el botón está deshabilitado. -->
+              <span class="form-submit-tip" [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''"
+                    [attr.tabindex]="sinCambios && !saving ? 0 : null">
+                <button mat-raised-button color="primary" type="submit" class="usuario-form__submit"
+                        [disabled]="saving || sinCambios">
+                    @if (saving) {
+                      <mat-spinner diameter="20"></mat-spinner>
+                    } @else {
+                      <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+                    }
+                    <!-- El texto se mantiene mientras guarda: un botón con solo el spinner
+                         se queda sin nombre accesible. -->
+                    <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear usuario') }}</span>
+                </button>
+              </span>
             </div>
         </div>
 

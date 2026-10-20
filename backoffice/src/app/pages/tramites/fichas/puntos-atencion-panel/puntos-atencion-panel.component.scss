@@ -1,10 +1,10 @@
 // ==========================================================================
 // Panel de puntos de atención de una ficha: barra (toggle de inactivos +
 // "Agregar punto") y una grilla de cards (nombre, dirección, horarios,
-// contacto, coordenadas con "Ver en mapa", acciones).
+// contacto, coordenadas con "Ver en mapa" = `.detail-link` global, acciones).
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 .puntos {
   display: flex;
@@ -59,8 +59,8 @@
 
   &__nombre {
     margin: 0;
-    font-size: var(--theme-font-size-md);
-    font-weight: var(--theme-font-weight-semibold);
+    font-size: var(--theme-font-body-size);
+    font-weight: var(--theme-font-card-title-weight);
     color: var(--theme-text-primary);
     overflow-wrap: anywhere;
   }
@@ -76,7 +76,7 @@
     display: flex;
     align-items: flex-start;
     gap: var(--theme-space-sm);
-    font-size: var(--theme-font-size-sm);
+    font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
 
     dt {
@@ -102,21 +102,6 @@
     align-items: baseline;
     gap: var(--theme-space-sm);
     font-variant-numeric: tabular-nums;
-  }
-
-  &__mapa {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    color: var(--theme-primary);
-    font-size: var(--theme-font-size-xs);
-    text-decoration: none;
-    border-radius: var(--theme-radius-sm);
-    @include focus-ring;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   &__faltante {

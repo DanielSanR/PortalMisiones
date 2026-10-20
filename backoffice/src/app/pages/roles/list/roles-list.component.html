@@ -16,22 +16,23 @@
       ariaLabel="Buscar roles por código, descripción o alcance">
     </app-list-search>
 
-    <div class="roleslist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} roles</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="roleslist-iconbtn" disabled aria-label="Exportar a CSV">
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} roles</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
+              aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row roleslist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs
       [tabs]="(filterTabs$ | async) ?? []"
       [active]="(filtro$ | async)!"
       (activeChange)="filtro$.next($any($event))">
     </app-filter-tabs>
-    <button type="button" class="roleslist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -51,7 +52,7 @@
        `emptyActionPermission` va vacío a propósito: con filtros el CTA es "Limpiar filtros" (no
        exige nada) y sin filtros es "Nuevo rol", que se autoriza por ROL y ya lo verificó la ruta.
        Pedir `CREATE_ROLE` acá escondería el CTA a un ADMIN_BACKOFFICE que sí puede crear roles. -->
-  <div class="roles-layout__master">
+  <div>
     <app-shared-table
         [data]="vista.rows"
         [columns]="columns"
@@ -72,20 +73,23 @@
         (emptyAction)="onEmptyAction()"
         emptyIcon="shield-star">
 
-      <!-- Columna: Rol (ícono + código + tag + descripción) -->
+      <!-- Columna: Rol (tile tintado + código + tag + descripción) -->
       <ng-template appTableCell="rol" let-row>
-        <div class="rol-cell">
-          <span class="rol-cell__icon" [class.rol-cell__icon--protected]="esRolProtegido(row)">
-            <i class="ph" [class.ph-lock-simple]="esRolProtegido(row)" [class.ph-shield-star]="!esRolProtegido(row)" aria-hidden="true"></i>
+        <div class="cell-person">
+          <!-- Tinte por rol (diseño): protegido = cálido, global = azul, por organismo = gris. -->
+          <span class="cell-avatar" aria-hidden="true"
+                [class.cell-avatar--warm]="esRolProtegido(row)"
+                [class.cell-avatar--blue]="!esRolProtegido(row) && row.scopeTipo === 'global'"
+                [class.cell-avatar--grey]="!esRolProtegido(row) && row.scopeTipo !== 'global'">
+            <i class="ph" [class.ph-lock-simple]="esRolProtegido(row)" [class.ph-shield-star]="!esRolProtegido(row)"></i>
           </span>
           <div class="rol-cell__text">
             <div class="rol-cell__name-row">
               <span class="rol-cell__name">{{ row.codigo }}</span>
+              <!-- Sin tooltip: un span no focusable no lo muestra con teclado. El motivo ("solo un SUPERADMIN
+                   puede modificarlo") ya está en la nota del panel de detalle de este rol. -->
               @if (esRolProtegido(row)) {
-                <span class="rol-cell__tag rol-cell__tag--protected"
-                      matTooltip="Rol del sistema: solo un SUPERADMIN puede modificarlo">
-                  Protegido
-                </span>
+                <span class="rol-cell__tag rol-cell__tag--protected">Protegido</span>
               } @else if (row.scopeTipo === 'global') {
                 <span class="rol-cell__tag rol-cell__tag--system">Sistema</span>
               }
@@ -95,9 +99,9 @@
         </div>
       </ng-template>
 
-      <!-- Columna: Número de permisos -->
+      <!-- Columna: Número de permisos (alineada a la derecha y tabular, vía cellClass/headerClass). -->
       <ng-template appTableCell="permisos" let-row>
-        <strong class="count-badge">{{ row.permisos.length }}</strong>
+        <span class="text-secondary">{{ row.permisos.length }}</span>
       </ng-template>
 
       <!-- Columna: Activo (RoleResponseDTO.active → RolVM.activo) -->
@@ -129,7 +133,8 @@
     @if (detalle$ | async; as detalle) {
       <div class="rol-detail">
         <div class="rol-detail__header">
-          <div class="rol-detail__heading">
+          <!-- aria-live: al elegir otro rol cambian título y resumen; sin esto el cambio no se anuncia. -->
+          <div class="rol-detail__heading" aria-live="polite">
             <h2 class="rol-detail__title">{{ detalle.rol.descripcion || detalle.rol.codigo }}</h2>
             <p class="rol-detail__meta">
               {{ detalle.rol.permisos.length }} permisos asignados

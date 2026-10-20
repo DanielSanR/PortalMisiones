@@ -1,16 +1,16 @@
 <!-- Alta y edición de plantilla provincial. El breadcrumb lo pone el shell. -->
 @if (cargando) {
-  <div class="plantform-cargando" role="status" aria-live="polite">
+  <div class="loading-inline" role="status" aria-live="polite">
     <app-loading [loading]="true" [message]="isEdit ? 'Cargando la plantilla…' : 'Cargando el formulario…'"></app-loading>
   </div>
 } @else if (errorCarga) {
-  <div class="plantform-estado" role="alert">
-    <span class="plantform-estado__icono" aria-hidden="true">
+  <div class="load-state" role="alert">
+    <span class="load-state__icono" aria-hidden="true">
       <i class="ph" [class.ph-file-x]="errorCarga.noExiste" [class.ph-cloud-slash]="!errorCarga.noExiste"></i>
     </span>
-    <h2 class="plantform-estado__titulo">{{ errorCarga.titulo }}</h2>
-    <p class="plantform-estado__texto">{{ errorCarga.texto }}</p>
-    <div class="plantform-estado__acciones">
+    <h2 class="load-state__titulo">{{ errorCarga.titulo }}</h2>
+    <p class="load-state__texto">{{ errorCarga.texto }}</p>
+    <div class="load-state__acciones">
       @if (!errorCarga.noExiste) {
         <button type="button" mat-flat-button color="primary" (click)="cargar()">
           <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
@@ -29,7 +29,7 @@
   <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
 
   @if (catalogos.noDisponibles.length) {
-    <div class="plantform-aviso" role="status">
+    <div class="plantform-aviso">
       <i class="ph ph-warning" aria-hidden="true"></i>
       <p>
         No pudimos cargar: {{ catalogos.noDisponibles.join(', ') }}. Lo que la plantilla ya tenía elegido
@@ -42,13 +42,13 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
 
       <!-- ── Identificación ── -->
-      <div class="section-header">Identificación</div>
+      <h2 class="section-header">Identificación</h2>
       <div class="form-grid form-grid--full">
 
         <div class="form-field" [class.is-invalid]="campoInvalido('titulo')">
           <label class="form-field__label" id="titulo-label" for="titulo">Título <span class="form-field__required" aria-hidden="true">*</span></label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <input matInput id="titulo" aria-labelledby="titulo-label" formControlName="titulo"
+            <input matInput id="titulo" aria-labelledby="titulo-label" formControlName="titulo" required
                    [maxlength]="maxTextoCorto" placeholder="Ej: Obtener la licencia de conducir">
             <mat-hint>Empezá con un verbo en infinitivo: Obtener, Inscribirse…</mat-hint>
             @if (form.controls.titulo.hasError('required')) {
@@ -64,7 +64,7 @@
           <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
           <div class="plantform-slug">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug"
+              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug" required
                      [maxlength]="maxTextoCorto" (input)="onSlugEditado()" placeholder="obtener-licencia-de-conducir">
               <mat-hint>
                 {{ isEdit ? 'Cambiarlo cambia la dirección pública del trámite.' : 'Se arma solo desde el título; podés editarlo.' }}
@@ -102,7 +102,7 @@
       </div>
 
       <!-- ── Descripción ── -->
-      <div class="section-header">Descripción</div>
+      <h2 class="section-header">Descripción</h2>
       <div class="form-grid form-grid--full">
         <div class="form-field">
           <label class="form-field__label" id="resumen-label" for="resumen">Resumen <span class="form-field__optional">(opcional)</span></label>
@@ -122,7 +122,7 @@
       </div>
 
       <!-- ── Clasificación ── -->
-      <div class="section-header">Clasificación</div>
+      <h2 class="section-header">Clasificación</h2>
       <div class="form-grid">
 
         <div class="form-field">
@@ -204,7 +204,7 @@
       </div>
 
       <!-- ── Estado ── -->
-      <div class="section-header">Estado</div>
+      <h2 class="section-header">Estado</h2>
       <div class="plantform-activa">
         <mat-slide-toggle formControlName="activa" color="primary">Activa</mat-slide-toggle>
         @if (!form.controls.activa.value) {
@@ -220,16 +220,18 @@
         <span class="form-actions__help">Guardar reemplaza la plantilla completa.</span>
         <div class="form-actions__buttons">
           <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="cancelar()">Cancelar</button>
-          <button mat-raised-button color="primary" type="submit"
-                  [disabled]="saving || sinCambios"
-                  [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''">
-            @if (saving) {
-              <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-            } @else {
-              <i class="ph ph-floppy-disk" aria-hidden="true"></i>
-            }
-            <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear plantilla') }}</span>
-          </button>
+          <!-- El tooltip no puede colgar del botón deshabilitado: va en un envoltorio focusable. -->
+          <span class="form-actions__submit" [matTooltip]="sinCambios && !saving ? 'No hay cambios para guardar' : ''"
+                [attr.tabindex]="sinCambios && !saving ? 0 : null">
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving || sinCambios">
+              @if (saving) {
+                <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+              } @else {
+                <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+              }
+              <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear plantilla') }}</span>
+            </button>
+          </span>
         </div>
       </div>
 

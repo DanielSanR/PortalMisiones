@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -14,9 +14,11 @@ import { RowAction, RowActionsComponent } from '../../../shared/components/row-a
 import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { buscarEn, todasOnlyTabs } from '@core/utils/list-filter.utils';
 import { EventosDeVidaFacade, EventoDeVidaVM } from '@features/eventos-de-vida';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -53,6 +55,7 @@ interface EventosVista extends EstadoVacio {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    UnavailableDirective,
   ],
   templateUrl: './eventos-de-vida-list.component.html',
   styleUrls: ['./eventos-de-vida-list.component.scss'],
@@ -120,6 +123,7 @@ export class EventosDeVidaListComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor(
     private router: Router,
@@ -204,6 +208,8 @@ export class EventosDeVidaListComponent implements OnInit {
   }
 
   onDelete(evento: EventoDeVidaVM): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host);
     this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: '¿Eliminar el evento de vida?',
@@ -228,11 +234,14 @@ export class EventosDeVidaListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Evento de vida eliminado', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef);
+        this.snackBar.open('Evento de vida eliminado', 'OK', {
+          duration: 3000,
+          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   private buscar(eventos: EventoDeVidaVM[], termino: string): EventoDeVidaVM[] {

@@ -7,15 +7,7 @@
 // fila B de chips y la celda de código.
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
-
-.list-toolbar {
-  @include list-toolbar;
-
-  &-count {
-    @include list-toolbar-count;
-  }
-}
+@use 'shared-styles/mixins' as *;
 
 // Select de recurso de la fila A. Más angosto que el buscador: el término libre
 // es el filtro principal de esta lista (es la más larga del backoffice).
@@ -26,37 +18,8 @@
   min-width: 180px;
 }
 
-// Fila B — chips de acción -------------------------------------------------
-.permlist-chips {
-  justify-content: flex-start;
-  gap: var(--theme-space-xs);
-}
-
-// Celda de código ----------------------------------------------------------
+// Celda de código: la estructura es `.cell-name` (global). Monoespaciada: el código es un identificador
+// exacto y se escanea columna abajo comparando prefijos (CREATE_/READ_/UPDATE_).
 .permlist-codigo {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-
-  // Monoespaciada: el código es un identificador exacto y se escanea columna
-  // abajo comparando prefijos (CREATE_/READ_/UPDATE_).
-  &__principal {
-    font-family: var(--theme-font-mono);
-    font-weight: var(--theme-font-weight-medium);
-    @include truncate;
-  }
-
-  // En mobile la tabla oculta "Recurso" y "Descripción": este resumen bajo el
-  // código recupera esos datos en vez de perderlos.
-  &__meta {
-    display: none;
-    color: var(--theme-text-tertiary);
-    font-size: var(--theme-font-size-sm);
-
-    @include responsive(mobile) {
-      display: block;
-      @include truncate;
-    }
-  }
+  font-family: var(--theme-font-mono);
 }

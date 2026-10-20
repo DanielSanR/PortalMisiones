@@ -5,12 +5,12 @@
 // ---------------------------------------------------------------------------
 // Cards & Surfaces
 // ---------------------------------------------------------------------------
+// Card plana del diseño (handoff `surface-card`): borde + radio 10, sin sombra.
 @mixin theme-card {
-  background-color: var(--theme-bg-card);
-  border: 1px solid var(--theme-border-secondary);
-  border-radius: var(--theme-radius-lg);
-  box-shadow: var(--theme-shadow-card);
-  transition: box-shadow var(--theme-transition-normal);
+  background-color: var(--theme-surface-card);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-panel);
+  box-shadow: var(--theme-elevation-0);
 }
 
 @mixin theme-card-interactive {
@@ -370,9 +370,10 @@ $breakpoint-2xl: 1440px;
   }
 }
 
+// Diseño: 12.5 / text-secondary.
 @mixin list-toolbar-count($push-right: false) {
-  font-size: var(--theme-font-size-sm);
-  color: var(--theme-text-tertiary);
+  font-size: var(--theme-font-small-size);
+  color: var(--theme-text-secondary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 
@@ -455,25 +456,26 @@ $breakpoint-2xl: 1440px;
 // Círculo 64 + ícono Phosphor, título, texto y CTA. Lo reusan la tabla, el Home
 // y cualquier pantalla que necesite el mismo tono de error de carga.
 // ---------------------------------------------------------------------------
+// Medidas del Kitchen Sink §06: círculo 56 + ícono 28, título 15, texto 12.5 (max 250), gap 10.
 @mixin state-panel {
   @include flex-center;
   flex-direction: column;
-  gap: 12px;
-  padding: var(--theme-space-3xl) var(--theme-space-lg);
+  gap: 10px;
+  padding: 34px 26px;
   text-align: center;
 }
 
 @mixin state-panel-icon {
   @include flex-center;
   flex: none;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--theme-radius-full);
   background-color: var(--theme-surface-sunken);
   color: var(--theme-primary-200);
 
   i {
-    font-size: 34px;
+    font-size: 28px;
   }
 }
 
@@ -483,13 +485,13 @@ $breakpoint-2xl: 1440px;
 }
 
 @mixin state-panel-title {
-  font-size: var(--theme-font-size-md);
+  font-size: var(--theme-font-subtitle-size);
   font-weight: var(--theme-font-weight-semibold);
   color: var(--theme-text-primary);
 }
 
 @mixin state-panel-text {
-  max-width: 320px;
+  max-width: 250px;
   font-size: var(--theme-font-small-size);
   color: var(--theme-text-secondary);
   line-height: var(--theme-font-small-line-height);
@@ -500,8 +502,8 @@ $breakpoint-2xl: 1440px;
   margin-top: 4px;
 
   i {
-    font-size: 20px;
-    margin-right: var(--theme-space-sm);
+    font-size: var(--theme-icon-size-sm);
+    margin-right: 7px;
   }
 }
 
@@ -615,6 +617,31 @@ $breakpoint-2xl: 1440px;
     color: var(--theme-text-secondary);
   }
 
+  // Variante de error (ErrorDialog / acción fallida): círculo sobre la escala de ERROR.
+  &__icono--error {
+    background: var(--theme-error-bg);
+    color: var(--theme-error-icon);
+  }
+
+  // Mensaje del diálogo de confirmación/error: body 13.5, secundario; `b` resalta el objeto afectado.
+  &__texto {
+    margin: 5px 0 0;
+    font-size: var(--theme-font-body-size);
+    line-height: 1.5;
+    color: var(--theme-text-secondary);
+    text-wrap: pretty;
+
+    b {
+      color: var(--theme-text-primary);
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
+
+  // Variante angosta para diálogos de confirmación / aviso (sin campos).
+  &--sm {
+    width: 420px;
+  }
+
   &__campos {
     display: flex;
     flex-direction: column;
@@ -673,5 +700,44 @@ $breakpoint-2xl: 1440px;
     &:hover {
       background-color: var(--theme-neutral-500);
     }
+  }
+}
+
+// ===== shared =====
+
+/// Texto solo para lectores de pantalla (queda en el árbol de accesibilidad, no en la vista).
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/// Barra fantasma de skeleton (diseño: 11px, redondeada, shimmer 1.4s). Los `@keyframes skeleton-shimmer`
+/// son GLOBALES (`_components.scss`): el mixin solo referencia el nombre, así no se duplican por componente.
+/// Con `prefers-reduced-motion` queda un bloque plano `--theme-skeleton-base`, sin animación.
+/// Uso: `.x__bar { @include skeleton-bar; }` (alto opcional: `skeleton-bar(14px)`).
+@mixin skeleton-bar($height: 11px) {
+  display: block;
+  height: $height;
+  border-radius: var(--theme-radius-full);
+  background-color: var(--theme-skeleton-base);
+  background-image: linear-gradient(
+    90deg,
+    var(--theme-skeleton-base) 0%,
+    var(--theme-skeleton-highlight) 40%,
+    var(--theme-skeleton-base) 80%
+  );
+  background-size: 420px 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background-image: none;
   }
 }

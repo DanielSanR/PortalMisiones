@@ -1,7 +1,6 @@
-import { Directive, Input, OnChanges, SimpleChanges, ElementRef, Renderer2, OnDestroy } from '@angular/core';
+import { Directive, DoCheck, ElementRef, Input, Renderer2 } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { FieldConfig } from '../../../core/models/field.interface';
-import { Subscription } from 'rxjs';
 import { getControlErrorMessage } from './form-error-messages.util';
 
 /**
@@ -9,38 +8,38 @@ import { getControlErrorMessage } from './form-error-messages.util';
  * debajo del campo). Reemplaza el `<mat-error>` nativo de Material para poder incluir el
  * ícono; los mensajes/prioridad viven en `form-error-messages.util.ts` (compartidos con el
  * banner resumen de `DynamicFormComponent`).
+ *
+ * Se recalcula en `ngDoCheck` comparando el mensaje que corresponde con el pintado, y NO
+ * escuchando `statusChanges`: `touched` (blur, `markAllAsTouched()` al enviar) no emite ningún
+ * evento del control, así que con la suscripción el texto quedaba vacío aunque el campo ya se
+ * mostrara inválido. `ngDoCheck` corre cada vez que se revisa la vista del campo (incluidas las
+ * OnPush, que `DynamicFormComponent` refresca con su `revision` al enviar).
  */
 @Directive({
   selector: '[appFormErrorMessage]',
   standalone: true,
 })
-export class FormErrorMessageDirective implements OnChanges, OnDestroy {
+export class FormErrorMessageDirective implements DoCheck {
   @Input() control: AbstractControl | null = null;
   @Input() field: FieldConfig | null = null;
   @Input() group: FormGroup | null = null;
 
-  private subscription: Subscription | null = null;
+  /** Mensaje pintado ahora (`null` = nada); evita tocar el DOM si no cambió. */
+  private pintado: string | null = null;
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}
 
-  ngOnChanges(changes: SimpleChanges): void {
-    this.subscription?.unsubscribe();
-    if (this.control) {
-      this.subscription = this.control.statusChanges.subscribe(() => {
-        this.updateErrorMessage();
-      });
-    }
-    this.updateErrorMessage();
+  ngDoCheck(): void {
+    const mensaje = this.mensajeActual();
+    if (mensaje === this.pintado) return;
+    this.pintado = mensaje;
+    this.limpiar();
+    if (mensaje) this.pintar(mensaje);
   }
 
-  ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
-  }
-
-  private updateErrorMessage(): void {
-    this.renderer.setProperty(this.el.nativeElement, 'innerHTML', '');
-    if (!this.control || !this.field || !this.control.touched) {
-      return;
+  private mensajeActual(): string | null {
+    if (!this.control || !this.field || !this.control.touched || this.control.valid) {
+      return null;
     }
 
     const extraErrors =
@@ -48,15 +47,25 @@ export class FormErrorMessageDirective implements OnChanges, OnDestroy {
         ? this.group.errors
         : null;
 
-    const message = getControlErrorMessage(this.control, this.field, extraErrors);
-    if (!message) {
-      return;
-    }
+    return getControlErrorMessage(this.control, this.field, extraErrors) || null;
+  }
 
-    this.renderer.setProperty(
-      this.el.nativeElement,
-      'innerHTML',
-      `<i class="ph ph-warning-circle" aria-hidden="true"></i><span>${message}</span>`,
-    );
+  // Nodos creados con Renderer2 (texto como `createText`, nunca HTML): el mensaje no se interpreta.
+  private pintar(mensaje: string): void {
+    const icono = this.renderer.createElement('i');
+    this.renderer.addClass(icono, 'ph');
+    this.renderer.addClass(icono, 'ph-warning-circle');
+    this.renderer.setAttribute(icono, 'aria-hidden', 'true');
+    const texto = this.renderer.createElement('span');
+    this.renderer.appendChild(texto, this.renderer.createText(mensaje));
+    this.renderer.appendChild(this.el.nativeElement, icono);
+    this.renderer.appendChild(this.el.nativeElement, texto);
+  }
+
+  private limpiar(): void {
+    const host: HTMLElement = this.el.nativeElement;
+    while (host.firstChild) {
+      this.renderer.removeChild(host, host.firstChild);
+    }
   }
 }

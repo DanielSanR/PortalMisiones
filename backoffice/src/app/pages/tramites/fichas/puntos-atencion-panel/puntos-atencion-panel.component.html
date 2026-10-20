@@ -39,9 +39,9 @@
                 <div class="puntos-card__encabezado">
                   <h4 class="puntos-card__nombre">{{ punto.nombre }}</h4>
                   @if (!punto.activo) {
-                    <span class="bool-badge bool-badge--inactive">
-                      <span class="bool-badge__dot" aria-hidden="true"></span>
-                      Inactivo
+                    <span class="pill pill--inactive">
+                      <span class="pill__dot" aria-hidden="true"></span>
+                      <span class="pill__label">Inactivo</span>
                     </span>
                   }
                 </div>
@@ -68,7 +68,7 @@
                     <dd class="puntos-card__coords">
                       @if (mapa(punto); as url) {
                         {{ coordenadas(punto) }}
-                        <a class="puntos-card__mapa" [href]="url" target="_blank" rel="noopener noreferrer">
+                        <a class="detail-link" [href]="url" target="_blank" rel="noopener noreferrer">
                           Ver en mapa <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
                           <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
                         </a>
@@ -80,16 +80,8 @@
                 </dl>
 
                 <div class="puntos-card__acciones">
-                  <button type="button" mat-button color="primary" (click)="editar(punto)"
-                          *appHasPermission="'UPDATE_ATTENTION_POINT'" [attr.aria-label]="'Editar ' + punto.nombre">
-                    <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-                  </button>
-                  @if (punto.activo) {
-                    <button type="button" mat-button color="warn" (click)="desactivar(punto)"
-                            *appHasPermission="'DELETE_ATTENTION_POINT'" [attr.aria-label]="'Desactivar ' + punto.nombre">
-                      <i class="ph ph-prohibit" aria-hidden="true"></i> Desactivar
-                    </button>
-                  }
+                  <app-row-actions [primary]="accionEditar(punto)" [actions]="accionesDe(punto)"
+                                   [menuLabel]="'Más acciones de ' + punto.nombre"></app-row-actions>
                 </div>
               </li>
             }

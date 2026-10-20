@@ -28,6 +28,22 @@ html {
   scroll-behavior: smooth;
 }
 
+// Movimiento reducido (WCAG 2.3.3 / 2.2.2): global, así ningún componente tiene que repetir su propio bloque.
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   font-family: var(--theme-font-family);
   font-size: var(--theme-font-size-base);

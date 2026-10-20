@@ -14,22 +14,22 @@
 
 @if (estado$ | async; as estado) {
   @if (estado.tipo === 'cargando') {
-    <div class="adopdet-cargando" role="status">
+    <div class="loading-inline" role="status">
       <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
       <span>Cargando el trámite del organismo...</span>
     </div>
   } @else if (estado.tipo === 'error') {
-    <div class="adopdet-estado" role="alert">
-      <span class="adopdet-estado__icono" aria-hidden="true">
+    <div class="load-state" role="alert">
+      <span class="load-state__icono" aria-hidden="true">
         <i class="ph" [class.ph-file-x]="estado.noExiste" [class.ph-cloud-slash]="!estado.noExiste"></i>
       </span>
-      <h2 class="adopdet-estado__titulo">{{ estado.noExiste ? textosInexistente.titulo : 'No pudimos cargar el trámite del organismo' }}</h2>
-      <p class="adopdet-estado__texto">
+      <h2 class="load-state__titulo">{{ estado.noExiste ? textosInexistente.titulo : 'No pudimos cargar el trámite del organismo' }}</h2>
+      <p class="load-state__texto">
         {{ estado.noExiste
           ? textosInexistente.texto
           : 'Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.' }}
       </p>
-      <div class="adopdet-estado__acciones">
+      <div class="load-state__acciones">
         @if (!estado.noExiste) {
           <button type="button" mat-flat-button color="primary" (click)="reintentar()">
             <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
@@ -41,54 +41,54 @@
       </div>
     </div>
   } @else {
-    <div class="adopdet">
-      <header class="adopdet-membrete">
-        <div class="adopdet-membrete__fila">
-          <h2 class="adopdet-membrete__titulo">{{ estado.adopcion.plantillaTitulo ?? 'Trámite sin nombre disponible' }}</h2>
-          <app-vigencia-badge [estado]="estado.adopcion.estadoVigencia" [habilitada]="estado.adopcion.habilitada"></app-vigencia-badge>
+    <div class="detail-col">
+      <header class="detail-header">
+        <div class="detail-header__row">
+          <h2 class="detail-header__title">{{ estado.adopcion.plantillaTitulo ?? 'Trámite sin nombre disponible' }}</h2>
+          <app-vigencia-badge [estado]="estado.adopcion.estadoVigencia" [habilitada]="estado.adopcion.habilitada" [bordered]="true"></app-vigencia-badge>
         </div>
-        <p class="adopdet-membrete__organismo">
-          <i class="ph ph-building-office" aria-hidden="true"></i>
-          {{ estado.adopcion.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}
+        <p class="detail-header__meta">
+          <span><i class="ph ph-building-office" aria-hidden="true"></i>
+          {{ estado.adopcion.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}</span>
         </p>
         @if (!estado.adopcion.habilitada) {
-          <p class="adopdet-membrete__aviso">
+          <p class="detail-header__notice">
             <i class="ph ph-info" aria-hidden="true"></i>
             Está deshabilitado: no aparece en el listado de Trámites del organismo.
           </p>
         }
       </header>
 
-      <div class="adopdet-grid">
-        <section class="adopdet-card" aria-labelledby="adopdet-datos">
-          <h3 class="adopdet-card__titulo" id="adopdet-datos">Datos</h3>
-          <dl class="adopdet-datos">
-            <div class="adopdet-datos__fila">
-              <dt>Plantilla provincial</dt>
-              <dd>
-                <span [class.adopdet-datos__faltante]="!estado.adopcion.plantillaTitulo">{{ estado.adopcion.plantillaTitulo ?? noDisponible }}</span>
-                <a class="adopdet-datos__link" [routerLink]="[rutaPlantilla, estado.adopcion.plantillaId]" *appHasPermission="'READ_PROCEDURE'">
+      <div class="detail-grid detail-grid--aside">
+        <section class="detail-card" aria-labelledby="adopdet-datos">
+          <h3 class="detail-card__title" id="adopdet-datos">Datos</h3>
+          <dl class="detail-fields">
+            <div class="detail-field">
+              <dt class="detail-field__label">Plantilla provincial</dt>
+              <dd class="detail-field__value">
+                <span [class.detail-field__value--muted]="!estado.adopcion.plantillaTitulo">{{ estado.adopcion.plantillaTitulo ?? noDisponible }}</span>
+                <a class="detail-link" [routerLink]="[rutaPlantilla, estado.adopcion.plantillaId]" *appHasPermission="'READ_PROCEDURE'">
                   Ver plantilla <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
                 </a>
               </dd>
             </div>
-            <div class="adopdet-datos__fila">
-              <dt>Organismo</dt>
-              <dd [class.adopdet-datos__faltante]="!estado.adopcion.organismoNombre">{{ estado.adopcion.organismoNombre ?? noDisponible }}</dd>
+            <div class="detail-field">
+              <dt class="detail-field__label">Organismo</dt>
+              <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.adopcion.organismoNombre">{{ estado.adopcion.organismoNombre ?? noDisponible }}</dd>
             </div>
-            <div class="adopdet-datos__fila">
-              <dt>Vigente desde</dt>
-              <dd>{{ estado.adopcion.vigenteDesde | date: 'dd/MM/yyyy' }}</dd>
+            <div class="detail-field">
+              <dt class="detail-field__label">Vigente desde</dt>
+              <dd class="detail-field__value">{{ estado.adopcion.vigenteDesde | date: 'dd/MM/yyyy' }}</dd>
             </div>
-            <div class="adopdet-datos__fila">
-              <dt>Vigente hasta</dt>
-              <dd [class.adopdet-datos__faltante]="!estado.adopcion.vigenteHasta">{{ estado.adopcion.vigenteHasta ? (estado.adopcion.vigenteHasta | date: 'dd/MM/yyyy') : 'Sin fecha de fin' }}</dd>
+            <div class="detail-field">
+              <dt class="detail-field__label">Vigente hasta</dt>
+              <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.adopcion.vigenteHasta">{{ estado.adopcion.vigenteHasta ? (estado.adopcion.vigenteHasta | date: 'dd/MM/yyyy') : 'Sin fecha de fin' }}</dd>
             </div>
           </dl>
         </section>
 
-        <section class="adopdet-card" aria-labelledby="adopdet-editar" *appHasPermission="'UPDATE_ADOPTION'">
-          <h3 class="adopdet-card__titulo" id="adopdet-editar">Vigencia y estado</h3>
+        <section class="detail-card" aria-labelledby="adopdet-editar" *appHasPermission="'UPDATE_ADOPTION'">
+          <h3 class="detail-card__title" id="adopdet-editar">Vigencia y estado</h3>
           <form class="adopdet-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
             <app-vigencia-campos [grupo]="form.controls.vigencia" idPrefijo="adopdet" [intentos]="intentos"></app-vigencia-campos>
 
@@ -128,8 +128,8 @@
 
       <!-- Fichas por localidad de esta adopción (componente hijo con su propio facade). Sin
            `READ_VARIANT` (AB) no se muestra: el backend no le deja leer fichas. -->
-      <section class="adopdet-card" aria-labelledby="adopdet-fichas" *appHasPermission="'READ_VARIANT'">
-        <h3 class="adopdet-card__titulo" id="adopdet-fichas">Fichas por localidad</h3>
+      <section class="detail-card" aria-labelledby="adopdet-fichas" *appHasPermission="'READ_VARIANT'">
+        <h3 class="detail-card__title" id="adopdet-fichas">Fichas por localidad</h3>
         <app-fichas-de-adopcion [adopcionId]="estado.adopcion.id" [habilitada]="estado.adopcion.habilitada"></app-fichas-de-adopcion>
       </section>
     </div>

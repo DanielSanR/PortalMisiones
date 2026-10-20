@@ -1,5 +1,7 @@
 import { Injectable, Provider } from '@angular/core';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_NATIVE_DATE_FORMATS, NativeDateAdapter } from '@angular/material/core';
+import { MatDatepickerIntl } from '@angular/material/datepicker';
+import { DatepickerIntlEsAr } from '@core/services/datepicker-intl-es-ar';
 
 /** `D/M/AAAA` (también con `-` o `.`), lo que se tipea en un campo de fecha es-AR. */
 const FECHA_AR = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
@@ -45,5 +47,8 @@ export function provideFechaArDatepicker(): Provider[] {
   return [
     { provide: DateAdapter, useClass: FechaArDateAdapter },
     { provide: MAT_DATE_FORMATS, useValue: MAT_NATIVE_DATE_FORMATS },
+    // Textos del calendario en es-AR. Va acá (provider de componente) y NO en app.config.ts:
+    // registrarlo en el root mete todo el datepicker (~200 kB) en el bundle inicial.
+    { provide: MatDatepickerIntl, useClass: DatepickerIntlEsAr },
   ];
 }

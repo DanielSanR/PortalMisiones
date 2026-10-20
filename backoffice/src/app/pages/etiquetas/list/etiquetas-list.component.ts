@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -14,11 +14,13 @@ import { RowAction, RowActionsComponent } from '../../../shared/components/row-a
 import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { buscarEn } from '@core/utils/list-filter.utils';
 import { FilterTabOption } from '../../../shared/components/filter-tabs';
 import { CREAR_ETIQUETA_ACCESS } from '@core/constants/policy-overrides.constants';
 import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -78,6 +80,7 @@ interface EtiquetasVista extends EstadoVacio {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    UnavailableDirective,
   ],
   templateUrl: './etiquetas-list.component.html',
   styleUrls: ['./etiquetas-list.component.scss'],
@@ -145,6 +148,7 @@ export class EtiquetasListComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor(
     private router: Router,
@@ -231,6 +235,8 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   onDelete(etiqueta: EtiquetaVM): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host);
     this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: '¿Eliminar la etiqueta?',
@@ -253,11 +259,14 @@ export class EtiquetasListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Etiqueta eliminada', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef);
+        this.snackBar.open('Etiqueta eliminada', 'OK', {
+          duration: 3000,
+          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   private buscar(etiquetas: EtiquetaVM[], termino: string): EtiquetaVM[] {

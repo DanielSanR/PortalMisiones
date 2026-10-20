@@ -2,10 +2,10 @@
 // Portal Provincial de Tramites - Misiones
 // Design Tokens / CSS Custom Properties
 // ==========================================================================
-// Paleta institucional azul .
-// Primary: #2F6EB1 | Buttons/Icons: #3B82C4
-// Tipografía: Oak Sans
-// Contraste verificado WCAG 2.1 AA en todas las combinaciones texto/fondo.
+// Paleta institucional azul. Primary: #2F6EB1 | Buttons/Icons: #3B82C4.
+// Fuente de verdad visual: Claude Design "Kitchen Sink - Design System Misiones".
+// Contraste: WCAG 2.2 AA manda sobre el diseño cuando chocan (ej. text-tertiary).
+// Tipografía: Oak Sans (aún no self-hosted) → se renderiza Figtree.
 // ==========================================================================
 
 :root {
@@ -84,14 +84,14 @@
   --theme-bg-header: #FFFFFF; // delta: era #2F6EB1
   --theme-bg-input: #FFFFFF;
   --theme-bg-table-header: #EDF0F4; // delta: era #F4F6F8
-  --theme-bg-table-hover: #F0F5FA;
+  --theme-bg-table-hover: #F7F9FB; // diseño: surface-row-hover
   --theme-bg-table-stripe: #F9FBFD; // delta: era #F7FAFE
   --theme-bg-overlay: rgba(0, 0, 0, 0.5);
 
   // ---------------------------------------------------------------------------
   // Surfaces (nuevo) — jerarquía app / card / sunken / inverse / canvas
   // ---------------------------------------------------------------------------
-  --theme-surface-app: #F4F6F8;
+  --theme-surface-app: #FFFFFF; // diseño: el <main> es blanco
   --theme-surface-card: #FFFFFF;
   --theme-surface-sunken: #F7F9FB; // delta: era #EDF0F4 — header de tabla, wells
   --theme-surface-inverse: #0F335D; // navy — reservado para hero de Login y tints oscuros
@@ -102,7 +102,8 @@
   // ---------------------------------------------------------------------------
   --theme-text-primary: #1A1A2E;
   --theme-text-secondary: #5F6368;
-  --theme-text-tertiary: #9AA0A6;
+  // a11y: el diseño usa #9AA0A6 (2.64:1, falla AA); #6B7280 = 4.83:1 blanco · 4.58:1 sunken
+  --theme-text-tertiary: #6B7280;
   --theme-text-disabled: #BDBDBD;
   --theme-text-on-primary: #FFFFFF;
   --theme-text-on-accent: #FFFFFF;
@@ -119,14 +120,15 @@
   --theme-border-primary: #E6E9ED; // delta: era #E3E7EC — bordes más fríos (shell claro)
   --theme-border-secondary: #EEEEEE;
   --theme-border-subtle: #F1F3F5; // nuevo — divisor de fila (más claro que border-primary)
-  --theme-border-strong: #C9CFD6; // nuevo — contorno input/card
+  --theme-border-strong: #C9CFD6; // contorno de botones/hover (decorativo)
   --theme-border-focus: #2F6EB1;
-  --theme-border-input: #C9CFD6; // delta: era rgba(229, 231, 235, 1) / #E5E7EB
+  // a11y 1.4.11: contorno de controles ≥3:1 (#8A94A0 = 3.08:1 sobre blanco)
+  --theme-border-input: #8A94A0;
 
   // ---------------------------------------------------------------------------
   // Form-specific tokens
   // ---------------------------------------------------------------------------
-  --theme-form-input-border: 1px solid #C9CFD6; // delta: era rgba(229, 231, 235, 1)
+  --theme-form-input-border: 1px solid var(--theme-border-input);
   --theme-form-input-text: rgba(10, 10, 10, 0.50);
   --theme-form-separator: 2px solid #2F6EB1;
   --theme-form-btn: #3B82C4;
@@ -135,7 +137,8 @@
   // ---------------------------------------------------------------------------
   // Semantic / State Colors
   // ---------------------------------------------------------------------------
-  --theme-success: #16A34A;
+  --theme-success: #16A34A; // ícono/borde — como TEXTO no llega a AA (3.3:1)
+  --theme-success-text: #166534; // texto verde accesible (7.1:1)
   --theme-success-bg: #F0FDF4;
   --theme-success-border: #86EFAC;
   --theme-error: #D32F2F;
@@ -154,11 +157,16 @@
   // Charts (nuevo)
   // ---------------------------------------------------------------------------
   --theme-chart-1: #1A4779;
-  --theme-chart-2: #3B82C4;
+  --theme-chart-2: #2F6EB1;
   --theme-chart-3: #77ABDE;
-  --theme-chart-4: #0F8A8A;
-  --theme-chart-5: #7C5CBF;
-  --theme-chart-6: #B0721E;
+  --theme-chart-4: #C5DCF2;
+  --theme-chart-5: #0F8A8A;
+  --theme-chart-6: #7C5CBF;
+  --theme-chart-historic: #5A98D6; // serie histórica del gráfico de consultas
+
+  // Skeleton (shimmer) — antes hardcodeado en table/loading
+  --theme-skeleton-base: #EEF1F4;
+  --theme-skeleton-highlight: #F8FAFB;
 
   // ---------------------------------------------------------------------------
   // Botones — variante secondary (nuevo, Fase 2a)
@@ -210,6 +218,10 @@
   --theme-space-xl: 32px;
   --theme-space-2xl: 48px;
   --theme-space-3xl: 64px;
+  // Pasos intermedios del diseño (gap de fila, padding de card, gap entre bandas)
+  --theme-space-gap: 12px;
+  --theme-space-card: 18px;
+  --theme-space-band: 30px;
 
   // ---------------------------------------------------------------------------
   // Typography
@@ -245,19 +257,33 @@
   --theme-font-display-line-height: 1.25;
   --theme-font-display-tracking: -0.3px;
 
-  --theme-font-section-size: 1.1875rem;  // 19px
+  --theme-font-section-size: 1.0625rem;  // 17px
   --theme-font-section-weight: 600;
   --theme-font-section-line-height: 1.25;
+  --theme-font-section-tracking: -0.2px;
+
+  --theme-font-page-title-size: 1rem;     // 16px — título de página en el topbar
+  --theme-font-detail-title-size: 1.1875rem; // 19px — título de entidad en el membrete de detalle
+  --theme-font-page-title-weight: 600;
+  --theme-font-page-title-tracking: -0.1px;
+
+  --theme-font-card-title-size: 0.84375rem; // 13.5px
+  --theme-font-card-title-weight: 600;
+
+  --theme-font-caption-size: 0.71875rem;  // 11.5px — header de tabla, badges
+
+  --theme-font-metric-size: 1.625rem;     // 26px — KPI
+  --theme-font-metric-weight: 600;
 
   --theme-font-subtitle-size: 0.9375rem; // 15px
   --theme-font-subtitle-weight: 400;
   --theme-font-subtitle-line-height: 1.5;
 
-  --theme-font-body-size: 0.875rem;      // 14px
+  --theme-font-body-size: 0.84375rem;    // 13.5px
   --theme-font-body-weight: 400;
   --theme-font-body-line-height: 1.5;
 
-  --theme-font-small-size: 0.8125rem;    // 13px
+  --theme-font-small-size: 0.78125rem;   // 12.5px
   --theme-font-small-weight: 400;
   --theme-font-small-line-height: 1.5;
 
@@ -295,9 +321,9 @@
   // Elevation (nuevo) — alias semánticos sobre las sombras existentes
   // 0: borde plano · 1: card · 2: menú/popover · 3: dialog
   // ---------------------------------------------------------------------------
-  --theme-elevation-0: 0 0 0 1px var(--theme-border-primary);
-  --theme-elevation-1: var(--theme-shadow-card);
-  --theme-elevation-2: var(--theme-shadow-lg);
+  --theme-elevation-0: none; // card plana: el borde lo pone el contenedor
+  --theme-elevation-1: 0 1px 2px rgba(15, 51, 93, 0.06);
+  --theme-elevation-2: var(--theme-shadow-md);
   --theme-elevation-3: var(--theme-shadow-dialog);
 
   // ---------------------------------------------------------------------------
@@ -313,8 +339,25 @@
   // Accent bar (nuevo) — barra de 3px para nav activo / section header
   // ---------------------------------------------------------------------------
   --theme-accent-bar-width: 3px;
-  --theme-accent-bar-color: #5A98D6;      // sobre superficies oscuras (hero de Login, tints navy)
-  --theme-accent-bar-color-on-light: #2F6EB1; // sobre superficies claras — usado por el sidebar (shell claro)
+  --theme-accent-bar-color: #2F6EB1;          // default: superficies claras (sidebar, section header)
+  --theme-accent-bar-color-on-light: var(--theme-accent-bar-color);
+  --theme-accent-bar-color-on-dark: #5A98D6;  // hero de Login, tints navy
+
+  // ---------------------------------------------------------------------------
+  // Navegación (sidebar)
+  // ---------------------------------------------------------------------------
+  --theme-nav-item-active-fg: #1A4779;
+  --theme-nav-item-active-shadow: var(--theme-elevation-1);
+
+  // ---------------------------------------------------------------------------
+  // Controles — alturas e íconos del diseño
+  // ---------------------------------------------------------------------------
+  --theme-control-height-sm: 30px;
+  --theme-control-height-md: 34px;
+  --theme-input-height: 40px;
+  --theme-icon-size-sm: 16px;
+  --theme-icon-size-md: 17px;
+  --theme-icon-size-lg: 20px;
 
   // ---------------------------------------------------------------------------
   // Table (nuevo)
@@ -323,16 +366,15 @@
   --theme-table-header-bg: var(--theme-surface-sunken);
   --theme-table-hover-bg: var(--theme-bg-table-hover);
 
-  // -----------------------  --theme-form-max-width: 1400px;   // igual que content-max-width: el form ocupa la columna completa
-  // igual que content-max-width: el form ocupa la columna completa
+  // ---------------------------------------------------------------------------
   // Layout
-  // -----------------------------------0----0----------------------------------
+  // ---------------------------------------------------------------------------
   --theme-sidebar-width: 260px;
   --theme-sidebar-collapsed-width: 64px;
   --theme-header-height: 60px;
   --theme-header-height-mobile: 56px;
   --theme-content-max-width: 1400px;
-  --theme-form-max-width: 1400px;  
+  --theme-form-max-width: 1400px; // igual que content-max-width: el form ocupa la columna completa
 
   // ---------------------------------------------------------------------------
   // Transitions

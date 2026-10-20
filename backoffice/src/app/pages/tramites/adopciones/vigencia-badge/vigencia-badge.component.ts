@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { EstadoVigencia } from '@features/adopciones';
 
+const TONOS: Record<EstadoVigencia | 'deshabilitada', string> = {
+  vigente: 'success',
+  programada: 'info',
+  vencida: 'warning',
+  deshabilitada: 'neutral',
+};
+
 const ETIQUETAS: Record<EstadoVigencia, string> = {
   vigente: 'Vigente',
   programada: 'Programada',
@@ -8,7 +15,7 @@ const ETIQUETAS: Record<EstadoVigencia, string> = {
 };
 
 /**
- * Estado de una adopción como pill (mismo lenguaje que `app-estado-badge` y `.bool-badge`): vigente,
+ * Estado de una adopción como pill global (`.pill`, mismo lenguaje que `app-estado-badge`): vigente,
  * programada o vencida según la fecha actual. Una deshabilitada (solo se ve en su detalle) gana.
  */
 @Component({
@@ -21,9 +28,16 @@ const ETIQUETAS: Record<EstadoVigencia, string> = {
 export class VigenciaBadgeComponent {
   @Input({ required: true }) estado!: EstadoVigencia;
   @Input() habilitada = true;
+  /** Con borde y un punto más grande: para membretes de detalle (en tablas va sin borde). */
+  @Input() bordered = false;
 
   get clave(): EstadoVigencia | 'deshabilitada' {
     return this.habilitada ? this.estado : 'deshabilitada';
+  }
+
+  /** Modificador de tono de la pill (`pill--<tono>`). */
+  get tono(): string {
+    return TONOS[this.clave];
   }
 
   get etiqueta(): string {

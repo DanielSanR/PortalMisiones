@@ -1,0 +1,206 @@
+// ==========================================================================
+// User menu — perfil del pie de la sidebar + contenido del menú de cuenta.
+// El contenido del <mat-menu> se declara acá, así que conserva la encapsulación
+// aunque se dibuje en el overlay. Solo el panel contenedor (propiedad de Material)
+// se estiliza con la clase global `.user-menu-panel` (shared-styles/_components.scss).
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+:host {
+    display: block;
+}
+
+.user-menu {
+    // ---- Trigger (sidebar) ----
+    &__trigger {
+        position: relative;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px var(--theme-space-sm);
+        border: none;
+        border-radius: var(--theme-radius-md);
+        background: transparent;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color var(--theme-transition-fast);
+
+        @include focus-ring;
+
+        &:hover {
+            background-color: var(--theme-bg-sidebar-hover);
+        }
+
+        &.is-compact {
+            justify-content: center;
+            padding-inline: 0;
+            gap: 0;
+        }
+    }
+
+    &__avatar {
+        flex: none;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--theme-radius-full);
+        background-color: var(--theme-info-bg);
+        color: var(--theme-nav-item-active-fg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--theme-font-size-xs);
+        font-weight: var(--theme-font-weight-semibold);
+
+        &--lg {
+            width: 38px;
+            height: 38px;
+            font-size: var(--theme-font-size-sm);
+        }
+    }
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    &__name {
+        max-width: 100%;
+        font-size: var(--theme-font-size-sm);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-text-primary);
+        @include truncate;
+    }
+
+    &__role {
+        max-width: 100%;
+        font-size: var(--theme-font-caption-size);
+        color: var(--theme-text-tertiary);
+        @include truncate;
+    }
+
+    &__arrow {
+        flex: none;
+        font-size: 18px;
+        color: var(--theme-text-tertiary);
+    }
+
+    // ---- Contenido del menú ----
+    &__header {
+        display: flex;
+        gap: 11px;
+        padding: var(--theme-space-md);
+        border-bottom: 1px solid var(--theme-border-subtle);
+    }
+
+    &__header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+
+        strong {
+            font-size: var(--theme-font-body-size);
+            font-weight: var(--theme-font-weight-semibold);
+            color: var(--theme-text-primary);
+            @include truncate;
+        }
+    }
+
+    &__email {
+        font-size: var(--theme-font-size-xs);
+        color: var(--theme-text-secondary);
+        @include truncate;
+    }
+
+    &__rol {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--theme-space-gap);
+        padding: var(--theme-space-gap) var(--theme-space-md);
+        background-color: var(--theme-surface-sunken);
+        border-bottom: 1px solid var(--theme-border-subtle);
+
+        &-label {
+            font-size: var(--theme-font-overline-size);
+            font-weight: var(--theme-font-weight-semibold);
+            letter-spacing: var(--theme-font-overline-track);
+            text-transform: uppercase;
+            color: var(--theme-text-secondary);
+        }
+
+        &-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            height: 22px;
+            padding: 0 9px;
+            border-radius: var(--theme-radius-full);
+            background-color: var(--theme-info-bg);
+            color: var(--theme-nav-item-active-fg);
+            font-size: var(--theme-font-caption-size);
+            font-weight: var(--theme-font-weight-semibold);
+            white-space: nowrap;
+
+            i {
+                font-size: 13px;
+            }
+        }
+    }
+
+    &__actions {
+        padding: 6px;
+    }
+
+    &__item {
+        min-height: 40px;
+        padding: 0 var(--theme-space-gap);
+        border-radius: var(--theme-radius-md);
+        font-size: var(--theme-font-body-size);
+
+        i.ph {
+            width: 19px;
+            height: 19px;
+            margin-right: 0;
+            font-size: 19px;
+            color: var(--theme-text-secondary);
+        }
+
+        &:hover:not([disabled]) {
+            background-color: var(--theme-surface-sunken);
+        }
+
+        &--danger {
+            color: var(--theme-error-icon);
+
+            i.ph {
+                color: inherit;
+            }
+
+            &:hover:not([disabled]) {
+                background-color: var(--theme-error-bg);
+            }
+        }
+    }
+
+    // Valor a la derecha de la etiqueta ("Idioma … es-AR"). El padding asegura la separación aunque la
+    // fila del ítem (template de Material) no reparta el espacio sobrante.
+    &__item-value {
+        margin-left: auto;
+        padding-left: var(--theme-space-lg);
+        white-space: nowrap;
+        font-size: var(--theme-font-caption-size);
+        color: var(--theme-text-tertiary);
+    }
+}
+
+mat-divider {
+    margin: 0 var(--theme-space-xs);
+    border-top-color: var(--theme-border-subtle);
+}

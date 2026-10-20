@@ -1,69 +1,10 @@
 // ==========================================================================
-// Badge de vigencia de una adopción — pill 24px + dot 6px, como `.bool-badge`.
-// Vigente = success, programada = info, vencida = warning, deshabilitada = neutro.
+// Badge de vigencia de una adopción. La pill (forma, dot, tonos) es la clase
+// global `.pill` (shared-styles/_components.scss); acá solo el host.
+// Vigente = success, programada = info, vencida = warning, deshabilitada = neutral.
 // ==========================================================================
 
 :host {
   display: inline-flex;
   max-width: 100%;
-}
-
-.vigencia-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: var(--theme-radius-full);
-  font-size: var(--theme-font-size-xs);
-  font-weight: var(--theme-font-weight-semibold);
-  white-space: nowrap;
-  line-height: 1;
-
-  &__dot {
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: var(--theme-radius-full);
-  }
-
-  &[data-estado="vigente"] {
-    background: var(--theme-success-bg);
-    color: var(--theme-success);
-    border: 1px solid var(--theme-success-border);
-
-    .vigencia-badge__dot {
-      background: var(--theme-success);
-    }
-  }
-
-  &[data-estado="programada"] {
-    background: var(--theme-info-bg);
-    color: var(--theme-info);
-    border: 1px solid var(--theme-info-border);
-
-    .vigencia-badge__dot {
-      background: var(--theme-info);
-    }
-  }
-
-  &[data-estado="vencida"] {
-    background: var(--theme-warning-bg);
-    color: var(--theme-warning-text);
-    border: 1px solid var(--theme-warning-border);
-
-    .vigencia-badge__dot {
-      background: var(--theme-warning);
-    }
-  }
-
-  &[data-estado="deshabilitada"] {
-    background: var(--theme-surface-sunken);
-    color: var(--theme-text-tertiary);
-    border: 1px solid var(--theme-border-primary);
-
-    .vigencia-badge__dot {
-      background: var(--theme-text-tertiary);
-    }
-  }
 }

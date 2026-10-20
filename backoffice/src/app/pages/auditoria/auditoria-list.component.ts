@@ -1,15 +1,16 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
-import { AsyncPipe, DatePipe } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { AsyncPipe, DatePipe, LowerCasePipe } from '@angular/common';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '@shared/components/table';
 import { FilterTabsComponent } from '@shared/components/filter-tabs';
+import { ListSearchComponent } from '@shared/components/list-search';
 import { AccionLabelPipe } from './accion-label.pipe';
 import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { AuditoriaAccion, AuditoriaFacade, AuditoriaPaginaVM, AuditoriaRegistroVM } from '@features/auditoria';
@@ -22,11 +23,13 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
   imports: [
     AsyncPipe,
     DatePipe,
+    LowerCasePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatInputModule,
     MatSelectModule,
+    MatTooltipModule,
+    ListSearchComponent,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
@@ -62,7 +65,10 @@ export class AuditoriaListComponent implements OnInit {
     { key: 'detalle', label: '',        width: '56px' },
   ];
 
-  filterForm: FormGroup;
+  readonly filterForm = new FormGroup({
+    search: new FormControl('', { nonNullable: true }),
+    accion: new FormControl<AuditoriaAccion | ''>('', { nonNullable: true }),
+  });
 
   acciones: { value: AuditoriaAccion; label: string }[] = [
     { value: 'crear',           label: 'Creación' },
@@ -73,12 +79,7 @@ export class AuditoriaListComponent implements OnInit {
     { value: 'eliminar',        label: 'Eliminación' },
   ];
 
-  constructor(
-    private dialog: MatDialog,
-    private fb: FormBuilder,
-  ) {
-    this.filterForm = this.fb.group({ search: [''], accion: [''] });
-  }
+  constructor(private dialog: MatDialog) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -129,7 +130,6 @@ export class AuditoriaListComponent implements OnInit {
   onViewDetail(registro: AuditoriaRegistroVM): void {
     this.dialog.open(AuditoriaDetailDialogComponent, {
       data: registro,
-      width: '700px',
       panelClass: 'custom-modal-panel',
     });
   }

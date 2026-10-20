@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
+import { UnavailableDirective } from '../../shared/directives/unavailable.directive';
+import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
 
 /**
  * Activación de cuenta vía token del email (`/auth/activacion/:token`).
@@ -16,7 +16,7 @@ import { AuthService } from '../../core/services/auth.service';
   selector: 'app-activate-account',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, MatProgressSpinnerModule, MatIconModule],
+  imports: [RouterLink, MatProgressSpinnerModule, AuthShellComponent, UnavailableDirective],
   templateUrl: './activate-account.component.html',
   styleUrl: './activate-account.component.scss',
 })
@@ -39,6 +39,7 @@ export class ActivateAccountComponent implements OnInit {
     if (!token) {
       this.estado = 'error';
       this.errorMessage = 'El enlace de activación es inválido.';
+      this.cdr.markForCheck();
       return;
     }
 

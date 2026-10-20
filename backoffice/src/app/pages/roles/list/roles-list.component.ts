@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -8,7 +8,6 @@ import {
   map, shareReplay, startWith,
 } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SharedTableComponent, TableCellDirective, TableColumn, TableSortEvent } from '../../../shared/components/table';
@@ -17,6 +16,7 @@ import { RowAction, RowActionsComponent } from '../../../shared/components/row-a
 import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { buscarEn } from '@core/utils/list-filter.utils';
 import { buildPermisoGroups, PermisoGroupVM } from '@core/utils/permiso-groups.util';
@@ -26,6 +26,7 @@ import { RolesFacade, RolVM } from '@features/roles';
 import { PermisoVM } from '@features/permisos';
 import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from '@core/constants/policy-overrides.constants';
 import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 
 /** Filtro por alcance del rol (campo real `scopeTipo`). */
 type ScopeFiltro = 'todos' | 'global' | 'organismo';
@@ -67,7 +68,6 @@ interface RolDetalle {
     AsyncPipe,
     ReactiveFormsModule,
     MatButtonModule,
-    MatTooltipModule,
     MatSnackBarModule,
     SharedTableComponent,
     TableCellDirective,
@@ -76,6 +76,7 @@ interface RolDetalle {
     ListSearchComponent,
     ActiveFiltersComponent,
     PageActionsDirective,
+    UnavailableDirective,
   ],
   templateUrl: './roles-list.component.html',
   styleUrl: './roles-list.component.scss',
@@ -83,6 +84,7 @@ interface RolDetalle {
 export class RolesListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   /**
    * Excepción consciente a "el componente solo inyecta su facade": Roles NO se gatea por permiso
    * atómico sino por ROL (`/api/role`: leer SA/AB, escribir solo SA — PPDT-5.1). El CTA del estado
@@ -160,9 +162,10 @@ export class RolesListComponent implements OnInit {
     }),
   );
 
+  // Divergencia: el diseño también muestra "Usuarios" por rol; `/api/role` no devuelve ese conteo, se omite.
   columns: TableColumn<RolVM>[] = [
     { key: 'rol',      label: 'Rol',      sortable: true },
-    { key: 'permisos', label: 'Permisos', sortable: true, width: '110px' },
+    { key: 'permisos', label: 'Permisos', sortable: true, width: '110px', headerClass: 'cell-numeric', cellClass: 'cell-numeric' },
     { key: 'activo',   label: 'Activo',   sortable: true, width: '110px' },
     { key: 'acciones', label: 'Acciones', width: '150px' },
   ];
@@ -285,6 +288,8 @@ export class RolesListComponent implements OnInit {
   }
 
   onDelete(rol: RolVM): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host);
     this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: '¿Eliminar el rol?',
@@ -309,11 +314,14 @@ export class RolesListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Rol eliminado', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef);
+        this.snackBar.open('Rol eliminado', 'OK', {
+          duration: 3000,
+          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   private buscar(roles: RolVM[], termino: string): RolVM[] {

@@ -15,21 +15,23 @@
       ariaLabel="Buscar etiquetas por slug o por organismo">
     </app-list-search>
 
-    <div class="etiqlist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} etiquetas</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="etiqlist-iconbtn" disabled aria-label="Ordenar">
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} etiquetas</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
+              aria-label="Ordenar">
         <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-      <button type="button" class="etiqlist-iconbtn" disabled aria-label="Exportar a CSV">
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
+              aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row etiqlist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <button type="button" class="etiqlist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -67,19 +69,19 @@
     emptyIcon="bookmarks-simple">
 
     <ng-template appTableCell="slug" let-row>
-        <div class="etiqlist-slug">
-            <div class="etiqlist-slug__fila">
-                <span class="etiqlist-slug__texto">{{ row.slug }}</span>
+        <div class="cell-name">
+            <div class="etiqlist-fila">
+                <span class="cell-name__principal">{{ row.slug }}</span>
                 <!-- Alcance del Tag real: global (sin organismo) o local (con organismo). -->
-                <span class="etiqlist-slug__alcance"
-                      [class.etiqlist-slug__alcance--global]="!row.local"
-                      [class.etiqlist-slug__alcance--local]="row.local">
+                <span class="etiqlist-alcance"
+                      [class.etiqlist-alcance--global]="!row.local"
+                      [class.etiqlist-alcance--local]="row.local">
                     {{ row.local ? 'Local' : 'Global' }}
                 </span>
             </div>
             <!-- En mobile la columna Organismo se oculta: acá no se pierde el dato. -->
             @if (row.local) {
-                <span class="etiqlist-slug__meta">{{ row.organismoNombre ?? 'Organismo no disponible' }}</span>
+                <span class="cell-name__meta">{{ row.organismoNombre ?? 'Organismo no disponible' }}</span>
             }
         </div>
     </ng-template>

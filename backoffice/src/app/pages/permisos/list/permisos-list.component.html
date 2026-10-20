@@ -28,10 +28,10 @@
       </mat-select>
     </mat-form-field>
 
-    <span class="list-toolbar-count">{{ vista.total }} permisos</span>
+    <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} permisos</span>
   </div>
 
-  <div class="list-toolbar__row permlist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs [tabs]="vista.tabs" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($event)"></app-filter-tabs>
   </div>
 </div>
@@ -69,10 +69,10 @@
     emptyIcon="key">
 
     <ng-template appTableCell="codigo" let-row>
-        <div class="permlist-codigo">
-            <span class="permlist-codigo__principal">{{ row.codigo }}</span>
+        <div class="cell-name">
+            <span class="cell-name__principal permlist-codigo">{{ row.codigo }}</span>
             <!-- En mobile la tabla oculta Recurso y Descripción: acá no se pierden. -->
-            <span class="permlist-codigo__meta">{{ row.recursoLabel }} · {{ row.descripcion || 'Sin descripción' }}</span>
+            <span class="cell-name__meta">{{ row.recursoLabel }} · {{ row.descripcion || 'Sin descripción' }}</span>
         </div>
     </ng-template>
 

@@ -1,19 +1,19 @@
-<form class="punto-dialog" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
-  <div class="punto-dialog__header">
-    <div class="punto-dialog__icono" aria-hidden="true">
+<form class="form-dialog" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
+  <div class="form-dialog__header">
+    <div class="form-dialog__icono" aria-hidden="true">
       <i class="ph" [class.ph-map-pin-plus]="!esEdicion" [class.ph-map-pin]="esEdicion"></i>
     </div>
-    <div class="punto-dialog__encabezado">
-      <h2 class="punto-dialog__titulo" mat-dialog-title>{{ esEdicion ? 'Editar punto de atención' : 'Agregar punto de atención' }}</h2>
-      <p class="punto-dialog__subtitulo">Dónde se hace el trámite en esta localidad. Se muestra en la ficha del portal.</p>
+    <div class="form-dialog__encabezado">
+      <h2 class="form-dialog__titulo" mat-dialog-title>{{ esEdicion ? 'Editar punto de atención' : 'Agregar punto de atención' }}</h2>
+      <p class="form-dialog__subtitulo">Dónde se hace el trámite en esta localidad. Se muestra en la ficha del portal.</p>
     </div>
   </div>
 
-  <div class="punto-dialog__campos">
+  <div class="form-dialog__campos">
     <div class="form-field" [class.is-invalid]="invalido('nombre')">
       <label class="form-field__label" id="punto-nombre-label" for="punto-nombre">Nombre <span class="form-field__required" aria-hidden="true">*</span></label>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <input matInput id="punto-nombre" aria-labelledby="punto-nombre-label" formControlName="nombre" [maxlength]="maxNombre"
+        <input matInput id="punto-nombre" aria-labelledby="punto-nombre-label" formControlName="nombre" required [maxlength]="maxNombre"
                placeholder="Ej: Centro de Emisión de Licencias">
         @if (form.controls.nombre.hasError('required')) {
           <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El nombre es obligatorio</span></mat-error>
@@ -24,7 +24,7 @@
     <div class="form-field" [class.is-invalid]="invalido('direccion')">
       <label class="form-field__label" id="punto-direccion-label" for="punto-direccion">Dirección <span class="form-field__required" aria-hidden="true">*</span></label>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <input matInput id="punto-direccion" aria-labelledby="punto-direccion-label" formControlName="direccion"
+        <input matInput id="punto-direccion" aria-labelledby="punto-direccion-label" formControlName="direccion" required
                placeholder="Ej: Av. Uruguay 3150, Posadas">
         @if (form.controls.direccion.hasError('required')) {
           <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>La dirección es obligatoria</span></mat-error>
@@ -36,7 +36,7 @@
       <div class="form-field" [class.is-invalid]="invalido('latitud')">
         <label class="form-field__label" id="punto-lat-label" for="punto-lat">Latitud <span class="form-field__required" aria-hidden="true">*</span></label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <input matInput id="punto-lat" aria-labelledby="punto-lat-label" formControlName="latitud" inputmode="decimal"
+          <input matInput id="punto-lat" aria-labelledby="punto-lat-label" formControlName="latitud" required inputmode="decimal"
                  autocomplete="off" placeholder="-27,367104">
           <mat-hint>Entre -90 y 90, hasta {{ maxDecimales }} decimales.</mat-hint>
           @if (form.controls.latitud.hasError('required')) {
@@ -57,7 +57,7 @@
       <div class="form-field" [class.is-invalid]="invalido('longitud')">
         <label class="form-field__label" id="punto-lon-label" for="punto-lon">Longitud <span class="form-field__required" aria-hidden="true">*</span></label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <input matInput id="punto-lon" aria-labelledby="punto-lon-label" formControlName="longitud" inputmode="decimal"
+          <input matInput id="punto-lon" aria-labelledby="punto-lon-label" formControlName="longitud" required inputmode="decimal"
                  autocomplete="off" placeholder="-55,896108">
           <mat-hint>Entre -180 y 180, hasta {{ maxDecimales }} decimales.</mat-hint>
           @if (form.controls.longitud.hasError('required')) {
@@ -109,7 +109,7 @@
     }
 
     @if (errorMensaje) {
-      <p class="punto-dialog__error" role="alert">
+      <p class="form-dialog__error" role="alert">
         <i class="ph ph-warning-circle" aria-hidden="true"></i>
         <span>{{ errorMensaje }}</span>
       </p>
@@ -120,7 +120,7 @@
     <button type="button" mat-stroked-button color="primary" [disabled]="guardando" (click)="cancelar()">Cancelar</button>
     <button type="submit" mat-flat-button color="primary" [disabled]="guardando">
       @if (guardando) {
-        <mat-spinner diameter="18"></mat-spinner>
+        <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
       }
       <span>{{ guardando ? 'Guardando...' : (esEdicion ? 'Guardar cambios' : 'Agregar') }}</span>
     </button>

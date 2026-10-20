@@ -32,22 +32,21 @@
       }
 
       @if (estado.tipo === 'no-disponible') {
-        <div class="fichasadop-vacio" role="status">
-          <span class="fichasadop-vacio__icono" aria-hidden="true"><i class="ph ph-link-break"></i></span>
-          <p class="fichasadop-vacio__titulo">No podemos listar las fichas de este trámite todavía</p>
-          <p class="fichasadop-vacio__texto">
-            El servidor no informa a qué trámite del organismo pertenece cada ficha. Puede que ya tenga fichas:
-            buscalas en la lista general.
+        <div class="state-panel fichasadop-vacio">
+          <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-link-break"></i></span>
+          <p class="state-panel__title">Todavía no podemos mostrar las fichas de este trámite</p>
+          <p class="state-panel__text">
+            Puede que ya tenga fichas: buscalas en la lista general de Fichas por localidad.
           </p>
           <a mat-button color="primary" [routerLink]="rutaLista">
             <i class="ph ph-list-bullets" aria-hidden="true"></i> Ver Fichas por localidad
           </a>
         </div>
       } @else if (!estado.fichas.length) {
-        <div class="fichasadop-vacio">
-          <span class="fichasadop-vacio__icono" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
-          <p class="fichasadop-vacio__titulo">Todavía no se ofrece en ninguna localidad</p>
-          <p class="fichasadop-vacio__texto">
+        <div class="state-panel fichasadop-vacio">
+          <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
+          <p class="state-panel__title">Todavía no se ofrece en ninguna localidad</p>
+          <p class="state-panel__text">
             Agregá una ficha por cada localidad donde se hace el trámite, con sus requisitos, costos y puntos de atención.
           </p>
         </div>
@@ -62,9 +61,9 @@
               <span class="fichasadop-item__estado">
                 <app-estado-badge [estado]="ficha.estado"></app-estado-badge>
                 @if (!ficha.activa) {
-                  <span class="bool-badge bool-badge--inactive">
-                    <span class="bool-badge__dot" aria-hidden="true"></span>
-                    Desactivada
+                  <span class="pill pill--inactive">
+                    <span class="pill__dot" aria-hidden="true"></span>
+                    <span class="pill__label">Desactivada</span>
                   </span>
                 }
               </span>

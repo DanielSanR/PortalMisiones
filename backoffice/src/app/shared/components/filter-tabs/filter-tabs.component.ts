@@ -26,6 +26,11 @@ export interface FilterTabOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterTabsComponent {
+  /**
+   * Con menos de 2 opciones no hay nada que filtrar: la barra no se renderiza (un único chip
+   * "Todos" sería un control sin función). La pantalla no necesita su propio `@if`, pero si el
+   * contenedor deja un hueco (ej. `.list-toolbar__row`) puede condicionarlo con `tabs.length > 1`.
+   */
   @Input({ required: true }) tabs: FilterTabOption[] = [];
   @Input() active = '';
   @Output() readonly activeChange = new EventEmitter<string>();
@@ -38,7 +43,10 @@ export class FilterTabsComponent {
   }
 
   /**
-   * Navegación por teclado del patrón `tablist` (ARIA APG): las flechas mueven entre chips
+   * Semántica `radiogroup` y no `tablist`: los chips son filtros EXCLUYENTES de una lista, no
+   * pestañas que muestran paneles distintos (no hay `tabpanel` que controlar).
+   *
+   * Navegación por teclado del patrón `radiogroup` (ARIA APG): las flechas mueven entre chips
    * y Home/End van a los extremos, con wrap-around. Solo el chip activo es tabbable
    * (roving tabindex en el template), así que Tab entra y sale de la barra de una vez
    * en lugar de recorrer un chip por pulsación.

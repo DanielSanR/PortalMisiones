@@ -1,16 +1,57 @@
 // ==========================================================================
 // Admin Layout — Portal Misiones Backoffice
-// Shell CLARO: sidebar (bg claro, ítem activo = tarjeta blanca con sombra,
-// buscador + nav agrupado colapsable + perfil abajo) + header blanco con
-// borde inferior (breadcrumb + slot de acciones de página) + canvas exterior
-// gris con panel blanco. El navy institucional queda reservado para el hero
-// de Login (--theme-surface-inverse), no para este shell.
+// Shell CLARO: sidebar (bg claro, ítem activo = tarjeta blanca con sombra y
+// barra de acento pegada al borde del sidebar, buscador + nav agrupado
+// colapsable + perfil abajo) + topbar blanco (título de página h1 + campana +
+// slot de acciones de página) + <main> + footer. El navy institucional queda
+// reservado para el hero de Login, no para este shell.
+// Movimiento reducido: se resuelve global en `shared-styles/_base.scss`.
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
+
+// Ocultamiento visual accesible (equivale a `.cdk-visually-hidden`): el texto sigue en el árbol de
+// accesibilidad. Con la sidebar colapsada el label no se dibuja, pero el link/botón conserva su nombre.
+@mixin visually-hidden-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 
 .admin-layout {
     height: 100vh;
+
+    // Skip-link (WCAG 2.4.1): primer focusable de la página; fuera de pantalla hasta recibir foco.
+    &__skip-link {
+        position: fixed;
+        top: var(--theme-space-sm);
+        left: var(--theme-space-sm);
+        z-index: var(--theme-z-modal);
+        padding: var(--theme-space-sm) var(--theme-space-md);
+        border-radius: var(--theme-radius-md);
+        background-color: var(--theme-primary);
+        color: var(--theme-text-on-primary);
+        font-size: var(--theme-font-body-size);
+        font-weight: var(--theme-font-weight-semibold);
+        text-decoration: none;
+        transform: translateY(-200%);
+
+        &:hover {
+            color: var(--theme-text-on-primary);
+        }
+
+        &:focus-visible {
+            transform: translateY(0);
+            outline: var(--theme-focus-ring-width) solid var(--theme-focus-ring-color);
+            outline-offset: var(--theme-focus-ring-offset);
+        }
+    }
 
     // ======================================================================
     // SHELL — sidenav container (sidebar + columna principal)
@@ -33,17 +74,10 @@
         overflow-x: hidden;
         transition: width var(--theme-transition-normal);
 
-        // El `border-right` de arriba pisa al divisor de Material (`.mat-drawer-side`)
-        // por especificidad: clase + atributo de encapsulación le gana a una clase sola.
-        // Antes no se veía por dos motivos encadenados: un `&.mat-drawer { border-right:
-        // none }` acá —más específico que `&__sidenav`, pese al comentario que decía lo
-        // contrario— y un `.mat-sidenav { border-right: none !important }` global.
-
         // El contenido proyectado (logo/buscador/nav/footer) no es hijo directo del
         // `mat-drawer` sino de su wrapper interno `.mat-drawer-inner-container` (CDK).
-        // El `display:flex` de arriba solo gobierna ESE wrapper como único hijo: para que
-        // `.admin-layout__nav { flex: 1 }` realmente empuje el footer al fondo (a cualquier
-        // zoom/alto), el wrapper mismo tiene que ser el contenedor flex-column.
+        // Para que `.admin-layout__nav { flex: 1 }` empuje el footer al fondo, el wrapper
+        // mismo tiene que ser el contenedor flex-column.
         ::ng-deep .mat-drawer-inner-container {
             height: 100%;
             display: flex;
@@ -56,23 +90,26 @@
 
         .admin-layout__logo {
             padding-inline: 0;
+            flex-direction: column;
             justify-content: center;
+            gap: 6px;
         }
 
         .admin-layout__logo-text,
         .admin-layout__search,
         .admin-layout__nav-group-label,
-        .admin-layout__nav-group-chev,
-        .admin-layout__nav-label,
-        .admin-layout__footer-item span,
-        .admin-layout__profile-info,
-        .admin-layout__profile-arrow {
+        .admin-layout__nav-group-chev {
             display: none;
         }
 
+        // Los labels se ocultan solo a la vista: sin esto los `<a>`/`<button>` quedarían sin nombre accesible.
+        .admin-layout__nav-label,
+        .admin-layout__footer-label {
+            @include visually-hidden-label;
+        }
+
         .admin-layout__nav-item,
-        .admin-layout__footer-item,
-        .admin-layout__profile {
+        .admin-layout__footer-item {
             justify-content: center;
             padding-inline: 0;
             gap: 0;
@@ -84,49 +121,51 @@
     }
 
     // ======================================================================
-    // CONTENT — columna principal (header + canvas + panel de página)
+    // CONTENT — columna principal (topbar + main + footer)
     // ======================================================================
     // El `<main>` del diseño es blanco liso: el contenido va directo sobre él, sin un
-    // lienzo gris detrás ni una tarjeta que lo recorte. Antes el área de página usaba
-    // `surface-canvas` (#E8EBEF) y el panel una tarjeta blanca encima, así que se veían
-    // dos superficies donde el diseño tiene una.
+    // lienzo gris detrás ni una tarjeta que lo recorte.
     &__content {
+        display: flex;
+        flex-direction: column;
         background-color: var(--theme-surface-card);
     }
 
+    // <main id="contenido">. Padding del diseño: 18 / 20 / 44.
     &__page {
         flex: 1;
         background-color: var(--theme-surface-card);
-        padding: var(--theme-space-md) calc(var(--theme-space-xl) + var(--theme-space-sm)) calc(var(--theme-space-2xl));
+        padding: var(--theme-space-card) calc(var(--theme-space-md) + var(--theme-space-xs)) calc(var(--theme-space-2xl) - var(--theme-space-xs));
         display: flex;
         justify-content: center;
+
+        // Recibe foco programático al cambiar de página (tabindex -1): no es un control, no lleva anillo.
+        &:focus {
+            outline: none;
+        }
 
         @include responsive(mobile) {
             padding: var(--theme-space-md);
         }
     }
 
-    // Contenedor de ancho máximo, no una tarjeta: el diseño no dibuja borde ni sombra
-    // alrededor del contenido de la página. Sin padding propio: con `box-sizing: border-box`
-    // el max-width lo incluía, así que el contenido nunca llegaba a los 1400px. El aire
-    // exterior lo pone `__page`, igual que el `<main>` del diseño.
+    // Contenedor de ancho máximo, no una tarjeta. El aire exterior lo pone `__page`.
     &__panel {
         width: 100%;
         max-width: var(--theme-content-max-width);
+        min-width: 0;
     }
 }
 
 // ==========================================================================
-// LOGO (+ botón colapsar)
+// LOGO (+ botón colapsar) — sin borde inferior, alto natural (diseño: 12 12 6)
 // ==========================================================================
 .admin-layout__logo {
     flex: none;
-    height: var(--theme-header-height);
-    padding: 0 12px 0 20px;
+    padding: var(--theme-space-gap) var(--theme-space-gap) 6px;
     display: flex;
     align-items: center;
-    gap: 11px;
-    border-bottom: 1px solid var(--theme-border-primary);
+    gap: 10px;
 
     &-mark {
         flex: none;
@@ -138,7 +177,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: var(--theme-font-size-sm);
+        font-size: 0.875rem; // 14px
         font-weight: var(--theme-font-weight-bold);
     }
 
@@ -151,7 +190,7 @@
     }
 
     &-name {
-        font-size: 13.5px;
+        font-size: var(--theme-font-body-size);
         font-weight: var(--theme-font-weight-semibold);
         color: var(--theme-text-primary);
         line-height: 1.2;
@@ -159,7 +198,7 @@
     }
 
     &-sub {
-        font-size: var(--theme-font-overline-size);
+        font-size: var(--theme-font-caption-size);
         color: var(--theme-text-tertiary);
         line-height: 1.3;
         @include truncate;
@@ -175,7 +214,7 @@
     height: 32px;
     padding: 0;
     border: none;
-    border-radius: var(--theme-radius-sm);
+    border-radius: var(--theme-radius-md); // diseño: 7px (sin token; el más cercano es md)
     background: transparent;
     color: var(--theme-text-tertiary);
     cursor: pointer;
@@ -188,7 +227,7 @@
     }
 
     &:hover {
-        background-color: var(--theme-bg-sidebar-hover);
+        background-color: var(--theme-bg-sidebar-hover); // diseño: #E9EDF1 (sin token)
         color: var(--theme-text-secondary);
     }
 }
@@ -199,20 +238,23 @@
 // ==========================================================================
 .admin-layout__search {
     flex: none;
-    // El diseño deja 6px arriba y 10px abajo (no 10/10): son 4px más para el nav.
-    margin: 6px 12px 10px;
+    // El diseño deja 6px arriba y 10px abajo.
+    margin: 6px var(--theme-space-gap) 10px;
     height: 34px;
     padding: 0 10px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--theme-space-sm);
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-md);
     background-color: var(--theme-surface-card);
     transition: border-color var(--theme-transition-fast);
 
+    // El input no dibuja su propio outline: el indicador de foco (≥3:1, WCAG 2.4.7/1.4.11) va en el contenedor.
     &:focus-within {
-        border-color: var(--theme-border-strong);
+        border-color: var(--theme-border-focus);
+        outline: var(--theme-focus-ring-width) solid var(--theme-focus-ring-color);
+        outline-offset: var(--theme-focus-ring-offset);
     }
 
     i {
@@ -228,14 +270,12 @@
         outline: none;
         background: transparent;
         font-family: inherit;
-        font-size: 13px;
+        font-size: var(--theme-font-size-sm);
         color: var(--theme-text-primary);
 
         &::placeholder {
             color: var(--theme-text-tertiary);
         }
-
-        // El navegador agrega un botón "x" nativo a type=search; se deja, es accesible.
     }
 
     &-kbd {
@@ -263,7 +303,7 @@
 .admin-layout__nav {
     flex: 1;
     min-height: 0;
-    padding: 2px 12px 12px;
+    padding: 2px var(--theme-space-gap) var(--theme-space-gap);
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -283,7 +323,7 @@
     align-items: center;
     gap: 6px;
     height: 26px;
-    padding: 0 8px;
+    padding: 0 var(--theme-space-sm);
     border: none;
     background: transparent;
     cursor: pointer;
@@ -320,7 +360,7 @@
     display: flex;
     align-items: center;
     height: 26px;
-    padding: 0 8px;
+    padding: 0 var(--theme-space-sm);
     font-size: var(--theme-font-overline-size);
     font-weight: var(--theme-font-weight-semibold);
     letter-spacing: var(--theme-font-overline-track);
@@ -335,7 +375,7 @@
 }
 
 .admin-layout__nav-empty {
-    margin: var(--theme-space-sm) 8px 0;
+    margin: var(--theme-space-sm) var(--theme-space-sm) 0;
     font-size: var(--theme-font-small-size);
     color: var(--theme-text-tertiary);
 }
@@ -344,8 +384,6 @@
     position: relative;
     flex: none;
     width: 100%;
-    // 36px / 10px, la métrica del diseño. Estaba en 40/12: con 14 ítems eso son 56px de
-    // más, que es exactamente lo que desbordaba el nav en pantallas de ~900px de alto.
     height: 36px;
     padding: 0 10px;
     display: flex;
@@ -353,14 +391,10 @@
     gap: 10px;
     border-radius: var(--theme-radius-md);
     border: 1px solid transparent;
-    // En modo búsqueda las filas son `<button>`, no `<a>`: hay que neutralizar los
-    // estilos propios del botón para que se vean idénticas a un ítem del nav.
     background: transparent;
     font-family: inherit;
     text-align: left;
-    // 13px, como la navegación del diseño. Usaba `--theme-font-body-size` (14px), que es
-    // el tamaño de cuerpo de contenido, no el de la nav.
-    font-size: var(--theme-font-size-sm);
+    font-size: var(--theme-font-body-size); // 13.5px
     color: var(--theme-text-secondary);
     text-decoration: none;
     cursor: pointer;
@@ -370,7 +404,7 @@
 
     &:hover {
         background-color: var(--theme-bg-sidebar-hover);
-        color: var(--theme-text-primary);
+        color: var(--theme-text-secondary);
 
         .admin-layout__nav-icon {
             color: var(--theme-text-secondary);
@@ -380,11 +414,21 @@
     &.is-active {
         background-color: var(--theme-bg-sidebar-active);
         border-color: var(--theme-border-primary);
-        box-shadow: var(--theme-shadow-card);
-        color: var(--theme-text-primary);
+        box-shadow: var(--theme-nav-item-active-shadow);
+        color: var(--theme-nav-item-active-fg);
         font-weight: var(--theme-font-weight-semibold);
 
-        @include accent-bar(var(--theme-accent-bar-color-on-light));
+        // Barra de acento pegada al borde del sidebar: queda FUERA de la tarjeta, sobre el padding del nav (12px).
+        &::before {
+            content: '';
+            position: absolute;
+            left: calc(-1 * var(--theme-space-gap) - 1px); // -12px + el borde de 1px de la tarjeta
+            top: var(--theme-space-sm);
+            bottom: var(--theme-space-sm);
+            width: var(--theme-accent-bar-width);
+            border-radius: 0 3px 3px 0;
+            background-color: var(--theme-accent-bar-color-on-light);
+        }
 
         .admin-layout__nav-icon {
             color: var(--theme-primary);
@@ -392,12 +436,14 @@
 
         &:hover {
             background-color: var(--theme-bg-sidebar-active);
+            color: var(--theme-nav-item-active-fg);
         }
     }
 
     // Cursor del buscador. Deliberadamente más liviano que `is-active`: ese estado
     // significa "acá estás parado", y el cursor solo "esto ejecuta Enter". Es único —
     // lo mueven tanto las flechas como el mouse, así no compiten dos resaltados.
+    // El foco real queda en el input, por eso el cursor no lleva anillo propio.
     &.is-cursor {
         background-color: var(--theme-bg-sidebar-hover);
         color: var(--theme-text-primary);
@@ -432,24 +478,34 @@
 // ==========================================================================
 .admin-layout__footer {
     flex: none;
-    margin-top: auto; // siempre al fondo, aunque el nav tenga pocos ítems (short-circuit del flex:1 de arriba)
-    padding: 10px 12px 12px;
+    margin-top: auto; // siempre al fondo, aunque el nav tenga pocos ítems
+    padding: 10px var(--theme-space-gap) var(--theme-space-gap);
     display: flex;
     flex-direction: column;
     gap: 1px;
     border-top: 1px solid var(--theme-border-primary);
 }
 
+// Botón (appUnavailable): se resetean los estilos nativos para que se vea como fila del diseño.
 .admin-layout__footer-item {
     flex: none;
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 10px;
     height: 34px;
     padding: 0 10px;
+    border: none;
     border-radius: var(--theme-radius-md);
-    font-size: var(--theme-font-small-size);
+    background: transparent;
+    font-family: inherit;
+    font-size: var(--theme-font-size-sm);
+    text-align: left;
     color: var(--theme-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--theme-transition-fast);
+
+    @include focus-ring;
 
     i {
         flex: none;
@@ -457,83 +513,17 @@
         color: var(--theme-text-tertiary);
     }
 
-    span {
-        @include truncate;
-    }
-
-    // Placeholder inerte: sin ruta todavía (ver resumen de la corrida).
-    &.is-disabled {
-        cursor: not-allowed;
-        opacity: 0.7;
-    }
-}
-
-.admin-layout__profile {
-    position: relative;
-    flex: none;
-    margin-top: 6px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 7px 8px;
-    border: none;
-    border-radius: var(--theme-radius-md);
-    background: transparent;
-    cursor: pointer;
-    transition: background-color var(--theme-transition-fast);
-
-    @include focus-ring;
-
     &:hover {
         background-color: var(--theme-bg-sidebar-hover);
     }
 }
 
-.admin-layout__profile-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.admin-layout__profile-name {
-    font-size: 13px;
-    font-weight: var(--theme-font-weight-semibold);
-    color: var(--theme-text-primary);
-    max-width: 100%;
+.admin-layout__footer-label {
     @include truncate;
-}
-
-.admin-layout__profile-role {
-    font-size: var(--theme-font-overline-size);
-    color: var(--theme-text-tertiary);
-    max-width: 100%;
-    @include truncate;
-}
-
-.admin-layout__profile-arrow {
-    flex: none;
-    font-size: 18px;
-    color: var(--theme-text-tertiary);
-}
-
-.admin-layout__avatar {
-    flex: none;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--theme-radius-full);
-    background-color: var(--theme-info-bg);
-    color: var(--theme-primary-800);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-semibold);
 }
 
 // ==========================================================================
-// HEADER — blanco, borde inferior: colapsar + breadcrumb + slot de acciones
+// TOPBAR — blanco, borde inferior: título de página (h1) + campana + acciones
 // ==========================================================================
 .admin-layout__header {
     position: sticky;
@@ -545,8 +535,8 @@
     border-bottom: 1px solid var(--theme-border-primary);
     display: flex;
     align-items: center;
-    gap: var(--theme-space-md);
-    padding: 0 28px;
+    gap: var(--theme-space-gap);
+    padding: 0 calc(var(--theme-space-md) + var(--theme-space-xs));
 
     @include responsive(mobile) {
         height: var(--theme-header-height-mobile);
@@ -559,6 +549,7 @@
     flex: none;
     width: 34px;
     height: 34px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -572,7 +563,7 @@
     @include focus-ring;
 
     i {
-        font-size: 19px;
+        font-size: 18px;
     }
 
     &:hover {
@@ -581,28 +572,44 @@
     }
 }
 
+// Ícono de sección del topbar (20px, text-secondary).
+.admin-layout__title-icon {
+    flex: none;
+    font-size: var(--theme-icon-size-lg);
+    color: var(--theme-text-secondary);
+}
+
+// h1 de la vista: 16/600, tracking -0.1px (tokens de título de página).
+.admin-layout__title {
+    min-width: 0;
+    margin: 0;
+    font-size: var(--theme-font-page-title-size);
+    font-weight: var(--theme-font-page-title-weight);
+    letter-spacing: var(--theme-font-page-title-tracking);
+    line-height: var(--theme-line-height-tight);
+    color: var(--theme-text-primary);
+    @include truncate;
+}
+
+// Tramos previos al título ("Organismos /" Editar). En mobile queda solo el h1.
 .admin-layout__breadcrumb {
     display: flex;
     align-items: center;
-    gap: var(--theme-space-sm);
-    font-size: var(--theme-font-small-size);
-    color: var(--theme-text-secondary);
     min-width: 0;
+    // Pegado al h1: entre tramo y tramo ya hay un separador; el gap del header sería demasiado.
+    margin-right: calc(-1 * var(--theme-space-sm));
+    font-size: var(--theme-font-page-title-size);
+    font-weight: var(--theme-font-page-title-weight);
+    letter-spacing: var(--theme-font-page-title-tracking);
+    color: var(--theme-text-secondary);
 
     @include responsive(mobile) {
         display: none;
     }
 
-    &-icon {
-        flex: none;
-        font-size: 16px;
-        color: var(--theme-text-tertiary);
-    }
-
     &-list {
         display: flex;
         align-items: center;
-        gap: var(--theme-space-sm);
         min-width: 0;
         margin: 0;
         padding: 0;
@@ -632,18 +639,12 @@
     }
 
     &-sep {
-        font-size: 16px;
+        padding-right: var(--theme-space-sm);
         color: var(--theme-text-tertiary);
     }
 
     &-crumb {
-        color: var(--theme-text-secondary);
         @include truncate;
-
-        &.is-current {
-            color: var(--theme-text-primary);
-            font-weight: var(--theme-font-weight-semibold);
-        }
     }
 }
 
@@ -658,147 +659,9 @@
     align-items: center;
     gap: var(--theme-space-sm);
 
-    // Los botones que proyectan las páginas (mat-*-button, 40px) deben centrarse entre sí
-    // sin importar el orden/variante — nunca `align-self` propio ni márgenes verticales.
+    // Los botones que proyectan las páginas deben centrarse entre sí sin importar el orden/variante.
     ::ng-deep > * {
         flex: none;
         align-self: center;
-    }
-}
-
-// ==========================================================================
-// USER MENU (dropdown del perfil, abre hacia arriba desde la sidebar)
-// ==========================================================================
-.admin-layout__user-menu {
-    min-width: 280px !important;
-    border-radius: var(--theme-radius-lg) !important;
-    overflow: hidden !important;
-}
-
-.user-menu-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border-bottom: 1px solid var(--theme-border-secondary);
-}
-
-.user-menu-avatar {
-    flex: none;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--theme-radius-full);
-    background-color: var(--theme-info-bg);
-    color: var(--theme-primary-800);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--theme-font-size-sm);
-    font-weight: var(--theme-font-weight-semibold);
-}
-
-.user-menu-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-
-    strong {
-        font-size: var(--theme-font-body-size);
-        font-weight: var(--theme-font-weight-semibold);
-        color: var(--theme-text-primary);
-        @include truncate;
-    }
-}
-
-.user-menu-email {
-    font-size: 12.5px;
-    color: var(--theme-text-secondary);
-    @include truncate;
-}
-
-.user-menu-role {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--theme-space-md);
-    padding: var(--theme-space-md);
-    background-color: var(--theme-surface-sunken);
-    border-bottom: 1px solid var(--theme-border-secondary);
-
-    &__label {
-        font-size: var(--theme-font-overline-size);
-        font-weight: var(--theme-font-weight-semibold);
-        letter-spacing: var(--theme-font-overline-track);
-        text-transform: uppercase;
-        color: var(--theme-text-secondary);
-    }
-
-    &__badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 22px;
-        padding: 0 9px;
-        border-radius: var(--theme-radius-full);
-        background-color: var(--theme-info-bg);
-        color: var(--theme-primary-800);
-        font-size: var(--theme-font-overline-size);
-        font-weight: var(--theme-font-weight-semibold);
-        white-space: nowrap;
-
-        i {
-            font-size: 13px;
-        }
-    }
-}
-
-.user-menu-actions {
-    padding: 6px 0;
-}
-
-.user-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    i {
-        font-size: 20px;
-        color: var(--theme-text-secondary);
-    }
-
-    // Ítems placeholder del diseño (Mi perfil / Cambiar contraseña / Preferencias): sin ruta todavía.
-    &[disabled] {
-        opacity: 0.55;
-        cursor: not-allowed;
-    }
-
-    &--danger {
-        color: var(--theme-error-icon);
-
-        i {
-            color: inherit;
-        }
-
-        &:hover {
-            background-color: var(--theme-error-bg);
-        }
-    }
-}
-
-mat-divider {
-    margin: 0 !important;
-}
-
-// ==========================================================================
-// REDUCED MOTION
-// ==========================================================================
-@media (prefers-reduced-motion: reduce) {
-    .admin-layout__sidenav,
-    .admin-layout__nav-item,
-    .admin-layout__icon-btn,
-    .admin-layout__collapse-btn,
-    .admin-layout__profile {
-        transition: none;
     }
 }

@@ -15,22 +15,24 @@
       ariaLabel="Buscar destinatarios por nombre">
     </app-list-search>
 
-    <div class="destinatarioslist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} destinatarios</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="destinatarioslist-iconbtn" disabled aria-label="Ordenar">
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} destinatarios</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
+              aria-label="Ordenar">
         <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-      <button type="button" class="destinatarioslist-iconbtn" disabled aria-label="Exportar a CSV">
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
+              aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row destinatarioslist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <!-- Chip único "Todas": el modelo no tiene ningún campo real por el que filtrar. -->
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" active="todas"></app-filter-tabs>
-    <button type="button" class="destinatarioslist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -68,7 +70,7 @@
     emptyIcon="user-focus">
 
     <ng-template appTableCell="nombre" let-row>
-        <span class="destinatarioslist-nombre">{{ row.nombre }}</span>
+        <div class="cell-name"><span class="cell-name__principal">{{ row.nombre }}</span></div>
     </ng-template>
 
     <ng-template appTableCell="acciones" let-row>

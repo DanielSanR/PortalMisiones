@@ -4,15 +4,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
 import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
-import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
+import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { FormConfig } from '../../../core/models/field.interface';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO } from '../organismo-save-error';
@@ -54,12 +55,13 @@ interface CampoFicha {
     DatePipe,
     NgTemplateOutlet,
     MatButtonModule,
+    MatMenuModule,
     MatTooltipModule,
     MatSnackBarModule,
     DynamicFormComponent,
-    RowActionsComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    UnavailableDirective,
   ],
   templateUrl: './organismo-detail.component.html',
   styleUrls: ['./organismo-detail.component.scss'],
@@ -104,6 +106,9 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     { clave: 'historial', label: 'Historial', contador: null },
   ];
 
+  /** Pestañas que se muestran: editando no hay "Trámites" (el diseño tiene Datos / Responsables / Historial). */
+  tabsVisibles: Tab[] = this.tabs;
+
   private id = '';
 
   /** Adónde vuelve la edición al guardar o cancelar (ver `organismo-origen.ts`). */
@@ -112,6 +117,7 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? '';
     this.modo = this.route.snapshot.data['modo'] === 'editar' ? 'editar' : 'ver';
+    this.tabsVisibles = this.modo === 'editar' ? this.tabs.filter((t) => t.clave !== 'tramites') : this.tabs;
     this.origen = origenEdicionDesde(this.route.snapshot.queryParamMap.get(PARAM_ORIGEN_EDICION));
     this.cargar();
   }
@@ -234,6 +240,27 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     this.tab$.next(clave);
   }
 
+  /**
+   * Teclado del tablist (patrón APG, activación automática): ←/→ recorren las pestañas con vuelta,
+   * Inicio/Fin saltan a la primera/última. El foco acompaña a la selección (tabindex móvil).
+   */
+  onTabsKeydown(event: KeyboardEvent): void {
+    const claves = this.tabsVisibles.map((t) => t.clave);
+    const actual = claves.indexOf(this.tab$.value);
+    const ultimo = claves.length - 1;
+    let destino: number;
+    switch (event.key) {
+      case 'ArrowRight': destino = actual >= ultimo ? 0 : actual + 1; break;
+      case 'ArrowLeft': destino = actual <= 0 ? ultimo : actual - 1; break;
+      case 'Home': destino = 0; break;
+      case 'End': destino = ultimo; break;
+      default: return;
+    }
+    event.preventDefault();
+    this.seleccionarTab(claves[destino]);
+    (event.currentTarget as HTMLElement).querySelector<HTMLElement>(`#orgdet-tab-${claves[destino]}`)?.focus();
+  }
+
   /** Iniciales del membrete: la sigla si existe, si no las del nombre. */
   get iniciales(): string {
     const sigla = (this.organismo?.acronym ?? '').replace(/[^\p{L}]/gu, '');
@@ -311,19 +338,6 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
    */
   tieneCambiosSinGuardar(): boolean {
     return this.modo === 'editar' && !this.saving && !!this.dynamicForm?.form?.dirty;
-  }
-
-  get accionesDelMembrete(): RowAction[] {
-    return [
-      {
-        label: 'Eliminar',
-        icon: 'trash',
-        permission: 'DELETE_ORGANISM',
-        danger: true,
-        ariaLabel: `Eliminar organismo ${this.organismo?.nombre ?? ''}`,
-        run: () => this.onDelete(),
-      },
-    ];
   }
 
   onDelete(): void {

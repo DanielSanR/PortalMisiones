@@ -1,102 +1,79 @@
-.title-icon {
-  vertical-align: middle;
-  margin-right: 8px;
+// ==========================================================================
+// Detalle de un registro de auditoría. La cáscara es `.form-dialog` (global); acá solo el
+// cuerpo con scroll y el diff antes / después, sobre tokens de error / success.
+// ==========================================================================
+
+// El contenido de Material trae padding y margen propios: la cáscara ya los pone.
+.auditoria-detalle.mat-mdc-dialog-content {
+  margin: 0;
+  padding: 0;
 }
 
-.meta-row {
-  display: flex;
-  gap: var(--theme-space-lg, 24px);
-  margin-bottom: var(--theme-space-lg, 24px);
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.meta-label {
-  font-size: var(--theme-font-size-xs, 12px);
-  color: var(--theme-text-secondary, #666);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.meta-value {
-  font-weight: var(--theme-font-weight-medium, 500);
-}
-
-.diff-container {
+.auditoria-diff {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--theme-space-md, 16px);
-}
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--theme-space-md);
 
-.diff-panel {
-  border-radius: var(--theme-radius-md, 8px);
-  padding: var(--theme-space-md, 16px);
-  overflow: auto;
+  &__panel {
+    min-width: 0;
+    padding: var(--theme-space-md);
+    border: 1px solid var(--diff-border);
+    border-radius: var(--theme-radius-md);
+    background: var(--diff-bg);
 
-  h4 {
+    // Antes = error (lo que se quitó); después = success (lo que quedó).
+    &--antes {
+      --diff-bg: var(--theme-error-bg);
+      --diff-border: var(--theme-error-border);
+      --diff-fg: var(--theme-error-icon);
+    }
+
+    &--despues {
+      --diff-bg: var(--theme-success-bg);
+      --diff-border: var(--theme-success-border);
+      --diff-fg: var(--theme-success-text);
+    }
+  }
+
+  &__titulo {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 0 0 12px;
-    font-size: var(--theme-font-size-sm, 14px);
+    gap: var(--theme-space-sm);
+    margin: 0 0 var(--theme-space-gap);
+    font-size: var(--theme-font-size-sm);
+    color: var(--diff-fg);
+
+    i.ph {
+      font-size: var(--theme-icon-size-md);
+    }
   }
-}
 
-.diff-old {
-  background: #FFF3F3;
-  border: 1px solid #FFCDD2;
+  &__lista {
+    margin: 0;
+  }
 
-  h4 { color: #C62828; }
-}
+  &__fila {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-2xs);
+    padding: var(--theme-space-sm) 0;
+    border-bottom: 1px solid var(--diff-border);
 
-.diff-new {
-  background: #F1F8E9;
-  border: 1px solid #C5E1A5;
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
 
-  h4 { color: #2E7D32; }
-}
+  &__campo {
+    font-size: var(--theme-font-caption-size);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-secondary);
+  }
 
-.diff-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-
-  &:last-child { border-bottom: none; }
-}
-
-.diff-key {
-  font-size: var(--theme-font-size-xs, 12px);
-  color: var(--theme-text-secondary, #666);
-  font-family: monospace;
-}
-
-.diff-value {
-  font-size: var(--theme-font-size-sm, 14px);
-  word-break: break-word;
-}
-
-.diff-removed { color: #C62828; }
-.diff-added { color: #2E7D32; }
-
-.no-diff {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--theme-space-xl, 32px);
-  color: var(--theme-text-secondary, #666);
-
-  mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
-    opacity: 0.5;
-    margin-bottom: 8px;
+  &__valor {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--diff-fg);
+    overflow-wrap: anywhere;
   }
 }

@@ -6,7 +6,7 @@
 // Dot rojo opcional = alerta ("Requieren revisión").
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 .filter-tabs {
   display: flex;
@@ -19,14 +19,14 @@
     align-items: center;
     gap: 7px;
     height: 34px;
-    padding: 0 var(--theme-space-md);
+    padding: 0 12px;
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-md);
     background: var(--theme-bg-card);
-    color: var(--theme-text-primary);
+    color: var(--theme-text-secondary);
     font-family: inherit;
     font-size: var(--theme-font-size-sm);
-    font-weight: var(--theme-font-weight-medium);
+    font-weight: var(--theme-font-weight-normal);
     white-space: nowrap;
     cursor: pointer;
     transition: all var(--theme-transition-fast);
@@ -47,7 +47,11 @@
   &-tab-count {
     font-variant-numeric: tabular-nums;
     font-size: var(--theme-font-size-xs);
-    opacity: 0.75;
+  }
+
+  // Contador del chip activo: color sólido (con `opacity: .75` caía a 4.39:1, bajo AA).
+  &-tab.is-active &-tab-count {
+    color: var(--theme-primary-700);
   }
 
   &-tab-dot {

@@ -4,10 +4,12 @@ import { Observable, Subject, catchError, map, of, startWith, switchMap } from '
 import { MatButtonModule } from '@angular/material/button';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { UserRole } from '@core/enums/user-role.enum';
-import { DashboardFacade, DashboardHomeVM } from '@features/dashboard';
+import { DashboardFacade } from '@features/dashboard';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 import { ExampleDataPillComponent } from '@shared/components/example-data-pill';
 import { LoadingComponent } from '@shared/components/loading/loading.component';
 import { DashboardPanelComponent } from './components/dashboard-panel/dashboard-panel.component';
+import { DashboardHomeView, HOME_COPY, toHomeView } from './dashboard.view';
 
 // ── Tipos de vista (placeholders honestos — ver HOME_REDISENO.md §5) ─────────
 interface DashboardWidgetFlags {
@@ -31,7 +33,7 @@ interface PipelineScope {
 /** VM de pantalla del Home: la carga de los widgets como estado explícito (no hay "en blanco"). */
 interface DashboardScreenVM {
   estado: 'cargando' | 'listo' | 'error';
-  home?: DashboardHomeVM;
+  home?: DashboardHomeView;
 }
 
 const EMPTY_WIDGETS: DashboardWidgetFlags = {
@@ -57,6 +59,7 @@ const WIDGETS_BY_ROLE: Record<UserRole, DashboardWidgetFlags> = {
     AsyncPipe,
     DecimalPipe,
     MatButtonModule,
+    UnavailableDirective,
     ExampleDataPillComponent,
     LoadingComponent,
     DashboardPanelComponent,
@@ -67,6 +70,8 @@ const WIDGETS_BY_ROLE: Record<UserRole, DashboardWidgetFlags> = {
 export class DashboardComponent implements OnInit {
   /** Infra de sesión (excepción documentada): solo para resolver el rol → matriz de widgets. */
   private readonly auth = inject(AuthTokenService);
+
+  readonly copy = HOME_COPY;
 
   widgets: DashboardWidgetFlags = { ...EMPTY_WIDGETS };
   pipelineScope: PipelineScope = {
@@ -87,7 +92,7 @@ export class DashboardComponent implements OnInit {
     startWith(undefined),
     switchMap(() =>
       this.facade.loadHome().pipe(
-        map((home): DashboardScreenVM => ({ estado: 'listo', home })),
+        map((home): DashboardScreenVM => ({ estado: 'listo', home: toHomeView(home) })),
         startWith<DashboardScreenVM>({ estado: 'cargando' }),
         catchError(() => of<DashboardScreenVM>({ estado: 'error' })),
       ),
@@ -106,11 +111,11 @@ export class DashboardComponent implements OnInit {
 
   private resolvePipelineScope(role: UserRole | null): PipelineScope {
     if (role === UserRole.ADMIN_ORGANIZATION) {
-      return { icon: 'git-branch', title: '¿Cómo está el contenido?', subtitle: '63 trámites de tu organismo', gatePermission: 'READ_PROCEDURE · scope organismo' };
+      return { icon: 'git-branch', title: '¿Cómo está el contenido?', subtitle: HOME_COPY.pipelineSubtitles.organism, gatePermission: 'READ_PROCEDURE · scope organismo' };
     }
     if (role === UserRole.AGENT) {
-      return { icon: 'git-branch', title: '¿Cómo están tus fichas?', subtitle: '22 fichas por localidad a tu cargo', gatePermission: 'READ_VARIANT · scope organismo' };
+      return { icon: 'git-branch', title: '¿Cómo están tus fichas?', subtitle: HOME_COPY.pipelineSubtitles.agent, gatePermission: 'READ_VARIANT · scope organismo' };
     }
-    return { icon: 'git-branch', title: '¿Cómo está el contenido?', subtitle: '529 trámites en total', gatePermission: 'READ_PROCEDURE' };
+    return { icon: 'git-branch', title: '¿Cómo está el contenido?', subtitle: HOME_COPY.pipelineSubtitles.default, gatePermission: 'READ_PROCEDURE' };
   }
 }

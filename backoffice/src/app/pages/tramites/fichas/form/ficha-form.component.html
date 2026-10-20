@@ -1,16 +1,16 @@
 <!-- Alta y edición de ficha por localidad. El breadcrumb lo pone el shell. -->
 @if (cargando) {
-  <div class="fichaform-cargando" role="status" aria-live="polite">
+  <div class="loading-inline" role="status" aria-live="polite">
     <app-loading [loading]="true" [message]="isEdit ? 'Cargando la ficha…' : 'Cargando el formulario…'"></app-loading>
   </div>
 } @else if (errorCarga) {
-  <div class="fichaform-estado" role="alert">
-    <span class="fichaform-estado__icono" aria-hidden="true">
+  <div class="load-state" role="alert">
+    <span class="load-state__icono" aria-hidden="true">
       <i class="ph" [class.ph-file-x]="errorCarga.definitivo" [class.ph-cloud-slash]="!errorCarga.definitivo"></i>
     </span>
-    <h2 class="fichaform-estado__titulo">{{ errorCarga.titulo }}</h2>
-    <p class="fichaform-estado__texto">{{ errorCarga.texto }}</p>
-    <div class="fichaform-estado__acciones">
+    <h2 class="load-state__titulo">{{ errorCarga.titulo }}</h2>
+    <p class="load-state__texto">{{ errorCarga.texto }}</p>
+    <div class="load-state__acciones">
       @if (!errorCarga.definitivo) {
         <button type="button" mat-flat-button color="primary" (click)="cargar()">
           <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
@@ -44,31 +44,30 @@
       <app-estado-badge [estado]="ficha.estado"></app-estado-badge>
     }
     @if (datos.adopcion) {
-      <a class="fichaform-contexto__link" [routerLink]="[rutaAdopcion, datos.adopcion.id]" *appHasPermission="'READ_ADOPTION'">
+      <a class="detail-link" [routerLink]="[rutaAdopcion, datos.adopcion.id]" *appHasPermission="'READ_ADOPTION'">
         Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
       </a>
     }
   </div>
 
   @if (editaPublicada) {
-    <div class="fichaform-aviso" role="status">
+    <div class="fichaform-aviso">
       <i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>
       <p><strong>Esta ficha está publicada.</strong> Los cambios se verán en el portal al guardar.</p>
     </div>
   }
   @if (datos.adopcion && !datos.adopcion.habilitada) {
-    <div class="fichaform-aviso" role="status">
+    <div class="fichaform-aviso">
       <i class="ph ph-warning" aria-hidden="true"></i>
       <p>El trámite del organismo está deshabilitado: esta ficha no se va a ver en el portal aunque se publique.</p>
     </div>
   }
 
   @if (!isEdit && !datos.ocupadas.localidadesVerificables) {
-    <div class="fichaform-aviso" role="status">
+    <div class="fichaform-aviso">
       <i class="ph ph-warning" aria-hidden="true"></i>
       <p>
-        No podemos validar si la localidad ya tiene una ficha de este trámite: el servidor no informa a qué trámite
-        pertenece cada ficha. Antes de guardar, revisá la lista de
+        Todavía no podemos verificar si la localidad ya tiene una ficha de este trámite. Antes de guardar, revisá la lista de
         <a class="fichaform-aviso__link" [routerLink]="rutaLista">Fichas por localidad</a> para no duplicarla.
       </p>
     </div>
@@ -78,7 +77,7 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
 
       <!-- ── Localidad y dirección pública ── -->
-      <div class="section-header">Localidad</div>
+      <h2 class="section-header">Localidad</h2>
       <div class="form-grid form-grid--full">
 
         <div class="form-field" [class.is-invalid]="campoInvalido('localidadId')">
@@ -86,7 +85,7 @@
             Localidad @if (!isEdit) {<span class="form-field__required" aria-hidden="true">*</span>}
           </label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="localidad" aria-labelledby="localidad-label" formControlName="localidadId"
+            <mat-select id="localidad" aria-labelledby="localidad-label" formControlName="localidadId" [required]="!isEdit"
                         placeholder="Elegí una localidad">
               @for (op of datos.localidades; track op.id) {
                 <mat-option [value]="op.id" [disabled]="!isEdit && ocupada(op.id)">
@@ -102,7 +101,7 @@
                 ? 'No se puede cambiar: otra localidad es otra ficha.'
                 : datos.ocupadas.localidadesVerificables
                   ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir.'
-                  : 'No podemos validar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
+                  : 'Todavía no podemos verificar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
             </mat-hint>
             @if (form.controls.localidadId.hasError('required')) {
               <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Elegí una localidad</span></mat-error>
@@ -117,7 +116,7 @@
           <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
           <div class="fichaform-slug">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug"
+              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug" required
                      [maxlength]="maxSlug" (input)="onSlugEditado()" placeholder="obtener-licencia-de-conducir-posadas">
               <mat-hint>
                 {{ isEdit ? 'Cambiarlo cambia la dirección pública de la ficha.' : 'Se arma solo con el trámite y la localidad; podés editarlo.' }}
@@ -169,7 +168,7 @@
       </div>
 
       <!-- ── Contenido local ── -->
-      <div class="section-header">Requisitos y costos</div>
+      <h2 class="section-header">Requisitos y costos</h2>
       <div class="form-grid form-grid--full">
         <div class="form-field">
           <label class="form-field__label" id="requisitos-label" for="requisitos">Requisitos <span class="form-field__optional">(opcional)</span></label>
@@ -189,7 +188,7 @@
       </div>
 
       <!-- ── Estado ── -->
-      <div class="section-header">Disponibilidad</div>
+      <h2 class="section-header">Disponibilidad</h2>
       <div class="fichaform-activa">
         <mat-slide-toggle formControlName="activa" color="primary">Activa</mat-slide-toggle>
         @if (form.controls.activa.hasError('reactivaDuplicada')) {
@@ -219,16 +218,18 @@
         </span>
         <div class="form-actions__buttons">
           <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="cancelar()">Cancelar</button>
-          <button mat-raised-button color="primary" type="submit"
-                  [disabled]="saving || sinCambios"
-                  [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''">
-            @if (saving) {
-              <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-            } @else {
-              <i class="ph ph-floppy-disk" aria-hidden="true"></i>
-            }
-            <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear ficha') }}</span>
-          </button>
+          <!-- El tooltip no puede colgar del botón deshabilitado: va en un envoltorio focusable. -->
+          <span class="form-actions__submit" [matTooltip]="sinCambios && !saving ? 'No hay cambios para guardar' : ''"
+                [attr.tabindex]="sinCambios && !saving ? 0 : null">
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving || sinCambios">
+              @if (saving) {
+                <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+              } @else {
+                <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+              }
+              <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear ficha') }}</span>
+            </button>
+          </span>
         </div>
       </div>
 

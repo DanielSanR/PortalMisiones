@@ -1,4 +1,4 @@
-<span class="estado-badge" [attr.data-estado]="clave">
-    <span class="estado-badge__dot" aria-hidden="true"></span>
-    <span class="estado-badge__label">{{ estado | estadoBadge }}</span>
+<span class="pill" [class]="'pill--' + clave" [class.pill--bordered]="bordered">
+    <span class="pill__dot" aria-hidden="true"></span>
+    <span class="pill__label">{{ estado | estadoBadge }}</span>
 </span>

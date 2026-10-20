@@ -100,3 +100,46 @@ describe('DynamicFormComponent — cambio de fields después del primer render',
     expect(component.form.get('extra')?.value).toBe('x');
   });
 });
+
+/**
+ * Al enviar un formulario inválido, cada campo obligatorio vacío tiene que mostrar el TEXTO del
+ * error (no solo el borde rojo), también los campos diferidos (`@defer`) como el select, que son
+ * OnPush: `markAllAsTouched()` no emite `statusChanges` ni toca sus inputs.
+ */
+describe('DynamicFormComponent — errores al enviar', () => {
+  let fixture: ComponentFixture<DynamicFormComponent>;
+
+  const fields: FieldConfig[] = [
+    { name: 'nombre', label: 'Nombre', type: 'text', validations: { required: true } },
+    {
+      name: 'tipo', label: 'Tipo', type: 'select', validations: { required: true },
+      options: [{ id: 'a', name: 'A' }], optionsLoaded: true,
+    },
+  ];
+
+  const textoDeError = (nombre: string): string => {
+    const campo: HTMLElement | null = fixture.nativeElement.querySelector(`#${nombre}`)
+      ?.closest('mat-form-field');
+    return campo?.querySelector('mat-error')?.textContent?.trim() ?? '';
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, NoopAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DynamicFormComponent);
+    fixture.componentRef.setInput('fields', fields);
+    fixture.detectChanges();
+    await fixture.whenStable(); // resuelve los @defer (on immediate)
+    fixture.detectChanges();
+  });
+
+  it('muestra el mensaje en el input y en el select diferido', () => {
+    fixture.componentInstance.submit();
+    fixture.detectChanges();
+
+    expect(textoDeError('nombre')).not.toBe('');
+    expect(textoDeError('tipo')).not.toBe('');
+  });
+});

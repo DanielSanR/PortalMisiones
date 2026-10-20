@@ -5,6 +5,11 @@
 > **todo** el backoffice (Angular 17). No es un rediseño desde cero: **evoluciona** el design system que ya
 > existe en `backoffice/src/shared-styles/`.
 > **Ámbito:** solo `backoffice/`. El portal público (Next.js) es de otro equipo y queda fuera.
+>
+> **Nota (2026-10): documento histórico.** El sistema vigente está en `DESIGN.md` + `backoffice/src/shared-styles/`.
+> Donde difieran, mandan esos. Correcciones conocidas: Oak Sans **no** está self-hosted (se renderiza Figtree);
+> los íconos son **Phosphor regular** (no Material Symbols); el sidebar es claro (no navy); WCAG 2.2 AA gana sobre
+> el diseño; el apéndice §14 (tokens actuales) está desactualizado.
 
 ---
 
@@ -17,7 +22,7 @@
 | Marca | **Azul institucional Misiones se mantiene** (`#2F6EB1` / `#3B82C4`). Se puede refinar la escala y los neutros, no el hue base. |
 | Tema | **Solo claro.** Dejar los tokens preparados por si luego se agrega oscuro, pero no implementarlo. |
 | Alcance | **Rediseño total**, incluyendo las ~14 pantallas. Se ejecuta por fases (§11). |
-| Tipografía | **Oak Sans** (ya cargada). Se mantiene; se define jerarquía/escala. No migrar a Inter/Roboto/Poppins. |
+| Tipografía | **Oak Sans** (declarada, aún no self-hosted → se renderiza Figtree). Se mantiene; se define jerarquía/escala. No migrar a Inter/Roboto/Poppins. |
 
 ---
 
@@ -107,6 +112,8 @@ métricas para que las columnas alineen.
   decorativa. Respetar `prefers-reduced-motion`.
 
 ### 3.4 Iconografía
+> Corrección: el sistema usa **Phosphor Icons regular** (ver `DESIGN.md` §8); lo de abajo quedó superado.
+
 Mantener **Material Symbols** (ya en uso). Un solo set, un solo estilo (recomendado: Rounded, weight 400,
 optical size consistente). **Nunca emojis como íconos.** Tamaño base 20px en acciones, 24px en nav.
 

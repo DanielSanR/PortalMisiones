@@ -65,7 +65,7 @@ export const COMANDOS: Comando[] = [
   },
   {
     label: 'Crear tipo de organismo',
-    icon: 'path',
+    icon: 'tree-structure',
     keywords: ['nuevo', 'alta', 'agregar', 'tipo'],
     route: '/dashboard/tipos-organismo/nuevo',
     rule: { permissions: ['CREATE_ORGANISM_TYPE'] },
@@ -93,7 +93,7 @@ export const COMANDOS: Comando[] = [
   },
   {
     label: 'Crear etiqueta',
-    icon: 'bookmark-simple',
+    icon: 'bookmarks-simple',
     keywords: ['nueva', 'alta', 'agregar', 'etiqueta', 'tag'],
     route: '/dashboard/etiquetas/nuevo',
     rule: CREAR_ETIQUETA_ACCESS,

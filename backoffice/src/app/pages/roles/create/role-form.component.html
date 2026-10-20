@@ -35,13 +35,13 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <!-- ── Identificación ── -->
-      <div class="section-header">Identificación</div>
+      <h2 class="section-header">Identificación</h2>
       <div class="form-grid">
 
         <div class="form-field" [class.is-invalid]="fieldError('codigo', 'required') || fieldError('codigo', 'maxlength')">
           <label class="form-field__label" id="codigo-label" for="codigo">Código <span class="form-field__required" aria-hidden="true">*</span></label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <input matInput id="codigo" aria-labelledby="codigo-label" formControlName="codigo" placeholder="Ej: EDITOR_TRAMITES">
+            <input matInput id="codigo" aria-labelledby="codigo-label" required formControlName="codigo" placeholder="Ej: EDITOR_TRAMITES">
             <mat-hint>Sin espacios, en mayúsculas</mat-hint>
             @if (fieldError('codigo', 'required')) {
               <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El código es obligatorio</span></mat-error>
@@ -55,7 +55,7 @@
         <div class="form-field" [class.is-invalid]="fieldError('descripcion', 'required') || fieldError('descripcion', 'maxlength')">
           <label class="form-field__label" id="descripcion-label" for="descripcion">Descripción <span class="form-field__required" aria-hidden="true">*</span></label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <input matInput id="descripcion" aria-labelledby="descripcion-label" formControlName="descripcion" placeholder="Ej: Editor de trámites">
+            <input matInput id="descripcion" aria-labelledby="descripcion-label" required formControlName="descripcion" placeholder="Ej: Editor de trámites">
             @if (fieldError('descripcion', 'required')) {
               <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>La descripción es obligatoria</span></mat-error>
             }
@@ -68,13 +68,13 @@
       </div>
 
       <!-- ── Configuración ── -->
-      <div class="section-header">Configuración</div>
+      <h2 class="section-header">Configuración</h2>
       <div class="form-grid form-grid--full">
 
         <div class="form-field" [class.is-invalid]="fieldError('scopeTipo', 'required')">
           <label class="form-field__label" id="scopeTipo-label" for="scopeTipo">Scope <span class="form-field__required" aria-hidden="true">*</span></label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="scopeTipo" aria-labelledby="scopeTipo-label" formControlName="scopeTipo">
+            <mat-select id="scopeTipo" aria-labelledby="scopeTipo-label" required formControlName="scopeTipo">
               @for (op of scopeOpciones; track op.value) {
                 <mat-option [value]="op.value">{{ op.label }}</mat-option>
               }
@@ -106,7 +106,7 @@
       </div>
 
       <!-- ── Permisos ── -->
-      <div class="section-header">Permisos asignados</div>
+      <h2 class="section-header">Permisos asignados</h2>
       <div class="permiso-picker" role="group" aria-label="Permisos asignados al rol">
         @for (group of permisoGroups; track group.key) {
           <div class="perm-group">
@@ -140,16 +140,20 @@
           <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="goBack()">Cancelar</button>
           <!-- En edición el botón arranca deshabilitado: sin cambios no hay nada que guardar
                (equivalente al `requireChanges` de `app-dynamic-form`). -->
-          <button mat-raised-button color="primary" type="submit"
-                  [disabled]="saving || sinCambios"
-                  [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''">
-            @if (saving) {
-              <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-            } @else {
-              <i class="ph ph-floppy-disk" aria-hidden="true"></i>
-            }
-            <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear rol') }}</span>
-          </button>
+          <!-- El tooltip no puede colgar de un `disabled` nativo (no recibe foco ni hover): va en un contenedor
+               focusable solo mientras el botón está deshabilitado. -->
+          <span class="form-submit-tip" [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''"
+                [attr.tabindex]="sinCambios && !saving ? 0 : null">
+            <button mat-raised-button color="primary" type="submit"
+                    [disabled]="saving || sinCambios">
+              @if (saving) {
+                <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+              } @else {
+                <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+              }
+              <span>{{ saving ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Crear rol') }}</span>
+            </button>
+          </span>
         </div>
       </div>
 

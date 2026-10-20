@@ -98,9 +98,9 @@
       <span class="fichalist-estado">
         <app-estado-badge [estado]="row.estado"></app-estado-badge>
         @if (!row.activa) {
-          <span class="bool-badge bool-badge--inactive">
-            <span class="bool-badge__dot" aria-hidden="true"></span>
-            Desactivada
+          <span class="pill pill--inactive">
+            <span class="pill__dot" aria-hidden="true"></span>
+            <span class="pill__label">Desactivada</span>
           </span>
         }
       </span>

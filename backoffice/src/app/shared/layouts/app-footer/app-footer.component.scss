@@ -1,0 +1,64 @@
+// Pie del shell. Links sin destino todavía (appUnavailable): botones con aspecto de link, no `<a href="#">`.
+
+@use 'shared-styles/mixins' as *;
+
+:host {
+    display: block;
+    flex: none;
+}
+
+.app-footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: var(--theme-space-gap) calc(var(--theme-space-md) + var(--theme-space-xs));
+    border-top: 1px solid var(--theme-border-primary);
+    background-color: var(--theme-surface-card);
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-tertiary);
+
+    &__sep {
+        width: 1px;
+        height: var(--theme-space-gap);
+        background-color: var(--theme-border-primary);
+    }
+
+    &__link {
+        padding: 0;
+        border: none;
+        border-radius: var(--theme-radius-xs);
+        background: transparent;
+        font-family: inherit;
+        font-size: inherit;
+        color: var(--theme-text-secondary);
+        cursor: pointer;
+
+        @include focus-ring;
+    }
+
+    &__end {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-left: auto;
+    }
+
+    &__version {
+        font-family: var(--theme-font-mono);
+    }
+
+    &__brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--theme-text-secondary);
+        white-space: nowrap;
+    }
+
+    &__logo {
+        height: 16px;
+        width: auto;
+        opacity: 0.8;
+    }
+}
