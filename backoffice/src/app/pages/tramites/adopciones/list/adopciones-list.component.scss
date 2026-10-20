@@ -1,0 +1,52 @@
+// ==========================================================================
+// Listado de Trámites del organismo — toolbar de dos filas (buscador + selects
+// + contador) igual que Plantillas. Acá quedan los selects y las celdas propias.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+// Selects de la fila A, con fondo de card para que se lean sobre el well.
+.adoplist-select {
+  @include list-filter-field;
+  min-width: 150px;
+  flex: 0 1 220px;
+}
+
+// Celda del trámite: link al detalle -------------------------------------
+.adoplist-plantilla {
+  display: block;
+  color: var(--theme-text-primary);
+  font-weight: var(--theme-font-weight-medium);
+  text-decoration: none;
+  @include truncate;
+  @include focus-ring;
+
+  &:hover {
+    color: var(--theme-primary);
+    text-decoration: underline;
+  }
+
+  &__faltante {
+    color: var(--theme-text-tertiary);
+    font-weight: var(--theme-font-weight-normal);
+  }
+}
+
+// Celda de vigencia: "desde → hasta" en cifras tabulares ------------------
+.adoplist-vigencia {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--theme-space-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--theme-text-secondary);
+
+  i.ph {
+    color: var(--theme-text-tertiary);
+  }
+
+  &__abierta {
+    color: var(--theme-text-tertiary);
+    font-style: italic;
+  }
+}

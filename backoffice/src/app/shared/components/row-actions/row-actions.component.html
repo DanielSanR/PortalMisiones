@@ -6,8 +6,10 @@
             [attr.aria-busy]="busy || null"
             [matTooltip]="busy ? busyLabel : ''"
             (click)="accion.run()">
-      <i class="ph" [class]="'ph ph-' + (busy ? 'spinner-gap' : accion.icon)"
-         [class.row-actions__spinner]="busy" aria-hidden="true"></i>
+      <!-- Diseño: "Editar" sin ícono; solo aparece el spinner mientras la fila está ocupada. -->
+      @if (busy) {
+        <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+      }
       {{ accion.label }}
     </button>
   }
@@ -24,20 +26,33 @@
 
       <mat-menu #acciones="matMenu" xPosition="before">
         @for (accion of menu.normales; track accion.label) {
-          <button mat-menu-item type="button" [disabled]="accion.disabled"
-                  [attr.aria-label]="accion.ariaLabel || null" (click)="accion.run()">
+          <button mat-menu-item type="button" [disabled]="accion.disabled && !accion.disabledReason"
+                  [appAriaDisabled]="accion.disabled"
+                  [attr.aria-describedby]="accion.disabled && accion.disabledReason ? motivoId(accion) : null"
+                  [matTooltip]="accion.disabled && accion.disabledReason ? accion.disabledReason : ''"
+                  [attr.aria-label]="accion.ariaLabel || null" (click)="ejecutar(accion)">
             <i class="ph" [class]="'ph ph-' + accion.icon" aria-hidden="true"></i>
             <span>{{ accion.label }}</span>
+            @if (accion.disabled && accion.disabledReason) {
+              <span class="cdk-visually-hidden" [id]="motivoId(accion)">{{ accion.disabledReason }}</span>
+            }
           </button>
         }
 
         @if (menu.divisor) { <hr class="row-actions__divisor" aria-hidden="true" /> }
 
         @for (accion of menu.destructivas; track accion.label) {
-          <button mat-menu-item type="button" class="delete-action" [disabled]="accion.disabled"
-                  [attr.aria-label]="accion.ariaLabel || null" (click)="accion.run()">
+          <button mat-menu-item type="button" class="delete-action"
+                  [disabled]="accion.disabled && !accion.disabledReason"
+                  [appAriaDisabled]="accion.disabled"
+                  [attr.aria-describedby]="accion.disabled && accion.disabledReason ? motivoId(accion) : null"
+                  [matTooltip]="accion.disabled && accion.disabledReason ? accion.disabledReason : ''"
+                  [attr.aria-label]="accion.ariaLabel || null" (click)="ejecutar(accion)">
             <i class="ph" [class]="'ph ph-' + accion.icon" aria-hidden="true"></i>
             <span>{{ accion.label }}</span>
+            @if (accion.disabled && accion.disabledReason) {
+              <span class="cdk-visually-hidden" [id]="motivoId(accion)">{{ accion.disabledReason }}</span>
+            }
           </button>
         }
       </mat-menu>

@@ -1,14 +1,14 @@
-<div class="error-dialog">
-    <div class="error-dialog__header">
-        <div class="error-dialog__icon-wrapper">
-            <mat-icon>error_outline</mat-icon>
+<div class="form-dialog form-dialog--sm">
+    <div class="form-dialog__header">
+        <div class="form-dialog__icono form-dialog__icono--error">
+            <i class="ph ph-warning-circle" aria-hidden="true"></i>
         </div>
-        <h2>{{ data.title }}</h2>
+        <div class="form-dialog__encabezado">
+            <h2 mat-dialog-title class="form-dialog__titulo">{{ data.title }}</h2>
+            <p class="form-dialog__texto">{{ data.message }}</p>
+        </div>
     </div>
-    <mat-dialog-content>
-        <p>{{ data.message }}</p>
-    </mat-dialog-content>
     <mat-dialog-actions align="end">
-        <button mat-flat-button color="primary" (click)="dialogRef.close()">Aceptar</button>
+        <button mat-flat-button color="primary" type="button" cdkFocusInitial (click)="dialogRef.close()">Aceptar</button>
     </mat-dialog-actions>
 </div>

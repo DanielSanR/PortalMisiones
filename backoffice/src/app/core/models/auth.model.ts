@@ -27,6 +27,17 @@ export interface RefreshTokenRequest {
 }
 
 /** Claims reales del access/refresh token (BACKEND_API_SPEC.md §1.2). */
+/**
+ * `GET /api/auth/me` → contexto EFECTIVO del usuario autenticado (fuente de verdad del RBAC).
+ * `roles` viene con prefijo `ROLE_`; `permissions`, los códigos atómicos.
+ */
+export interface AuthMeResponseDTO {
+  userId: string;
+  email: string;
+  roles: string[];
+  permissions: string[];
+}
+
 export interface JwtPayload {
   sub: string; // email
   /**

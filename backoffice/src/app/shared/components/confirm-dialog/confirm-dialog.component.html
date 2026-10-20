@@ -1,24 +1,33 @@
-<div class="confirm-dialog" [class.confirm-dialog--danger]="esDestructivo">
-    <div class="confirm-dialog__header">
-        <div class="confirm-dialog__icon-wrapper">
+<div class="form-dialog form-dialog--sm">
+    <div class="form-dialog__header">
+        <div class="form-dialog__icono" [class.form-dialog__icono--error]="esDestructivo">
             <i class="ph" [class.ph-warning]="esDestructivo" [class.ph-question]="!esDestructivo"
                aria-hidden="true"></i>
         </div>
-        <div class="confirm-dialog__body">
-            <h3 class="confirm-dialog__title">{{ data.title }}</h3>
-            <p class="confirm-dialog__message">
+        <div class="form-dialog__encabezado">
+            <h2 mat-dialog-title class="form-dialog__titulo">{{ data.title }}</h2>
+            <p class="form-dialog__texto">
                 <ng-container *ngFor="let parte of partes">
                     <b *ngIf="parte.destacado">{{ parte.texto }}</b>
                     <ng-container *ngIf="!parte.destacado">{{ parte.texto }}</ng-container>
                 </ng-container>
             </p>
+            <p *ngIf="errorMensaje" class="form-dialog__error" role="alert">
+                <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                <span>{{ errorMensaje }}</span>
+            </p>
+            <!-- La acción tarda más de lo normal: se avisa y Cancelar sigue disponible. -->
+            <p *ngIf="ejecutando && lenta" class="form-dialog__texto" role="status">
+                Está tardando más de lo habitual. Podés cancelar y revisar el estado en la lista.
+            </p>
         </div>
     </div>
     <mat-dialog-actions align="end">
-        <button mat-stroked-button color="primary" [disabled]="ejecutando" (click)="dialogRef.close(false)">
+        <!-- Cancelar queda operable aun con la acción en vuelo: nunca se atrapa al usuario. -->
+        <button mat-stroked-button color="primary" type="button" (click)="cancelar()">
             {{ data.cancelText || 'Cancelar' }}
         </button>
-        <button mat-flat-button [color]="esDestructivo ? 'warn' : 'primary'"
+        <button mat-flat-button [color]="esDestructivo ? 'warn' : 'primary'" type="button"
             [disabled]="ejecutando"
             [attr.aria-busy]="ejecutando"
             (click)="confirmar()">

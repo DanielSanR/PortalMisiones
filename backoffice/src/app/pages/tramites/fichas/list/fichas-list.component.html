@@ -1,0 +1,123 @@
+<!-- "Fichas por localidad". Sin botón "Nueva": las fichas se agregan desde el detalle del trámite
+     del organismo ("Agregar localidad"), porque cuelgan de una adopción. -->
+@if (vista$ | async; as vista) {
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por trámite, organismo, localidad o slug…"
+      ariaLabel="Buscar fichas por trámite, organismo, localidad o slug">
+    </app-list-search>
+
+    <mat-form-field appearance="outline" class="fichalist-select" subscriptSizing="dynamic">
+      <mat-label>Estado</mat-label>
+      <mat-select [formControl]="estadoCtrl">
+        <mat-option value="">Todos</mat-option>
+        @for (op of estados; track op.valor) {
+          <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (localidades$ | async; as localidades) {
+      @if (localidades.length > 1) {
+        <mat-form-field appearance="outline" class="fichalist-select" subscriptSizing="dynamic">
+          <mat-label>Localidad</mat-label>
+          <mat-select [formControl]="localidadCtrl">
+            <mat-option value="">Todas</mat-option>
+            @for (op of localidades; track op.id) {
+              <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    }
+
+    <mat-slide-toggle class="fichalist-toggle" color="primary" [formControl]="inactivasCtrl">Mostrar desactivadas</mat-slide-toggle>
+
+    <span class="list-toolbar-count">{{ vista.total }} fichas</span>
+  </div>
+
+  @if (filterTabs$ | async; as tabs) {
+    @if (tabs.length) {
+      <div class="list-toolbar__row">
+        <app-filter-tabs [tabs]="tabs" [active]="(tab$ | async)!" (activeChange)="cambiarTab($event)"></app-filter-tabs>
+      </div>
+    }
+  }
+</div>
+
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
+<app-shared-table
+    [data]="vista.rows"
+    [columns]="columns"
+    [loading]="loading"
+    [error]="error"
+    errorTitle="No pudimos cargar las fichas por localidad"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionLabel]="vista.hayFiltros ? 'Limpiar filtros' : ''"
+    emptyActionIcon="x"
+    (emptyAction)="limpiarFiltros()"
+    emptyIcon="map-pin-area">
+
+    <ng-template appTableCell="tramite" let-row>
+      <a class="fichalist-tramite" [routerLink]="[rutaDetalle, row.id]">
+        <span class="fichalist-tramite__titulo" [class.fichalist-tramite__titulo--faltante]="!row.plantillaTitulo">
+          {{ row.plantillaTitulo ?? row.slug }}
+        </span>
+        <span class="fichalist-tramite__organismo">{{ row.organismoNombre ?? ('Organismo ' + noDisponible.toLowerCase()) }}</span>
+      </a>
+    </ng-template>
+
+    <ng-template appTableCell="localidad" let-row>
+      @if (row.localidadNombre) {
+        <span>{{ row.localidadNombre }}</span>
+      } @else {
+        <span class="text-secondary">{{ noDisponible }}</span>
+      }
+    </ng-template>
+
+    <ng-template appTableCell="estado" let-row>
+      <span class="fichalist-estado">
+        <app-estado-badge [estado]="row.estado"></app-estado-badge>
+        @if (!row.activa) {
+          <span class="pill pill--inactive">
+            <span class="pill__dot" aria-hidden="true"></span>
+            <span class="pill__label">Desactivada</span>
+          </span>
+        }
+      </span>
+    </ng-template>
+
+    <ng-template appTableCell="version" let-row>
+      <span class="fichalist-version">v{{ row.version }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="acciones" let-row>
+      <app-row-actions
+          [primary]="accionVer(row)"
+          [actions]="accionesDe(row, vista.accionesWorkflow)"
+          [busy]="ocupadaId === row.id"
+          busyLabel="Procesando...">
+      </app-row-actions>
+    </ng-template>
+
+</app-shared-table>
+}

@@ -5,7 +5,7 @@
 // así que acá solo va lo propio de este componente.
 // ==========================================================================
 
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 :host {
   display: block;
@@ -19,13 +19,4 @@
     border: 0;
     border-top: 1px solid var(--theme-border-subtle);
   }
-
-  &__spinner {
-    display: inline-block;
-    animation: row-actions-spin 0.9s linear infinite;
-  }
-}
-
-@keyframes row-actions-spin {
-  to { transform: rotate(360deg); }
 }

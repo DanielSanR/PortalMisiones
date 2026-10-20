@@ -1,0 +1,15 @@
+<!-- Grupo propio: @Host del `formControlName` no ve el `formGroup` del componente padre. -->
+<ng-container [formGroup]="group">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <input matInput
+           [id]="field.name"
+           [attr.aria-labelledby]="field.name + '-label'"
+           [matDatepicker]="picker"
+           [formControlName]="field.name"
+           [placeholder]="field.placeholder || 'DD/MM/AAAA'"
+           [required]="field.validations?.required || false">
+    <mat-datepicker-toggle matIconSuffix [for]="picker" aria-label="Elegir fecha"></mat-datepicker-toggle>
+    <mat-datepicker #picker></mat-datepicker>
+    <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+  </mat-form-field>
+</ng-container>

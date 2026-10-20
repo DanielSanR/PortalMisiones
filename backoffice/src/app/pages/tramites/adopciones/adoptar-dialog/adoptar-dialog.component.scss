@@ -1,0 +1,18 @@
+// ==========================================================================
+// Diálogo "Adoptar trámite". La cáscara es `.form-dialog` (global, shared-styles);
+// acá solo el estado de error al cargar las opciones.
+// ==========================================================================
+
+.adoptar-dialog__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+  margin-top: var(--theme-space-lg);
+  color: var(--theme-text-secondary);
+  font-size: var(--theme-font-size-sm);
+
+  p {
+    margin: 0;
+  }
+}

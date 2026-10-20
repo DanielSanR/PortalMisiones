@@ -1,10 +1,11 @@
 // ==========================================================================
 // DashboardPanelComponent — chrome común de los widgets del Home
-// (screens-spec.md §4): panel radio 10, header ícono+título+badge/acción,
+// (pantallas-backoffice, vista Home): panel radio 10, header glifo+título+badge/acción,
 // cuerpo proyectado, footer con `app-gate-label`.
+// Variantes: card (default) · is-rows (filas a sangre) · is-chart (cuerpo con padding + divisor).
 // ==========================================================================
 
-@use '../../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 :host {
   display: flex;
@@ -23,38 +24,27 @@
   &-header {
     display: flex;
     align-items: center;
-    gap: var(--theme-space-sm);
-    padding: 14px var(--theme-space-lg);
-    border-bottom: 1px solid var(--theme-border-subtle);
+    gap: var(--theme-space-gap);
+    padding: 14px var(--theme-space-card) 0;
   }
 
+  // Glifo suelto (sin tile), alineado al título.
   &-header-icon {
     flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: var(--theme-radius-md);
-    background: var(--theme-info-bg);
+    font-size: var(--theme-icon-size-md);
     color: var(--theme-primary);
-
-    i.ph {
-      font-size: 16px;
-    }
   }
 
   &-header-text {
-    // No crece: se queda pegado al ícono/badge. `min-width: 0` habilita el truncado del título
-    // cuando el header no tiene espacio (el resto de los elementos son `flex: none`).
+    // No crece: se queda pegado al ícono/badge. `min-width: 0` habilita el truncado del título.
     flex: 0 1 auto;
     min-width: 0;
   }
 
   &-header-title {
     margin: 0;
-    font-size: var(--theme-font-size-base);
-    font-weight: var(--theme-font-weight-semibold);
+    font-size: var(--theme-font-card-title-size);
+    font-weight: var(--theme-font-card-title-weight);
     color: var(--theme-text-primary);
     line-height: 1.3;
     @include truncate;
@@ -71,13 +61,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 7px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     border-radius: var(--theme-radius-full);
     background: var(--theme-warning-bg);
     color: var(--theme-warning-text);
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-size-2xs);
     font-weight: var(--theme-font-weight-semibold);
     font-variant-numeric: tabular-nums;
 
@@ -87,14 +77,13 @@
     }
   }
 
-  // Agrupa acción/leyenda/KPI proyectados a la derecha del header; `margin-left: auto` es el
-  // "spacer" real que separa el grupo izquierdo (ícono+título+badge) del contenido a la derecha
-  // (evita que el badge quede pegado al borde del panel — bug corregido de "Cola de revisión").
+  // Grupo a la derecha del header (acción/leyenda/KPI proyectados); `margin-left: auto` lo separa del
+  // grupo izquierdo (ícono+título+badge).
   &-header-extra {
     flex: none;
     display: flex;
     align-items: center;
-    gap: var(--theme-space-md);
+    gap: var(--theme-space-gap);
     margin-left: auto;
 
     &:empty {
@@ -102,38 +91,26 @@
     }
   }
 
+  // Link de acción ("Abrir bandeja →"). No disponible: `appUnavailable` lo atenúa con `.is-unavailable`.
   &-header-action {
     flex: none;
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    height: 26px;
-    padding: 0 10px;
+    padding: 0;
     border: none;
-    border-radius: var(--theme-radius-md);
     background: transparent;
-    color: var(--theme-text-disabled);
+    color: var(--theme-text-link);
     font-family: inherit;
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     font-weight: var(--theme-font-weight-semibold);
-    cursor: not-allowed;
     white-space: nowrap;
-
-    i.ph {
-      font-size: 13px;
-    }
   }
 
   &-body {
     flex: 1;
-    padding: var(--theme-space-md) var(--theme-space-lg);
+    padding: var(--theme-space-gap) var(--theme-space-card) var(--theme-space-sm);
     min-width: 0;
-  }
-
-  &-hint {
-    margin: 0 0 var(--theme-space-sm);
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-tertiary);
   }
 
   &-footer {
@@ -141,9 +118,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--theme-space-sm);
-    padding: 10px var(--theme-space-lg);
-    border-top: 1px solid var(--theme-border-subtle);
-    background: var(--theme-surface-sunken);
+    padding: 10px var(--theme-space-card);
   }
 
   &-footer-extra {
@@ -156,12 +131,25 @@
     }
   }
 
+  &.is-rows,
+  &.is-chart {
+    .dashboard-panel-header {
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--theme-border-subtle);
+    }
+  }
+
+  &.is-rows .dashboard-panel-body {
+    padding: 0;
+  }
+
+  &.is-chart .dashboard-panel-body {
+    padding: var(--theme-space-md) var(--theme-space-card) var(--theme-space-sm);
+  }
+
   @include responsive(mobile) {
     &-header,
-    &-body {
-      padding-inline: var(--theme-space-md);
-    }
-
+    &-body,
     &-footer {
       padding-inline: var(--theme-space-md);
     }

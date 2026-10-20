@@ -7,6 +7,7 @@ import { EventosDeVidaDataSource } from './eventos-de-vida.datasource';
 import { LifeEventResponseDTO } from '../models/evento-de-vida.dto';
 import { toEventoDeVidaVM, toLifeEventRequest } from '../mappers/eventos-de-vida.mapper';
 import { EventoDeVidaFormValue, EventoDeVidaVM } from '../models/evento-de-vida.vm';
+import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
 /** Implementación HTTP real (`/api/life-event`, §5.3). */
 @Injectable()
@@ -25,25 +26,25 @@ export class EventosDeVidaHttpDataSource extends EventosDeVidaDataSource {
 
   getById(id: string): Observable<EventoDeVidaVM> {
     return this.http
-      .get<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toEventoDeVidaVM(res.data)));
   }
 
   create(form: EventoDeVidaFormValue): Observable<EventoDeVidaVM> {
     return this.http
-      .post<ResponseDTO<LifeEventResponseDTO>>(this.apiUrl, toLifeEventRequest(form))
+      .post<ResponseDTO<LifeEventResponseDTO>>(this.apiUrl, toLifeEventRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toEventoDeVidaVM(res.data)));
   }
 
   update(id: string, form: EventoDeVidaFormValue): Observable<EventoDeVidaVM> {
     return this.http
-      .put<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${id}`, toLifeEventRequest(form))
+      .put<ResponseDTO<LifeEventResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toLifeEventRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toEventoDeVidaVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`)
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

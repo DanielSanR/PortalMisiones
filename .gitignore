@@ -45,3 +45,12 @@ yarn-error.log*
 # Credenciales / notas locales (NO subir)
 backoffice/login.data.md
 **/login.data.md
+
+# Claves privadas / SSH: nunca en el repo
+gitlab
+gitlab.pub
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.pem
+*.key

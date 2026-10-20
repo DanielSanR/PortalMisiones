@@ -58,3 +58,10 @@ export function extractErrorMessage(body: unknown): string | null {
   if (typeof b['details'] === 'string' && b['details']) return b['details'] as string;
   return null;
 }
+
+/** Código de NEGOCIO de un cuerpo de error del backend (`MessageDTO`/`ErrorDTO`), o `null`. */
+export function extractErrorCode(body: unknown): number | null {
+  if (!body || typeof body !== 'object') return null;
+  const code = (body as Record<string, unknown>)['code'];
+  return typeof code === 'number' ? code : null;
+}

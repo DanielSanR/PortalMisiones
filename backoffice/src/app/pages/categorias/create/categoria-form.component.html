@@ -1,6 +1,7 @@
 <div class="form-card">
   <app-dynamic-form [requireChanges]="isEdit" [fields]="config.fields!" [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear categoría'"
-      cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" (formSubmit)="onSubmit($event)"
+      cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" [serverError]="serverError"
+      (formSubmit)="onSubmit($event)"
       (formCancel)="goBack()">
   </app-dynamic-form>
 </div>

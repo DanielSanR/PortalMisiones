@@ -7,6 +7,15 @@
   gap: var(--theme-space-md);
 }
 
+// Carga fallida — reemplaza al formulario con el motivo y una salida (reintentar / volver).
+.rolform-fallo {
+  &__texto {
+    margin: 0 0 var(--theme-space-lg);
+    color: var(--theme-text-secondary);
+    font-size: var(--theme-font-size-sm);
+  }
+}
+
 // Multi-select de permisos — grupos de badges por recurso (mismo look que el detalle de Roles,
 // pero interactivo: cada `.perm-chip--toggle` es un `<button>` que otorga/quita el permiso).
 .permiso-picker {

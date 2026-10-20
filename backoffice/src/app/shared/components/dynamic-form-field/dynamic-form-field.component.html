@@ -1,16 +1,16 @@
 <ng-container [formGroup]="group" *ngIf="field">
   <!-- Section Header (no form control) — barra de acento + título -->
   <div *ngIf="field.type === 'section-header'" class="section-header-field">
-    <h3 class="section-header-title">{{ field.label }}</h3>
+    <h2 class="section-header-title">{{ field.label }}</h2>
     <p *ngIf="field.placeholder" class="section-header-description">{{ field.placeholder }}</p>
   </div>
 
   <!-- Tip (no form control) -->
-  <div *ngIf="field.type === 'tip'" class="tip-field">
+  <div *ngIf="field.type === 'tip'" class="tip-field" role="note">
     <div class="tip-content">
       <i class="ph ph-info tip-icon" aria-hidden="true"></i>
       <div class="tip-body">
-        <h6 *ngIf="field.label" class="tip-title">{{ field.label }}</h6>
+        <p *ngIf="field.label" class="tip-title"><strong>{{ field.label }}</strong></p>
         <p class="tip-text">{{ field.placeholder || '' }}</p>
       </div>
     </div>
@@ -47,7 +47,6 @@
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [required]="field.validations?.required || false">
-        <i class="ph ph-envelope-simple" matSuffix aria-hidden="true"></i>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
@@ -59,7 +58,7 @@
                [formControlName]="field.name"
                [placeholder]="field.placeholder || 'https://...'"
                [required]="field.validations?.required || false">
-        <i class="ph ph-link" matSuffix aria-hidden="true"></i>
+        <i class="ph ph-link dynamic-form-field__icon" matIconSuffix aria-hidden="true"></i>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
@@ -112,139 +111,48 @@
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
-      <!-- Select -->
-      <mat-form-field *ngSwitchCase="'select'" appearance="outline" subscriptSizing="dynamic">
-        <mat-select [id]="field.name"
-                    [attr.aria-labelledby]="field.name + '-label'"
-                    [formControlName]="field.name"
-                    [placeholder]="field.placeholder || ''"
-                    [required]="field.validations?.required || false">
-          <mat-option *ngIf="!field.options?.length" disabled>
-            {{ field.optionsLoaded
-                ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
-                : 'Cargando opciones...' }}
-          </mat-option>
-          <mat-option *ngFor="let option of field.options" [value]="option.id">
-            {{ option.name }}
-          </mat-option>
-        </mat-select>
-        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
-      </mat-form-field>
+      <!-- Tipos con módulo pesado de Material: componentes aparte cargados en diferido, para que
+           MatSelect / MatDatepicker / MatRadio / MatSlideToggle solo bajen si el form los usa.
+           El placeholder reserva el alto de un input (40px) mientras llega el chunk. -->
+      <ng-container *ngSwitchCase="'select'">
+        @defer (on immediate) {
+          <app-dynamic-form-select-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-select-field>
+        } @placeholder {
+          <div class="field-placeholder" aria-hidden="true"></div>
+        }
+      </ng-container>
 
-      <!-- Select Multiple -->
-      <mat-form-field *ngSwitchCase="'select-multiple'" appearance="outline" subscriptSizing="dynamic">
-        <mat-select [id]="field.name"
-                    [attr.aria-labelledby]="field.name + '-label'"
-                    [formControlName]="field.name"
-                    [placeholder]="field.placeholder || ''"
-                    [required]="field.validations?.required || false"
-                    multiple>
-          <mat-option *ngIf="!field.options?.length" disabled>
-            {{ field.optionsLoaded
-                ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
-                : 'Cargando opciones...' }}
-          </mat-option>
-          <mat-option *ngFor="let option of field.options" [value]="option.id">
-            {{ option.name }}
-          </mat-option>
-        </mat-select>
-        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
-      </mat-form-field>
+      <ng-container *ngSwitchCase="'select-multiple'">
+        @defer (on immediate) {
+          <app-dynamic-form-select-field [field]="field" [group]="group" [multiple]="true" [revision]="revision"></app-dynamic-form-select-field>
+        } @placeholder {
+          <div class="field-placeholder" aria-hidden="true"></div>
+        }
+      </ng-container>
 
-      <!-- Datepicker -->
-      <mat-form-field *ngSwitchCase="'datepicker'" appearance="outline" subscriptSizing="dynamic">
-        <input matInput
-               [id]="field.name"
-               [attr.aria-labelledby]="field.name + '-label'"
-               [matDatepicker]="picker"
-               [formControlName]="field.name"
-               [placeholder]="field.placeholder || 'DD/MM/AAAA'"
-               [required]="field.validations?.required || false">
-        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
-      </mat-form-field>
+      <ng-container *ngSwitchCase="'datepicker'">
+        @defer (on immediate) {
+          <app-dynamic-form-date-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-date-field>
+        } @placeholder {
+          <div class="field-placeholder" aria-hidden="true"></div>
+        }
+      </ng-container>
 
-      <!-- Checkbox (booleano) — slide-toggle pill, patrón FORM -->
-      <div *ngSwitchCase="'checkbox'" class="slide-toggle-field">
-        <mat-slide-toggle [formControlName]="field.name" color="primary">
-          {{ field.label }}
-        </mat-slide-toggle>
-      </div>
+      <ng-container *ngSwitchCase="'checkbox'">
+        @defer (on immediate) {
+          <app-dynamic-form-choice-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-choice-field>
+        } @placeholder {
+          <div class="field-placeholder" aria-hidden="true"></div>
+        }
+      </ng-container>
 
-      <!-- Radio — opciones en línea (ver "Jurisdicción" en el diseño del form) -->
-      <mat-radio-group *ngSwitchCase="'radio'" class="radio-field"
-                       [formControlName]="field.name"
-                       [attr.aria-labelledby]="field.name + '-label'">
-        <mat-radio-button *ngFor="let option of field.options" [value]="option.id" color="primary">
-          {{ option.name }}
-        </mat-radio-button>
-      </mat-radio-group>
-
-      <!-- Icon Picker -->
-      <div *ngSwitchCase="'icon-picker'" class="icon-picker-field">
-        <label class="icon-picker-label">
-          {{ field.label }}
-          <span *ngIf="!field.validations?.required" class="icon-picker-optional"> (opcional)</span>
-        </label>
-        <p *ngIf="field.placeholder" class="icon-picker-hint">{{ field.placeholder }}</p>
-
-        <!-- Selected icon preview -->
-        <!-- Los `mat-icon` que quedan en este bloque NO son una elección de estilo: el campo
-             `icono` del trámite guarda un NOMBRE de Material Symbols (`account_balance`,
-             `directions_bus`…) y eso es lo que se persiste y consume aguas abajo. Pasar el
-             picker a Phosphor no es cambiar un ícono, es migrar el dato de todos los
-             trámites ya cargados. Ver la nota al respecto en el informe de audit. -->
-        <div *ngIf="group.get(field.name)?.value" class="icon-picker-selected">
-          <mat-icon class="icon-picker-selected__icon">{{ group.get(field.name)?.value }}</mat-icon>
-          <span class="icon-picker-selected__name">{{ group.get(field.name)?.value }}</span>
-          <button mat-icon-button type="button" (click)="clearIcon()" aria-label="Quitar ícono">
-            <i class="ph ph-x" aria-hidden="true"></i>
-          </button>
-        </div>
-
-        <!-- Search -->
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="icon-picker-search">
-          <input matInput
-                 aria-label="Buscar ícono"
-                 [(ngModel)]="iconSearch"
-                 [ngModelOptions]="{ standalone: true }"
-                 (ngModelChange)="filterIcons()"
-                 placeholder="Buscar ícono... ej: health, school, work">
-          <i class="ph ph-magnifying-glass" matSuffix aria-hidden="true"></i>
-        </mat-form-field>
-
-        <!-- Category filter -->
-        <div class="icon-picker-categories">
-          <button mat-stroked-button type="button"
-                  *ngFor="let cat of iconCategories"
-                  [class.icon-picker-categories__active]="selectedIconCategory === cat"
-                  (click)="selectIconCategory(cat)">
-            {{ cat }}
-          </button>
-        </div>
-
-        <!-- Icons grid -->
-        <div class="icon-picker-grid">
-          <button type="button"
-                  *ngFor="let icon of filteredIcons"
-                  class="icon-picker-grid__item"
-                  [class.icon-picker-grid__item--selected]="group.get(field.name)?.value === icon"
-                  (click)="selectIcon(icon)"
-                  [attr.aria-label]="icon"
-                  [matTooltip]="icon">
-            <mat-icon>{{ icon }}</mat-icon>
-          </button>
-          <p *ngIf="filteredIcons.length === 0" class="icon-picker-empty">
-            No se encontraron íconos para "{{ iconSearch }}"
-          </p>
-        </div>
-
-        <p *ngIf="group.get(field.name)?.touched && group.get(field.name)?.hasError('required')" class="form-field__error">
-          <i class="ph ph-warning-circle" aria-hidden="true"></i>
-          <span>Debe seleccionar un ícono</span>
-        </p>
-      </div>
+      <ng-container *ngSwitchCase="'radio'">
+        @defer (on immediate) {
+          <app-dynamic-form-choice-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-choice-field>
+        } @placeholder {
+          <div class="field-placeholder" aria-hidden="true"></div>
+        }
+      </ng-container>
 
       <!-- Unsupported -->
       <div *ngSwitchDefault class="unsupported-field">
@@ -252,5 +160,16 @@
       </div>
 
     </ng-container>
+
+    <!-- Vista previa derivada del valor (`field.preview`). La región viva queda montada
+         siempre que el campo la declare —si se creara junto con el texto, los lectores de
+         pantalla no anunciarían el primer cambio—; solo su contenido aparece y desaparece. -->
+    <div *ngIf="field.preview" class="field-preview" aria-live="polite">
+      <p *ngIf="preview$ | async as valorPrevisto" class="field-preview-content">
+        <i class="ph ph-arrow-bend-down-right field-preview-icon" aria-hidden="true"></i>
+        <span>{{ field.preview.label }}</span>
+        <code class="field-preview-value">{{ valorPrevisto }}</code>
+      </p>
+    </div>
   </ng-container>
 </ng-container>

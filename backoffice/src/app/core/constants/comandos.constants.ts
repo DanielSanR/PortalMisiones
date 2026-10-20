@@ -1,5 +1,6 @@
 import { AccessRule } from '../models/access-rule.model';
 import { UserRole } from '../enums/user-role.enum';
+import { ADOPTAR_ACCESS, CREAR_ETIQUETA_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
 
 /**
  * Comando del buscador del shell: una acción a la que se llega escribiendo, sin
@@ -32,11 +33,28 @@ export interface Comando {
 export const COMANDOS: Comando[] = [
   // ── Altas ────────────────────────────────────────────────────────────────
   {
-    label: 'Crear trámite',
-    icon: 'file-plus',
-    keywords: ['nuevo', 'alta', 'agregar', 'tramite'],
-    route: '/dashboard/tramites/nuevo',
-    rule: { permissions: ['CREATE_PROCEDURE', 'CREATE_VARIANT'] },
+    label: 'Crear plantilla',
+    icon: 'files',
+    keywords: ['nueva', 'alta', 'agregar', 'plantilla', 'provincial', 'tramite'],
+    route: '/dashboard/tramites/plantillas/nueva',
+    rule: { permissions: ['CREATE_PROCEDURE'] },
+  },
+  {
+    // El diálogo vive en "Trámites del organismo": `?adoptar=1` lo abre al entrar.
+    label: 'Adoptar trámite',
+    icon: 'file-arrow-down',
+    keywords: ['adoptar', 'adopcion', 'tramite', 'organismo', 'vigencia', 'nuevo', 'alta'],
+    route: '/dashboard/tramites/adopciones?adoptar=1',
+    rule: ADOPTAR_ACCESS,
+  },
+  {
+    // Bandeja de publicación: el listado abre la tab "En revisión" con `?tab=revision`. Las fichas no
+    // tienen comando de alta: cuelgan de un trámite del organismo ("Agregar localidad" en su detalle).
+    label: 'Revisar fichas por localidad',
+    icon: 'map-pin-area',
+    keywords: ['revision', 'publicar', 'ficha', 'localidad', 'bandeja', 'pendientes'],
+    route: '/dashboard/tramites/fichas?tab=revision',
+    rule: { permissions: ['READ_VARIANT', 'PUBLISH_VARIANT'], mode: 'all' },
   },
   {
     label: 'Crear organismo',
@@ -47,7 +65,7 @@ export const COMANDOS: Comando[] = [
   },
   {
     label: 'Crear tipo de organismo',
-    icon: 'path',
+    icon: 'tree-structure',
     keywords: ['nuevo', 'alta', 'agregar', 'tipo'],
     route: '/dashboard/tipos-organismo/nuevo',
     rule: { permissions: ['CREATE_ORGANISM_TYPE'] },
@@ -75,10 +93,10 @@ export const COMANDOS: Comando[] = [
   },
   {
     label: 'Crear etiqueta',
-    icon: 'bookmark-simple',
+    icon: 'bookmarks-simple',
     keywords: ['nueva', 'alta', 'agregar', 'etiqueta', 'tag'],
     route: '/dashboard/etiquetas/nuevo',
-    rule: { permissions: ['CREATE_TAXONOMY'] },
+    rule: CREAR_ETIQUETA_ACCESS,
   },
   {
     label: 'Crear destinatario',
@@ -99,15 +117,15 @@ export const COMANDOS: Comando[] = [
     icon: 'shield-plus',
     keywords: ['nuevo', 'alta', 'agregar', 'rol', 'permisos'],
     route: '/dashboard/roles/nuevo',
-    // Roles y Permisos se gatean por ROL (igual que sus rutas), no por permiso atómico.
-    rule: { requireRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE] },
+    // Roles y Permisos se gatean por ROL (igual que sus rutas). Crear = solo SUPERADMIN (PPDT-5.1).
+    rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
   },
   {
     label: 'Crear permiso',
     icon: 'key',
     keywords: ['nuevo', 'alta', 'agregar', 'permiso'],
     route: '/dashboard/permisos/nuevo',
-    rule: { requireRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE] },
+    rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
   },
 
   // ── Cuenta y shell ───────────────────────────────────────────────────────

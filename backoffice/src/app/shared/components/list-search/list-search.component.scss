@@ -28,8 +28,10 @@
 
     // El foco vive en el input, pero el anillo se pinta sobre la caja completa.
     &:focus-within {
-        border-color: var(--theme-primary);
+        border-color: var(--theme-focus-ring-color);
         box-shadow: var(--theme-focus-ring-soft);
+        outline: var(--theme-focus-ring-width) solid var(--theme-focus-ring-color);
+        outline-offset: 0;
     }
 
     &__icon {
@@ -42,12 +44,23 @@
         flex: 1;
         min-width: 0;
         border: 0;
-        outline: none;
         padding: 0;
         background: transparent;
         font-family: inherit;
         font-size: var(--theme-font-size-sm);
         color: var(--theme-text-primary);
+
+        // El anillo de foco lo pinta `.list-search:focus-within` (caja completa). Se anula solo el
+        // outline del navegador, con reemplazo visible garantizado por ese contenedor.
+        &:focus,
+        &:focus-visible {
+            outline: none;
+        }
+
+        // `type="search"`: se oculta la "x" nativa de WebKit (el diseño no la tiene).
+        &::-webkit-search-cancel-button {
+            appearance: none;
+        }
 
         &::placeholder {
             color: var(--theme-text-tertiary);

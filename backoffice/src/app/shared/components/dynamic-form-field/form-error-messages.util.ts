@@ -23,6 +23,8 @@ export const FORM_ERROR_MESSAGES: { [key: string]: (field: FieldConfig) => strin
 
 /** Orden de prioridad: se muestra el primer error de esta lista presente en el control. */
 export const FORM_ERROR_PRIORITY: string[] = [
+  // Error que devolvió el backend para este campo (ej. unicidad). Su valor ES el mensaje.
+  'server',
   'required',
   'requiredFile',
   'invalidFileType',
@@ -50,6 +52,7 @@ export function getControlErrorMessage(
   if (!control) return null;
   const errors = { ...(control.errors ?? {}), ...(extraErrors ?? {}) };
   const errorKey = FORM_ERROR_PRIORITY.find((key) => key in errors);
+  if (errorKey === 'server' && typeof errors['server'] === 'string') return errors['server'];
   if (!errorKey) {
     return Object.keys(errors).length ? 'Este campo tiene un error' : null;
   }

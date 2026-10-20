@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
 import { AuthUser } from '../models/auth.model';
 import { UserRole } from '../enums/user-role.enum';
-import { AuthzContext, canPerform, resolveRoleLabel } from '../utils/authorization.utils';
+import { AuthzContext, canPerform, evaluateAccess, resolveRoleLabel } from '../utils/authorization.utils';
+import { AccessRule } from '../models/access-rule.model';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -105,8 +106,8 @@ export class AuthTokenService {
     return this.currentUser.getValue()?.permissions ?? [];
   }
 
-  // ── Autorización con política (permiso + excepciones SUPERADMIN-only) ─────────
-  // Aplican las excepciones de política (PERMISSION_POLICY_ROLES) de forma consistente.
+  // ── Autorización (permiso + prerrequisitos de la UI) ───────────────────────────
+  // Aplican los prerrequisitos (PERMISSION_PREREQUISITES) de forma consistente.
   // ⚠️ Son síncronos (leen el snapshot de sesión). NO cachear su resultado en un campo del
   // componente calculado UNA vez en ngOnInit: no reaccionaría a un cambio de sesión (refresh de
   // token con otros permisos, switcher de rol). Para gating reactivo, suscribirse a `getCurrentUser$()`
@@ -127,6 +128,11 @@ export class AuthTokenService {
   canAll(...permissions: string[]): boolean {
     const ctx = this.authzContext();
     return permissions.every((p) => canPerform(ctx, p));
+  }
+
+  /** Evalúa una `AccessRule` completa (permisos + roles), igual que el guard y el nav. */
+  canAccess(rule: AccessRule): boolean {
+    return evaluateAccess(this.authzContext(), rule);
   }
 
   /** Códigos de rol crudos (canónicos + custom) para display. */

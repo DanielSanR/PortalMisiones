@@ -40,18 +40,28 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Contenidos',
     items: [
       { label: 'Inicio', icon: 'layout', route: '/dashboard/home' }, // todo autenticado
-      // Trámites/Variantes (backend aún bloqueado; gating provisional por los permisos que aplicarán).
-      { label: 'Trámites', icon: 'file-text', route: '/dashboard/tramites/lista', rule: { permissions: ['READ_PROCEDURE', 'READ_VARIANT'] } },
       // Organismos y Tipos: de facto solo SUPERADMIN (solo él tiene READ_ORGANISM/READ_ORGANISM_TYPE en el seed).
       { label: 'Organismos', icon: 'buildings', route: '/dashboard/organismos/lista', rule: { permissions: ['READ_ORGANISM'] } },
-      { label: 'Tipos de Organismo', icon: 'path', route: '/dashboard/tipos-organismo/lista', rule: { permissions: ['READ_ORGANISM_TYPE'] } },
+      { label: 'Tipos de Organismo', icon: 'tree-structure', route: '/dashboard/tipos-organismo/lista', rule: { permissions: ['READ_ORGANISM_TYPE'] } },
       // Taxonomía: sin permiso READ (GET públicos) → visible si tiene alguna escritura del catálogo.
       { label: 'Categorías', icon: 'folders', route: '/dashboard/categorias/lista', rule: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] } },
       // Etiquetas: sin controller en backend (mock); se aproxima con el permiso genérico de taxonomía.
-      { label: 'Etiquetas', icon: 'tag', route: '/dashboard/etiquetas/lista', rule: { permissions: ['CREATE_TAXONOMY', 'UPDATE_TAXONOMY', 'DELETE_TAXONOMY'] } },
-      { label: 'Modalidades', icon: 'sliders-horizontal', route: '/dashboard/modalidades/lista', rule: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] } },
-      { label: 'Eventos de Vida', icon: 'bookmarks-simple', route: '/dashboard/eventos-de-vida/lista', rule: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] } },
+      { label: 'Etiquetas', icon: 'bookmarks-simple', route: '/dashboard/etiquetas/lista', rule: { permissions: ['READ_TAG'] } },
+      { label: 'Modalidades', icon: 'devices', route: '/dashboard/modalidades/lista', rule: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] } },
+      { label: 'Eventos de Vida', icon: 'path', route: '/dashboard/eventos-de-vida/lista', rule: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] } },
       { label: 'Destinatarios', icon: 'user-focus', route: '/dashboard/destinatarios/lista', rule: { permissions: ['CREATE_RECIPIENT', 'UPDATE_RECIPIENT', 'DELETE_RECIPIENT'] } },
+    ],
+  },
+  {
+    // Trámites contra la API real (PLAN_TRAMITES_API.md §4.1, decisión P-1): plantillas, adopciones
+    // ("Trámites del organismo") y "Fichas por localidad". Es el único acceso a trámites (el ítem viejo
+    // "Trámites" de Contenidos se retiró en la fase 5).
+    label: 'Trámites',
+    items: [
+      { label: 'Plantillas provinciales', icon: 'files', route: '/dashboard/tramites/plantillas', rule: { permissions: ['READ_PROCEDURE'] } },
+      { label: 'Trámites del organismo', icon: 'building-office', route: '/dashboard/tramites/adopciones', rule: { permissions: ['READ_ADOPTION'] } },
+      // Sin badge "En revisión": `NavItem` no soporta contadores; el contador vive en la tab del listado.
+      { label: 'Fichas por localidad', icon: 'map-pin-area', route: '/dashboard/tramites/fichas', rule: { permissions: ['READ_VARIANT'] } },
     ],
   },
   {

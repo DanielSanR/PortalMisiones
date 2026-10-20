@@ -1,4 +1,4 @@
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 .active-filters {
     display: flex;
@@ -16,8 +16,8 @@
         display: inline-flex;
         align-items: center;
         gap: var(--theme-space-xs);
-        height: 26px;
-        padding: 0 6px 0 10px;
+        min-height: 26px;
+        padding: 0 2px 0 10px;
         border-radius: var(--theme-radius-full);
         background: var(--theme-info-bg);
         color: var(--theme-primary-800);
@@ -29,6 +29,9 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        // Target mínimo 24×24 (WCAG 2.5.8); el chip crece apenas, el ícono sigue en 13px.
+        min-width: 24px;
+        min-height: 24px;
         border: 0;
         padding: 0;
         background: transparent;
@@ -48,8 +51,9 @@
 
     &__limpiar {
         margin-left: 2px;
+        min-height: 24px;
         border: 0;
-        padding: 0;
+        padding: 0 var(--theme-space-xs);
         background: transparent;
         font-family: inherit;
         font-size: var(--theme-font-size-xs);

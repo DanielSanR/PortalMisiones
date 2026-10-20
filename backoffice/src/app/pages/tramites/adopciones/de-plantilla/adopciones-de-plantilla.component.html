@@ -1,0 +1,39 @@
+@if (estado$ | async; as estado) {
+  @if (estado.tipo === 'cargando') {
+    <p class="adopplant-mensaje" role="status">
+      <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+      Cargando los organismos...
+    </p>
+  } @else if (estado.tipo === 'error') {
+    <div class="adopplant-mensaje adopplant-mensaje--error" role="alert">
+      <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+      <span>No pudimos cargar los organismos que la adoptaron.</span>
+      <button type="button" mat-button color="primary" (click)="reintentar()">
+        <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+      </button>
+    </div>
+  } @else if (!estado.adopciones.length) {
+    <p class="adopplant-mensaje">
+      <i class="ph ph-buildings" aria-hidden="true"></i>
+      Ningún organismo la adoptó todavía.
+    </p>
+  } @else {
+    <ul class="adopplant">
+      @for (adopcion of estado.adopciones; track adopcion.id) {
+        <li class="adopplant-item">
+          <a class="adopplant-item__organismo" [routerLink]="[rutaDetalle, adopcion.id]"
+             [class.adopplant-item__organismo--faltante]="!adopcion.organismoNombre">
+            {{ adopcion.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}
+          </a>
+          <span class="adopplant-item__vigencia">
+            {{ adopcion.vigenteDesde | date: 'dd/MM/yyyy' }}
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            <span class="cdk-visually-hidden">hasta</span>
+            {{ adopcion.vigenteHasta ? (adopcion.vigenteHasta | date: 'dd/MM/yyyy') : 'sin fin' }}
+          </span>
+          <app-vigencia-badge [estado]="adopcion.estadoVigencia"></app-vigencia-badge>
+        </li>
+      }
+    </ul>
+  }
+}

@@ -19,19 +19,21 @@
 // las clases estructurales estables de Material (`.mdc-*`, `.mat-mdc-*`).
 // ==========================================================================
 
+@use 'mixins' as *;
+
 // ---------------------------------------------------------------------------
 // Buttons — matriz primary / secondary / ghost / danger
-// Altura 40px, radius 8, 14/600, pad 0 18 (ghost 0 14), icono 20 gap 8.
+// Kitchen Sink §03 · md: alto 34, radius 8, 13/600, pad 0 13, ícono 16 gap 7.
 // ---------------------------------------------------------------------------
 .mat-mdc-raised-button,
 .mat-mdc-unelevated-button,
 .mat-mdc-outlined-button,
 .mat-mdc-button {
   // Kitchen Sink §03: botón md = 34px (sm = 30px, que es el de las acciones de fila).
-  height: 34px !important;
-  padding: 0 18px !important;
+  height: var(--theme-control-height-md) !important;
+  padding: 0 13px !important;
   border-radius: var(--theme-radius-md) !important;
-  font-size: var(--theme-font-size-base) !important;
+  font-size: var(--theme-font-size-sm) !important;
   font-weight: var(--theme-font-weight-semibold) !important;
   letter-spacing: normal !important;
   transition: background-color var(--theme-transition-fast),
@@ -41,14 +43,14 @@
   @include focus-ring;
 
   .mat-icon {
-    margin-right: var(--theme-space-sm); // gap 8
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
+    margin-right: 7px;
+    font-size: var(--theme-icon-size-sm);
+    width: var(--theme-icon-size-sm);
+    height: var(--theme-icon-size-sm);
   }
 
   // El label de MDC es un bloque, así que el `align-items: center` del botón no llega a
-  // su contenido: un glifo de 20px apoyado sobre la línea base del texto de 14px quedaba
+  // su contenido: un glifo apoyado sobre la línea base del texto quedaba
   // ~2,5px por encima del centro. Con el label en flex, ícono y texto se centran de verdad.
   .mdc-button__label {
     display: inline-flex;
@@ -57,8 +59,8 @@
 
   // Iconos Phosphor proyectados por las páginas (botones "Nuevo X", limpiar filtros, etc.)
   i.ph {
-    margin-right: var(--theme-space-sm); // gap 8
-    font-size: 20px;
+    margin-right: 7px;
+    font-size: var(--theme-icon-size-sm);
     line-height: 1;
   }
 
@@ -75,8 +77,8 @@
     --mdc-filled-button-label-text-color: var(--theme-text-on-primary);
     --mdc-protected-button-container-color: var(--theme-primary);
     --mdc-protected-button-label-text-color: var(--theme-text-on-primary);
-    --mdc-filled-button-disabled-container-color: var(--theme-neutral-300);
-    --mdc-filled-button-disabled-label-text-color: var(--theme-text-tertiary);
+    --mdc-filled-button-disabled-container-color: var(--theme-border-primary);
+    --mdc-filled-button-disabled-label-text-color: var(--theme-text-disabled);
     box-shadow: none !important;
 
     &:hover:not([disabled]) {
@@ -118,7 +120,7 @@
 
   &.mat-primary {
     --mdc-outlined-button-label-text-color: var(--theme-primary-dark);
-    --mdc-outlined-button-outline-color: var(--theme-border-strong);
+    --mdc-outlined-button-outline-color: var(--theme-border-primary);
     --mdc-outlined-button-outline-width: 1px;
 
     &:hover:not([disabled]) {
@@ -256,7 +258,7 @@
 
   &.mat-form-field-appearance-outline {
     --mdc-outlined-text-field-container-shape: var(--theme-radius-md);
-    --mdc-outlined-text-field-outline-color: var(--theme-border-strong);
+    --mdc-outlined-text-field-outline-color: var(--theme-border-input); // a11y 1.4.11 ≥3:1
     --mdc-outlined-text-field-hover-outline-color: var(--theme-text-tertiary);
     --mdc-outlined-text-field-focus-outline-color: var(--theme-primary);
     --mdc-outlined-text-field-disabled-outline-color: var(--theme-border-primary);
@@ -401,14 +403,13 @@
     background-color: var(--theme-table-header-bg);
     height: auto;
 
+    // Diseño: sentence case 11.5/600 tertiary (tertiary ya ajustado a AA).
     .mat-mdc-header-cell {
-      font-weight: var(--theme-font-overline-weight);
-      font-size: var(--theme-font-overline-size);
-      letter-spacing: var(--theme-font-overline-track);
-      color: var(--theme-text-secondary);
-      text-transform: uppercase;
+      font-weight: var(--theme-font-weight-semibold);
+      font-size: var(--theme-font-caption-size);
+      color: var(--theme-text-tertiary);
       border-bottom: 1px solid var(--theme-border-primary);
-      padding: 14px 20px;
+      padding: 11px var(--theme-space-card);
     }
   }
 
@@ -427,8 +428,8 @@
     .mat-mdc-cell {
       font-size: var(--theme-font-body-size);
       color: var(--theme-text-primary);
-      padding: 10px 20px;
-      border-bottom-color: var(--theme-border-secondary);
+      padding: 10px var(--theme-space-card);
+      border-bottom-color: var(--theme-border-subtle);
     }
   }
 }
@@ -460,39 +461,6 @@
 
   .mat-mdc-select-value {
     color: var(--theme-text-primary);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Cards
-// ---------------------------------------------------------------------------
-.mat-mdc-card {
-  border-radius: var(--theme-radius-md) !important;
-  box-shadow: var(--theme-elevation-1) !important;
-  border: 1px solid var(--theme-border-secondary);
-  transition: box-shadow var(--theme-transition-normal);
-
-  .mat-mdc-card-header {
-    padding: var(--theme-space-md) var(--theme-space-lg) 0;
-  }
-
-  .mat-mdc-card-title {
-    font-size: var(--theme-font-size-md) !important;
-    font-weight: var(--theme-font-weight-semibold) !important;
-    color: var(--theme-text-primary);
-  }
-
-  .mat-mdc-card-subtitle {
-    font-size: var(--theme-font-size-sm) !important;
-    color: var(--theme-text-secondary);
-  }
-
-  .mat-mdc-card-content {
-    padding: var(--theme-space-md) var(--theme-space-lg);
-
-    &:last-child {
-      padding-bottom: var(--theme-space-lg);
-    }
   }
 }
 
@@ -689,7 +657,8 @@
   --mdc-switch-handle-height: 16px;
   --mdc-switch-handle-width: 16px;
   --mdc-switch-handle-shape: var(--theme-radius-full);
-  --mdc-switch-state-layer-size: 40px;
+  // 32 y no 40: el halo de hover va centrado en el thumb y con 40 pisaba el label (se veía "hovereado").
+  --mdc-switch-state-layer-size: 32px;
   --mdc-switch-selected-icon-size: 0px;
   --mdc-switch-unselected-icon-size: 0px;
 
@@ -712,6 +681,16 @@
     --mdc-switch-unselected-pressed-handle-color: #FFFFFF;
     --mdc-switch-disabled-selected-track-color: var(--theme-neutral-300);
     --mdc-switch-disabled-unselected-track-color: var(--theme-neutral-300);
+  }
+
+  // MDC deja 4px entre switch y label; el patrón FORM pide aire (el label también togglea al click).
+  .mdc-form-field > .mdc-label {
+    padding-left: var(--theme-space-gap);
+  }
+
+  .mdc-form-field--align-end > .mdc-label {
+    padding-left: 0;
+    padding-right: var(--theme-space-gap);
   }
 }
 

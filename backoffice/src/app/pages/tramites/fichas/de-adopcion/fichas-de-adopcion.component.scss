@@ -1,0 +1,116 @@
+// ==========================================================================
+// "Fichas por localidad" dentro del detalle del trámite del organismo:
+// barra con "Agregar localidad", una fila por ficha (localidad, estado,
+// versión) o el estado vacío.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+.fichasadop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+}
+
+.fichasadop-barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--theme-space-sm) var(--theme-space-md);
+
+  &__texto {
+    flex: 1 1 240px;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+}
+
+.fichasadop-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--theme-space-sm);
+  margin: 0;
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-warning-text);
+
+  i.ph {
+    flex: none;
+    margin-top: 2px;
+  }
+}
+
+.fichasadop-lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fichasadop-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--theme-space-md);
+  padding: var(--theme-space-sm) 0;
+  border-bottom: 1px solid var(--theme-border-primary);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  @include responsive(mobile) {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    &__estado {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
+  &__localidad {
+    color: var(--theme-text-primary);
+    font-weight: var(--theme-font-weight-medium);
+    text-decoration: none;
+    border-radius: var(--theme-radius-sm);
+    @include truncate;
+    @include focus-ring;
+
+    &:hover {
+      color: var(--theme-primary);
+      text-decoration: underline;
+    }
+
+    &--faltante {
+      font-family: var(--theme-font-mono);
+      font-weight: var(--theme-font-weight-normal);
+      color: var(--theme-text-tertiary);
+    }
+  }
+
+  &__estado {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--theme-space-xs);
+  }
+
+  &__version {
+    font-size: var(--theme-font-size-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-secondary);
+  }
+
+  &.is-inactiva &__localidad {
+    color: var(--theme-text-secondary);
+  }
+}
+
+// Vacío de la card: `.state-panel` global, con menos aire (vive dentro de una card chica).
+.fichasadop-vacio {
+  padding: var(--theme-space-xl) var(--theme-space-lg);
+}
+
+.fichasadop-mensaje {
+  @include inline-message;
+}

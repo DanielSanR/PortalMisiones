@@ -1,0 +1,34 @@
+// ==========================================================================
+// Cambio de email / contraseña de un usuario. La cáscara es el `.form-dialog` global (círculo de ícono,
+// título, campos, error y acciones); label externo = `.form-field`. Acá solo queda lo propio del diálogo:
+// textos de ayuda y error inline por campo.
+// ==========================================================================
+
+.credencial-dialog {
+  &__ayuda {
+    margin: 0;
+    font-size: var(--theme-font-size-xs);
+    line-height: 1.4;
+    color: var(--theme-text-secondary);
+  }
+
+  &__invalido {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-error-icon);
+  }
+
+  &__error-campo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__ojo i.ph {
+    font-size: var(--theme-icon-size-lg);
+    color: var(--theme-text-secondary);
+  }
+}

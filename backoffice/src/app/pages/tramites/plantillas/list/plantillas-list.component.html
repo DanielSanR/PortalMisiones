@@ -1,0 +1,115 @@
+<ng-template appPageActions>
+  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_PROCEDURE'">
+    <i class="ph ph-plus" aria-hidden="true"></i> Nueva plantilla
+  </button>
+</ng-template>
+
+@if (vista$ | async; as vista) {
+<!-- Toolbar de dos filas del diseño (pantalla LISTA): buscador + selects + contador. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por título o slug…"
+      ariaLabel="Buscar plantillas por título o por slug">
+    </app-list-search>
+
+    @if (opciones$ | async; as opciones) {
+      <mat-form-field appearance="outline" class="plantlist-select" subscriptSizing="dynamic">
+        <mat-label>Categoría</mat-label>
+        <mat-select [formControl]="categoriaCtrl">
+          <mat-option value="">Todas</mat-option>
+          @for (op of opciones.categorias; track op.id) {
+            <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="plantlist-select" subscriptSizing="dynamic">
+        <mat-label>Modalidad</mat-label>
+        <mat-select [formControl]="modalidadCtrl">
+          <mat-option value="">Todas</mat-option>
+          @for (op of opciones.modalidades; track op.id) {
+            <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <span class="list-toolbar-count">{{ vista.total }} plantillas</span>
+  </div>
+</div>
+
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
+<app-shared-table
+    [data]="vista.rows"
+    [columns]="columns"
+    [loading]="loading"
+    [error]="error"
+    errorTitle="No pudimos cargar las plantillas"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_PROCEDURE'"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
+    (emptyAction)="onEmptyAction(vista.hayFiltros)"
+    emptyIcon="files">
+
+    <ng-template appTableCell="titulo" let-row>
+      <div class="plantlist-titulo">
+        <a class="plantlist-titulo__link" [routerLink]="[rutaDetalle, row.id]">{{ row.titulo }}</a>
+        <span class="plantlist-titulo__slug">{{ row.slug }}</span>
+      </div>
+    </ng-template>
+
+    <ng-template appTableCell="modalidad" let-row>
+      @if (row.modalidad) {
+        <span>{{ row.modalidad.nombre ?? noDisponible }}</span>
+      } @else {
+        <span class="text-secondary" aria-label="Sin modalidad">—</span>
+      }
+    </ng-template>
+
+    <ng-template appTableCell="categoriaPrincipal" let-row>
+      @if (row.categoriaPrincipal) {
+        <span>{{ row.categoriaPrincipal.nombre ?? noDisponible }}</span>
+      } @else {
+        <span class="text-secondary" aria-label="Sin categoría principal">—</span>
+      }
+    </ng-template>
+
+    <ng-template appTableCell="categorias" let-row>
+      <span class="plantlist-contador">{{ row.categorias.length }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="etiquetas" let-row>
+      <span class="plantlist-contador">{{ row.etiquetas.length }}</span>
+    </ng-template>
+
+    <ng-template appTableCell="acciones" let-row>
+      <app-row-actions
+          [primary]="accionEditar(row)"
+          [actions]="accionesDe(row)"
+          [busy]="desactivandoId === row.id"
+          busyLabel="Desactivando plantilla...">
+      </app-row-actions>
+    </ng-template>
+
+</app-shared-table>
+}

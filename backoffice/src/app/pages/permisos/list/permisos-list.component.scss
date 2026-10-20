@@ -1,9 +1,25 @@
-@use '../../../../shared-styles/mixins' as *;
+// ==========================================================================
+// Listado de Permisos — mismo toolbar de dos filas que el resto de las listas
+// (diseño "Pantallas · Backoffice Misiones", pantalla LISTA).
+//
+// La caja de búsqueda es `app-list-search` y la barra de filtros aplicados es
+// `app-active-filters`: acá solo quedan el select de recurso de la fila A, la
+// fila B de chips y la celda de código.
+// ==========================================================================
 
-.list-toolbar {
-  @include list-toolbar;
+@use 'shared-styles/mixins' as *;
 
-  &-count {
-    @include list-toolbar-count;
-  }
+// Select de recurso de la fila A. Más angosto que el buscador: el término libre
+// es el filtro principal de esta lista (es la más larga del backoffice).
+.permlist-select {
+  @include list-filter-field;
+
+  flex: 0 1 220px;
+  min-width: 180px;
+}
+
+// Celda de código: la estructura es `.cell-name` (global). Monoespaciada: el código es un identificador
+// exacto y se escanea columna abajo comparando prefijos (CREATE_/READ_/UPDATE_).
+.permlist-codigo {
+  font-family: var(--theme-font-mono);
 }

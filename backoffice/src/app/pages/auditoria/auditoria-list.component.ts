@@ -1,19 +1,19 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { AsyncPipe, DatePipe, LowerCasePipe } from '@angular/common';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '../../shared/components/table';
-import { FilterTabsComponent } from '../../shared/components/filter-tabs';
-import { AccionLabelPipe } from '../../shared/pipes/accion-label.pipe';
-import { PageActionsDirective } from '../../shared/directives/page-actions.directive';
-import { AuditoriaService } from '../../core/services/auditoria.service';
-import { AuditoriaTramite, AuditoriaAccion, AuditoriaFilter } from '../../core/models/dashboard.model';
+import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '@shared/components/table';
+import { FilterTabsComponent } from '@shared/components/filter-tabs';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { AccionLabelPipe } from './accion-label.pipe';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { AuditoriaAccion, AuditoriaFacade, AuditoriaPaginaVM, AuditoriaRegistroVM } from '@features/auditoria';
 import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.component';
 
 @Component({
@@ -21,12 +21,15 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AsyncPipe,
     DatePipe,
+    LowerCasePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatInputModule,
     MatSelectModule,
+    MatTooltipModule,
+    ListSearchComponent,
     SharedTableComponent,
     TableCellDirective,
     FilterTabsComponent,
@@ -37,16 +40,24 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
   styleUrls: ['./auditoria-list.component.scss'],
 })
 export class AuditoriaListComponent implements OnInit {
+  private readonly facade = inject(AuditoriaFacade);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  registros: AuditoriaTramite[] = [];
+  /** Última página cargada (server-side). */
+  readonly pagina$ = this.facade.pagina$;
+  readonly paginaVacia: AuditoriaPaginaVM = { registros: [], total: 0 };
+
   loading = true;
-  totalItems = 0;
+  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
+  error = false;
   currentPage = 0;
   pageSize = 10;
 
-  columns: TableColumn<AuditoriaTramite>[] = [
+  /** Carga en vuelo: se cancela si llega otra (filtro/página) para no pisar con una respuesta vieja. */
+  private carga?: Subscription;
+
+  columns: TableColumn<AuditoriaRegistroVM>[] = [
     { key: 'accion',  label: 'Acción',  width: '180px' },
     { key: 'tramite', label: 'Trámite' },
     { key: 'usuario', label: 'Usuario', hideOnMobile: true },
@@ -54,7 +65,10 @@ export class AuditoriaListComponent implements OnInit {
     { key: 'detalle', label: '',        width: '56px' },
   ];
 
-  filterForm: FormGroup;
+  readonly filterForm = new FormGroup({
+    search: new FormControl('', { nonNullable: true }),
+    accion: new FormControl<AuditoriaAccion | ''>('', { nonNullable: true }),
+  });
 
   acciones: { value: AuditoriaAccion; label: string }[] = [
     { value: 'crear',           label: 'Creación' },
@@ -65,13 +79,7 @@ export class AuditoriaListComponent implements OnInit {
     { value: 'eliminar',        label: 'Eliminación' },
   ];
 
-  constructor(
-    private auditoriaService: AuditoriaService,
-    private dialog: MatDialog,
-    private fb: FormBuilder,
-  ) {
-    this.filterForm = this.fb.group({ search: [''], accion: [''] });
-  }
+  constructor(private dialog: MatDialog) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -88,26 +96,26 @@ export class AuditoriaListComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
+    this.error = false;
     const v = this.filterForm.value;
 
-    const filter: AuditoriaFilter = {
+    this.carga?.unsubscribe();
+    this.carga = this.facade.loadPagina({
       page: this.currentPage + 1,
       pageSize: this.pageSize,
       search: v.search || undefined,
       accion: v.accion || undefined,
-    };
-
-    this.auditoriaService.getAll(filter)
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          this.registros = response.data;
-          this.totalItems = response.total;
+        next: () => {
           this.loading = false;
           this.cdr.markForCheck();
         },
+        // Sin esto la tabla mostraría "No se encontraron registros", indistinguible de una carga fallida.
         error: () => {
           this.loading = false;
+          this.error = true;
           this.cdr.markForCheck();
         },
       });
@@ -119,10 +127,9 @@ export class AuditoriaListComponent implements OnInit {
     this.loadData();
   }
 
-  onViewDetail(registro: AuditoriaTramite): void {
+  onViewDetail(registro: AuditoriaRegistroVM): void {
     this.dialog.open(AuditoriaDetailDialogComponent, {
       data: registro,
-      width: '700px',
       panelClass: 'custom-modal-panel',
     });
   }

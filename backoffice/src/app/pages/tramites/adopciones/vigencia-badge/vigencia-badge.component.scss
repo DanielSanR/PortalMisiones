@@ -1,0 +1,10 @@
+// ==========================================================================
+// Badge de vigencia de una adopción. La pill (forma, dot, tonos) es la clase
+// global `.pill` (shared-styles/_components.scss); acá solo el host.
+// Vigente = success, programada = info, vencida = warning, deshabilitada = neutral.
+// ==========================================================================
+
+:host {
+  display: inline-flex;
+  max-width: 100%;
+}

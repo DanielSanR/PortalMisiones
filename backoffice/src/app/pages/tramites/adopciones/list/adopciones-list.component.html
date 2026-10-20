@@ -1,0 +1,120 @@
+<ng-template appPageActions>
+  <button mat-raised-button color="primary" (click)="onAdoptar()" *appHasPermission="adoptarAccess">
+    <i class="ph ph-file-arrow-down" aria-hidden="true"></i> Adoptar trámite
+  </button>
+</ng-template>
+
+@if (vista$ | async; as vista) {
+<div class="list-toolbar list-toolbar--stacked">
+  <div class="list-toolbar__row">
+    <app-list-search
+      [control]="searchCtrl"
+      placeholder="Buscar por trámite u organismo…"
+      ariaLabel="Buscar trámites del organismo por nombre del trámite o del organismo">
+    </app-list-search>
+
+    <mat-form-field appearance="outline" class="adoplist-select" subscriptSizing="dynamic">
+      <mat-label>Estado</mat-label>
+      <mat-select [formControl]="estadoCtrl">
+        <mat-option value="">Todos</mat-option>
+        @for (op of estados; track op.valor) {
+          <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (organismos$ | async; as organismos) {
+      @if (organismos.length > 1) {
+        <mat-form-field appearance="outline" class="adoplist-select" subscriptSizing="dynamic">
+          <mat-label>Organismo</mat-label>
+          <mat-select [formControl]="organismoCtrl">
+            <mat-option value="">Todos</mat-option>
+            @for (op of organismos; track op.id) {
+              <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    }
+
+    <span class="list-toolbar-count">{{ vista.total }} trámites</span>
+  </div>
+</div>
+
+@if (vista.filtrosActivos.length) {
+  <app-active-filters
+    [filtros]="vista.filtrosActivos"
+    (quitar)="quitarFiltro($event)"
+    (limpiar)="limpiarFiltros()">
+  </app-active-filters>
+}
+
+<app-shared-table
+    [data]="vista.rows"
+    [columns]="columns"
+    [loading]="loading"
+    [error]="error"
+    errorTitle="No pudimos cargar los trámites del organismo"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="load()"
+    [sortable]="true"
+    (sortChange)="onSortChange($event)"
+    [paginated]="true"
+    [totalItems]="vista.total"
+    [pageIndex]="vista.pageIndex"
+    [pageSize]="(pageSize$ | async)!"
+    (pageChange)="onPageChange($event)"
+    [emptyTitle]="vista.emptyTitle"
+    [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : adoptarAccess"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.hayFiltros ? 'x' : 'file-arrow-down'"
+    (emptyAction)="onEmptyAction(vista.hayFiltros)"
+    emptyIcon="building-office">
+
+    <ng-template appTableCell="plantilla" let-row>
+      <a class="adoplist-plantilla" [routerLink]="[rutaDetalle, row.id]">
+        @if (row.plantillaTitulo) {
+          {{ row.plantillaTitulo }}
+        } @else {
+          <span class="adoplist-plantilla__faltante">{{ noDisponible }}</span>
+        }
+      </a>
+    </ng-template>
+
+    <ng-template appTableCell="organismo" let-row>
+      @if (row.organismoNombre) {
+        <span>{{ row.organismoNombre }}</span>
+      } @else {
+        <span class="text-secondary">{{ noDisponible }}</span>
+      }
+    </ng-template>
+
+    <ng-template appTableCell="vigencia" let-row>
+      <span class="adoplist-vigencia">
+        {{ row.vigenteDesde | date: 'dd/MM/yyyy' }}
+        <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        <span class="cdk-visually-hidden">hasta</span>
+        @if (row.vigenteHasta) {
+          {{ row.vigenteHasta | date: 'dd/MM/yyyy' }}
+        } @else {
+          <span class="adoplist-vigencia__abierta">sin fin</span>
+        }
+      </span>
+    </ng-template>
+
+    <ng-template appTableCell="estado" let-row>
+      <app-vigencia-badge [estado]="row.estadoVigencia"></app-vigencia-badge>
+    </ng-template>
+
+    <ng-template appTableCell="acciones" let-row>
+      <app-row-actions
+          [primary]="accionVer(row)"
+          [actions]="accionesDe(row)"
+          [busy]="deshabilitandoId === row.id"
+          busyLabel="Deshabilitando...">
+      </app-row-actions>
+    </ng-template>
+
+</app-shared-table>
+}

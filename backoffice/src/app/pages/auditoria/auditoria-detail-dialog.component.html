@@ -1,62 +1,75 @@
-<h2 mat-dialog-title>
-  <mat-icon class="title-icon">{{ accionIcon }}</mat-icon>
-  Detalle de {{ data.accion | titlecase }}
-</h2>
-
-<mat-dialog-content>
-  <div class="meta-row">
-    <div class="meta-item">
-      <span class="meta-label">Trámite</span>
-      <span class="meta-value">{{ data.tramiteTitulo }}</span>
+<div class="form-dialog">
+  <div class="form-dialog__header">
+    <div class="form-dialog__icono" aria-hidden="true">
+      <i class="ph ph-{{ data.accion | accionLabel:'icon' }}"></i>
     </div>
-    <div class="meta-item">
-      <span class="meta-label">Usuario</span>
-      <span class="meta-value">{{ data.usuarioNombre }}</span>
-    </div>
-    <div class="meta-item">
-      <span class="meta-label">Fecha</span>
-      <span class="meta-value">{{ data.fechaAccion | date:'dd/MM/yyyy HH:mm' }}</span>
+    <div class="form-dialog__encabezado">
+      <h2 class="form-dialog__titulo" mat-dialog-title>Detalle de {{ data.accion | accionLabel | lowercase }}</h2>
+      <p class="form-dialog__subtitulo">Qué cambió en el trámite y quién lo hizo.</p>
     </div>
   </div>
 
-  @if (data.datosAnteriores || data.datosNuevos) {
-    <div class="diff-container">
-      @if (data.datosAnteriores) {
-        <div class="diff-panel diff-old">
-          <h4><mat-icon>remove_circle_outline</mat-icon> Antes</h4>
-          <div class="diff-content">
-            @for (item of data.datosAnteriores | keyvalue; track item.key) {
-              <div class="diff-row">
-                <span class="diff-key">{{ item.key }}</span>
-                <span class="diff-value diff-removed">{{ item.value }}</span>
-              </div>
-            }
-          </div>
+  <mat-dialog-content class="auditoria-detalle">
+    <div class="form-dialog__campos">
+      <dl class="detail-fields detail-fields--grid">
+        <div class="detail-field">
+          <dt class="detail-field__label">Trámite</dt>
+          <dd class="detail-field__value">{{ data.tramiteTitulo }}</dd>
         </div>
-      }
+        <div class="detail-field">
+          <dt class="detail-field__label">Usuario</dt>
+          <dd class="detail-field__value">{{ data.usuarioNombre }}</dd>
+        </div>
+        <div class="detail-field">
+          <dt class="detail-field__label">Fecha</dt>
+          <dd class="detail-field__value">{{ data.fechaAccion | date:'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      </dl>
 
-      @if (data.datosNuevos) {
-        <div class="diff-panel diff-new">
-          <h4><mat-icon>add_circle_outline</mat-icon> Después</h4>
-          <div class="diff-content">
-            @for (item of data.datosNuevos | keyvalue; track item.key) {
-              <div class="diff-row">
-                <span class="diff-key">{{ item.key }}</span>
-                <span class="diff-value diff-added">{{ item.value }}</span>
-              </div>
-            }
-          </div>
+      @if (antes.length || despues.length) {
+        <div class="auditoria-diff">
+          @if (antes.length) {
+            <section class="auditoria-diff__panel auditoria-diff__panel--antes" aria-labelledby="auditoria-antes">
+              <h3 class="auditoria-diff__titulo" id="auditoria-antes">
+                <i class="ph ph-minus-circle" aria-hidden="true"></i> Antes
+              </h3>
+              <dl class="auditoria-diff__lista">
+                @for (campo of antes; track campo.clave) {
+                  <div class="auditoria-diff__fila">
+                    <dt class="auditoria-diff__campo">{{ campo.etiqueta }}</dt>
+                    <dd class="auditoria-diff__valor">{{ campo.valor }}</dd>
+                  </div>
+                }
+              </dl>
+            </section>
+          }
+
+          @if (despues.length) {
+            <section class="auditoria-diff__panel auditoria-diff__panel--despues" aria-labelledby="auditoria-despues">
+              <h3 class="auditoria-diff__titulo" id="auditoria-despues">
+                <i class="ph ph-plus-circle" aria-hidden="true"></i> Después
+              </h3>
+              <dl class="auditoria-diff__lista">
+                @for (campo of despues; track campo.clave) {
+                  <div class="auditoria-diff__fila">
+                    <dt class="auditoria-diff__campo">{{ campo.etiqueta }}</dt>
+                    <dd class="auditoria-diff__valor">{{ campo.valor }}</dd>
+                  </div>
+                }
+              </dl>
+            </section>
+          }
+        </div>
+      } @else {
+        <div class="state-panel">
+          <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-info"></i></span>
+          <p class="state-panel__text">No se registraron cambios de datos para esta acción.</p>
         </div>
       }
     </div>
-  } @else {
-    <div class="no-diff">
-      <mat-icon>info_outline</mat-icon>
-      <p>No se registraron cambios de datos para esta acción.</p>
-    </div>
-  }
-</mat-dialog-content>
+  </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="dialogRef.close()">Cerrar</button>
-</mat-dialog-actions>
+  <mat-dialog-actions align="end">
+    <button type="button" mat-stroked-button color="primary" (click)="dialogRef.close()">Cerrar</button>
+  </mat-dialog-actions>
+</div>

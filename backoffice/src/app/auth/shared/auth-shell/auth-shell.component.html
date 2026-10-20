@@ -1,0 +1,38 @@
+<main class="auth-shell">
+  <!-- ── Hero institucional ── -->
+  <section class="auth-shell__hero" aria-label="Portal de Trámites de Misiones">
+    <img src="assets/images/login/misiones-emblema-solido.png" alt="" class="auth-shell__emblema" aria-hidden="true" />
+
+    <img src="assets/images/login/misiones-gobierno-blanco.png" alt="Gobierno de la Provincia de Misiones" class="auth-shell__marca" />
+
+    <div class="auth-shell__intro">
+      <span class="auth-shell__overline">Vicegobernación · Portal Misionero</span>
+      <p class="auth-shell__titulo">Backoffice de Trámites y Servicios</p>
+      <p class="auth-shell__bajada">Gestión de organismos, trámites y contenidos que la ciudadanía ve en el portal misionero.</p>
+    </div>
+
+    <div class="auth-shell__pie">
+      <span class="auth-shell__copyright">Gobierno de la Provincia de Misiones © {{ anioActual }}</span>
+      <span class="auth-shell__pie-divisor" aria-hidden="true"></span>
+      <button type="button" class="auth-shell__enlace" appUnavailable="Las sugerencias llegan en una próxima versión">Sugerencias</button>
+      <button type="button" class="auth-shell__enlace" appUnavailable="El canal de soporte llega en una próxima versión">Soporte</button>
+      <button type="button" class="auth-shell__enlace" appUnavailable="Este enlace llega en una próxima versión">Digital Factory</button>
+    </div>
+  </section>
+
+  <!-- ── Tarjeta ── -->
+  <div class="auth-shell__panel">
+    <div class="auth-shell__card">
+      <header class="auth-shell__encabezado">
+        <h1 class="auth-shell__card-titulo">{{ titulo }}</h1>
+        @if (subtitulo) {
+          <p class="auth-shell__card-subtitulo">{{ subtitulo }}</p>
+        }
+      </header>
+
+      <ng-content />
+
+      <ng-content select="[authFooter]" />
+    </div>
+  </div>
+</main>

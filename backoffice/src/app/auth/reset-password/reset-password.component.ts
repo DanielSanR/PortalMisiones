@@ -6,7 +6,6 @@ import {
   OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
   ReactiveFormsModule,
@@ -20,10 +19,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom, timer } from 'rxjs';
 import { CuentaFacade } from '@features/cuenta';
+import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
 
 /** Valida que `password` y `confirmPassword` sean idénticos (nivel de grupo). */
 const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
@@ -37,14 +36,13 @@ const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): Validatio
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     RouterLink,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule,
     MatProgressSpinnerModule,
+    AuthShellComponent,
   ],
   templateUrl: './reset-password.component.html',
   styleUrl: './reset-password.component.scss',
@@ -86,8 +84,24 @@ export class ResetPasswordComponent implements OnInit {
     }
   }
 
+  /** Error visible del campo: solo después de que el usuario lo tocó o intentó enviar. */
+  fieldError(campo: 'password' | 'confirmPassword'): boolean {
+    const control = this.form.get(campo);
+    return !!control && control.invalid && control.touched;
+  }
+
+  /** Las contraseñas difieren (error de grupo) y la confirmación ya fue tocada o se intentó enviar. */
+  get noCoinciden(): boolean {
+    return this.form.hasError('passwordsMismatch') && !!this.form.get('confirmPassword')?.touched;
+  }
+
   async onSubmit(): Promise<void> {
-    if (this.form.invalid || !this.token) return;
+    if (this.loading || !this.token) return;
+    if (this.form.invalid) {
+      // El botón queda habilitado: al enviar incompleto se señalan los errores en vez de no responder.
+      this.form.markAllAsTouched();
+      return;
+    }
 
     this.loading = true;
     this.errorMessage = '';

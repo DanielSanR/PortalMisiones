@@ -1,0 +1,57 @@
+// ==========================================================================
+// Detalle de Trámite del organismo — lo propio de la pantalla: el form de
+// "Vigencia y estado". Membrete, grilla, cards y campos son las clases
+// globales `.detail-*` (shared-styles/_components.scss).
+// ==========================================================================
+
+.adopdet-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+
+  &__habilitada {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+  }
+
+  &__aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-warning-text);
+
+    i.ph {
+      flex: none;
+      margin-top: 2px;
+    }
+  }
+
+  &__error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    padding: var(--theme-space-sm);
+    border-radius: var(--theme-radius-sm);
+    background: var(--theme-error-bg);
+    color: var(--theme-error-icon);
+    font-size: var(--theme-font-size-sm);
+    line-height: 1.4;
+
+    i.ph {
+      flex: none;
+      margin-top: 1px;
+      font-size: var(--theme-icon-size-sm);
+    }
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--theme-space-sm);
+  }
+}

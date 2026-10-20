@@ -1,6 +1,7 @@
 import { Directive, Input, OnInit, TemplateRef, ViewContainerRef, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthTokenService } from '../../core/services/auth-token.service';
+import { AccessRule } from '../../core/models/access-rule.model';
 
 /**
  * Directiva estructural de gating por PERMISO atómico (no por rol).
@@ -8,6 +9,7 @@ import { AuthTokenService } from '../../core/services/auth-token.service';
  *   <button *appHasPermission="'CREATE_USER'">Nuevo</button>
  *   <div *appHasPermission="['UPDATE_CATEGORY','DELETE_CATEGORY']">…</div>       (any por defecto)
  *   <div *appHasPermission="['CREATE_MODALITY','UPDATE_MODALITY']; mode:'all'">…</div> (todos)
+ *   <button *appHasPermission="reglaDeAcceso">…</button>   (AccessRule completa: permisos y/o roles)
  *
  * Reactiva al usuario actual (re-evalúa si cambia la sesión, p. ej. el switcher de rol dev).
  */
@@ -15,6 +17,8 @@ import { AuthTokenService } from '../../core/services/auth-token.service';
 export class HasPermissionDirective implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private permissions: string[] = [];
+  /** Si se pasó una `AccessRule`, se evalúa entera (incluye `requireRoles`). */
+  private rule: AccessRule | null = null;
   private mode: 'any' | 'all' = 'any';
   private hasView = false;
 
@@ -24,8 +28,10 @@ export class HasPermissionDirective implements OnInit {
     private auth: AuthTokenService
   ) {}
 
-  @Input({ required: true }) set appHasPermission(value: string | string[]) {
-    this.permissions = Array.isArray(value) ? value : [value];
+  @Input({ required: true }) set appHasPermission(value: string | string[] | AccessRule) {
+    const esRegla = typeof value === 'object' && !Array.isArray(value);
+    this.rule = esRegla ? value : null;
+    this.permissions = esRegla ? [] : Array.isArray(value) ? value : [value];
     this.update();
   }
 
@@ -52,8 +58,9 @@ export class HasPermissionDirective implements OnInit {
   }
 
   private evaluate(): boolean {
+    if (this.rule) return this.auth.canAccess(this.rule);
     if (this.permissions.length === 0) return false;
-    // `can*` aplica las excepciones de política (ej. CREATE/UPDATE/DELETE_USER → SUPERADMIN),
+    // `can*` aplica los prerrequisitos de la UI (ej. CREATE_USER → READ_ORGANISM + rol admin),
     // así el botón queda alineado con la ruta y el nav sin hardcodear el rol en el template.
     if (this.permissions.length === 1) return this.auth.can(this.permissions[0]);
     return this.mode === 'all'

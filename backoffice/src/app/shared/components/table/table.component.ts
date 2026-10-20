@@ -1,9 +1,12 @@
-import { AfterContentInit, Component, Input, Output, EventEmitter, ViewChild, ContentChildren, QueryList, TemplateRef, Directive, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
+import { AfterContentInit, Component, Input, Output, EventEmitter, ViewChild, ContentChildren, QueryList, TemplateRef, Directive, ViewEncapsulation, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
+import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { AuthTokenService } from '../../../core/services/auth-token.service';
+import { AccessRule } from '../../../core/models/access-rule.model';
 import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.model';
 
 // Directiva para registrar cell templates por nombre desde el consumidor.
@@ -44,6 +47,9 @@ export class TableHeaderDirective {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SharedTableComponent<T = any> implements AfterContentInit {
+  // Debe declararse antes que `puedeAccionar$`: los campos de clase se inicializan en orden.
+  private readonly auth = inject(AuthTokenService);
+
   // Inputs — Datos
   @Input() data: T[] = [];
 
@@ -60,13 +66,42 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @Input() loading = false;
 
   // Estado vacío — círculo + icono Phosphor + título/texto + CTA opcional.
-  @Input() emptyIcon = 'inbox'; // nombre Phosphor sin prefijo (ej. "buildings")
+  @Input() emptyIcon = 'tray'; // nombre Phosphor sin prefijo (ej. "buildings")
   @Input() emptyTitle = '';
   @Input() emptyMessage = 'No se encontraron resultados';
   @Input() emptyImage = ''; // fallback legado: si se define, reemplaza al icono
   @Input() emptyActionLabel = '';
   @Input() emptyActionIcon = 'plus';
+  /**
+   * Permiso que exige el CTA del estado vacío. Vacío = se muestra siempre.
+   *
+   * Existe porque el vacío ofrecía "Nuevo X" a cualquiera: quien no puede crear
+   * terminaba en un formulario que el backend le iba a rechazar. El gateo vive acá y no
+   * en cada pantalla porque el CTA es un input de este componente, y resolverlo afuera
+   * obligaba a las listas a inyectar el servicio de permisos, contra la regla de que un
+   * componente solo conoce el facade de su feature.
+   */
+  @Input() set emptyActionPermission(value: string | AccessRule) {
+    this.emptyActionPermission$.next(value ?? '');
+  }
   @Output() emptyAction = new EventEmitter<void>();
+
+  private readonly emptyActionPermission$ = new BehaviorSubject<string | AccessRule>('');
+
+  /**
+   * Reactivo a la sesión: si cambian los permisos, el CTA aparece o se va sin recargar. Acepta
+   * un permiso suelto o una `AccessRule` completa (ej. `ADOPTAR_ACCESS`: varios permisos a la vez).
+   */
+  readonly puedeAccionar$ = combineLatest([
+    this.emptyActionPermission$,
+    this.auth.getCurrentUser$(),
+  ]).pipe(
+    // `can`/`canAccess` (no `getPermissions().includes`): aplican `PERMISSION_PREREQUISITES`, igual
+    // que el botón del header (`*appHasPermission`), la ruta y el nav.
+    map(([permiso]) => typeof permiso === 'string'
+      ? !permiso || this.auth.can(permiso)
+      : this.auth.canAccess(permiso)),
+  );
 
   // Estado de error — círculo rojo + cloud-slash + CTA "Reintentar".
   @Input() error = false;
@@ -201,6 +236,16 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
 
   onRowClick(row: T): void {
     this.rowClick.emit(row);
+  }
+
+  /**
+   * Enter/Espacio sobre la fila clickable. Solo si el foco está en la fila misma: una tecla
+   * pulsada sobre un botón de la celda (Editar, ⋮) burbujea hasta acá y no debe abrir el detalle.
+   */
+  onRowKeydown(event: Event, row: T): void {
+    if (!this.rowClick.observed || event.target !== event.currentTarget) return;
+    event.preventDefault(); // Espacio no debe scrollear la página
+    this.onRowClick(row);
   }
 
   rowIsSelected(row: T): boolean {

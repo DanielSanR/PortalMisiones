@@ -7,6 +7,7 @@ import { OrganismosDataSource } from './organismos.datasource';
 import { OrganismResponseDTO } from '../models/organismo.dto';
 import { toOrganismoVM, toOrganismRequest } from '../mappers/organismos.mapper';
 import { OrganismoFormValue, OrganismoVM } from '../models/organismo.vm';
+import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
 /** Implementación HTTP real (`/api/organism`, SUPERADMIN, §5.2). */
 @Injectable()
@@ -25,25 +26,25 @@ export class OrganismosHttpDataSource extends OrganismosDataSource {
 
   getById(id: string): Observable<OrganismoVM> {
     return this.http
-      .get<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toOrganismoVM(res.data)));
   }
 
   create(form: OrganismoFormValue): Observable<OrganismoVM> {
     return this.http
-      .post<ResponseDTO<OrganismResponseDTO>>(this.apiUrl, toOrganismRequest(form))
+      .post<ResponseDTO<OrganismResponseDTO>>(this.apiUrl, toOrganismRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toOrganismoVM(res.data)));
   }
 
   update(id: string, form: OrganismoFormValue): Observable<OrganismoVM> {
     return this.http
-      .put<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${id}`, toOrganismRequest(form))
+      .put<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toOrganismRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toOrganismoVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`)
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

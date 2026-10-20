@@ -40,6 +40,17 @@ export const API_CODES = {
   ROLE_ALREADY_EXISTS: 4061,
   PERMISSION_ALREADY_EXISTS: 4062,
   REFRESH_INVALID: 4064,
+  ORGANISM_ACRONYM_TAKEN: 4069,
+  // Taxonomía (genéricos): conflicto de unicidad (ej. slug repetido en el alcance) / entidad inexistente.
+  TAXONOMY_CONFLICT: 4072,
+  TAXONOMY_NOT_FOUND: 4073,
+  // Los mismos 4072/4073, con nombre genérico: ya no son solo de taxonomía (plantillas, adopciones,
+  // fichas y puntos de atención los usan para "ya existe" / "no existe o está fuera de tu alcance").
+  ENTITY_CONFLICT: 4072,
+  ENTITY_NOT_FOUND: 4073,
+  // Adopción solapada: misma plantilla, mismo organismo, vigencias que se pisan (409). Sin mensaje en
+  // `messages.properties`: llega `"response.code.4080"` y el front lo traduce.
+  ADOPTION_OVERLAP: 4080,
 
   // Sistema
   UNEXPECTED: 5000,

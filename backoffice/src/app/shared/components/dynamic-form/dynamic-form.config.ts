@@ -1,187 +1,7 @@
 import { FieldConfig, FormConfig } from '../../../core/models/field.interface';
+import { canonicalizarSlug } from '../../../core/utils/slug.utils';
 
 const FORM_CONFIGS: Record<string, FormConfig> = {
-  TRAMITE: {
-    fields: [
-      // ── Tab 1: Datos Generales ───────────────────────────
-      {
-        name: '_section_info',
-        label: 'Datos generales',
-        type: 'section-header',
-      },
-      {
-        name: 'titulo',
-        label: 'Título del trámite',
-        type: 'text',
-        placeholder: 'Ej: Obtener certificado de residencia',
-        hint: 'Debe comenzar con un verbo en infinitivo',
-        cssClass: 'colspan-full',
-        validations: {
-          required: true,
-          maxLength: 255,
-        },
-      },
-      {
-        name: 'resumen',
-        label: 'Resumen',
-        type: 'textarea',
-        placeholder: 'Descripción breve para el listado',
-        validations: {
-          required: true,
-        },
-      },
-      {
-        name: 'urlOficial',
-        label: 'URL oficial del trámite',
-        type: 'url',
-        placeholder: 'https://...',
-        validations: {
-          required: true,
-        },
-      },
-      {
-        name: 'icono',
-        label: 'Ícono del trámite',
-        type: 'icon-picker',
-        placeholder: 'Seleccione un ícono para el portal',
-        cssClass: 'colspan-full',
-        validations: {
-          required: true,
-        },
-      },
-      {
-        name: '_section_clasificacion',
-        label: 'Clasificación',
-        type: 'section-header',
-      },
-      {
-        name: 'organismoId',
-        label: 'Organismo',
-        type: 'select',
-        placeholder: 'Seleccione un organismo',
-        cssClass: 'colspan-half',
-        validations: {
-          required: true,
-        },
-        options: [],
-      },
-      {
-        name: 'modalidadId',
-        label: 'Modalidad',
-        type: 'select',
-        placeholder: 'Seleccione una modalidad',
-        cssClass: 'colspan-half',
-        validations: {
-          required: true,
-        },
-        options: [],
-      },
-      {
-        name: 'categoriaIds',
-        label: 'Categorías',
-        type: 'select-multiple',
-        placeholder: 'Seleccione las categorías (sub-categorías)',
-        hint: 'Donde aparecerá el trámite en la navegación del portal.',
-        options: [],
-      },
-      {
-        name: 'etiquetaIds',
-        label: 'Etiquetas',
-        type: 'select-multiple',
-        placeholder: 'Seleccione etiquetas (filtros transversales)',
-        hint: 'Chips para filtrado cruzado entre categorías.',
-        options: [],
-      },
-      {
-        name: 'destinatarioIds',
-        label: 'Destinatarios',
-        type: 'select-multiple',
-        placeholder: 'Seleccione los destinatarios',
-        hint: 'Público objetivo: Ciudadanía, Organizaciones, Organismos.',
-        options: [],
-      },
-      {
-        name: '_section_disponibilidad',
-        label: 'Disponibilidad',
-        type: 'section-header',
-      },
-      {
-        name: 'eventoDeVidaIds',
-        label: 'Eventos de Vida',
-        type: 'select-multiple',
-        placeholder: 'Seleccioná los eventos de vida relacionados',
-        hint: 'Los ciudadanos encuentran este trámite al explorar estos eventos.',
-        cssClass: 'colspan-full',
-        options: [],
-      },
-      {
-        name: 'localidadIds',
-        label: 'Localidades',
-        type: 'select-multiple',
-        placeholder: 'Dejar vacío para disponibilidad provincial',
-        hint: 'Si no selecciona ninguna, el trámite estará disponible en toda la provincia.',
-        cssClass: 'colspan-full',
-        options: [],
-      },
-      {
-        name: 'destacado',
-        label: 'Marcar como trámite destacado',
-        type: 'checkbox',
-        value: false,
-      },
-      // ── Tab 2: Contenido Provincial ──────────────────────
-      {
-        name: '_section_contenido',
-        label: 'Contenido provincial (igual para toda la provincia)',
-        type: 'section-header',
-      },
-      {
-        name: 'descripcionLarga',
-        label: 'Descripción completa',
-        type: 'textarea',
-        placeholder: 'Información detallada: a quién se dirige, paso a paso...',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'requisitos',
-        label: 'Guía de Requisitos Generales',
-        type: 'textarea',
-        placeholder: 'Listar los requisitos necesarios para realizar el trámite',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'costos',
-        label: 'Costos y modalidad de pago (default provincial)',
-        type: 'textarea',
-        placeholder: 'Costos generales. Se puede personalizar por localidad.',
-        hint: 'Este valor se usa como fallback cuando una localidad no tiene costo específico.',
-      },
-      {
-        name: 'formularios',
-        label: 'Formularios e instructivos',
-        type: 'textarea',
-        placeholder: 'Links a formularios PDF, instructivos, etc.',
-      },
-      {
-        name: 'contacto',
-        label: 'Contacto (default provincial)',
-        type: 'textarea',
-        placeholder: 'Dirección, teléfono, email de contacto general.',
-        hint: 'Se puede personalizar por localidad.',
-      },
-      {
-        name: 'sitioWebTramite',
-        label: 'Sitio web del trámite',
-        type: 'url',
-        placeholder: 'https://...',
-        hint: 'Página específica del trámite en el sitio del organismo.',
-      },
-      // Nota: Tab 3 (contenido por localidad) se maneja fuera del DynamicForm
-    ],
-    submitButtonText: 'Crear trámite',
-    cancelButtonText: 'Cancelar',
-  },
-
   // Backend real (§5.2): Organism = typeId (req) + parentId? + baseLocationId? + name + acronym? + active.
   // Sin sitioWeb/logoUrl (no existen en el backend).
   ORGANISMO: {
@@ -384,11 +204,16 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         label: 'Datos de la etiqueta',
         type: 'section-header',
       },
+      // Contrato real `Tag` (BACKEND_API_SPEC.md §5.5): solo `slug` + organismo opcional.
+      // `local` no se pide: lo deriva el alcance (con organismo ⇒ local; sin ⇒ global).
       {
-        name: 'nombre',
-        label: 'Nombre',
+        name: 'slug',
+        label: 'Slug',
         type: 'text',
-        placeholder: 'Ej: Salud, Educación, Empresas',
+        placeholder: 'Ej: salud, adultos-mayores',
+        hint: 'Se guarda en minúsculas, sin tildes y con guiones en lugar de espacios.',
+        // El backend canonicaliza (`TagService.createTag`): se muestra cómo va a quedar.
+        preview: { label: 'Se guardará como:', transform: canonicalizarSlug },
         cssClass: 'colspan-half',
         validations: {
           required: true,
@@ -396,24 +221,14 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         },
       },
       {
-        name: '_section_visual',
-        label: 'Apariencia',
-        type: 'section-header',
-      },
-      {
-        name: 'icono',
-        label: 'Ícono',
-        type: 'icon-picker',
-        placeholder: 'Seleccione un ícono',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'color',
-        label: 'Color',
-        type: 'text',
-        placeholder: '#4CAF50',
-        hint: 'Color hexadecimal para identificar la etiqueta',
+        name: 'organismoId',
+        label: 'Organismo',
+        type: 'select',
+        // Sin organismo ⇒ global; con organismo ⇒ local de ese organismo. La primera opción
+        // ("Ninguno — etiqueta global") la agrega el form al cargar el catálogo.
+        placeholder: 'Ninguno — etiqueta global',
         cssClass: 'colspan-half',
+        options: [],
       },
     ],
     submitButtonText: 'Crear etiqueta',
@@ -434,6 +249,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'text',
         placeholder: 'Ej: Nacimiento de un hijo, Iniciar un emprendimiento',
         hint: 'El identificador (slug) se genera automáticamente desde el nombre.',
+        // No hay campo `slug`: el backend lo deriva del `name` (`generateSlug`), así que la
+        // vista previa va sobre el nombre y muestra el identificador resultante.
+        preview: { label: 'Identificador (slug):', transform: canonicalizarSlug },
         cssClass: 'colspan-full',
         validations: {
           required: true,
@@ -464,6 +282,9 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'text',
         placeholder: 'Ej: automotor-transporte',
         hint: 'Identificador URL único (minúsculas, números y guiones)',
+        // Categoría NO canonicaliza en el backend (el slug viaja tal cual y lo filtra el
+        // `pattern`), así que no es "se guardará como" sino la forma válida sugerida.
+        preview: { label: 'Formato sugerido:', transform: canonicalizarSlug },
         cssClass: 'colspan-half',
         validations: {
           required: true,
@@ -539,6 +360,35 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
 };
 
 /**
+ * Copia profunda que preserva funciones por referencia.
+ *
+ * Los FormConfig se clonan para que un formulario no mute la config compartida de
+ * `FORM_CONFIGS` (p. ej. al cargar `options`). `structuredClone` no sirve: tira
+ * `DataCloneError` ante funciones, y la config las lleva (`FieldConfig.preview.transform`).
+ * Las funciones son puras e inmutables, así que compartirlas no rompe el aislamiento;
+ * todo lo demás (arrays y objetos planos) se copia en profundidad.
+ */
+function clonarConfig<T>(valor: T): T {
+  if (valor === null || typeof valor !== 'object') {
+    // primitivos y funciones: se devuelven tal cual
+    return valor;
+  }
+  if (Array.isArray(valor)) {
+    return valor.map((item) => clonarConfig(item)) as T;
+  }
+  const proto = Object.getPrototypeOf(valor);
+  if (proto !== Object.prototype && proto !== null) {
+    // Date, Map, etc.: no llevan funciones adentro, structuredClone los copia bien
+    return structuredClone(valor);
+  }
+  const copia: Record<string, unknown> = {};
+  for (const [clave, v] of Object.entries(valor as Record<string, unknown>)) {
+    copia[clave] = clonarConfig(v);
+  }
+  return copia as T;
+}
+
+/**
  * Devuelve una copia profunda del FormConfig para la key dada.
  */
 export function getFormConfig(key: string): FormConfig {
@@ -546,7 +396,7 @@ export function getFormConfig(key: string): FormConfig {
   if (!config) {
     throw new Error(`FormConfig '${key}' no encontrado`);
   }
-  return structuredClone(config);
+  return clonarConfig(config);
 }
 
 /**
@@ -557,7 +407,7 @@ export function updateFormConfigOptions(
   fieldName: string,
   options: { id: any; name: string }[],
 ): FormConfig {
-  const clone = structuredClone(config);
+  const clone = clonarConfig(config);
   const field = clone.fields?.find((f: FieldConfig) => f.name === fieldName);
   if (field) {
     field.options = options;

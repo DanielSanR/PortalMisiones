@@ -1,0 +1,22 @@
+// ==========================================================================
+// Detalle de Ficha por localidad — lo propio de la pantalla: texto de ayuda,
+// slug y URL. Membrete, grilla, cards y campos son las clases globales
+// `.detail-*` (shared-styles/_components.scss).
+// ==========================================================================
+
+.fichadet-ayuda {
+  margin: 0;
+  font-size: var(--theme-font-small-size);
+  color: var(--theme-text-secondary);
+}
+
+.fichadet-slug {
+  font-family: var(--theme-font-mono);
+  font-size: var(--theme-font-small-size);
+}
+
+// La URL del trámite es el dato principal del campo: tamaño de cuerpo, no de enlace chico.
+.fichadet-url {
+  font-size: var(--theme-font-small-size);
+  overflow-wrap: anywhere;
+}

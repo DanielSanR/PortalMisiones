@@ -49,15 +49,22 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets",
+                "ignore": ["icons/**"]
+              }
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/@phosphor-icons/web/src/regular/style.css"
+              "src/assets/icons/phosphor-subset.css"
             ],
             "scripts": [],
             "stylePreprocessorOptions": {
-              "includePaths": ["src"]
+              "includePaths": [
+                "src"
+              ]
             }
           },
           "configurations": {
@@ -66,23 +73,93 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/mocks/mock-auth-init.ts",
+                  "with": "src/app/core/mocks/mock-auth-init.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/features/categorias/datasources/categorias.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/cuenta/datasources/cuenta.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/destinatarios/datasources/destinatarios.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/eventos-de-vida/datasources/eventos-de-vida.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/localidades/datasources/localidades.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/modalidades/datasources/modalidades.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/organismos/datasources/organismos.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/permisos/datasources/permisos.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/roles/datasources/roles.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/tipos-organismo/datasources/tipos-organismo.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/usuarios/datasources/usuarios.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 }
               ],
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "2mb"
+                  "maximumWarning": "900kb",
+                  "maximumError": "1.2mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kb",
-                  "maximumError": "16kb"
+                  "maximumWarning": "16kb",
+                  "maximumError": "24kb"
                 }
               ],
               "outputHashing": "all"
             },
             "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            },
+            "staging": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            },
+            "local": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.local.ts"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
@@ -98,6 +175,14 @@
             },
             "development": {
               "buildTarget": "backoffice:build:development"
+            },
+            "staging": {
+              "buildTarget": "backoffice:build:staging",
+              "proxyConfig": "proxy.staging.cjs"
+            },
+            "local": {
+              "buildTarget": "backoffice:build:local",
+              "proxyConfig": "proxy.local.cjs"
             }
           },
           "defaultConfiguration": "development"
@@ -123,8 +208,13 @@
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/@phosphor-icons/web/src/regular/style.css"
+              "src/assets/icons/phosphor-subset.css"
             ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "src"
+              ]
+            },
             "scripts": []
           }
         }

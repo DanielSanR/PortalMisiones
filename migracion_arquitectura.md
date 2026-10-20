@@ -143,24 +143,29 @@ core/
 - [x] Refactor `usuarios-list` (async pipe + `firstValueFrom`) y `usuario-form` (orquestación vía facade) → consumen **solo** `UsuariosFacade`. Build + madge OK.
 - Nota: `usuarios` corre en **`mock`** (featureOverride) porque el backend no expone listado/update genérico y `create` exige rol→UUID; el `HttpDataSource` queda listo para activarse al cerrar esos gaps.
 
-### Fase 2 — Roles y Permisos
-- [ ] DataSources/Repos/Facades para roles y permisos. `RolesFacade` combina ambos para el editor de roles.
-- [ ] Pantallas: lista de roles, form de rol (selector de permisos), lista de permisos.
+### Fase 2 — Roles y Permisos  ✅ HECHO
+- [x] DataSources/Repos/Facades para roles y permisos. `RolesFacade` combina ambos para el editor de roles.
+- [x] Pantallas: lista de roles, form de rol (selector de permisos), lista de permisos.
 
-### Fase 3 — Datos de referencia (caché)
-- [ ] `CatalogosFacade` (o por entidad): `municipios$`, `rolesAllowed$`, `permisos$` con `shareReplay(1)` + invalidación tras ABM.
+### Fase 3 — Datos de referencia (caché)  ✅ HECHO (por entidad)
+- [x] Caché por entidad en vez de un `CatalogosFacade`: `localidades` (Department→Location) con `shareReplay`;
+  las opciones de organismos/tipos/roles se resuelven en el `getFormData()` de cada facade.
 
-### Fase 4 — Recuperación de contraseña
-- [ ] DataSource/Repo/Facade sobre email (`recovery`, `change-pass`) + pantallas "olvidé"/"restablecer".
+### Fase 4 — Recuperación de contraseña  ✅ HECHO
+- [x] DataSource/Repo/Facade sobre email (`recovery`, `change-pass`) + pantallas "olvidé"/"restablecer" (feature `cuenta`).
 
-### Fase 5 — Features bloqueadas por backend (trámites, organismos, etc.)
-- [ ] DataSource **mock** + repository + facade por feature (mapean a VM). `featureOverrides` las mantiene en `mock`.
+### Fase 5 — Features bloqueadas por backend (trámites, organismos, etc.)  ✅ HECHO (lado front)
+- [x] DataSource **mock** + repository + facade por feature (mapean a VM). `featureOverrides` las mantiene en `mock`:
+  `tramites`, `etiquetas`, `dashboard`, `auditoria`, `feedback`.
 - [ ] Cuando el backend exponga el endpoint: agregar `HttpDataSource` y cambiar el override. Sin tocar facade/componente.
 
-### Fase 6 — Cierre y guardarraíles
-- [ ] Ningún componente inyecta `HttpClient`/Service/Repository/DataSource (solo facades).
-- [ ] `madge --circular` = 0 hallazgos. Reglas de límites activas.
-- [ ] Borrar servicios/modelos muertos. Actualizar `CLAUDE.md` con la arquitectura de capas.
+### Fase 6 — Cierre y guardarraíles  ✅ HECHO
+- [x] Ningún componente inyecta `HttpClient`/Service/Repository/DataSource (solo facades). Excepción documentada:
+  sesión (`AuthService`/`AuthTokenService`) y `LayoutChromeService` (estado de UI del shell).
+- [x] `madge --circular` = 0 hallazgos. Reglas de límites activas.
+- [x] Borrar servicios/modelos muertos (`dashboard/auditoria/modalidad.service`, `tramite-preview`). `CLAUDE.md` actualizado.
+  Los mock services que quedan (`categoria`, `destinatario`, `evento-de-vida`, `organismo`, `tramite`, `localidad`,
+  `feedback`, `usuario`) solo los consumen datasources mock (`tramites`, `feedback`, `usuarios`).
 
 ---
 
@@ -252,7 +257,7 @@ export class UsuariosFacade {
 ### Features migrados al patrón de capas
 | Feature | Fuente real | Estado |
 |---|---|---|
-| `usuarios` | parcial (backend sin listado/update genérico) | corre en **mock**; HttpDataSource listo |
+| `usuarios` | parcial (backend sin listado/update genérico) | **híbrido** (`featureOverrides.usuarios = 'local'`): `create` y `setAccountStatus` van a HTTP real; `list`/`getById`/`update`/`toggleActive`/`changePassword`/`changeEmail`/`deleteDefinitive` delegan al mock dentro del `UsuariosHttpDataSource` (los ids de la lista son del mock). **Salida**: con `GET /api/user`, reemplazar cada delegación por HTTP real (DTOs ya en `usuario.dto.ts`) y quitar `UsuarioService`. |
 | `organismos` | ✅ `/api/organism` | **real** (local, SUPERADMIN) + mock. ABM completo (typeId/parent/baseLocation/acronym/active). Facade resuelve `tipoNombre` y orquesta `getFormData()` cross-feature (tipos + localidades + padre). Sigue exponiendo `getOptions()` para usuarios. |
 | `tipos-organismo` | ✅ `/api/organism-type` | **real** (local, SUPERADMIN) + mock. ABM completo (name/description/active). `getOptions()` consumido cross-feature por el form de organismos. |
 | `roles` | ✅ `/api/role` | **real** (local) + mock dev |
@@ -263,23 +268,39 @@ export class UsuariosFacade {
 | `eventos-de-vida` | ✅ `/api/life-event` | **real** (local) + mock. Alineado al contrato real (`slug`+`name`). |
 | `categorias` | ✅ `/api/category` | **real** (local) + mock. Jerárquico (`parentId`); árbol derivado en el facade. Alineado al contrato real (`slug`+`name`+`parent`). |
 | `destinatarios` | ✅ `/api/recipient` | **real** (local) + mock. Catálogo `{id,name}`, hard-delete (Recipients, `0ecd14e`). ABM completo + nav. |
-| `etiquetas` | sin endpoint | mock (molde de feature bloqueada; Tag sigue sin `TagController`) |
+| `etiquetas` | ✅ `/api/tag` | **real** (BO-16) + mock (semilla propia `etiquetas.mock-data.ts`, forma `TagResponseDTO`; ya no depende de `core/mocks`) |
+| `plantillas` | ✅ `/api/procedure-template` | **real** (fase 1, `c194f43`) + mock. Plantilla provincial, alcance global, `*_PROCEDURE` |
+| `adopciones` | ✅ `/api/organism-procedure` | **mock hasta R-3** (`featureOverrides.adopciones = 'mock'`, HTTP escrito; fase 2, `4d8f34c`). Facade consulta sesión solo para no pedir organismos sin `READ_ORGANISM` (excepción documentada en `.claude/rules/arquitectura-capas.md`) |
+| `fichas-locales` | ⚠️ `/api/organism-procedure-location` (response incompleto) | **mock hasta G-1** (HTTP + workflow escritos; fase 3, `bbb3b52`). Estados `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO` por `PUBLISH_VARIANT` |
+| `puntos-atencion` | ✅ `/api/attention-point` | **mock hasta G-1** (se activa junto con fichas para no mezclar ids; R-3 para los grants; fase 4, `bbb3b52`) |
+| ~~`tramites`~~ | — | **retirado en la fase 5** de `PLAN_TRAMITES_API.md` (feature, pantallas `list/create/detail`, `tramite.service`, `tramite.model`, rutas del `mockApiInterceptor`). Reemplazado por los 4 features de arriba |
+| `dashboard` | sin endpoint | mock (datos de ejemplo en el datasource; el componente solo consume el facade) |
+| `auditoria` | sin endpoint | mock (paginado server-side simulado; estado de error en la tabla) |
+| `feedback` | sin endpoint (PPDT-5.15) | mock en memoria propio (`feedback.mock-data.ts`); el `FeedbackService` legado se borró en la fase 5 |
 
 Servicios reales inlineados y eliminados: `UserAdminService`, `RoleService`, `PermissionService`,
 `MunicipalityService`, `AccountService` (su HTTP vive en el `*.http.datasource` de cada feature).
+Servicios mock legados eliminados en la fase 5 de trámites (sin consumidores tras borrar `tramites`): `TramiteService`,
+`OrganismoService`, `CategoriaService`, `DestinatarioService`, `EventoDeVidaService`, `LocalidadService`, `FeedbackService`;
+y los modelos `tramite.model.ts` / `dashboard.model.ts`. En `core/services` queda como legado solo `UsuarioService`
+(+ `mockApiInterceptor` reducido a `/api/usuarios`; `PaginatedResponse` se movió a `usuario.model.ts`).
 
 ### Excepciones documentadas (no son violaciones)
+- **`UsuariosHttpDataSource` híbrido**: contiene delegaciones al mock (`UsuarioService`) mientras el backend no
+  exponga el listado. Es temporal y está acotado a ese archivo; ver la fila de `usuarios` arriba.
 - **Auth** (`AuthService`/`AuthTokenService` en `login`, guards, interceptors): infra de sesión/token.
   Queda fuera del patrón de features por decisión del plan. `AuthTokenService` ya cumple rol de facade.
 - **`storage.service`**: wrapper real de `/api/storage` sin consumidor aún (listo para features de archivos).
 
-### Deuda pendiente (Fase 5 diferida — sin ganancia funcional hasta que el backend exponga endpoints)
-Pantallas que aún consumen mock services directo (migrar cuando llegue su endpoint, construyendo el
-HttpDataSource directo, o replicando el molde `etiquetas`): **trámites, dashboard, auditoría, feedback**,
-y el **listado de usuarios**. (Taxonomía —categorías/modalidades/eventos-de-vida— y **organismos + tipos de
-organismo** ya migrados y cableados al backend real, alineados al contrato real: se removieron los campos que
-el backend no persiste —ícono/color/descripción/orden/toggle-activo/trámites en taxonomía; sitioWeb/logoUrl en
-organismos—. El `OrganismoService`/`CategoriaService`/etc. mock se conservan porque **trámites** aún los usa.)
+### Deuda pendiente (actualizada tras la fase 5 de trámites, 2026-10-13)
+Ninguna pantalla consume mock services directo: todas pasan por su facade.
+- **Activar en real (solo sacar el override de `environment*.ts`)**: `adopciones` cuando el backend corrija **R-3**;
+  `fichas-locales` + `puntos-atencion` juntos cuando cierre **G-1** (y R-3 para puntos). El HTTP ya está escrito.
+- **Sin `HttpDataSource` por falta de endpoint**: `dashboard` (PPDT-5.13), `auditoria` (PPDT-5.21), `feedback`
+  (PPDT-5.15) y el **listado/edición de usuarios** (`GET /api/user`, BO-17). Con este último se borran `UsuarioService`,
+  el `mockApiInterceptor` y `core/mocks/mock-data.ts`.
+- **Composition root**: `app.config.ts` importa cada `<feature>.providers.ts` (no el barrel) por el budget del bundle
+  inicial (837 kB / 900 kB); la medición y la decisión están en el comentario del archivo.
 
 ### Guardarraíles activos
 - `npm run check:circular` (madge) → **0 ciclos**.
@@ -315,9 +336,11 @@ y decide por permisos; el modelo viejo (por rol) rechazaba en login a cualquier 
 - **`core/utils/authorization.utils.ts`**: `canPerform(ctx, permission)` = tiene el permiso Y —si hay
   excepción— alguno de los roles requeridos. `evaluateAccess(ctx, rule)` evalúa una `AccessRule`. Es la
   ÚNICA función de autorización; la consumen nav, guard y la directiva → consistencia por construcción.
-- **`core/constants/policy-overrides.constants.ts`**: `PERMISSION_POLICY_ROLES` = excepciones declarativas
-  (más estrictas que el seed). Hoy: `CREATE_USUARIO`/`DELETE_USUARIO` → `[SUPERADMIN]`. Declarar acá aplica
-  en ruta, nav y botón a la vez.
+- **`core/constants/policy-overrides.constants.ts`**: `PERMISSION_PREREQUISITES` = lo que la PANTALLA necesita
+  leer además del permiso del backend (no endurece la política del backend). Hoy: `CREATE_USER` → `READ_ORGANISM`
+  + rol SA/AB/AO (el form carga `/api/organism` y `/api/role/allowed`). `EDITAR_USUARIO_ACCESS` aplica lo mismo
+  solo a la ruta de edición y a la acción "Editar" (el resto de acciones de `UPDATE_USER` no lo necesitan).
+  Reemplaza a `PERMISSION_POLICY_ROLES` (que restringía todo a SUPERADMIN; el backend solo exige `hasAuthority`).
 - **`core/models/access-rule.model.ts`**: `AccessRule = { permissions?, mode?, requireRoles? }`. Sin regla =
   visible/accesible para todo autenticado (Dashboard). `requireRoles` para secciones sin permiso atómico
   (Auditoría, Permisos).
@@ -337,9 +360,9 @@ y decide por permisos; el modelo viejo (por rol) rechazaba en login a cualquier 
   cortocircuita. Todas las rutas de `pages.module.ts` migradas a `{ access: {...}, redirectTo }`.
 - **Nav** (`role-mapping.constants.ts`): `NavItem.rule: AccessRule`. `admin-layout` filtra con `evaluateAccess`
   **reactivo** a `getCurrentUser$` (takeUntilDestroyed). Usuarios se muestra con `READ/UPDATE_USUARIO`
-  (crear/eliminar son SUPERADMIN-only y NO dan visibilidad).
+  (crear/eliminar NO dan visibilidad).
 - **Directiva `*appHasPermission`**: consume `AuthTokenService.can/canAny/canAll` (aplican las excepciones).
-  El botón "Nuevo usuario" quedó SUPERADMIN-only vía `CREATE_USUARIO` sin hardcodear el rol.
+  El botón "Nuevo usuario" aplica los prerrequisitos de `CREATE_USER` sin hardcodear el rol.
 - **`authGuard`** (sesión válida) sin cambios; sigue en la ruta `dashboard`.
 - Eliminados por muertos: `role.guard`, `permission.guard`, `has-role.directive`, `invalid-role.error`,
   y los métodos `hasPermission*`/`getUserRoleSpanish/Display` de `AuthTokenService`.
@@ -363,8 +386,8 @@ según este mapeo (= el estado previo al pivot por rol):
 | Feedback / Reportes | `[SA,AB,AO]` | `['VIEW_ANALYTICS_INTELIGENCIA']` |
 | Permisos / Auditoría | `[SUPERADMIN]` | **queda `requireRoles`** (no hay permiso atómico en el catálogo §4.2) |
 
-Además: revisar si `PERMISSION_POLICY_ROLES` (excepción `CREATE/DELETE_USUARIO → SUPERADMIN`) sigue haciendo
-falta o si el backend ya lo exige. **Cero cambios** en guard/directiva/store/`authorization.utils`.
+~~Además: revisar si `PERMISSION_POLICY_ROLES` sigue haciendo falta~~ → resuelto en BO-7 (reemplazado por
+`PERMISSION_PREREQUISITES`). **Cero cambios** en guard/directiva/store/`authorization.utils`.
 
 **Decisiones de diseño (debate arquitecto + angular-ssr):** NO crear clases `AuthStore`/`PermissionService`
 (la separación estado-vs-decisión ya existe: estado en `AuthTokenService`, decisión en funciones puras

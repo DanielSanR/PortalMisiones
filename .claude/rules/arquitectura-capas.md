@@ -25,6 +25,21 @@ mappers + models = HOJAS (no dependen de capas superiores)
 - **Mappers** son funciones puras DTO↔ViewModel; solo dependen de models.
 - Cero dependencias circulares (verificar con `npm run check:circular`).
 
+## Excepción documentada: sesión en facades
+Un facade puede consultar `AuthTokenService` (estado de sesión, `can*`) **solo para decidir si pide un catálogo
+cross-feature** que el usuario no tiene permiso de leer (p. ej. no llamar a `/api/organism` sin `READ_ORGANISM`, que
+abriría el diálogo global con un 403). Es dependencia de infraestructura de sesión, no `facade → facade`. Ejemplo:
+`AdopcionesFacade`. También puede escuchar `getCurrentUser$()` para **invalidar su caché** cuando cambia la sesión
+(otro usuario u otros permisos), como `AdopcionesFacade` y `PuntosAtencionFacade`. No se usa para decidir reglas de
+negocio ni para gatear UI (eso es de guards, directiva y `RowAction`), con una salvedad acotada: cuando lo que se
+ofrece depende a la vez del **estado del dominio y de los permisos** (p. ej. las acciones del workflow de una ficha),
+el facade del feature puede exponerlo como Observable derivado de la sesión (`FichasLocalesFacade.puedePublicar$` /
+`accionesWorkflow$`), para que el componente no inyecte `AuthTokenService`. El backend vuelve a exigir el permiso.
+
+Del mismo modo, una **capacidad de la fuente** (qué operaciones puede ejecutar de verdad el datasource activo) se
+expone como propiedad del datasource → repository → facade (p. ej. `UsuariosFacade.accionesDeCuentaDisponibles`), sin
+que nadie arriba sepa si la fuente es mock o real.
+
 ## Foldering por feature
 Todo el feature vive en `core/features/<feature>/` con subcarpetas por capa:
 `models/`, `mappers/`, `datasources/`, `repositories/`, `facades/`, más `<feature>.providers.ts` e `index.ts` (barrel).

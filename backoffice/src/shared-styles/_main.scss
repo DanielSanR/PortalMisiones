@@ -1,11 +1,11 @@
 // ==========================================================================
 // Main Entry Point — Shared Styles
-// Import order matters: tokens first, then base, then component overrides
+// Import order matters: tokens first, then base, then component overrides.
+// `_mixins` no emite CSS: lo consume cada parcial/componente con `@use`.
 // ==========================================================================
 
-@import 'themes';       // CSS custom properties (design tokens)
-@import 'base';         // Reset, typography, utility classes
-@import 'mixins';       // SCSS mixins (consumed by components)
-@import 'material';     // Angular Material overrides
-@import 'responsive';   // Responsive utilities and breakpoint rules
-@import 'components';   // Shared component styles (buttons, forms, etc.)
+@use 'themes';       // CSS custom properties (design tokens)
+@use 'base';         // Reset, typography, utility classes
+@use 'material';     // Angular Material overrides
+@use 'responsive';   // Responsive utilities and breakpoint rules
+@use 'components';   // Shared component styles (buttons, forms, etc.)

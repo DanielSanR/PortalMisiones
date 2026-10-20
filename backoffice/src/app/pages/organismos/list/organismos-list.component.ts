@@ -1,5 +1,5 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
-import { AsyncPipe } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
@@ -14,9 +14,13 @@ import { RowAction, RowActionsComponent } from '../../../shared/components/row-a
 import { ListSearchComponent } from '../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
 import { OrganismosFacade, OrganismoVM } from '@features/organismos';
+import { PARAM_ORIGEN_EDICION } from '../organismo-origen';
+import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { tinteDeAvatar } from '@shared/utils/avatar-tinte';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -36,15 +40,13 @@ interface OrganismosVista extends EstadoVacio {
   filtrosActivos: FiltroActivo[];
 }
 
-/** Paleta de tintes de los avatares de la tabla (Kitchen Sink §05). */
-const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
-
 @Component({
   selector: 'app-organismos-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe,
+    DatePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatSnackBarModule,
@@ -56,6 +58,7 @@ const TINTES = ['blue', 'warm', 'green', 'grey'] as const;
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    UnavailableDirective,
   ],
   templateUrl: './organismos-list.component.html',
   styleUrls: ['./organismos-list.component.scss'],
@@ -108,7 +111,7 @@ export class OrganismosListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
-        ...this.estadoVacio(organismos.length, hayFiltros),
+        ...this.estadoVacio(hayFiltros),
       };
     }),
   );
@@ -123,6 +126,7 @@ export class OrganismosListComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor(
     private router: Router,
@@ -215,9 +219,7 @@ export class OrganismosListComponent implements OnInit {
    * entre recargas y ordenamientos, en vez de depender de la posición en la lista.
    */
   tinte(id: string): string {
-    let acumulado = 0;
-    for (const caracter of id ?? '') acumulado = (acumulado + caracter.charCodeAt(0)) % 997;
-    return TINTES[acumulado % TINTES.length];
+    return tinteDeAvatar(id);
   }
 
   accionEditar(organismo: OrganismoVM): RowAction {
@@ -258,10 +260,14 @@ export class OrganismosListComponent implements OnInit {
   }
 
   onEdit(organismo: OrganismoVM): void {
-    this.router.navigate(['/dashboard/organismos/editar', organismo.id]);
+    this.router.navigate(['/dashboard/organismos/editar', organismo.id], {
+      queryParams: { [PARAM_ORIGEN_EDICION]: 'lista' },
+    });
   }
 
   onDelete(organismo: OrganismoVM): void {
+    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    const indice = indiceDeFilaActiva(this.host);
     this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: '¿Eliminar el organismo?',
@@ -288,11 +294,14 @@ export class OrganismosListComponent implements OnInit {
     })
       .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Organismo eliminado', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      }));
+      .subscribe(() => {
+        enfocarTrasEliminar(this.host, indice, this.destroyRef);
+        this.snackBar.open('Organismo eliminado', 'OK', {
+          duration: 3000,
+          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+          panelClass: 'snackbar-success',
+        });
+      });
   }
 
   private buscar(organismos: OrganismoVM[], termino: string): OrganismoVM[] {
@@ -328,8 +337,9 @@ export class OrganismosListComponent implements OnInit {
     return activos;
   }
 
-  private estadoVacio(total: number, hayFiltros: boolean): EstadoVacio {
-    if (total > 0 && hayFiltros) {
+  private estadoVacio(hayFiltros: boolean): EstadoVacio {
+    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
+    if (hayFiltros) {
       return {
         emptyTitle: 'Sin resultados',
         emptyMessage: 'Ningún organismo coincide con la búsqueda o el filtro aplicado.',
@@ -338,7 +348,7 @@ export class OrganismosListComponent implements OnInit {
     }
     return {
       emptyTitle: 'Todavía no hay organismos',
-      emptyMessage: 'Creá el primero para poder asociarle trámites y usuarios.',
+      emptyMessage: 'Creá el primero para empezar a cargar sus trámites y responsables.',
       emptyActionLabel: 'Nuevo organismo',
     };
   }

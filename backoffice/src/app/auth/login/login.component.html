@@ -1,42 +1,78 @@
-<div class="auth-page">
-  <div class="auth-card">
-    <div class="auth-card__header">
-      <img src="assets/images/logo-misiones.png" alt="Misiones" class="auth-card__logo" />
-      <h1>Portal de Trámites</h1>
-      <p>Backoffice de Administración</p>
+<app-auth-shell titulo="Iniciar sesión" subtitulo="Ingresá con tu cuenta institucional o con Ciudadano Digital.">
+  @if (errorMessage) {
+    <div class="form-error-banner auth-banner" role="alert">
+      <i class="ph ph-warning-circle form-error-banner__icon" aria-hidden="true"></i>
+      <div class="form-error-banner__body">
+        <span class="form-error-banner__title">No pudimos iniciar sesión</span>
+        <span class="form-error-banner__detail">{{ errorMessage }}</span>
+      </div>
+    </div>
+  }
+
+  <button type="button" class="login__ciudadano"
+          appUnavailable="El ingreso con Ciudadan@ Misiones llega en una próxima versión">
+    <i class="ph ph-identification-badge" aria-hidden="true"></i>
+    Ingresar con Ciudadan&#64; Misiones
+  </button>
+
+  <div class="login__divisor" role="separator">
+    <span class="login__divisor-texto">o con tu correo institucional</span>
+  </div>
+
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+    <div class="form-field auth-campo" [class.is-invalid]="fieldError('email')">
+      <label class="form-field__label" id="email-label" for="email">Correo institucional</label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <i class="ph ph-envelope-simple" matPrefix aria-hidden="true"></i>
+        <input matInput id="email" formControlName="email" type="email"
+               placeholder="usuario@misiones.gob.ar" autocomplete="email" />
+        @if (loginForm.get('email')?.hasError('required')) {
+          <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El correo es obligatorio</span></mat-error>
+        }
+        @if (loginForm.get('email')?.hasError('email')) {
+          <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Ingresá un correo válido</span></mat-error>
+        }
+      </mat-form-field>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-card__form" novalidate>
-      <mat-form-field appearance="outline">
-        <mat-label>Email</mat-label>
-        <input matInput formControlName="email" type="email" placeholder="usuario@misiones.gob.ar" autocomplete="email" />
-        <mat-icon matSuffix>email</mat-icon>
-        <mat-error *ngIf="loginForm.get('email')?.hasError('required')">Email requerido</mat-error>
-        <mat-error *ngIf="loginForm.get('email')?.hasError('email')">Email inválido</mat-error>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Contraseña</mat-label>
-        <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'" autocomplete="current-password" />
-        <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword"
-                [attr.aria-label]="hidePassword ? 'Mostrar contraseña' : 'Ocultar contraseña'">
-          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+    <div class="form-field auth-campo" [class.is-invalid]="fieldError('password')">
+      <label class="form-field__label" id="password-label" for="password">Contraseña</label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <i class="ph ph-lock-simple" matPrefix aria-hidden="true"></i>
+        <input matInput id="password" formControlName="password"
+               [type]="hidePassword ? 'password' : 'text'" autocomplete="current-password" />
+        <button type="button" matSuffix class="auth-ver-clave" (click)="hidePassword = !hidePassword"
+                aria-label="Mostrar contraseña" [attr.aria-pressed]="!hidePassword">
+          <i class="ph" [class.ph-eye-slash]="hidePassword" [class.ph-eye]="!hidePassword" aria-hidden="true"></i>
         </button>
-        <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Contraseña requerida</mat-error>
+        @if (loginForm.get('password')?.hasError('required')) {
+          <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>La contraseña es obligatoria</span></mat-error>
+        }
       </mat-form-field>
+    </div>
 
-      <p *ngIf="errorMessage" class="auth-card__error" role="alert">{{ errorMessage }}</p>
+    <div class="login__opciones">
+      <mat-checkbox formControlName="recordar" class="login__recordar">Recordarme</mat-checkbox>
+      <a routerLink="/auth/forgot-password" class="auth-link">¿Olvidaste tu contraseña?</a>
+    </div>
 
-      <button mat-raised-button color="primary" type="submit"
-              [disabled]="loading || loginForm.invalid"
-              class="auth-card__submit">
-        <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
-        <span *ngIf="!loading">Iniciar sesión</span>
-      </button>
-    </form>
+    <button mat-flat-button color="primary" type="submit" class="auth-submit" [disabled]="loading" [attr.aria-busy]="loading">
+      @if (loading) {
+        <mat-spinner diameter="20" aria-hidden="true"></mat-spinner>
+        <span class="cdk-visually-hidden">Ingresando</span>
+      } @else {
+        Ingresar
+      }
+    </button>
+  </form>
 
-    <a routerLink="/auth/forgot-password" class="auth-card__link">
-      ¿Olvidaste tu contraseña?
-    </a>
+  <div authFooter class="login__pie">
+    <p class="login__aviso">El acceso a este sistema está registrado y auditado. Uso exclusivo de personal autorizado del Estado provincial.</p>
+
+    <div class="login__sellos">
+      <img src="assets/images/login/silicon-misiones.png" alt="Silicon Misiones" class="login__sello" />
+      <span class="login__sellos-divisor" aria-hidden="true"></span>
+      <img src="assets/images/login/ciudadano-misiones.png" alt="Ciudadano Misiones" class="login__sello" />
+    </div>
   </div>
-</div>
+</app-auth-shell>

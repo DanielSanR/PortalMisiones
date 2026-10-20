@@ -3,15 +3,15 @@ import { Observable } from 'rxjs';
 import { EtiquetaFormValue, EtiquetaVM } from '../models/etiqueta.vm';
 
 /**
- * Fuente de datos de etiquetas. BLOQUEADA por backend: hoy solo existe la impl mock.
- * Cuando el backend exponga el CRUD, se agrega `*.http.datasource.ts` y se cambia el override.
+ * Fuente de datos de etiquetas: HTTP real (`/api/tag`) o mock en memoria, según `featureOverrides`.
+ * `organismoNombre` NO lo resuelve la fuente (viene en `null`): lo completa el facade.
  */
 export abstract class EtiquetasDataSource {
   abstract list(): Observable<EtiquetaVM[]>;
-  abstract getById(id: number): Observable<EtiquetaVM>;
+  abstract getById(id: string): Observable<EtiquetaVM>;
   abstract create(form: EtiquetaFormValue): Observable<EtiquetaVM>;
-  abstract update(id: number, form: EtiquetaFormValue): Observable<EtiquetaVM>;
-  abstract delete(id: number): Observable<void>;
+  abstract update(id: string, form: EtiquetaFormValue): Observable<EtiquetaVM>;
+  abstract delete(id: string): Observable<void>;
 }
 
 export const ETIQUETAS_DS = new InjectionToken<EtiquetasDataSource>('ETIQUETAS_DS');

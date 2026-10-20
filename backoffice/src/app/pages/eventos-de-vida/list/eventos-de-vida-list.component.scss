@@ -1,19 +1,11 @@
-@use '../../../../shared-styles/mixins' as *;
+// ==========================================================================
+// Listado de Eventos de Vida. El toolbar y la celda de nombre (`.cell-name`) son clases globales
+// (`shared-styles/_components.scss`); acá solo queda la celda de slug.
+// ==========================================================================
 
-.list-toolbar {
-  @include list-toolbar;
-
-  &-count {
-    @include list-toolbar-count;
-  }
-}
-
-.evento-nombre {
-  font-weight: var(--theme-font-weight-semibold);
-  color: var(--theme-text-primary);
-}
-
-.text-secondary {
+.eventoslist-slug {
+  // Es un identificador de URL: se lee mejor monoespaciado.
   color: var(--theme-text-secondary);
+  font-family: var(--theme-font-mono);
   font-size: var(--theme-font-size-sm);
 }

@@ -1,0 +1,110 @@
+<!-- `(submit)` nativo y no `(ngSubmit)`: el `<form>` no lleva `[formGroup]` (el control activo
+     cambia según el modo), así que no hay directiva de forms que emita `ngSubmit` ni que frene
+     el envío nativo. `guardar($event)` hace el `preventDefault`. -->
+<form class="form-dialog" (submit)="guardar($event)" novalidate>
+    <div class="form-dialog__header">
+        <div class="form-dialog__icono">
+            <i class="ph" [class.ph-envelope-simple]="esEmail" [class.ph-key]="!esEmail" aria-hidden="true"></i>
+        </div>
+        <div class="form-dialog__encabezado">
+            <!-- mat-dialog-title: es el nombre accesible del diálogo (aria-labelledby del contenedor). -->
+            <h2 mat-dialog-title class="form-dialog__titulo">{{ titulo }}</h2>
+            <p class="form-dialog__subtitulo">
+                de <b>{{ data.nombre }}</b>
+            </p>
+        </div>
+    </div>
+
+    <div class="form-dialog__campos">
+        <ng-container *ngIf="esEmail; else camposPassword">
+            <div class="form-field" [class.is-invalid]="mensajeDeError(emailCtrl, campoEmail)">
+                <label class="form-field__label" for="credencial-email">
+                    {{ campoEmail.label }} <span class="form-field__required" aria-hidden="true">*</span>
+                </label>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <input matInput id="credencial-email" type="email" autocomplete="off" required
+                           [formControl]="emailCtrl" aria-describedby="credencial-email-ayuda" cdkFocusInitial>
+                    <mat-error>
+                        <ng-container *ngTemplateOutlet="errorDeCampo; context: { $implicit: mensajeDeError(emailCtrl, campoEmail) }"></ng-container>
+                    </mat-error>
+                </mat-form-field>
+            </div>
+            <p class="credencial-dialog__ayuda" id="credencial-email-ayuda">
+                <ng-container *ngIf="emailCtrl.valid && emailSinCambios; else ayudaEmail">
+                    Ingresá un email distinto al actual para poder guardar.
+                </ng-container>
+                <ng-template #ayudaEmail>Es el que usa para ingresar. Se guarda en minúsculas.</ng-template>
+            </p>
+        </ng-container>
+
+        <ng-template #camposPassword>
+            <ng-container [formGroup]="passwordForm">
+                <div class="form-field" [class.is-invalid]="mensajeDeError(passwordForm.controls.nueva, campoPassword)">
+                    <label class="form-field__label" for="credencial-nueva">
+                        {{ campoPassword.label }} <span class="form-field__required" aria-hidden="true">*</span>
+                    </label>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input matInput id="credencial-nueva" [type]="mostrarPassword ? 'text' : 'password'"
+                               autocomplete="new-password" required formControlName="nueva"
+                               aria-describedby="credencial-password-ayuda" cdkFocusInitial>
+                        <!-- Label fijo + aria-pressed: el estado lo comunica el atributo, no un texto que cambia
+                             (con label variable el lector anunciaría "Ocultar… pulsado" y se contradice). Alterna
+                             las dos contraseñas a la vez. -->
+                        <button mat-icon-button matSuffix type="button" class="credencial-dialog__ojo"
+                                (click)="alternarPassword()"
+                                aria-label="Mostrar contraseña"
+                                [attr.aria-pressed]="mostrarPassword">
+                            <i class="ph" [class.ph-eye]="!mostrarPassword" [class.ph-eye-slash]="mostrarPassword" aria-hidden="true"></i>
+                        </button>
+                        <mat-error>
+                            <ng-container *ngTemplateOutlet="errorDeCampo; context: { $implicit: mensajeDeError(passwordForm.controls.nueva, campoPassword) }"></ng-container>
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+                <div class="form-field" [class.is-invalid]="mensajeDeError(passwordForm.controls.repetida, campoRepetida)">
+                    <label class="form-field__label" for="credencial-repetida">
+                        {{ campoRepetida.label }} <span class="form-field__required" aria-hidden="true">*</span>
+                    </label>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input matInput id="credencial-repetida" [type]="mostrarPassword ? 'text' : 'password'"
+                               autocomplete="new-password" required formControlName="repetida">
+                        <mat-error>
+                            <ng-container *ngTemplateOutlet="errorDeCampo; context: { $implicit: mensajeDeError(passwordForm.controls.repetida, campoRepetida) }"></ng-container>
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+                <p *ngIf="passwordForm.hasError('noCoinciden') && passwordForm.controls.repetida.touched"
+                   class="credencial-dialog__invalido" role="alert">
+                    <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                    <span>Las contraseñas no coinciden</span>
+                </p>
+                <p class="credencial-dialog__ayuda" id="credencial-password-ayuda">
+                    Entre {{ passwordMin }} y {{ passwordMax }} caracteres, con al menos una mayúscula, una minúscula y un número.
+                </p>
+            </ng-container>
+        </ng-template>
+
+        <!-- Mismo patrón que `appFormErrorMessage`: ícono + texto. -->
+        <ng-template #errorDeCampo let-mensaje>
+            <span *ngIf="mensaje" class="credencial-dialog__error-campo">
+                <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                <span>{{ mensaje }}</span>
+            </span>
+        </ng-template>
+    </div>
+
+    <p *ngIf="errorMensaje" class="form-dialog__error" role="alert">
+        <i class="ph ph-warning-circle" aria-hidden="true"></i>
+        <span>{{ errorMensaje }}</span>
+    </p>
+
+    <mat-dialog-actions align="end">
+        <button type="button" mat-stroked-button color="primary" [disabled]="guardando" (click)="cancelar()">
+            Cancelar
+        </button>
+        <button type="submit" mat-flat-button color="primary" [disabled]="!puedeGuardar" [attr.aria-busy]="guardando">
+            <i *ngIf="guardando" class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+            <span>{{ guardando ? 'Guardando...' : 'Guardar' }}</span>
+        </button>
+    </mat-dialog-actions>
+</form>

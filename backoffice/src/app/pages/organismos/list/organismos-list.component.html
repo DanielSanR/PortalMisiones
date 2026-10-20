@@ -1,4 +1,9 @@
 <ng-template appPageActions>
+  <!-- El diseño suma "Exportar" secundario en el topbar; sin endpoint todavía: visible con motivo. -->
+  <button mat-stroked-button color="primary" type="button"
+          appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint">
+    <i class="ph ph-download-simple" aria-hidden="true"></i> Exportar
+  </button>
   <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_ORGANISM'">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo organismo
   </button>
@@ -15,23 +20,23 @@
       ariaLabel="Buscar organismos por nombre, sigla, tipo o dependencia">
     </app-list-search>
 
-    <div class="orglist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} organismos</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="orglist-iconbtn" disabled
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} organismos</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
               aria-label="Ordenar">
         <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-      <button type="button" class="orglist-iconbtn" disabled
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
               aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row orglist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <button type="button" class="orglist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -62,22 +67,26 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_ORGANISM'"
     [emptyActionLabel]="vista.emptyActionLabel"
     [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
     (emptyAction)="onEmptyAction()"
     emptyIcon="buildings">
 
     <ng-template appTableCell="nombre" let-row>
-        <div class="organismos-list__nombre">
+        <div class="cell-person">
             <!-- Avatar con iniciales tintadas (Kitchen Sink §05). El tinte se deriva del id. -->
-            <span class="organismos-list__avatar" [class]="'organismos-list__avatar organismos-list__avatar--' + tinte(row.id)"
-                  aria-hidden="true">{{ iniciales(row) }}</span>
-            <div class="organismos-list__nombre-texto">
-                <span class="organismos-list__nombre-principal">
-                    {{ row.nombre }}@if (row.acronym) {<span class="text-secondary">&nbsp;({{ row.acronym }})</span>}
-                </span>
+            <span [class]="'cell-avatar cell-avatar--' + tinte(row.id)" aria-hidden="true">{{ iniciales(row) }}</span>
+            <div class="cell-name">
+                <span class="cell-name__principal">{{ row.nombre }}</span>
+                <!-- Diseño: "SIGLA · act. DD/MM/AAAA". Solo se arma con lo que el VM trae (sigla y updatedAt opcionales). -->
+                @if (row.acronym || row.updatedAt) {
+                    <span class="cell-name__meta cell-name__meta--visible">
+                        {{ row.acronym }}@if (row.acronym && row.updatedAt) { · }@if (row.updatedAt) {act. {{ row.updatedAt | date: 'dd/MM/yyyy' }}}
+                    </span>
+                }
                 <!-- En mobile las columnas Tipo y "Depende de" se ocultan: acá no se pierde el dato. -->
-                <span class="organismos-list__meta">
+                <span class="cell-name__meta">
                     {{ row.tipoNombre || 'Sin tipo' }}@if (row.parentNombre) { · depende de {{ row.parentNombre }} }
                 </span>
             </div>
@@ -88,7 +97,7 @@
         @if (row.parentNombre) {
             <span class="text-secondary">{{ row.parentNombre }}</span>
         } @else {
-            <span class="organismos-list__raiz">Raíz</span>
+            <span class="cell-muted">Raíz</span>
         }
     </ng-template>
 

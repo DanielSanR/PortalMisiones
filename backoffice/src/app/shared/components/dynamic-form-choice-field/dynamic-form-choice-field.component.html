@@ -1,0 +1,21 @@
+<!-- Grupo propio: @Host del `formControlName` no ve el `formGroup` del componente padre. -->
+<ng-container [formGroup]="group">
+  @if (field.type === 'checkbox') {
+    <!-- Booleano — slide-toggle pill, patrón FORM -->
+    <div class="slide-toggle-field">
+      <mat-slide-toggle [formControlName]="field.name" color="primary">
+        {{ field.label }}
+      </mat-slide-toggle>
+    </div>
+  } @else {
+    <!-- Radio — opciones en línea (ver "Jurisdicción" en el diseño del form) -->
+    <mat-radio-group class="radio-field"
+                     [formControlName]="field.name"
+                     [attr.aria-labelledby]="field.name + '-label'"
+                     [attr.aria-required]="field.validations?.required ? 'true' : null">
+      <mat-radio-button *ngFor="let option of field.options" [value]="option.id" color="primary">
+        {{ option.name }}
+      </mat-radio-button>
+    </mat-radio-group>
+  }
+</ng-container>

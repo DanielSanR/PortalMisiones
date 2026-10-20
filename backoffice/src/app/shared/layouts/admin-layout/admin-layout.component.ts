@@ -1,12 +1,13 @@
 import { Component, OnInit, DestroyRef, ElementRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
-import { filter, fromEvent } from 'rxjs';
+import { distinctUntilChanged, filter, fromEvent, map } from 'rxjs';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
+import { UserMenuComponent } from '../user-menu/user-menu.component';
+import { AppFooterComponent } from '../app-footer/app-footer.component';
+import { UnavailableDirective } from '../../directives/unavailable.directive';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -16,6 +17,7 @@ import { COMANDOS } from '../../../core/constants/comandos.constants';
 import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
 import { evaluateAccess } from '../../../core/utils/authorization.utils';
+import { BreadcrumbDeclarado, BreadcrumbItem, resolverBreadcrumb } from '../../../core/utils/breadcrumb.utils';
 
 /** Icono genérico cuando el primer segmento del breadcrumb no matchea ningún `NavItem`
  *  (ej. detalle de trámite, cuyo trail es ["Trámites", "Detalle"] — sí matchea; se usa
@@ -52,9 +54,10 @@ interface GrupoResultado {
     CommonModule,
     RouterModule,
     MatSidenavModule,
-    MatMenuModule,
     MatTooltipModule,
-    MatDividerModule,
+    UnavailableDirective,
+    UserMenuComponent,
+    AppFooterComponent,
   ],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.scss'],
@@ -64,6 +67,7 @@ export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('navScroll') navScrollRef?: ElementRef<HTMLElement>;
+  @ViewChild('mainContent') mainContentRef?: ElementRef<HTMLElement>;
   isMobile = false;
   isCollapsed = false;
   userName = '';
@@ -86,8 +90,15 @@ export class AdminLayoutComponent implements OnInit {
   private permisosActuales: string[] = [];
   private rolesActuales: UserRole[] = [];
 
-  /** Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio". */
-  breadcrumbTrail: string[] = [];
+  /**
+   * Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio".
+   * Los tramos intermedios traen `link` (la lista de su sección); el último es la página actual.
+   */
+  breadcrumbTrail: BreadcrumbItem[] = [];
+  /** Tramos previos al título (links a su sección); el último tramo es `tituloPagina`, el `<h1>`. */
+  breadcrumbPrevios: BreadcrumbItem[] = [];
+  /** Título de la página = último tramo del breadcrumb ("Inicio" en Home). */
+  tituloPagina = 'Inicio';
   /** Icono de la sección activa (icono del `NavItem` cuyo label matchea `breadcrumbTrail[0]`). */
   sectionIcon = 'layout';
 
@@ -133,6 +144,25 @@ export class AdminLayoutComponent implements OnInit {
       .subscribe(() => this.updateBreadcrumb());
     this.updateBreadcrumb();
 
+    // Al cambiar de página el foco se mueve al <main>: si no, el lector de pantalla queda parado en el
+    // link del nav que se activó. Se ignora la carga inicial (el primer NavigationEnd que ve el shell) y
+    // los cambios que solo tocan query/fragment (pestañas, filtros), que no son otra página.
+    let primera = true;
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        map((event) => event.urlAfterRedirects.split(/[?#]/)[0]),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        if (primera) {
+          primera = false;
+          return;
+        }
+        this.mainContentRef?.nativeElement.focus({ preventScroll: true });
+      });
+
     // Atajo "/": foca el buscador de la sidebar, salvo que el foco ya esté en un campo editable.
     fromEvent<KeyboardEvent>(document, 'keydown')
       .pipe(
@@ -173,6 +203,7 @@ export class AdminLayoutComponent implements OnInit {
       this.rolesActuales = [];
       this.accessibleGroups = [];
       this.recomputeNavGroups();
+      this.updateBreadcrumb();
       return;
     }
     // El JWT NO trae nombre/apellido (ver AuthUser): con el backend real quedaban vacíos
@@ -192,13 +223,26 @@ export class AdminLayoutComponent implements OnInit {
       .map((group) => ({ label: group.label, items: group.items.filter((item) => evaluateAccess(ctx, item.rule)) }))
       .filter((group) => group.items.length > 0);
     this.recomputeNavGroups();
+    // Los links del breadcrumb dependen de qué secciones ve el usuario.
+    this.updateBreadcrumb();
   }
 
-  /** Deriva `breadcrumbTrail` de la ruta hija más profunda (la que efectivamente resuelve `router-outlet`). */
+  /**
+   * Deriva `breadcrumbTrail` de la ruta hija más profunda (la que efectivamente resuelve `router-outlet`).
+   * Los links se resuelven contra las secciones que el usuario VE (`accessibleGroups`), no contra todo
+   * `NAV_ITEMS`: un tramo de una sección a la que no tiene acceso queda como texto, en vez de llevarlo a
+   * una ruta que el guard le rechaza.
+   */
   private updateBreadcrumb(): void {
     let route = this.activatedRoute.root;
     while (route.firstChild) route = route.firstChild;
-    this.breadcrumbTrail = (route.snapshot.data['breadcrumb'] as string[] | undefined) ?? [];
+    const declarado = route.snapshot.data['breadcrumb'] as BreadcrumbDeclarado[] | undefined;
+    const visibles = this.accessibleGroups.flatMap((group) => group.items);
+    this.breadcrumbTrail = resolverBreadcrumb(declarado, visibles);
+    this.breadcrumbPrevios = this.breadcrumbTrail.slice(0, -1);
+    this.tituloPagina = this.breadcrumbTrail.length > 0
+      ? this.breadcrumbTrail[this.breadcrumbTrail.length - 1].label
+      : 'Inicio';
     this.sectionIcon = this.resolveSectionIcon(this.breadcrumbTrail);
     this.cdr.markForCheck();
   }
@@ -206,11 +250,17 @@ export class AdminLayoutComponent implements OnInit {
   /** Icono de la sección activa: el de "Inicio" cuando no hay trail (Home), o el del `NavItem`
    *  cuyo `label` matchea el primer segmento del trail (ej. "Roles" → shield-star). Fallback
    *  genérico si el segmento no corresponde a ningún ítem del nav. */
-  private resolveSectionIcon(trail: string[]): string {
+  private resolveSectionIcon(trail: BreadcrumbItem[]): string {
     if (trail.length === 0) {
       return NAV_ITEMS.find((item) => item.label === 'Inicio')?.icon ?? FALLBACK_SECTION_ICON;
     }
-    return NAV_ITEMS.find((item) => item.label === trail[0])?.icon ?? FALLBACK_SECTION_ICON;
+    return NAV_ITEMS.find((item) => item.label === trail[0].label)?.icon ?? FALLBACK_SECTION_ICON;
+  }
+
+  /** Skip-link: sin esto el `href="#contenido"` pasaría por el router (base href) en vez de mover el foco. */
+  irAlContenido(event: Event): void {
+    event.preventDefault();
+    this.mainContentRef?.nativeElement.focus();
   }
 
   trackByRoute(_index: number, item: NavItem): string {
@@ -311,7 +361,8 @@ export class AdminLayoutComponent implements OnInit {
       case 'cerrar-sesion': this.logout(); return;
       case 'colapsar-nav': this.toggleCollapse(); return;
     }
-    if (resultado.route) this.router.navigate([resultado.route]);
+    // `navigateByUrl` y no `navigate([...])`: una ruta con query (`?adoptar=1`) se codificaría como path.
+    if (resultado.route) this.router.navigateByUrl(resultado.route);
   }
 
   limpiarBusqueda(): void {

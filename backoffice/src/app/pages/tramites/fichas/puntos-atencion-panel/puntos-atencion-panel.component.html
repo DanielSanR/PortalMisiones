@@ -1,0 +1,93 @@
+@if (estado$ | async; as estado) {
+  @if (estado.tipo === 'cargando') {
+    <p class="puntos-mensaje" role="status">
+      <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+      Cargando los puntos de atención...
+    </p>
+  } @else if (estado.tipo === 'error') {
+    <div class="puntos-mensaje puntos-mensaje--error" role="alert">
+      <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+      <span>No pudimos cargar los puntos de atención.</span>
+      <button type="button" mat-button color="primary" (click)="reintentar()">
+        <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+      </button>
+    </div>
+  } @else {
+    <div class="puntos">
+      <div class="puntos-barra">
+        @if (estado.inactivos) {
+          <mat-slide-toggle color="primary" [formControl]="inactivosCtrl">
+            Mostrar inactivos ({{ estado.inactivos }})
+          </mat-slide-toggle>
+        }
+        <button type="button" mat-stroked-button color="primary" class="puntos-barra__agregar" (click)="agregar()"
+                *appHasPermission="'CREATE_ATTENTION_POINT'">
+          <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar punto
+        </button>
+      </div>
+
+      @if (visibles$ | async; as puntos) {
+        @if (!puntos.length) {
+          <p class="puntos-mensaje">
+            <i class="ph ph-map-pin" aria-hidden="true"></i>
+            {{ estado.puntos.length ? 'No hay puntos de atención activos.' : 'Todavía no hay puntos de atención: agregá dónde se hace el trámite en esta localidad.' }}
+          </p>
+        } @else {
+          <ul class="puntos-lista">
+            @for (punto of puntos; track punto.id) {
+              <li class="puntos-card" [class.is-inactivo]="!punto.activo">
+                <div class="puntos-card__encabezado">
+                  <h4 class="puntos-card__nombre">{{ punto.nombre }}</h4>
+                  @if (!punto.activo) {
+                    <span class="pill pill--inactive">
+                      <span class="pill__dot" aria-hidden="true"></span>
+                      <span class="pill__label">Inactivo</span>
+                    </span>
+                  }
+                </div>
+
+                <dl class="puntos-card__datos">
+                  <div class="puntos-card__fila">
+                    <dt><i class="ph ph-map-pin" aria-hidden="true"></i><span class="cdk-visually-hidden">Dirección</span></dt>
+                    <dd>{{ punto.direccion }}</dd>
+                  </div>
+                  @if (punto.horarios) {
+                    <div class="puntos-card__fila">
+                      <dt><i class="ph ph-clock" aria-hidden="true"></i><span class="cdk-visually-hidden">Horarios</span></dt>
+                      <dd>{{ punto.horarios }}</dd>
+                    </div>
+                  }
+                  @if (punto.contacto) {
+                    <div class="puntos-card__fila">
+                      <dt><i class="ph ph-phone" aria-hidden="true"></i><span class="cdk-visually-hidden">Contacto</span></dt>
+                      <dd>{{ punto.contacto }}</dd>
+                    </div>
+                  }
+                  <div class="puntos-card__fila">
+                    <dt><i class="ph ph-crosshair" aria-hidden="true"></i><span class="cdk-visually-hidden">Coordenadas</span></dt>
+                    <dd class="puntos-card__coords">
+                      @if (mapa(punto); as url) {
+                        {{ coordenadas(punto) }}
+                        <a class="detail-link" [href]="url" target="_blank" rel="noopener noreferrer">
+                          Ver en mapa <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                          <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
+                        </a>
+                      } @else {
+                        <span class="puntos-card__faltante">Sin coordenadas</span>
+                      }
+                    </dd>
+                  </div>
+                </dl>
+
+                <div class="puntos-card__acciones">
+                  <app-row-actions [primary]="accionEditar(punto)" [actions]="accionesDe(punto)"
+                                   [menuLabel]="'Más acciones de ' + punto.nombre"></app-row-actions>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </div>
+  }
+}

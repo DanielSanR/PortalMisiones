@@ -1,3 +1,5 @@
+@use 'shared-styles/mixins' as *;
+
 .loading {
     display: flex;
     flex-direction: column;
@@ -20,7 +22,7 @@
 }
 
 // ==========================================================================
-// Skeleton — filas 56px con shimmer (variant="skeleton")
+// Skeleton — filas 56px (variant="skeleton"). Barras con el mixin compartido `skeleton-bar`.
 // ==========================================================================
 .loading-skeleton {
     &__row {
@@ -29,20 +31,23 @@
         gap: var(--theme-space-md);
         min-height: var(--theme-table-row-height);
         padding: 0 var(--theme-space-lg);
-        border-bottom: 1px solid var(--theme-border-secondary);
+        border-bottom: 1px solid var(--theme-border-subtle);
 
         &:last-child {
             border-bottom: none;
         }
     }
 
-    &__bar {
-        display: block;
-        height: 12px;
+    &__avatar {
+        flex: none;
+        width: 30px;
+        height: 30px;
         border-radius: var(--theme-radius-full);
-        background-image: linear-gradient(90deg, #EEF1F4 0%, #F7F9FA 40%, #EEF1F4 80%);
-        background-size: 420px 100%;
-        animation: loading-skeleton-shimmer 1.4s linear infinite;
+        background: var(--theme-skeleton-base);
+    }
+
+    &__bar {
+        @include skeleton-bar;
 
         &--lg {
             flex: 1 1 auto;
@@ -51,18 +56,5 @@
         &--sm {
             flex: 0 0 60px;
         }
-    }
-}
-
-@keyframes loading-skeleton-shimmer {
-    0% { background-position: -420px 0; }
-    100% { background-position: 420px 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .loading-skeleton__bar {
-        animation: none;
-        background-image: none;
-        background-color: #EEF1F4;
     }
 }

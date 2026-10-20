@@ -1,28 +1,29 @@
-@use '../../../../shared-styles/mixins' as *;
+// ==========================================================================
+// Listado de Etiquetas. El toolbar y la celda nombre + meta (`.cell-name`) son clases globales
+// (`shared-styles/_components.scss`); acá solo queda el alcance global/local junto al slug.
+// ==========================================================================
 
-.list-toolbar {
-  @include list-toolbar;
+@use 'shared-styles/mixins' as *;
 
-  &-count {
-    @include list-toolbar-count;
+.etiqlist {
+  &-fila {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    min-width: 0;
   }
-}
 
-.etiqueta-name {
-  display: flex;
-  align-items: center;
-  gap: var(--theme-space-xs);
-}
+  // Global vs. local: la global (catálogo compartido) se destaca en tono info;
+  // la local queda neutra porque el organismo ya la acota en la columna de al lado.
+  &-alcance {
+    flex: none;
 
-.etiqueta-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-}
+    &--global {
+      @include estado-badge(--theme-info-bg, --theme-info, --theme-info-border);
+    }
 
-.count-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center; 
-  text-align: center;  
+    &--local {
+      @include estado-badge(--theme-surface-sunken, --theme-text-secondary, --theme-border-primary);
+    }
+  }
 }

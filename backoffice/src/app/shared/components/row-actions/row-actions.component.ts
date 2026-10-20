@@ -4,6 +4,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
+import { AccessRule } from '../../../core/models/access-rule.model';
+import { AriaDisabledDirective } from '../../directives/aria-disabled.directive';
+
+let nextUid = 0;
 
 /** Una acción de fila. `run` la ejecuta el consumidor; el componente solo la presenta. */
 export interface RowAction {
@@ -13,9 +17,17 @@ export interface RowAction {
   run: () => void;
   /** Permiso atómico requerido. Sin él la acción no se muestra. */
   permission?: string;
+  /** Regla completa (varios permisos y/o roles), para cuando un permiso solo no alcanza. */
+  rule?: AccessRule;
   /** Destructiva: se pinta en rojo y se agrupa al final, detrás de un divisor. */
   danger?: boolean;
   disabled?: boolean;
+  /**
+   * Por qué la acción está deshabilitada (ej. "El rol SUPERADMIN no se puede eliminar"). Si se
+   * informa, el item queda focusable (`aria-disabled`, no `disabled` nativo) y el motivo se ve en
+   * un tooltip y se anuncia con `aria-describedby`; el click se ignora.
+   */
+  disabledReason?: string;
   /** Solo si el label no alcanza como texto accesible. */
   ariaLabel?: string;
 }
@@ -37,7 +49,7 @@ export interface RowAction {
   selector: 'app-row-actions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncPipe, MatMenuModule, MatTooltipModule],
+  imports: [AsyncPipe, MatMenuModule, MatTooltipModule, AriaDisabledDirective],
   templateUrl: './row-actions.component.html',
   styleUrl: './row-actions.component.scss',
 })
@@ -86,7 +98,20 @@ export class RowActionsComponent {
     }),
   );
 
+  private readonly uid = nextUid++;
+
+  /** Id estable del texto con el motivo de una acción deshabilitada (para `aria-describedby`). */
+  motivoId(accion: RowAction): string {
+    return `row-action-motivo-${this.uid}-${accion.label.toLowerCase().replace(/\W+/g, '-')}`;
+  }
+
+  /** Un item `aria-disabled` sigue recibiendo el click: acá se descarta. */
+  ejecutar(accion: RowAction): void {
+    if (!accion.disabled) accion.run();
+  }
+
   private permitida(accion: RowAction): boolean {
-    return !accion.permission || this.auth.can(accion.permission);
+    return (!accion.permission || this.auth.can(accion.permission))
+      && (!accion.rule || this.auth.canAccess(accion.rule));
   }
 }

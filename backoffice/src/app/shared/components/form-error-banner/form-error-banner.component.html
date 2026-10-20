@@ -1,8 +1,14 @@
 @if (errors.length) {
-  <div class="form-error-banner" role="alert">
+  <!-- `live` (default): role=alert, para errores que aparecen solos (ej. fallo del servidor).
+       Sin `live`: el banner es un grupo con nombre que recibe el foco (`focus()`), para el resumen
+       de validación al enviar; así no se suma un anuncio asertivo a los `mat-error` ya polite. -->
+  <div #banner class="form-error-banner"
+       [attr.role]="live ? 'alert' : 'group'"
+       [attr.tabindex]="live ? null : -1"
+       [attr.aria-labelledby]="live ? null : tituloId">
     <i class="ph ph-warning-circle form-error-banner__icon" aria-hidden="true"></i>
     <div class="form-error-banner__body">
-      <span class="form-error-banner__title">
+      <span class="form-error-banner__title" [id]="tituloId">
         {{ titulo || 'Revisá ' + errors.length + ' campo' + (errors.length === 1 ? '' : 's') + ' para poder guardar' }}
       </span>
       <span class="form-error-banner__detail">{{ errors.join(' · ') }}</span>

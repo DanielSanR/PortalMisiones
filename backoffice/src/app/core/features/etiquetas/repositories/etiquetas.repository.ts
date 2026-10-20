@@ -12,7 +12,7 @@ export class EtiquetasRepository {
     return this.ds.list();
   }
 
-  getById(id: number): Observable<EtiquetaVM> {
+  getById(id: string): Observable<EtiquetaVM> {
     return this.ds.getById(id);
   }
 
@@ -20,11 +20,11 @@ export class EtiquetasRepository {
     return this.ds.create(form);
   }
 
-  update(id: number, form: EtiquetaFormValue): Observable<EtiquetaVM> {
+  update(id: string, form: EtiquetaFormValue): Observable<EtiquetaVM> {
     return this.ds.update(id, form);
   }
 
-  delete(id: number): Observable<void> {
+  delete(id: string): Observable<void> {
     return this.ds.delete(id);
   }
 }

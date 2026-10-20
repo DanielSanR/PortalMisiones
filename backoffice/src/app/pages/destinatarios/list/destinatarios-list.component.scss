@@ -1,9 +1,4 @@
-@use '../../../../shared-styles/mixins' as *;
-
-.list-toolbar {
-  @include list-toolbar;
-
-  &-count {
-    @include list-toolbar-count;
-  }
-}
+// ==========================================================================
+// Listado de Destinatarios. Sin estilos propios: toolbar (`.list-toolbar*`) y celda de nombre
+// (`.cell-name`) son clases globales de `shared-styles/_components.scss`.
+// ==========================================================================

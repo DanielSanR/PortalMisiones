@@ -15,21 +15,23 @@
       ariaLabel="Buscar tipos de organismo por nombre, descripción o código">
     </app-list-search>
 
-    <div class="tiposlist-acciones">
-      <span class="list-toolbar-count">{{ vista.total }} tipos de organismo</span>
-      <!-- Sin funcionalidad todavía: visibles y deshabilitados, no ocultos. -->
-      <button type="button" class="tiposlist-iconbtn" disabled aria-label="Ordenar">
+    <div class="list-toolbar__actions">
+      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} tipos de organismo</span>
+      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
+      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
+              aria-label="Ordenar">
         <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
       </button>
-      <button type="button" class="tiposlist-iconbtn" disabled aria-label="Exportar a CSV">
+      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
+              aria-label="Exportar a CSV">
         <i class="ph ph-download-simple" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <div class="list-toolbar__row tiposlist-chips">
+  <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <button type="button" class="tiposlist-masfiltros" disabled>
+    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>
   </div>
@@ -60,17 +62,18 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
+    [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_ORGANISM_TYPE'"
     [emptyActionLabel]="vista.emptyActionLabel"
     [emptyActionIcon]="vista.hayFiltros ? 'x' : 'plus'"
     (emptyAction)="onEmptyAction()"
     emptyIcon="folders">
 
     <ng-template appTableCell="nombre" let-row>
-        <div class="tiposlist-nombre">
-            <span class="tiposlist-nombre__principal">{{ row.nombre }}</span>
+        <div class="cell-name">
+            <span class="cell-name__principal">{{ row.nombre }}</span>
             <!-- En mobile la columna Descripción se oculta: acá no se pierde el dato. -->
             @if (row.descripcion) {
-                <span class="tiposlist-nombre__meta">{{ row.descripcion }}</span>
+                <span class="cell-name__meta">{{ row.descripcion }}</span>
             }
         </div>
     </ng-template>

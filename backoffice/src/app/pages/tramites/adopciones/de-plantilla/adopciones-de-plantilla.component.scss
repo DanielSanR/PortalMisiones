@@ -1,0 +1,73 @@
+// ==========================================================================
+// "Organismos que la adoptaron" (dentro de la tarjeta del detalle de plantilla):
+// una fila por adopción — organismo (link), vigencia y estado.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+.adopplant {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adopplant-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--theme-space-md);
+  padding: var(--theme-space-sm) 0;
+  border-bottom: 1px solid var(--theme-border-primary);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  @include responsive(mobile) {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    &__vigencia {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
+  &__organismo {
+    color: var(--theme-text-primary);
+    font-weight: var(--theme-font-weight-medium);
+    text-decoration: none;
+    border-radius: var(--theme-radius-sm);
+    @include truncate;
+    @include focus-ring;
+
+    &:hover {
+      color: var(--theme-primary);
+      text-decoration: underline;
+    }
+
+    &--faltante {
+      color: var(--theme-text-tertiary);
+      font-weight: var(--theme-font-weight-normal);
+    }
+  }
+
+  &__vigencia {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    font-size: var(--theme-font-size-sm);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--theme-text-secondary);
+
+    i.ph {
+      color: var(--theme-text-tertiary);
+    }
+  }
+}
+
+.adopplant-mensaje {
+  @include inline-message;
+}

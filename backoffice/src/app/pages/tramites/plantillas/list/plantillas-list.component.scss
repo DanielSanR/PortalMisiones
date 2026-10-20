@@ -1,0 +1,47 @@
+// ==========================================================================
+// Listado de Plantillas provinciales — toolbar de dos filas del diseño
+// (pantalla LISTA). Buscador y filtros aplicados son componentes compartidos;
+// acá quedan los selects de filtro y las celdas propias.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+// Selects de la fila A, con fondo de card para que se lean sobre el well.
+.plantlist-select {
+  @include list-filter-field;
+  min-width: 160px;
+  flex: 0 1 220px;
+}
+
+// Celda de título: link al detalle + slug debajo -------------------------
+.plantlist-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  &__link {
+    color: var(--theme-text-primary);
+    font-weight: var(--theme-font-weight-medium);
+    text-decoration: none;
+    @include truncate;
+    @include focus-ring;
+
+    &:hover {
+      color: var(--theme-primary);
+      text-decoration: underline;
+    }
+  }
+
+  &__slug {
+    color: var(--theme-text-tertiary);
+    font-family: var(--theme-font-mono, monospace);
+    font-size: var(--theme-font-size-xs);
+    @include truncate;
+  }
+}
+
+.plantlist-contador {
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-secondary);
+}

@@ -1,0 +1,53 @@
+<button type="button"
+    class="user-menu__trigger"
+    [class.is-compact]="compact"
+    [matMenuTriggerFor]="menu"
+    [attr.aria-label]="'Menú de perfil: ' + name">
+    <span class="user-menu__avatar" aria-hidden="true">{{ initials }}</span>
+    <span class="user-menu__info" [class.cdk-visually-hidden]="compact">
+        <span class="user-menu__name">{{ name }}</span>
+        <span class="user-menu__role">{{ role }}</span>
+    </span>
+    @if (!compact) {
+        <i class="ph ph-dots-three-vertical user-menu__arrow" aria-hidden="true"></i>
+    }
+</button>
+
+<mat-menu #menu="matMenu" panelClass="user-menu-panel" xPosition="after" yPosition="above">
+    <div class="user-menu__header" (click)="$event.stopPropagation()">
+        <span class="user-menu__avatar user-menu__avatar--lg" aria-hidden="true">{{ initials }}</span>
+        <div class="user-menu__header-info">
+            <strong>{{ name }}</strong>
+            <span class="user-menu__email">{{ email }}</span>
+        </div>
+    </div>
+    <div class="user-menu__rol" (click)="$event.stopPropagation()">
+        <span class="user-menu__rol-label">Rol</span>
+        <span class="user-menu__rol-badge">
+            <i class="ph ph-shield-star" aria-hidden="true"></i>
+            {{ role }}
+        </span>
+    </div>
+    <div class="user-menu__actions">
+        <button mat-menu-item class="user-menu__item" appUnavailable="Mi perfil: todavía no está disponible">
+            <i class="ph ph-user-circle" aria-hidden="true"></i>
+            <span>Mi perfil</span>
+        </button>
+        <button mat-menu-item class="user-menu__item" appUnavailable="Cambiar contraseña: todavía no está disponible">
+            <i class="ph ph-lock-simple" aria-hidden="true"></i>
+            <span>Cambiar contraseña</span>
+        </button>
+        <button mat-menu-item class="user-menu__item" appUnavailable="El idioma es fijo: español (Argentina)">
+            <i class="ph ph-globe" aria-hidden="true"></i>
+            <span>Idioma</span>
+            <span class="user-menu__item-value">es-AR</span>
+        </button>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="user-menu__actions">
+        <button mat-menu-item class="user-menu__item user-menu__item--danger" (click)="logout.emit()">
+            <i class="ph ph-sign-out" aria-hidden="true"></i>
+            <span>Cerrar sesión</span>
+        </button>
+    </div>
+</mat-menu>

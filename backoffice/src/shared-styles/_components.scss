@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 //formularios de creacion y edicion
 .form-card {
     @include form-card();
@@ -71,7 +73,7 @@
         text-transform: none;
         font-weight: var(--theme-font-weight-normal);
         letter-spacing: normal;
-        color: var(--theme-text-tertiary);
+        color: var(--theme-text-secondary); // a11y: texto informativo, no decorativo
     }
 
     &__error {
@@ -161,7 +163,7 @@
 
 // Error de envío del formulario (inline, cuando la pantalla maneja el error y no el diálogo global).
 .form-error {
-    color: var(--theme-error);
+    color: var(--theme-error-icon); // a11y: #D32F2F sobre error-bg da 4.36:1; #C62828 = 4.92:1
     font-size: var(--theme-font-size-sm);
     margin: var(--theme-space-md) 0 0;
     padding: var(--theme-space-sm) var(--theme-space-md);
@@ -210,17 +212,18 @@
 .perm-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    // Diseño (Roles y permisos): pad 0 9, 11.5/600, ícono 13, gap 5.
+    gap: 5px;
     height: 24px;
-    padding: 0 var(--theme-space-sm);
+    padding: 0 9px;
     border-radius: var(--theme-radius-full);
     border: 1px solid var(--theme-border-primary);
     background: var(--theme-bg-card);
     color: var(--theme-text-tertiary);
-    font-size: var(--theme-font-size-xs);
-    font-weight: var(--theme-font-weight-medium);
+    font-size: var(--theme-font-caption-size);
+    font-weight: var(--theme-font-weight-semibold);
 
-    i.ph { font-size: 12px; }
+    i.ph { font-size: 13px; }
 
     &--granted {
         background: var(--theme-info-bg);
@@ -247,8 +250,16 @@
     }
 }
 
+// Spinner global (ícono Phosphor `ph-spinner-gap` u otro). ÚNICA definición: las pantallas usan
+// `class="spin"` y no declaran keyframes propios. `inline-block` para que `transform` aplique a `<i>`.
+// Con `prefers-reduced-motion` no se rota (movimiento) sino que pulsa suave: sigue indicando progreso.
 .spin {
+    display: inline-block;
     animation: spin 1s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: spin-reduced 1.6s ease-in-out infinite;
+    }
 }
 
 @keyframes spin {
@@ -256,10 +267,136 @@
     to   { transform: rotate(360deg); }
 }
 
-//tablas
+@keyframes spin-reduced {
+    0%, 100% { opacity: 0.35; }
+    50%      { opacity: 1; }
+}
 
-.table-container {
-    @include table-container();
+// ==========================================================================
+// Toolbar de LISTA — patrón GLOBAL: se emite UNA vez acá en vez de incluir el
+// mixin en cada `*-list.component.scss` (con encapsulación emulada, cada
+// `@include` local copiaba el CSS completo dentro del chunk de páginas).
+// Los mixins siguen en `_mixins.scss` como fuente única, para el caso en que
+// un componente necesite aplicarlos a un selector propio.
+//
+//   <div class="list-toolbar list-toolbar--stacked">
+//     <div class="list-toolbar__row">
+//       <app-list-search .../>
+//       <span class="list-toolbar-count">68 organismos</span>
+//       <div class="list-toolbar__actions">
+//         <button class="list-iconbtn">…</button>
+//       </div>
+//     </div>
+//     <div class="list-toolbar__row list-toolbar__row--chips">
+//       <app-filter-tabs .../>
+//       <button class="list-ghost-button">Más filtros</button>
+//     </div>
+//   </div>
+// ==========================================================================
+.list-toolbar {
+    @include list-toolbar;
+
+    // Contador; `--end` lo empuja contra el borde derecho de la fila.
+    &-count {
+        @include list-toolbar-count;
+
+        &--end {
+            margin-left: auto;
+        }
+    }
+
+    // Grupo de botones de la fila A (Ordenar, Exportar).
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: var(--theme-space-sm);
+        flex: none;
+    }
+
+    // Fila B: chips de filtro + "Más filtros", alineados al inicio.
+    &__row--chips {
+        justify-content: flex-start;
+        gap: var(--theme-space-xs);
+    }
+}
+
+.list-iconbtn {
+    @include list-iconbtn;
+}
+
+// Control "todavía no disponible" (`appUnavailable`): se ve deshabilitado pero sigue siendo
+// focusable y muestra el motivo en un tooltip. Va después de los botones para ganar por orden.
+.is-unavailable,
+.is-unavailable.mat-mdc-button-base {
+    cursor: not-allowed !important;
+    // tertiary (AA) y no text-disabled (1.9:1): el control debe poder leerse para descubrir el motivo.
+    color: var(--theme-text-tertiary) !important;
+
+    i.ph,
+    .mat-icon {
+        color: var(--theme-text-tertiary) !important;
+    }
+
+    &:hover {
+        border-color: var(--theme-border-primary) !important;
+        background-color: transparent !important;
+    }
+}
+
+.is-unavailable.mat-mdc-unelevated-button,
+.is-unavailable.mat-mdc-raised-button {
+    background-color: var(--theme-border-primary) !important;
+}
+
+.list-ghost-button {
+    @include list-ghost-button;
+}
+
+// ==========================================================================
+// Paneles de estado — patrón GLOBAL (vacío / error con "Reintentar").
+//
+// `.state-panel`: bloque dentro de una card (Home, árbol de categorías, fichas
+// de una adopción). Círculo 64 + ícono, título, texto y CTA:
+//   <div class="state-panel" role="alert">
+//     <span class="state-panel__icon state-panel__icon--error"><i class="ph ph-cloud-slash"></i></span>
+//     <p class="state-panel__title">…</p>
+//     <p class="state-panel__text">…</p>
+//     <button mat-stroked-button class="state-panel__cta">…</button>
+//   </div>
+//
+// `.load-state`: panel a pantalla completa de "no se pudo cargar / no existe"
+// en forms y detalles (hijos `__icono`, `__titulo`, `__texto`, `__acciones`).
+//
+// `app-shared-table` dibuja el suyo con los mismos mixins (encapsulación None).
+// ==========================================================================
+.state-panel {
+    @include state-panel;
+
+    &__icon {
+        @include state-panel-icon;
+
+        &--error {
+            @include state-panel-icon-error;
+        }
+    }
+
+    &__title {
+        margin: 0;
+        @include state-panel-title;
+    }
+
+    &__text {
+        margin: 0;
+        @include state-panel-text;
+    }
+
+    &__cta {
+        @include state-panel-cta;
+    }
+}
+
+.load-state {
+    @include load-state-panel;
 }
 
 // ==========================================================================
@@ -282,23 +419,24 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 30px;
-    padding: 0 var(--theme-space-sm);
+    // Diseño: "Editar" = botón de 30px, pad 0 12, 12.5/600, SIN ícono (el ícono solo aparece
+    // como spinner mientras la fila está ocupada).
+    height: var(--theme-control-height-sm);
+    padding: 0 12px;
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-md);
     background: var(--theme-bg-card);
     color: var(--theme-primary-700);
     font-family: inherit;
-    font-size: var(--theme-font-size-xs);
+    font-size: var(--theme-font-small-size);
     font-weight: var(--theme-font-weight-semibold);
     white-space: nowrap;
     cursor: pointer;
     transition: all var(--theme-transition-fast);
     @include focus-ring;
 
-    // Kitchen Sink §09: iconografía de acciones a 18px.
     i.ph {
-        font-size: 18px;
+        font-size: var(--theme-icon-size-sm);
     }
 
     &:hover {
@@ -309,14 +447,14 @@
     // Variante solo-ícono (Eliminar, Agregar subcategoría, etc.) — cuadrada,
     // sin borde visible en reposo (target táctil 30x30).
     &--icon {
-        width: 30px;
+        width: var(--theme-control-height-sm);
         padding: 0;
         border-color: transparent;
         background: transparent;
-        color: var(--theme-text-secondary);
+        color: var(--theme-text-tertiary);
 
         i.ph {
-            font-size: 16px;
+            font-size: var(--theme-icon-size-md); // ⋮ 17px
         }
 
         &:hover {
@@ -360,233 +498,95 @@
 }
 
 // ==========================================================================
-// Bool badge — estado booleano (activo/inactivo) como pill de color, patrón
-// GLOBAL de listados (reemplaza el texto plano "Sí/No"). Mismo lenguaje
-// visual que `app-estado-badge` (dot 6px + texto, pill con borde).
+// Pill — chip de estado con dot (publicación, vigencia, activo/inactivo, acción de auditoría).
+// ÚNICA definición: `app-estado-badge`, `app-vigencia-badge`, `.bool-badge` y el chip de acción de
+// auditoría solo eligen el tono. Markup:
+//   <span class="pill pill--success [pill--bordered]">
+//     <span class="pill__dot" aria-hidden="true"></span><span class="pill__label">Activo</span>
+//   </span>
+// Variante por defecto = TABLA (diseño: h22, pad 0 9, 11.5/600, dot 5, SIN borde).
+// `--bordered` = DETALLE / membrete (h24, pad 0 10, 12/600, dot 6, con borde).
+// Texto verde SIEMPRE `--theme-success-text` (a11y: `--theme-success` como texto da 3.30:1).
+// `.bool-badge` es el alias histórico de las listas (`--active` = success, `--inactive` = neutral).
 // ==========================================================================
+$pill-tones: (
+    success:      (--theme-success-bg, --theme-success-text, --theme-success-border, --theme-success),
+    info:         (--theme-info-bg, --theme-primary-darker, --theme-info-border, --theme-info),
+    warning:      (--theme-warning-bg, --theme-warning-text, --theme-warning-border, --theme-warning),
+    danger:       (--theme-error-bg, --theme-error-icon, --theme-error-border, --theme-error-icon),
+    neutral:      (--theme-surface-sunken, --theme-text-secondary, --theme-border-primary, --theme-text-tertiary),
+    active:       (--theme-success-bg, --theme-success-text, --theme-success-border, --theme-success),
+    inactive:     (--theme-surface-sunken, --theme-text-secondary, --theme-border-primary, --theme-text-tertiary),
+    borrador:     (--theme-estado-borrador-bg, --theme-estado-borrador-text, --theme-estado-borrador-border, --theme-estado-borrador-icon),
+    revision:     (--theme-estado-revision-bg, --theme-estado-revision-text, --theme-estado-revision-border, --theme-estado-revision-icon),
+    publicado:    (--theme-estado-publicado-bg, --theme-estado-publicado-text, --theme-estado-publicado-border, --theme-estado-publicado-icon),
+    despublicado: (--theme-estado-despublicado-bg, --theme-estado-despublicado-text, --theme-estado-despublicado-border, --theme-estado-despublicado-icon),
+);
+
+.pill,
 .bool-badge {
+    --pill-bg: var(--theme-surface-sunken);
+    --pill-fg: var(--theme-text-secondary);
+    --pill-border: var(--theme-border-primary);
+    --pill-dot: var(--theme-text-tertiary);
+
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    height: 24px;
-    padding: 0 10px;
+    gap: 5px;
+    max-width: 100%;
+    height: 22px;
+    padding: 0 9px;
+    border: 1px solid transparent;
     border-radius: var(--theme-radius-full);
-    font-size: var(--theme-font-size-xs);
+    background: var(--pill-bg);
+    color: var(--pill-fg);
+    font-size: var(--theme-font-caption-size);
     font-weight: var(--theme-font-weight-semibold);
     white-space: nowrap;
     line-height: 1;
 
     &__dot {
         flex: none;
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         border-radius: var(--theme-radius-full);
+        background: var(--pill-dot);
     }
 
-    // Activo — tono success (verde).
-    &--active {
-        background: var(--theme-success-bg);
-        color: var(--theme-success);
-        border: 1px solid var(--theme-success-border);
+    &__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-        .bool-badge__dot {
-            background: var(--theme-success);
+    // Ícono Phosphor en lugar del dot (chips que necesitan ícono: acción de auditoría).
+    &__icon {
+        flex: none;
+        font-size: var(--theme-font-size-sm);
+    }
+
+    @each $tone, $vars in $pill-tones {
+        &--#{$tone} {
+            --pill-bg: var(#{nth($vars, 1)});
+            --pill-fg: var(#{nth($vars, 2)});
+            --pill-border: var(#{nth($vars, 3)});
+            --pill-dot: var(#{nth($vars, 4)});
         }
     }
 
-    // Inactivo — neutro (no es un error, solo "apagado").
-    &--inactive {
-        background: var(--theme-surface-sunken);
-        color: var(--theme-text-tertiary);
-        border: 1px solid var(--theme-border-primary);
+    // Detalle / membrete: con borde y un punto más de tamaño.
+    &--bordered {
+        gap: 6px;
+        height: 24px;
+        padding: 0 10px;
+        border-color: var(--pill-border);
+        font-size: var(--theme-font-size-xs);
 
+        .pill__dot,
         .bool-badge__dot {
-            background: var(--theme-text-tertiary);
+            width: 6px;
+            height: 6px;
         }
     }
-}
-
-//titulos
-.section-title {
-    @include section-title();
-}
-
-//inputs de formularios / searchbars
-
-/* .FormInput {
-    @include FormInput(100%, 1.75rem, 1px solid var(--theme-border-primary), 8px, 0.875rem, 0 1px 2px rgba(0, 0, 0, 0.05), #969696);
-
-} */
-
-// ==========================================================================
-// Auth layout — compartido entre login, forgot-password y reset-password
-// ==========================================================================
-.auth-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: linear-gradient(
-    160deg,
-    var(--theme-primary-darker) 0%,
-    var(--theme-primary-dark)   30%,
-    var(--theme-primary)        70%,
-    var(--theme-primary-light)  100%
-  );
-  padding: var(--theme-space-md);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 40%);
-    pointer-events: none;
-  }
-}
-
-.auth-card {
-  background: var(--theme-bg-card);
-  border-radius: var(--theme-radius-2xl);
-  box-shadow: var(--theme-shadow-xl);
-  padding: 48px 40px;
-  width: 100%;
-  max-width: 440px;
-  position: relative;
-  z-index: 1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-
-  &__header {
-    text-align: center;
-    margin-bottom: 36px;
-
-    h1 {
-      font-size: var(--theme-font-size-2xl);
-      font-weight: var(--theme-font-weight-bold);
-      color: var(--theme-text-primary);
-      margin: 20px 0 6px;
-      letter-spacing: -0.02em;
-    }
-
-    p {
-      color: var(--theme-text-secondary);
-      font-size: var(--theme-font-size-base);
-      font-weight: var(--theme-font-weight-normal);
-    }
-  }
-
-  &__logo {
-    max-width: 140px;
-    height: auto;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  }
-
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  &__error {
-    color: var(--theme-error);
-    font-size: var(--theme-font-size-sm);
-    text-align: center;
-    margin: 0;
-    padding: 8px 12px;
-    background: var(--theme-error-bg);
-    border-radius: var(--theme-radius-md);
-    border: 1px solid rgba(211, 47, 47, 0.12);
-  }
-
-  &__success {
-    color: var(--theme-success);
-    font-size: var(--theme-font-size-sm);
-    text-align: center;
-    margin: 0;
-    padding: 12px 16px;
-    background: var(--theme-success-bg);
-    border-radius: var(--theme-radius-md);
-    border: 1px solid rgba(22, 163, 74, 0.18);
-    line-height: var(--theme-line-height-normal);
-  }
-
-  &__submit {
-    margin-top: 12px;
-    height: 48px;
-    font-size: var(--theme-font-size-md) !important;
-    font-weight: var(--theme-font-weight-semibold);
-    border-radius: var(--theme-radius-md) !important;
-    letter-spacing: 0.02em;
-    transition: all var(--theme-transition-fast);
-
-    &:hover:not([disabled]) {
-      transform: translateY(-1px);
-      box-shadow: var(--theme-shadow-md);
-    }
-
-    &[disabled] {
-      opacity: 0.7;
-    }
-  }
-
-  &__footer {
-    text-align: center;
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid var(--theme-border-secondary);
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-tertiary);
-  }
-
-  &__link {
-    display: block;
-    text-align: center;
-    margin-top: var(--theme-space-md);
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-link);
-    text-decoration: none;
-    font-weight: var(--theme-font-weight-medium);
-    transition: opacity var(--theme-transition-fast);
-
-    &:hover {
-      opacity: 0.8;
-      text-decoration: underline;
-    }
-
-    @include focus-ring {
-      border-radius: var(--theme-radius-sm);
-    }
-
-    mat-icon {
-      font-size: var(--theme-font-size-sm);
-      width: var(--theme-font-size-sm);
-      height: var(--theme-font-size-sm);
-      vertical-align: middle;
-      margin-right: var(--theme-space-xs);
-    }
-  }
-
-  @include responsive(mobile) {
-    padding: 32px 24px;
-    border-radius: var(--theme-radius-xl);
-  }
-}
-
-// Preview dialog — sin padding ni bordes del dialog
-.preview-dialog-panel {
-  .mat-mdc-dialog-container {
-    padding: 0;
-    border-radius: var(--theme-radius-lg);
-    overflow: hidden;
-  }
-
-  .mat-mdc-dialog-content {
-    padding: 0;
-    max-height: none;
-  }
 }
 
 //presset de estilos para componentes comunes
@@ -601,3 +601,553 @@ mat-select,
     box-sizing: border-box;
     height: 45px;
 } */
+
+// ===== auth =====
+// Piezas compartidas por las 4 pantallas de auth (login, forgot, reset, activación) dentro del
+// <app-auth-shell>. El contenido proyectado no hereda la encapsulación del shell, por eso van globales.
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-md);
+}
+
+// Campo con label externo + prefijo Phosphor: aire a la izquierda del ícono y label azul con foco.
+.auth-campo {
+  .mat-mdc-form-field-icon-prefix {
+    padding-left: 11px;
+  }
+
+  &:focus-within:not(.is-invalid) .form-field__label {
+    color: var(--theme-primary);
+  }
+}
+
+// CTA del formulario: 40px (--theme-input-height) y ancho completo; el botón global mide 34px.
+.auth-submit.mat-mdc-unelevated-button {
+  width: 100%;
+  height: var(--theme-input-height) !important;
+}
+
+// Ver/ocultar contraseña (label fijo "Mostrar contraseña" + aria-pressed).
+.auth-ver-clave {
+  @include flex-center;
+  width: 32px;
+  height: 32px;
+  margin-right: var(--theme-space-xs);
+  padding: 0;
+  border: none;
+  border-radius: var(--theme-radius-sm);
+  background: transparent;
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  @include focus-ring;
+
+  i.ph {
+    font-size: 18px;
+  }
+
+  &:hover {
+    color: var(--theme-primary);
+  }
+}
+
+// Enlace de texto (volver al login, olvidé mi contraseña, etc.).
+.auth-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--theme-space-xs);
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--theme-font-small-size);
+  font-weight: var(--theme-font-weight-semibold);
+  color: var(--theme-text-link);
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: var(--theme-radius-sm);
+  @include focus-ring;
+
+  &:hover {
+    color: var(--theme-primary-dark);
+    text-decoration: underline;
+  }
+
+
+  i.ph {
+    font-size: var(--theme-icon-size-sm);
+  }
+}
+
+// El banner de error global trae margen inferior (va arriba de un form-card); en la tarjeta de auth separa el `gap`.
+.form-error-banner.auth-banner {
+  margin-bottom: 0;
+}
+
+// Aviso de éxito / estado (el de error es `.form-error-banner`).
+.auth-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: var(--theme-radius-md);
+  font-size: var(--theme-font-small-size);
+  line-height: 1.5;
+
+  &--success {
+    background: var(--theme-success-bg);
+    border: 1px solid var(--theme-success-border);
+    color: var(--theme-success-text); // a11y: --theme-success como texto no llega a 4.5:1
+
+    .auth-notice__icon {
+      color: var(--theme-success-text);
+    }
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: var(--theme-icon-size-md);
+  }
+}
+
+// ===== shared =====
+
+// Texto solo para lectores de pantalla: usar `.cdk-visually-hidden` (lo emite `mat.core()`); en SCSS,
+// el mixin `visually-hidden`. No crear otra utilidad equivalente.
+
+// Shimmer del skeleton: keyframes GLOBALES, referenciados por el mixin `skeleton-bar` (_mixins.scss).
+//
+// Markup del skeleton de lista/tabla (diseño: círculo 30 + barras 11px, fila de 56px):
+//   <div class="x__skeleton-row" aria-hidden="true">
+//     <span class="x__avatar"></span>       // 30×30, radius-full, background: var(--theme-skeleton-base)
+//     <span class="x__bar"></span>          // flex: 1;  @include skeleton-bar;
+//     <span class="x__bar x__bar--sm"></span> // width: 58px; @include skeleton-bar;
+//   </div>
+//   <span class="cdk-visually-hidden" role="status">Cargando…</span>   // el skeleton va aria-hidden
+@keyframes skeleton-shimmer {
+  0%   { background-position: -420px 0; }
+  100% { background-position: 420px 0; }
+}
+
+// Diálogo con cáscara del proyecto (círculo de ícono 38 + título + texto + acciones a la derecha).
+// Nivel 1: mismo markup en ConfirmDialog, ErrorDialog y los diálogos con formulario. Markup:
+//   <div class="form-dialog form-dialog--sm">            // --sm = 420px; sin modificador = 560px
+//     <div class="form-dialog__header">
+//       <div class="form-dialog__icono [form-dialog__icono--error]"><i class="ph ph-…" aria-hidden="true"></i></div>
+//       <div class="form-dialog__encabezado">
+//         <h2 mat-dialog-title class="form-dialog__titulo">Título</h2>   // mat-dialog-title = nombre accesible
+//         <p class="form-dialog__subtitulo">Subtítulo</p>               // (diálogos con campos)
+//         <p class="form-dialog__texto">Mensaje <b>destacado</b></p>    // (confirmaciones / avisos)
+//         <p class="form-dialog__error" role="alert"><i class="ph ph-warning-circle" aria-hidden="true"></i><span>…</span></p>
+//       </div>
+//     </div>
+//     <div class="form-dialog__campos">…campos (mat-form-field al 100%)…</div>   // opcional
+//     <mat-dialog-actions align="end"> …botones… </mat-dialog-actions>
+//   </div>
+// Para un ancho distinto o selectores propios, incluir el mixin `form-dialog($width)` en el componente.
+.form-dialog {
+  @include form-dialog;
+}
+
+// ===== shell2 =====
+// Panel del menú de perfil (shared/layouts/user-menu). Vive en el overlay del CDK, fuera de la
+// encapsulación del componente: se engancha por `panelClass` del <mat-menu>. El contenido interno
+// (header, rol, ítems) se estiliza en el SCSS del propio componente.
+// Medidas del diseño: 272 de ancho, radio 12, elevation-3.
+.user-menu-panel.mat-mdc-menu-panel {
+  min-width: 272px !important;
+  max-width: 272px !important;
+  border-radius: var(--theme-radius-lg) !important;
+  border-color: var(--theme-border-primary);
+  box-shadow: var(--theme-elevation-3) !important;
+  overflow: hidden !important;
+
+  .mat-mdc-menu-content {
+    padding: 0 !important;
+  }
+
+  // Texto del ítem (template de MatMenuItem): ícono + label (+ valor) en fila.
+  .mat-mdc-menu-item-text {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 11px;
+  }
+}
+
+// ===== abm =====
+
+// Celda "nombre + meta" de las listas (tipos, eventos, organismos, usuarios, permisos, etiquetas,
+// modalidades, destinatarios). Nivel 1 de la regla de 3 niveles: mismo markup en ≥2 pantallas.
+//   <div class="cell-name">
+//     <span class="cell-name__principal">Nombre</span>
+//     <span class="cell-name__meta">dato de la columna que en mobile se oculta</span>
+//   </div>
+// `__meta` se ve solo en mobile (la tabla oculta las columnas de ese dato). `cell-name__meta--visible`
+// la deja siempre visible cuando el dato NO tiene columna propia (ej. sigla + fecha del organismo).
+.cell-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  &__principal {
+    font-weight: var(--theme-font-weight-medium);
+    @include truncate;
+  }
+
+  &__meta {
+    display: none;
+    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-size-sm);
+
+    @include responsive(mobile) {
+      display: block;
+      @include truncate;
+    }
+  }
+
+  // Meta que NO depende de una columna oculta (ej. sigla + fecha en Organismos): siempre visible.
+  &__meta--visible {
+    display: block;
+    @include truncate;
+  }
+}
+
+// Avatar/tile de 30px con tintes (Kitchen Sink §05). Cuadrado redondeado por defecto (organismos,
+// tiles de rol); `--round` = círculo (personas). Los tintes se asignan por id para que cada ítem
+// conserve su color.
+.cell-avatar {
+  @include flex-center;
+  flex: none;
+  width: var(--theme-control-height-sm);
+  height: var(--theme-control-height-sm);
+  border-radius: calc(var(--theme-radius-md) - 1px);
+  font-size: var(--theme-font-size-2xs);
+  font-weight: var(--theme-font-weight-bold);
+  letter-spacing: 0.2px;
+
+  i.ph { font-size: var(--theme-icon-size-sm); }
+
+  &--round { border-radius: var(--theme-radius-full); }
+
+  &--blue  { background: var(--theme-primary-50);    color: var(--theme-primary-600); }
+  &--warm  { background: var(--theme-warning-bg);    color: var(--theme-warning-text); }
+  &--green { background: var(--theme-success-bg);    color: var(--theme-estado-publicado-text); }
+  &--grey  { background: var(--theme-border-subtle); color: var(--theme-text-secondary); }
+}
+
+// Avatar + `.cell-name` en una misma celda.
+.cell-person {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+// Dato ausente pero esperable ("Raíz", "Sin organismo"): la celda nunca queda en blanco.
+.cell-muted {
+  color: var(--theme-text-tertiary);
+  font-size: var(--theme-font-size-sm);
+}
+
+// Columna numérica alineada a la derecha (cabecera y celdas). Va en `headerClass` y `cellClass` de la
+// columna. El header ordenable es un flex de Material: hay que empujar su contenedor, no el texto.
+.cell-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+
+  .mat-sort-header-container { justify-content: flex-end; }
+}
+
+// ===== tramites =====
+// Detalle de entidad (plantilla, trámite del organismo, ficha, organismo): membrete + grilla de cards
+// + campos. Reemplaza los `*-membrete`, `*-grid`, `*-card` y `*-campo` que repetía cada pantalla.
+//
+//   <header class="detail-header">
+//     <div class="detail-header__row"><h2 class="detail-header__title">…</h2><span class="pill …">…</span></div>
+//     <p class="detail-header__meta"><span><i class="ph ph-…"></i> …</span></p>
+//     <p class="detail-header__notice"><i class="ph ph-info"></i> …</p>
+//   </header>
+//   <div class="detail-grid">
+//     <section class="detail-card" aria-labelledby="x"><h3 class="detail-card__title" id="x">…</h3>
+//       <dl class="detail-fields">
+//         <div class="detail-field"><dt class="detail-field__label">…</dt><dd class="detail-field__value">…</dd></div>
+//       </dl>
+//     </section>
+//   </div>
+// El `<h1>` de página lo pone el shell: el título de la entidad es `h2` y el de cada card `h3`.
+.detail-header {
+    @include theme-card;
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+    padding: var(--theme-space-card);
+
+    // Con pestañas o acciones propias: la tarjeta no tiene padding, lo ponen `__body` y las pestañas.
+    &--flush {
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    &__body {
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: var(--theme-space-md);
+        padding: var(--theme-space-card);
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--theme-space-gap);
+    }
+
+    // Diseño: 19px. No hay token para ese tamaño (entre `--theme-font-size-lg` 18 y `-xl` 20).
+    &__title {
+        margin: 0;
+        font-size: var(--theme-font-detail-title-size);
+        font-weight: var(--theme-font-weight-semibold);
+        letter-spacing: -0.2px;
+        overflow-wrap: anywhere;
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--theme-space-xs) var(--theme-space-md);
+        margin: 0;
+        font-size: var(--theme-font-small-size);
+        color: var(--theme-text-secondary);
+
+        > span {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--theme-space-xs);
+        }
+
+        i.ph {
+            font-size: var(--theme-icon-size-sm);
+            color: var(--theme-text-tertiary);
+        }
+    }
+
+    &__notice {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--theme-space-sm);
+        margin: var(--theme-space-xs) 0 0;
+        font-size: var(--theme-font-small-size);
+        color: var(--theme-warning-text);
+
+        i.ph {
+            flex: none;
+            margin-top: 2px;
+        }
+    }
+
+    // Botones del membrete (icono 34 + acción), alineados al final de la fila.
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: var(--theme-space-sm);
+        flex: none;
+        margin-left: auto;
+    }
+}
+
+// Grilla de cards. Sin modificador: principal 1.4fr / lateral 1fr.
+.detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: var(--theme-space-gap);
+    // stretch (default): las cards de una misma fila miden lo mismo aunque una tenga menos campos.
+    // Una `.detail-col` también se estira, pero sus cards internas conservan su alto natural.
+    align-items: stretch;
+
+    &--aside {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    }
+
+    &--even {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    &--main {
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    }
+
+    @include responsive(tablet-down) {
+        &,
+        &--aside,
+        &--even,
+        &--main {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+}
+
+// Columna de una grilla (apila cards).
+.detail-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-gap);
+    min-width: 0;
+}
+
+.detail-card {
+    @include theme-card;
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-md);
+    min-width: 0;
+    padding: var(--theme-space-card);
+
+    // Card cuyo contenido llega a los bordes (listas con divisores): el padding lo ponen `__bar` y el cuerpo.
+    &--flush {
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    // Diseño: título de card 15/600.
+    &__title {
+        margin: 0;
+        font-size: var(--theme-font-subtitle-size);
+        font-weight: var(--theme-font-card-title-weight);
+        line-height: var(--theme-line-height-tight);
+        color: var(--theme-text-primary);
+    }
+
+    &__subtitle {
+        margin: 0;
+        font-size: var(--theme-font-small-size);
+        color: var(--theme-text-tertiary);
+    }
+
+    // Franja de título de una card `--flush`: título + contador + enlace, con divisor.
+    &__bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--theme-space-gap);
+        padding: var(--theme-space-gap) var(--theme-space-card);
+        border-bottom: 1px solid var(--theme-border-subtle);
+    }
+}
+
+// Lista de campos (apilados). `--grid` = varias columnas que se reparten solas.
+.detail-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-md);
+    margin: 0;
+
+    &--grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--theme-space-card);
+    }
+}
+
+.detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-xs);
+    min-width: 0;
+
+    &__label {
+        @include field-label-overline;
+    }
+
+    &__value {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--theme-space-sm);
+        margin: 0;
+        font-size: var(--theme-font-body-size);
+        line-height: var(--theme-font-body-line-height);
+        color: var(--theme-text-primary);
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+
+        // Texto libre con saltos de línea.
+        &--pre {
+            display: block;
+            white-space: pre-line;
+        }
+
+        // Dato ausente o "no disponible": se ve, pero apagado.
+        &--muted {
+            color: var(--theme-text-tertiary);
+        }
+    }
+}
+
+// Enlace chico de un campo ("Ver plantilla ↗", "Ver trámite del organismo ↗", "Ver en mapa ↗").
+.detail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--theme-space-2xs);
+    border-radius: var(--theme-radius-sm);
+    color: var(--theme-primary);
+    font-size: var(--theme-font-caption-size);
+    text-decoration: none;
+    @include focus-ring;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+// Cargando una pantalla entera (detalle, form, diálogo): spinner + texto centrados. El ícono lleva `.spin`.
+.loading-inline {
+    @include flex-center;
+    gap: var(--theme-space-sm);
+    padding: var(--theme-space-3xl) 0;
+    color: var(--theme-text-secondary);
+    font-size: var(--theme-font-body-size);
+
+    &--compact {
+        padding: var(--theme-space-xl) 0;
+    }
+
+    i.ph {
+        font-size: var(--theme-icon-size-lg);
+    }
+}
+
+// Ícono dentro de un valor ("Aún no disponible"): tamaño de ícono chico, alineado al texto.
+.detail-field__value i.ph {
+    align-self: center;
+    font-size: var(--theme-icon-size-sm);
+}
+
+// Botón de submit deshabilitado con tooltip ("No hay cambios para guardar"): el tooltip no puede colgar de
+// un `disabled` nativo, así que el botón va en este envoltorio (focusable mientras está deshabilitado).
+.form-actions__submit {
+    display: inline-flex;
+    border-radius: var(--theme-radius-md);
+    @include focus-ring;
+}
+
+// Títulos de sección de formulario como `<h2 class="section-header">`: el estilo ya lo da `.section-header`;
+// solo se neutraliza el line-height "tight" de h2 para que la caja (y la barra de acento) midan igual que antes.
+h2.section-header {
+  line-height: inherit;
+}
+
+// Contenedor del botón Guardar: el tooltip "No hay cambios para guardar" no puede colgar de un `disabled`
+// nativo; el contenedor (focusable solo mientras el botón está deshabilitado) lo recibe en hover y foco.
+.form-submit-tip {
+  display: inline-flex;
+  border-radius: var(--theme-radius-md);
+  @include focus-ring;
+}

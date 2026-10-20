@@ -11,6 +11,11 @@ import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 export class UsuariosRepository {
   constructor(@Inject(USUARIOS_DS) private ds: UsuariosDataSource) {}
 
+  /** Ver `UsuariosDataSource.soportaAccionesDeCuenta`. */
+  get soportaAccionesDeCuenta(): boolean {
+    return this.ds.soportaAccionesDeCuenta;
+  }
+
   list(): Observable<UsuarioVM[]> {
     return this.ds.list();
   }
@@ -33,5 +38,17 @@ export class UsuariosRepository {
 
   setAccountStatus(id: string, active: boolean): Observable<void> {
     return this.ds.setAccountStatus(id, active);
+  }
+
+  changePassword(id: string, newPassword: string): Observable<void> {
+    return this.ds.changePassword(id, newPassword);
+  }
+
+  changeEmail(id: string, newEmail: string): Observable<void> {
+    return this.ds.changeEmail(id, newEmail);
+  }
+
+  deleteDefinitive(id: string): Observable<void> {
+    return this.ds.deleteDefinitive(id);
   }
 }

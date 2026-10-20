@@ -1,9 +1,13 @@
-@use '../../../../shared-styles/mixins' as *;
+// ==========================================================================
+// Listado de Usuarios. La celda avatar + nombre + meta y el dato ausente son clases globales
+// (`.cell-person`, `.cell-name`, `.cell-avatar`, `.cell-muted` en `shared-styles/_components.scss`);
+// acá solo queda la columna de rol.
+// ==========================================================================
 
-.list-toolbar {
-  @include list-toolbar;
+@use 'shared-styles/mixins' as *;
 
-  &-count {
-    @include list-toolbar-count;
-  }
+.usuarios-list__rol {
+  display: block;
+  font-weight: var(--theme-font-weight-medium);
+  @include truncate;
 }

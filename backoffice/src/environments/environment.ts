@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
   // Base de las rutas mockeadas heredadas (mockApiInterceptor). Mantener hasta que el
-  // backend exponga esos endpoints (trámites, organismos, etc. — ver §7 del API spec).
+  // backend exponga listado/edición de usuarios (único resto del mock por interceptor).
   apiUrl: 'http://localhost:3000/api',
   // Backend real (Spring Boot). Sin context-path: cada controller trae su propio prefijo /api/...
   apiBaseUrl: 'http://localhost:8080',
@@ -17,14 +17,22 @@ export const environment = {
   // Override por feature. Lo bloqueado por backend (API spec §7) se mantiene en 'mock'.
   featureOverrides: {
     // Usuarios: híbrido. El datasource HTTP hace POST /api/user REAL (create) y delega
-    // listado/edición al mock (el backend no expone GET /api/user ni update genérico).
+    // listado/edición al mock (el backend no expone GET /api/user ni update genérico, BO-17).
+    // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.
     usuarios: 'local',
-    tramites: 'mock',
+    // Trámites (PLAN_TRAMITES_API.md): la cadena plantilla → adopción → ficha → punto de atención se referencia
+    // por ids, así que va TODA con la misma fuente. Mezclarlas (p. ej. plantillas real + adopciones mock) hace que
+    // el front pida al backend plantillas con ids del mock (`pt-1`) → 500. Para la cadena real contra el backend
+    // local: `npm run start:local` (environment.local.ts).
+    plantillas: 'mock',       // fase 1 (real en start:local)
+    adopciones: 'mock',       // fase 2 (G-15: crear/editar da 500 en dev)
+    'fichas-locales': 'mock', // fase 3 (bloqueado por G-1)
+    'puntos-atencion': 'mock', // fase 4 (se activa junto con fichas)
     // organismos: /api/organism real (SUPERADMIN) → hereda default real.
     // tipos-organismo: /api/organism-type real (SUPERADMIN) → hereda default real.
     // categorias: /api/category real → hereda default real.
     // destinatarios: /api/recipient real → hereda default real.
-    etiquetas: 'mock',
+    // etiquetas: /api/tag real (PPDT-5.8) → hereda default real.
     // modalidades: /api/modality real → hereda default real.
     // eventos-de-vida: /api/life-event real → hereda default real.
     // localidades: endpoints públicos reales (/api/department, /api/location) → hereda default real.

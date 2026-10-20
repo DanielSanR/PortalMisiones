@@ -1,4 +1,6 @@
 <div class="admin-layout">
+    <a class="admin-layout__skip-link" href="#contenido" (click)="irAlContenido($event)">Saltar al contenido</a>
+
     <mat-sidenav-container class="admin-layout__shell" autosize>
         <mat-sidenav #sidenav
             [mode]="isMobile ? 'over' : 'side'"
@@ -6,8 +8,8 @@
             class="admin-layout__sidenav"
             [class.admin-layout__sidenav--mini]="isCollapsed && !isMobile"
             [style.width]="isMobile ? null : (isCollapsed ? 'var(--theme-sidebar-collapsed-width)' : 'var(--theme-sidebar-width)')"
-            role="navigation"
-            aria-label="Menú principal">
+            role="complementary"
+            aria-label="Barra lateral">
 
             <div class="admin-layout__logo">
                 <span class="admin-layout__logo-mark" aria-hidden="true">M</span>
@@ -36,8 +38,9 @@
                     aria-label="Buscar secciones y acciones"
                     role="combobox"
                     aria-autocomplete="list"
-                    aria-controls="nav-resultados"
-                    [attr.aria-expanded]="resultados.length > 0"
+                    aria-haspopup="listbox"
+                    [attr.aria-controls]="resultados.length > 0 ? 'nav-resultados' : null"
+                    [attr.aria-expanded]="searchQuery.length > 0"
                     [attr.aria-activedescendant]="indiceActivo >= 0 ? 'resultado-' + indiceActivo : null"
                     [value]="searchQuery"
                     (input)="onSearchInput($any($event.target).value)"
@@ -47,36 +50,41 @@
 
             <nav class="admin-layout__nav" #navScroll aria-label="Secciones del backoffice">
                 <!-- Con búsqueda activa el nav SE CONVIERTE en los resultados, en vez de
-                     filtrarse y quedar tapado por un panel flotante encima. -->
+                     filtrarse y quedar tapado por un panel flotante encima. Las opciones no son
+                     focusables: el foco queda en el input y el cursor se anuncia con aria-activedescendant. -->
                 <ng-container *ngIf="searchQuery; else navEnReposo">
-                    <div class="admin-layout__nav-resultados" id="nav-resultados" role="listbox">
+                    <div class="admin-layout__nav-resultados" id="nav-resultados" role="listbox"
+                        aria-label="Resultados de la búsqueda" *ngIf="resultados.length > 0">
                         <div class="admin-layout__nav-group"
                             *ngFor="let grupo of gruposResultado"
                             role="group"
                             [attr.aria-label]="grupo.titulo">
-                            <span class="admin-layout__nav-group-title">{{ grupo.titulo }}</span>
+                            <span class="admin-layout__nav-group-title" aria-hidden="true">{{ grupo.titulo }}</span>
 
                             <div class="admin-layout__nav-group-items">
-                                <button type="button"
-                                    class="admin-layout__nav-item"
+                                <div class="admin-layout__nav-item"
                                     *ngFor="let r of grupo.items"
                                     [id]="'resultado-' + r.indice"
                                     role="option"
                                     [attr.aria-selected]="r.indice === indiceActivo"
                                     [class.is-cursor]="r.indice === indiceActivo"
+                                    (mousedown)="$event.preventDefault()"
                                     (mouseenter)="indiceActivo = r.indice"
                                     (click)="ejecutar(r)">
                                     <i class="ph ph-{{ r.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
                                     <span class="admin-layout__nav-label">{{ r.label }}</span>
                                     <i class="ph ph-arrow-elbow-down-left admin-layout__nav-enter" aria-hidden="true"
                                        *ngIf="r.indice === indiceActivo"></i>
-                                </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <p class="admin-layout__nav-empty" *ngIf="resultados.length === 0">
+                    <p class="admin-layout__nav-empty" role="status" *ngIf="resultados.length === 0">
                         Sin resultados para "{{ searchQuery }}".
+                    </p>
+                    <p class="cdk-visually-hidden" role="status" *ngIf="resultados.length > 0">
+                        {{ resultados.length }} {{ resultados.length === 1 ? 'resultado' : 'resultados' }}
                     </p>
                 </ng-container>
 
@@ -88,7 +96,7 @@
                             [attr.aria-expanded]="group.isOpen"
                             [attr.aria-label]="'Sección ' + group.label">
                             <span class="admin-layout__nav-group-label">{{ group.label }}</span>
-                            <i class="ph admin-layout__nav-group-chev" [class.ph-caret-down]="group.isOpen" [class.ph-caret-right]="!group.isOpen" aria-hidden="true"></i>
+                            <i class="ph admin-layout__nav-group-chev" [class.ph-caret-up]="group.isOpen" [class.ph-caret-down]="!group.isOpen" aria-hidden="true"></i>
                         </button>
 
                         <div class="admin-layout__nav-group-items" *ngIf="group.isOpen">
@@ -110,62 +118,22 @@
             </nav>
 
             <div class="admin-layout__footer">
-                <div class="admin-layout__footer-item is-disabled" aria-disabled="true" [matTooltip]="isCollapsed ? 'Preferencias' : ''" matTooltipPosition="right">
+                <button type="button" class="admin-layout__footer-item" appUnavailable="Preferencias: todavía no está disponible">
                     <i class="ph ph-sliders-horizontal" aria-hidden="true"></i>
-                    <span>Preferencias</span>
-                </div>
-                <div class="admin-layout__footer-item is-disabled" aria-disabled="true" [matTooltip]="isCollapsed ? 'Ayuda y documentación' : ''" matTooltipPosition="right">
+                    <span class="admin-layout__footer-label">Preferencias</span>
+                </button>
+                <button type="button" class="admin-layout__footer-item" appUnavailable="Ayuda y documentación: todavía no está disponible">
                     <i class="ph ph-question" aria-hidden="true"></i>
-                    <span>Ayuda y documentación</span>
-                </div>
-
-                <button type="button"
-                    class="admin-layout__profile"
-                    [matMenuTriggerFor]="profileMenu"
-                    [attr.aria-label]="'Menú de perfil: ' + userName">
-                    <span class="admin-layout__avatar">{{ userInitials }}</span>
-                    <span class="admin-layout__profile-info">
-                        <span class="admin-layout__profile-name">{{ userName }}</span>
-                        <span class="admin-layout__profile-role">{{ userRoleSpanish }}</span>
-                    </span>
-                    <i class="ph ph-dots-three-vertical admin-layout__profile-arrow" aria-hidden="true"></i>
+                    <span class="admin-layout__footer-label">Ayuda y documentación</span>
                 </button>
 
-                <mat-menu #profileMenu="matMenu" class="admin-layout__user-menu" xPosition="after" yPosition="above">
-                    <div class="user-menu-header" (click)="$event.stopPropagation()">
-                        <span class="user-menu-avatar">{{ userInitials }}</span>
-                        <div class="user-menu-info">
-                            <strong>{{ userName }}</strong>
-                            <span class="user-menu-email">{{ userEmail }}</span>
-                        </div>
-                    </div>
-                    <div class="user-menu-role" (click)="$event.stopPropagation()">
-                        <span class="user-menu-role__label">Rol</span>
-                        <span class="user-menu-role__badge">
-                            <i class="ph ph-shield-star" aria-hidden="true"></i>
-                            {{ userRoleSpanish }}
-                        </span>
-                    </div>
-                    <div class="user-menu-actions">
-                        <button mat-menu-item class="user-menu-item" [disabled]="true">
-                            <i class="ph ph-user-circle" aria-hidden="true"></i>
-                            <span>Mi perfil</span>
-                        </button>
-                        <button mat-menu-item class="user-menu-item" [disabled]="true">
-                            <i class="ph ph-lock-simple" aria-hidden="true"></i>
-                            <span>Cambiar contraseña</span>
-                        </button>
-                        <button mat-menu-item class="user-menu-item" [disabled]="true">
-                            <i class="ph ph-sliders-horizontal" aria-hidden="true"></i>
-                            <span>Preferencias</span>
-                        </button>
-                    </div>
-                    <mat-divider></mat-divider>
-                    <button mat-menu-item class="user-menu-item user-menu-item--danger" (click)="logout()">
-                        <i class="ph ph-sign-out" aria-hidden="true"></i>
-                        <span>Cerrar sesión</span>
-                    </button>
-                </mat-menu>
+                <app-user-menu
+                    [name]="userName"
+                    [email]="userEmail"
+                    [initials]="userInitials"
+                    [role]="userRoleSpanish"
+                    [compact]="isCollapsed && !isMobile"
+                    (logout)="logout()" />
             </div>
         </mat-sidenav>
 
@@ -182,27 +150,47 @@
                     <i class="ph" [class.ph-x]="sidenav.opened" [class.ph-list]="!sidenav.opened" aria-hidden="true"></i>
                 </button>
 
-                <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación">
-                    <i class="ph ph-{{ sectionIcon }} admin-layout__breadcrumb-icon" aria-hidden="true"></i>
-                    <a routerLink="/dashboard/home" class="admin-layout__breadcrumb-home">Inicio</a>
-                    <ng-container *ngFor="let crumb of breadcrumbTrail; let last = last">
-                        <i class="ph ph-caret-right admin-layout__breadcrumb-sep" aria-hidden="true"></i>
-                        <span class="admin-layout__breadcrumb-crumb" [class.is-current]="last">{{ crumb }}</span>
-                    </ng-container>
+                <i class="ph ph-{{ sectionIcon }} admin-layout__title-icon" aria-hidden="true"></i>
+
+                <!-- Tramos previos = links a la lista de su sección (se ocultan en mobile). El último
+                     tramo es el título de la página: el único h1 de la vista. -->
+                <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación" *ngIf="breadcrumbPrevios.length > 0">
+                    <ol class="admin-layout__breadcrumb-list">
+                        @for (crumb of breadcrumbPrevios; track $index) {
+                            <li class="admin-layout__breadcrumb-item">
+                                @if (crumb.link) {
+                                    <a [routerLink]="crumb.link" class="admin-layout__breadcrumb-link">{{ crumb.label }}</a>
+                                } @else {
+                                    <span class="admin-layout__breadcrumb-crumb">{{ crumb.label }}</span>
+                                }
+                                <span class="admin-layout__breadcrumb-sep" aria-hidden="true">/</span>
+                            </li>
+                        }
+                    </ol>
                 </nav>
+                <h1 class="admin-layout__title">{{ tituloPagina }}</h1>
 
                 <span class="admin-layout__header-spacer"></span>
+
+                <button type="button"
+                    class="admin-layout__icon-btn"
+                    aria-label="Notificaciones"
+                    appUnavailable="Las notificaciones llegan en una próxima versión">
+                    <i class="ph ph-bell" aria-hidden="true"></i>
+                </button>
 
                 <div class="admin-layout__header-actions">
                     <ng-container *ngTemplateOutlet="chrome.actions$ | async"></ng-container>
                 </div>
             </header>
 
-            <div class="admin-layout__page">
+            <main id="contenido" #mainContent class="admin-layout__page" tabindex="-1">
                 <div class="admin-layout__panel">
                     <router-outlet></router-outlet>
                 </div>
-            </div>
+            </main>
+
+            <app-footer />
         </mat-sidenav-content>
     </mat-sidenav-container>
 </div>

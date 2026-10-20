@@ -1,0 +1,21 @@
+<!-- Grupo propio: @Host del `formControlName` no ve el `formGroup` del componente padre. -->
+<ng-container [formGroup]="group">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-select [id]="field.name"
+                [attr.aria-labelledby]="field.name + '-label'"
+                [formControlName]="field.name"
+                [placeholder]="field.placeholder || ''"
+                [required]="field.validations?.required || false"
+                [multiple]="multiple">
+      <mat-option *ngIf="!field.options?.length" disabled>
+        {{ field.optionsLoaded
+            ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
+            : 'Cargando opciones...' }}
+      </mat-option>
+      <mat-option *ngFor="let option of field.options" [value]="option.id">
+        {{ option.name }}
+      </mat-option>
+    </mat-select>
+    <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
+  </mat-form-field>
+</ng-container>

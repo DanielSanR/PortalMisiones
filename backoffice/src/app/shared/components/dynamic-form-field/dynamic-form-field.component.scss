@@ -1,5 +1,4 @@
-@use '../../../../shared-styles/themes' as *;
-@use '../../../../shared-styles/mixins' as *;
+@use 'shared-styles/mixins' as *;
 
 :host {
   display: block;
@@ -33,7 +32,7 @@ mat-form-field {
   }
 
   .section-header-title {
-    font-size: 15px;
+    font-size: var(--theme-font-subtitle-size);
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
     margin: 0;
@@ -41,43 +40,31 @@ mat-form-field {
   }
 
   .section-header-description {
-    font-size: 12.5px;
-    color: var(--theme-text-tertiary);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
     margin: 2px 0 0;
   }
 }
 
 // `.slide-toggle-field` (booleanos) vive en shared-styles/_components.scss
-// (DRY: la usan también los formularios custom de usuarios/roles).
+// (DRY: la usan también los formularios custom de usuarios/roles). Radio, select y fecha
+// tienen su propio componente (`dynamic-form-*-field`), cargado en diferido.
 
-// ==========================================================================
-// Radio
-// ==========================================================================
-.radio-field {
-  padding: var(--theme-space-sm) 0;
-
-  .radio-label {
-    display: block;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
-    margin-bottom: var(--theme-space-sm);
-  }
+// Reserva el alto de un input mientras llega el chunk diferido del campo.
+.field-placeholder {
+  min-height: var(--theme-input-height);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-skeleton-base);
 }
 
-.radio-group {
-  display: flex;
-  flex-direction: row;
-  gap: var(--theme-space-md);
-  flex-wrap: wrap;
-
-  .radio-option {
-    .mdc-radio {
-      padding: 8px;
-    }
-    .mdc-form-field {
-      align-items: center;
-    }
-  }
+// Ícono dentro del input (prefijo/sufijo): 17px tertiary, según el diseño. Compite con la regla
+// global de `.mat-mdc-form-field-icon-*` (18px) en _material.scss; se iguala la especificidad.
+i.ph.dynamic-form-field__icon {
+  font-size: var(--theme-icon-size-md);
+  width: var(--theme-icon-size-md);
+  height: var(--theme-icon-size-md);
+  line-height: 1;
+  color: var(--theme-text-tertiary);
 }
 
 // ==========================================================================
@@ -126,142 +113,36 @@ mat-form-field {
 }
 
 // ==========================================================================
-// Icon Picker
+// Vista previa derivada (`field.preview`) — p. ej. el slug canonicalizado
 // ==========================================================================
-.icon-picker-field {
-  width: 100%;
-}
-
-.icon-picker-label {
-  @include field-label-overline;
-  margin-bottom: var(--theme-space-xs);
-}
-
-.icon-picker-optional {
-  text-transform: none;
-  font-weight: var(--theme-font-weight-normal);
-  letter-spacing: normal;
-  color: var(--theme-text-tertiary);
-}
-
-.icon-picker-hint {
-  font-size: var(--theme-font-size-xs);
-  color: var(--theme-text-secondary);
-  margin: 0 0 var(--theme-space-md);
-}
-
-.icon-picker-selected {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--theme-space-sm);
-  padding: var(--theme-space-sm) var(--theme-space-md);
-  background: var(--theme-primary-50);
-  border: 2px solid var(--theme-primary);
-  border-radius: var(--theme-radius-md);
-  margin-bottom: var(--theme-space-md);
-
-  &__icon {
-    font-size: 28px;
-    width: 28px;
-    height: 28px;
-    color: var(--theme-primary);
+// El bloque es solo la región viva (sin caja propia): vacía no ocupa lugar y el form no
+// "salta" hasta que hay algo que mostrar. El espaciado vive en `-content`.
+.field-preview {
+  &-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    margin: var(--theme-space-xs) 0 0;
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-secondary);
   }
 
-  &__name {
+  &-icon {
     font-size: var(--theme-font-size-sm);
+    line-height: 1;
+    color: var(--theme-text-tertiary);
+  }
+
+  &-value {
+    font-family: var(--theme-font-mono);
     font-weight: var(--theme-font-weight-medium);
     color: var(--theme-primary-dark);
-    font-family: monospace;
+    background: var(--theme-primary-50);
+    padding: 1px var(--theme-space-xs);
+    border-radius: var(--theme-radius-sm);
+    word-break: break-all;
   }
-}
-
-.icon-picker-search {
-  width: 100%;
-  margin-bottom: var(--theme-space-xs);
-}
-
-.icon-picker-categories {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--theme-space-xs);
-  margin-bottom: var(--theme-space-md);
-
-  button {
-    font-size: var(--theme-font-size-xs) !important;
-    padding: 2px 12px !important;
-    min-height: 30px;
-    border-radius: var(--theme-radius-full) !important;
-    text-transform: none;
-  }
-
-  &__active {
-    background-color: var(--theme-primary) !important;
-    color: var(--theme-primary-contrast) !important;
-    border-color: var(--theme-primary) !important;
-  }
-}
-
-.icon-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-  gap: var(--theme-space-xs);
-  max-height: 280px;
-  overflow-y: auto;
-  padding: var(--theme-space-sm);
-  background: var(--theme-neutral-50);
-  border: 1px solid var(--theme-border-secondary);
-  border-radius: var(--theme-radius-md);
-
-  &__item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border: 1px solid transparent;
-    border-radius: var(--theme-radius-md);
-    background: var(--theme-bg-card);
-    cursor: pointer;
-    transition: border-color var(--theme-transition-fast),
-                background-color var(--theme-transition-fast),
-                transform var(--theme-transition-fast);
-
-    .mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-      color: var(--theme-text-secondary);
-      transition: color var(--theme-transition-fast);
-    }
-
-    &:hover {
-      border-color: var(--theme-primary-200);
-      background: var(--theme-primary-50);
-      transform: scale(1.08);
-
-      .mat-icon {
-        color: var(--theme-primary);
-      }
-    }
-
-    &--selected {
-      border-color: var(--theme-primary);
-      background: var(--theme-primary-50);
-      box-shadow: 0 0 0 2px var(--theme-primary-100);
-
-      .mat-icon {
-        color: var(--theme-primary);
-      }
-    }
-  }
-}
-
-.icon-picker-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: var(--theme-space-lg);
-  color: var(--theme-text-tertiary);
-  font-size: var(--theme-font-size-sm);
 }
 
 // ==========================================================================
@@ -274,16 +155,3 @@ mat-form-field {
   color: var(--theme-error);
   font-size: var(--theme-font-size-sm);
 }
-
-// ==========================================================================
-// Select panel
-// ==========================================================================
-::ng-deep .custom-select-panel {
-  max-height: 400px !important;
-
-  .mat-mdc-option {
-    min-height: 48px;
-    height: auto;
-  }
-}
-

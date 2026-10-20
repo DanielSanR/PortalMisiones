@@ -7,6 +7,7 @@ import { RoleResponseDTO } from '@core/models/role.model';
 import { RolesDataSource } from './roles.datasource';
 import { toRolVM, toRoleRequest } from '../mappers/roles.mapper';
 import { RolFormValue, RolVM } from '../models/role.vm';
+import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
 /** Implementación HTTP real (`/api/role`, BACKEND_API_SPEC.md §4.4). */
 @Injectable()
@@ -31,25 +32,25 @@ export class RolesHttpDataSource extends RolesDataSource {
 
   getById(id: string): Observable<RolVM> {
     return this.http
-      .get<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${id}`)
+      .get<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
       .pipe(map((res) => toRolVM(res.data)));
   }
 
   create(form: RolFormValue): Observable<RolVM> {
     return this.http
-      .post<ResponseDTO<RoleResponseDTO>>(this.apiUrl, toRoleRequest(form))
+      .post<ResponseDTO<RoleResponseDTO>>(this.apiUrl, toRoleRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toRolVM(res.data)));
   }
 
   update(id: string, form: RolFormValue): Observable<RolVM> {
     return this.http
-      .put<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${id}`, toRoleRequest(form))
+      .put<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, toRoleRequest(form), sinDialogoGlobal())
       .pipe(map((res) => toRolVM(res.data)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<ResponseDTO<void>>(`${this.apiUrl}/${id}`)
+      .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 }

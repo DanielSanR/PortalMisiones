@@ -3,21 +3,24 @@
        se cierra y el usuario se queda sin el motivo del fallo. -->
   <app-form-error-banner *ngIf="serverError" [errors]="[serverError]"
                          titulo="No se pudo guardar"></app-form-error-banner>
-  <app-form-error-banner *ngIf="submitted" [errors]="invalidFieldMessages()"></app-form-error-banner>
+  <!-- Resumen de validación: sin role=alert (los mat-error de cada campo ya se anuncian) y con
+       foco al enviar, para no duplicar anuncios. -->
+  <app-form-error-banner *ngIf="submitted" [live]="false" [errors]="invalidFieldMessages()"></app-form-error-banner>
 
   <div class="form-fields">
-    <div *ngFor="let field of fields"
+    <div *ngFor="let field of fields; trackBy: trackByName"
          class="form-field"
          [ngClass]="getFieldCssClass(field)">
       <label *ngIf="showExternalLabel(field)"
              class="form-field__label"
              [id]="field.name + '-label'"
              [attr.for]="field.name">
-        {{ field.label }}<span *ngIf="field.validations?.required" class="form-field__required" aria-hidden="true"> *</span><span *ngIf="!field.validations?.required" class="form-field__optional"> (opcional)</span>
+        {{ field.label }}<span *ngIf="field.validations?.required" class="form-field__required" aria-hidden="true"> *</span>
       </label>
       <app-dynamic-form-field
         [field]="field"
-        [group]="form">
+        [group]="form"
+        [revision]="revision">
       </app-dynamic-form-field>
       <!-- Una sola marca para todos los tipos de campo, en vez de repetirla por variante. -->
       <span *ngIf="field.pendiente" class="form-field__pendiente">
@@ -35,16 +38,20 @@
               (click)="formCancel.emit()">
         {{ cancelButtonText }}
       </button>
-      <button mat-raised-button color="primary"
-              type="submit"
-              [disabled]="saving || (requireChanges && form.pristine)"
-              [matTooltip]="requireChanges && form.pristine ? 'No hay cambios para guardar' : ''">
-        <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
-        <ng-container *ngIf="!saving">
-          <i class="ph ph-floppy-disk" aria-hidden="true"></i>
-          <span>{{ submitButtonText }}</span>
-        </ng-container>
-      </button>
+      <!-- El tooltip no se dispara sobre un botón `disabled`: se ancla al contenedor, que es
+           focusable por teclado solo cuando el motivo del bloqueo es "sin cambios". -->
+      <span class="form-actions__submit"
+            [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''"
+            [attr.tabindex]="sinCambios && !saving ? 0 : null">
+        <button mat-raised-button color="primary"
+                type="submit"
+                [attr.aria-busy]="saving || null"
+                [disabled]="saving || sinCambios">
+          <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
+          <i *ngIf="!saving" class="ph ph-floppy-disk" aria-hidden="true"></i>
+          <span>{{ saving ? savingButtonText : submitButtonText }}</span>
+        </button>
+      </span>
     </div>
   </div>
 </form>

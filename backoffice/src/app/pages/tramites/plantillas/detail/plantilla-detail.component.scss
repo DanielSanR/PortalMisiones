@@ -1,0 +1,44 @@
+// ==========================================================================
+// Detalle de Plantilla provincial — lo propio de la pantalla: el slug del
+// membrete y los chips de catálogo. Membrete, grilla, cards y campos son las
+// clases globales `.detail-*` (shared-styles/_components.scss).
+// ==========================================================================
+
+.plantdet-slug {
+  font-family: var(--theme-font-mono);
+  font-size: var(--theme-font-small-size);
+  color: var(--theme-text-tertiary);
+  word-break: break-all;
+}
+
+.plantdet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--theme-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    padding: var(--theme-space-2xs) var(--theme-space-sm);
+    border: 1px solid var(--theme-border-primary);
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-surface-sunken);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+
+    i.ph {
+      font-size: var(--theme-font-small-size);
+      color: var(--theme-text-tertiary);
+    }
+
+    // Id que ya no está en el catálogo: se marca en vez de esconderlo.
+    &--faltante {
+      border-style: dashed;
+      color: var(--theme-text-tertiary);
+    }
+  }
+}

@@ -1,4 +1,106 @@
-// Las clases .auth-page y .auth-card (y sus elementos BEM) están definidas en
-// shared-styles/_components.scss (cargado globalmente). Este archivo solo agrega
-// estilos específicos del componente login que no pertenecen al patrón compartido.
-// Por eso está intencionalmente vacío de reglas propias.
+@use 'shared-styles/mixins' as *;
+
+// Login — lo propio de esta pantalla. El layout split vive en <app-auth-shell> y las piezas comunes
+// (.auth-form, .auth-campo, .auth-submit, .auth-ver-clave, .auth-link) en shared-styles/_components.scss.
+.login {
+  // Ingreso con Ciudadan@ Misiones (sin backend: appUnavailable → .is-unavailable lo muestra apagado).
+  &__ciudadano {
+    @include flex-center;
+    gap: 10px;
+    height: var(--theme-input-height);
+    padding: 0 var(--theme-space-md);
+    border: 1px solid var(--theme-border-input);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-card);
+    font-family: inherit;
+    font-size: var(--theme-font-body-size);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-primary-dark);
+    cursor: pointer;
+    transition: border-color var(--theme-transition-fast), background-color var(--theme-transition-fast);
+    @include focus-ring;
+
+    i.ph {
+      font-size: 19px;
+      color: var(--theme-primary);
+    }
+
+    &:hover:not(.is-unavailable) {
+      border-color: var(--theme-primary);
+      background: var(--theme-primary-50);
+    }
+  }
+
+  // Línea | texto | línea.
+  &__divisor {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-gap);
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--theme-border-primary);
+    }
+  }
+
+  &__divisor-texto {
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-tertiary);
+  }
+
+  &__opciones {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--theme-space-gap);
+
+    // `.auth-link` trae `align-self: flex-start` (en la columna del form no debe estirarse); en esta fila
+    // eso lo subía al tope en vez de alinearlo con el checkbox.
+    .auth-link {
+      align-self: center;
+    }
+  }
+
+  &__recordar {
+    font-size: var(--theme-font-body-size);
+  }
+
+  &__pie {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  &__aviso {
+    margin: 0;
+    font-size: var(--theme-font-caption-size);
+    line-height: 1.6;
+    color: var(--theme-text-tertiary);
+    text-wrap: pretty;
+  }
+
+  &__sellos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-lg);
+    padding-top: 22px;
+    border-top: 1px solid var(--theme-border-subtle);
+  }
+
+  &__sellos-divisor {
+    width: 1px;
+    height: 20px;
+    background: var(--theme-border-primary);
+  }
+
+  &__sello {
+    height: 26px;
+    width: auto;
+  }
+}
