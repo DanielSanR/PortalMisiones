@@ -41,7 +41,7 @@ Tema **solo claro**. Contrastes calculados sobre blanco salvo indicación.
 | Token | Hex | Uso | Contraste |
 |---|---|---|---|
 | `--theme-primary` | `#2F6EB1` (600) | Botón primario, links, foco, acento | 5.27:1 (blanco encima: 5.27:1) |
-| `--theme-primary-dark` | `#245A95` (700) | Hover del primario; texto de botón secundario y de `.row-action` | 7.07:1 |
+| `--theme-primary-dark` | `#264F82` (= brand-dark del portal) | Hover del primario; texto de botón secundario y de `.row-action` | 8.33:1 |
 | `--theme-primary-darker` | `#1A4779` (800) | Active del primario; `--theme-nav-item-active-fg` | 9.45:1 |
 | `--theme-primary-light` / `--theme-accent` | `#3B82C4` (500) | Íconos de formulario (`--theme-form-icon`) | — |
 | `--theme-surface-inverse` | `#0F335D` (900) | Solo hero de Login y tints oscuros | — |
@@ -56,7 +56,7 @@ Tema **solo claro**. Contrastes calculados sobre blanco salvo indicación.
 | `--theme-bg-table-hover` / `--theme-table-hover-bg` | `#F7F9FB` | Hover de fila |
 | `--theme-bg-sidebar-hover` | `#EDF1F5` | Hover de nav |
 | `--theme-surface-canvas` | `#E8EBEF` | Marco exterior del shell |
-| `--theme-border-primary` | `#E6E9ED` | Borde de card, divisor 1px (decorativo, 1.22:1) |
+| `--theme-border-primary` | `#DBE2EE` (= border-soft del portal) | Borde de card, divisor 1px (decorativo, 1.30:1) |
 | `--theme-border-subtle` | `#F1F3F5` | Divisor de fila |
 | `--theme-border-strong` | `#C9CFD6` | Hover de botón/iconbtn (decorativo, 1.57:1) |
 | `--theme-border-input` | `#8A94A0` | **a11y:** contorno de inputs/selects (3.08:1, SC 1.4.11). El diseño usa `#C9CFD6` |
@@ -105,9 +105,9 @@ etiqueta sale de `EstadoBadgePipe`). No recrear el badge a mano.
 
 ## 4. Tipografía
 
-- **Familia:** `--theme-font-family: 'Oak Sans', 'Figtree', …`. **Oak Sans está declarada pero NO self-hosted**
-  (no hay `@font-face`, ver `_base.scss`), así que **lo que se renderiza es Figtree** (Google Fonts en `index.html`).
-  Cuando estén los archivos de Oak Sans, agregar el `@font-face` en `_base.scss`; no cambiar la familia.
+- **Familia:** `--theme-font-family: 'Oak Sans', …` — la misma del portal. Self-hosted en
+  `src/assets/fonts/oak-sans/` (woff2 400/500/600/700 subseteados a Latin desde `public/public/fonts/oak-sans`),
+  `@font-face` en `_base.scss` y preload del Regular en `index.html`.
 - Mono: `--theme-font-mono` (JetBrains Mono).
 - Números en tablas y métricas: `font-variant-numeric: tabular-nums`.
 
@@ -218,6 +218,10 @@ Loading: el ícono pasa a `ph-spinner-gap spin` y el texto a gerundio ("Guardand
 - Toolbar (clases globales, no redefinir): `.list-toolbar` (`--stacked`) › `.list-toolbar__row` (`--chips`) ›
   `<app-list-search>`, `.list-toolbar-count` (`--end`), `.list-toolbar__actions` › `.list-iconbtn`. Fila de chips:
   `<app-filter-tabs>`, `<app-active-filters>`, `.list-ghost-button`.
+- Chips de filtro (`<app-filter-tabs>`): pills como las del portal — reposo blanco con borde suave, activo relleno
+  primary + texto blanco.
+- Selects de filtro de la fila A: sin `<mat-label>`; la opción vacía nombra el filtro ("Todos los estados",
+  "Todas las localidades") y el `mat-select` lleva `aria-label="Filtrar por …"`. Alto 34 (regla en `.list-toolbar`).
 - Tabla: `<app-shared-table>` con `appTableCell` / `appTableHeader`. Trae skeleton (`loading`), vacío
   (`emptyIcon`, `emptyTitle`, `emptyMessage`, `emptyActionLabel`), error con reintento (`error`, `errorTitle`,
   `errorMessage`) y paginación (`paginated`). Header sentence case 11.5/600 tertiary; filas 56px; hover

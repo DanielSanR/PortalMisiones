@@ -2,9 +2,40 @@
 // Base Styles — Portal Provincial de Tramites Misiones
 // ==========================================================================
 
-// Oak Sans — font files must be self-hosted in assets/fonts/
-// @font-face declarations should be added when font files are available.
-// Fallback: the system font stack in --theme-font-family handles missing Oak Sans gracefully.
+// Oak Sans — la misma fuente que el portal (public/public/fonts/oak-sans), self-hosted en assets/fonts/.
+// woff2 subseteado a Latin (español + puntuación) con fonttools; solo los pesos que usa el tema (400-700).
+// Ruta absoluta (`/assets/…`): el builder no la reescribe y la sirve desde el output de assets.
+@font-face {
+  font-family: 'Oak Sans';
+  src: url('/assets/fonts/oak-sans/OakSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Oak Sans';
+  src: url('/assets/fonts/oak-sans/OakSans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Oak Sans';
+  src: url('/assets/fonts/oak-sans/OakSans-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Oak Sans';
+  src: url('/assets/fonts/oak-sans/OakSans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 // ---------------------------------------------------------------------------
 // Reset & Box Model

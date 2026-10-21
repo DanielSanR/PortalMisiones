@@ -1,9 +1,8 @@
 // ==========================================================================
-// FilterTabsComponent — chips/segmented-control PLANOS, radius 8 (delta
-// design "Filtros rediseñados" §2B, variante SOLID del toolbar de LISTA).
-// No son pills full ni dropdowns. Reposo: caja blanca, borde neutro. Activo:
-// bg info-50 (#E8F1FA) + borde info-200 (#9EC4E8) + texto primary-800 + 600.
-// Dot rojo opcional = alerta ("Requieren revisión").
+// FilterTabsComponent — pills como los chips de filtro del portal ciudadano (Figma "Infraestructura
+// Digital Misiones": Todos / Digital de punta a punta / …), para que las dos apps se reconozcan.
+// Reposo: pill blanca con borde suave. Activo: relleno primary + texto blanco + 600 (5.3:1).
+// Dot rojo opcional = alerta ("Requieren revisión"); sobre el activo lleva anillo blanco.
 // ==========================================================================
 
 @use 'shared-styles/mixins' as *;
@@ -19,9 +18,9 @@
     align-items: center;
     gap: 7px;
     height: 34px;
-    padding: 0 12px;
+    padding: 0 14px;
     border: 1px solid var(--theme-border-primary);
-    border-radius: var(--theme-radius-md);
+    border-radius: var(--theme-radius-full);
     background: var(--theme-bg-card);
     color: var(--theme-text-secondary);
     font-family: inherit;
@@ -32,14 +31,15 @@
     transition: all var(--theme-transition-fast);
     @include focus-ring;
 
-    &:hover {
-      border-color: var(--theme-border-strong);
+    &:hover:not(.is-active) {
+      border-color: var(--theme-primary);
+      color: var(--theme-primary);
     }
 
     &.is-active {
-      background: var(--theme-info-bg);
-      border-color: var(--theme-info-border);
-      color: var(--theme-primary-800);
+      background: var(--theme-primary);
+      border-color: var(--theme-primary);
+      color: #FFFFFF;
       font-weight: var(--theme-font-weight-semibold);
     }
   }
@@ -49,9 +49,13 @@
     font-size: var(--theme-font-size-xs);
   }
 
-  // Contador del chip activo: color sólido (con `opacity: .75` caía a 4.39:1, bajo AA).
+  // Contador del chip activo: blanco sólido (con `opacity` caería bajo AA sobre el primary).
   &-tab.is-active &-tab-count {
-    color: var(--theme-primary-700);
+    color: #FFFFFF;
+  }
+
+  &-tab.is-active &-tab-dot {
+    box-shadow: 0 0 0 2px #FFFFFF;
   }
 
   &-tab-dot {

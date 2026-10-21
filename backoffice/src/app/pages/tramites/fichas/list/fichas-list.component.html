@@ -10,9 +10,8 @@
     </app-list-search>
 
     <mat-form-field appearance="outline" class="fichalist-select" subscriptSizing="dynamic">
-      <mat-label>Estado</mat-label>
-      <mat-select [formControl]="estadoCtrl">
-        <mat-option value="">Todos</mat-option>
+      <mat-select [formControl]="estadoCtrl" aria-label="Filtrar por estado">
+        <mat-option value="">Todos los estados</mat-option>
         @for (op of estados; track op.valor) {
           <mat-option [value]="op.valor">{{ op.etiqueta }}</mat-option>
         }
@@ -22,9 +21,8 @@
     @if (localidades$ | async; as localidades) {
       @if (localidades.length > 1) {
         <mat-form-field appearance="outline" class="fichalist-select" subscriptSizing="dynamic">
-          <mat-label>Localidad</mat-label>
-          <mat-select [formControl]="localidadCtrl">
-            <mat-option value="">Todas</mat-option>
+          <mat-select [formControl]="localidadCtrl" aria-label="Filtrar por localidad">
+            <mat-option value="">Todas las localidades</mat-option>
             @for (op of localidades; track op.id) {
               <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
             }

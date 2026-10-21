@@ -19,9 +19,8 @@
     </app-list-search>
 
     <mat-form-field appearance="outline" class="permlist-select" subscriptSizing="dynamic">
-      <mat-label>Recurso</mat-label>
-      <mat-select [formControl]="recursoCtrl">
-        <mat-option value="">Todos</mat-option>
+      <mat-select [formControl]="recursoCtrl" aria-label="Filtrar por recurso">
+        <mat-option value="">Todos los recursos</mat-option>
         @for (recurso of vista.recursos; track recurso.key) {
           <mat-option [value]="recurso.key">{{ recurso.label }}</mat-option>
         }
