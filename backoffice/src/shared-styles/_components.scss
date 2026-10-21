@@ -296,6 +296,20 @@
 .list-toolbar {
     @include list-toolbar;
 
+    // Selects de filtro de la fila A (Estado, Localidad, Recurso…): mismo alto y cuerpo que `app-list-search`
+    // (34 / 13.5) y sin label flotante, como los filtros del portal ("Todos los estados"); el nombre del
+    // filtro va en el `aria-label` del `mat-select`. Global porque el infix es DOM interno de Material.
+    .mat-mdc-form-field.mat-form-field-appearance-outline {
+        font-size: var(--theme-font-size-sm);
+        --mat-select-trigger-text-size: var(--theme-font-size-sm); // el trigger del select no hereda font-size
+
+        .mat-mdc-form-field-infix {
+            min-height: var(--theme-control-height-md);
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+    }
+
     // Contador; `--end` lo empuja contra el borde derecho de la fila.
     &-count {
         @include list-toolbar-count;

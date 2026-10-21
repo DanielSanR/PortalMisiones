@@ -16,9 +16,8 @@
 
     @if (opciones$ | async; as opciones) {
       <mat-form-field appearance="outline" class="plantlist-select" subscriptSizing="dynamic">
-        <mat-label>Categoría</mat-label>
-        <mat-select [formControl]="categoriaCtrl">
-          <mat-option value="">Todas</mat-option>
+        <mat-select [formControl]="categoriaCtrl" aria-label="Filtrar por categoría">
+          <mat-option value="">Todas las categorías</mat-option>
           @for (op of opciones.categorias; track op.id) {
             <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
           }
@@ -26,9 +25,8 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="plantlist-select" subscriptSizing="dynamic">
-        <mat-label>Modalidad</mat-label>
-        <mat-select [formControl]="modalidadCtrl">
-          <mat-option value="">Todas</mat-option>
+        <mat-select [formControl]="modalidadCtrl" aria-label="Filtrar por modalidad">
+          <mat-option value="">Todas las modalidades</mat-option>
           @for (op of opciones.modalidades; track op.id) {
             <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
           }

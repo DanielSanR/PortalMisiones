@@ -17,9 +17,8 @@
     </app-list-search>
 
     <mat-form-field appearance="outline" class="filter-select" subscriptSizing="dynamic">
-      <mat-label>Acción</mat-label>
-      <mat-select formControlName="accion">
-        <mat-option value="">Todas</mat-option>
+      <mat-select formControlName="accion" aria-label="Filtrar por acción">
+        <mat-option value="">Todas las acciones</mat-option>
         @for (a of acciones; track a.value) {
           <mat-option [value]="a.value">{{ a.label }}</mat-option>
         }

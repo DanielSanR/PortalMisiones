@@ -414,7 +414,7 @@ $breakpoint-2xl: 1440px;
   }
 }
 
-// Botón con ícono + texto de la fila B ("Más filtros"), misma altura que los chips.
+// Botón con ícono + texto de la fila B ("Más filtros"): misma altura y forma (pill) que los chips de al lado.
 @mixin list-ghost-button {
   display: inline-flex;
   align-items: center;
@@ -422,7 +422,7 @@ $breakpoint-2xl: 1440px;
   height: 34px;
   padding: 0 var(--theme-space-md);
   border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-md);
+  border-radius: var(--theme-radius-full);
   background: var(--theme-surface-card);
   font-family: inherit;
   font-size: var(--theme-font-size-sm);

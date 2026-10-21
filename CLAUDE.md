@@ -89,5 +89,5 @@ Plantilla provincial (`/api/procedure-template`) → adopción por organismo = "
 - Spanish for UI labels and model names
 - Locale: es-AR
 - Date format: DD/MM/YYYY
-- Font: Oak Sans declarada (no self-hosted aún) → se renderiza Figtree
+- Font: Oak Sans self-hosted (`backoffice/src/assets/fonts/oak-sans/`, woff2 subseteado de la del portal)
 - Titles must start with infinitive verbs (Obtener, Inscribirse)

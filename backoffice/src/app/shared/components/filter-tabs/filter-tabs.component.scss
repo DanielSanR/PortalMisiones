@@ -1,8 +1,9 @@
 // ==========================================================================
-// FilterTabsComponent — chips/segmented-control PLANOS, radius 8 (delta
-// design "Filtros rediseñados" §2B, variante SOLID del toolbar de LISTA).
-// No son pills full ni dropdowns. Reposo: caja blanca, borde neutro. Activo:
-// bg info-50 (#E8F1FA) + borde info-200 (#9EC4E8) + texto primary-800 + 600.
+// FilterTabsComponent — pills como los chips de filtro del portal ciudadano (Figma "Infraestructura
+// Digital Misiones": Todos / Digital de punta a punta / …), para que las dos apps se reconozcan.
+// Reposo: pill blanca con borde suave. Activo: celeste suave (info-bg + borde info + primary-800, 600),
+// NO relleno primary como en el portal: en el backoffice el azul sólido queda para el CTA de la página
+// ("Nuevo organismo") y un filtro activo no debe competir con él.
 // Dot rojo opcional = alerta ("Requieren revisión").
 // ==========================================================================
 
@@ -19,9 +20,9 @@
     align-items: center;
     gap: 7px;
     height: 34px;
-    padding: 0 12px;
+    padding: 0 14px;
     border: 1px solid var(--theme-border-primary);
-    border-radius: var(--theme-radius-md);
+    border-radius: var(--theme-radius-full);
     background: var(--theme-bg-card);
     color: var(--theme-text-secondary);
     font-family: inherit;
@@ -32,8 +33,9 @@
     transition: all var(--theme-transition-fast);
     @include focus-ring;
 
-    &:hover {
-      border-color: var(--theme-border-strong);
+    &:hover:not(.is-active) {
+      border-color: var(--theme-primary);
+      color: var(--theme-primary);
     }
 
     &.is-active {
