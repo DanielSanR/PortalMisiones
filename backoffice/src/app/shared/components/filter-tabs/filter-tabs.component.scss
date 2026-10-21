@@ -1,8 +1,10 @@
 // ==========================================================================
 // FilterTabsComponent — pills como los chips de filtro del portal ciudadano (Figma "Infraestructura
 // Digital Misiones": Todos / Digital de punta a punta / …), para que las dos apps se reconozcan.
-// Reposo: pill blanca con borde suave. Activo: relleno primary + texto blanco + 600 (5.3:1).
-// Dot rojo opcional = alerta ("Requieren revisión"); sobre el activo lleva anillo blanco.
+// Reposo: pill blanca con borde suave. Activo: celeste suave (info-bg + borde info + primary-800, 600),
+// NO relleno primary como en el portal: en el backoffice el azul sólido queda para el CTA de la página
+// ("Nuevo organismo") y un filtro activo no debe competir con él.
+// Dot rojo opcional = alerta ("Requieren revisión").
 // ==========================================================================
 
 @use 'shared-styles/mixins' as *;
@@ -37,9 +39,9 @@
     }
 
     &.is-active {
-      background: var(--theme-primary);
-      border-color: var(--theme-primary);
-      color: #FFFFFF;
+      background: var(--theme-info-bg);
+      border-color: var(--theme-info-border);
+      color: var(--theme-primary-800);
       font-weight: var(--theme-font-weight-semibold);
     }
   }
@@ -49,13 +51,9 @@
     font-size: var(--theme-font-size-xs);
   }
 
-  // Contador del chip activo: blanco sólido (con `opacity` caería bajo AA sobre el primary).
+  // Contador del chip activo: color sólido (con `opacity: .75` caía a 4.39:1, bajo AA).
   &-tab.is-active &-tab-count {
-    color: #FFFFFF;
-  }
-
-  &-tab.is-active &-tab-dot {
-    box-shadow: 0 0 0 2px #FFFFFF;
+    color: var(--theme-primary-700);
   }
 
   &-tab-dot {

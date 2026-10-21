@@ -218,8 +218,8 @@ Loading: el ícono pasa a `ph-spinner-gap spin` y el texto a gerundio ("Guardand
 - Toolbar (clases globales, no redefinir): `.list-toolbar` (`--stacked`) › `.list-toolbar__row` (`--chips`) ›
   `<app-list-search>`, `.list-toolbar-count` (`--end`), `.list-toolbar__actions` › `.list-iconbtn`. Fila de chips:
   `<app-filter-tabs>`, `<app-active-filters>`, `.list-ghost-button`.
-- Chips de filtro (`<app-filter-tabs>`): pills como las del portal — reposo blanco con borde suave, activo relleno
-  primary + texto blanco.
+- Chips de filtro (`<app-filter-tabs>`) y `.list-ghost-button`: pills como las del portal. Reposo blanco con borde
+  suave; activo celeste suave (info-bg + primary-800, 600), no relleno primary: el azul sólido queda para el CTA.
 - Selects de filtro de la fila A: sin `<mat-label>`; la opción vacía nombra el filtro ("Todos los estados",
   "Todas las localidades") y el `mat-select` lleva `aria-label="Filtrar por …"`. Alto 34 (regla en `.list-toolbar`).
 - Tabla: `<app-shared-table>` con `appTableCell` / `appTableHeader`. Trae skeleton (`loading`), vacío
