@@ -1,17 +1,25 @@
 <div class="row-actions">
   @if (primaryVisible$ | async; as accion) {
-    <button type="button" class="row-action"
-            [disabled]="busy || accion.disabled"
-            [attr.aria-label]="accion.ariaLabel || null"
-            [attr.aria-busy]="busy || null"
-            [matTooltip]="busy ? busyLabel : ''"
-            (click)="accion.run()">
-      <!-- Diseño: "Editar" sin ícono; solo aparece el spinner mientras la fila está ocupada. -->
-      @if (busy) {
-        <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-      }
-      {{ accion.label }}
-    </button>
+    @if (accion.disabled && accion.disabledReason) {
+      <!-- No disponible con motivo: focusable, `aria-disabled` y el motivo en tooltip (appUnavailable). -->
+      <button type="button" class="row-action" [appUnavailable]="accion.disabledReason"
+              [attr.aria-label]="accion.ariaLabel || null">
+        {{ accion.label }}
+      </button>
+    } @else {
+      <button type="button" class="row-action"
+              [disabled]="busy || accion.disabled"
+              [attr.aria-label]="accion.ariaLabel || null"
+              [attr.aria-busy]="busy || null"
+              [matTooltip]="busy ? busyLabel : ''"
+              (click)="accion.run()">
+        <!-- Diseño: "Editar" sin ícono; solo aparece el spinner mientras la fila está ocupada. -->
+        @if (busy) {
+          <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+        }
+        {{ accion.label }}
+      </button>
+    }
   }
 
   @if (menu$ | async; as menu) {

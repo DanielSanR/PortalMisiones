@@ -10,6 +10,9 @@
            [required]="field.validations?.required || false">
     <mat-datepicker-toggle matIconSuffix [for]="picker" aria-label="Elegir fecha"></mat-datepicker-toggle>
     <mat-datepicker #picker></mat-datepicker>
+    @if (field.hint) {
+      <mat-hint align="start">{{ field.hint }}</mat-hint>
+    }
     <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
   </mat-form-field>
 </ng-container>

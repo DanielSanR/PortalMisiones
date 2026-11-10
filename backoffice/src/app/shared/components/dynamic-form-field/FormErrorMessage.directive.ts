@@ -29,12 +29,16 @@ export class FormErrorMessageDirective implements DoCheck {
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}
 
+  /** Ícono, contenedor del texto y su nodo de texto: se crean una vez y después solo se actualizan. */
+  private icono: unknown = null;
+  private caja: unknown = null;
+  private texto: unknown = null;
+
   ngDoCheck(): void {
     const mensaje = this.mensajeActual();
     if (mensaje === this.pintado) return;
     this.pintado = mensaje;
-    this.limpiar();
-    if (mensaje) this.pintar(mensaje);
+    this.pintar(mensaje ?? '');
   }
 
   private mensajeActual(): string | null {
@@ -50,22 +54,34 @@ export class FormErrorMessageDirective implements DoCheck {
     return getControlErrorMessage(this.control, this.field, extraErrors) || null;
   }
 
-  // Nodos creados con Renderer2 (texto como `createText`, nunca HTML): el mensaje no se interpreta.
+  /**
+   * Nodos creados con Renderer2 (texto como `createText`, nunca HTML): el mensaje no se interpreta.
+   *
+   * Sin mensaje, los nodos se ocultan y se vacían, NO se quitan. Antes se quitaban con
+   * `while (host.firstChild) renderer.removeChild(...)`, y eso colgaba la pestaña: el `<mat-error>`
+   * vive dentro de un contenedor animado de `mat-form-field` (`@transitionMessages`) y, con una
+   * animación en curso, el renderer de animaciones difiere la baja del nodo; `firstChild` seguía ahí
+   * y el `while` no terminaba nunca (caso típico: enviar el form inválido y corregir un campo).
+   */
   private pintar(mensaje: string): void {
-    const icono = this.renderer.createElement('i');
-    this.renderer.addClass(icono, 'ph');
-    this.renderer.addClass(icono, 'ph-warning-circle');
-    this.renderer.setAttribute(icono, 'aria-hidden', 'true');
-    const texto = this.renderer.createElement('span');
-    this.renderer.appendChild(texto, this.renderer.createText(mensaje));
-    this.renderer.appendChild(this.el.nativeElement, icono);
-    this.renderer.appendChild(this.el.nativeElement, texto);
-  }
+    if (!this.icono) {
+      if (!mensaje) return;
+      this.icono = this.renderer.createElement('i');
+      this.renderer.addClass(this.icono, 'ph');
+      this.renderer.addClass(this.icono, 'ph-warning-circle');
+      this.renderer.setAttribute(this.icono, 'aria-hidden', 'true');
+      this.caja = this.renderer.createElement('span');
+      this.texto = this.renderer.createText(mensaje);
+      this.renderer.appendChild(this.caja, this.texto);
+      this.renderer.appendChild(this.el.nativeElement, this.icono);
+      this.renderer.appendChild(this.el.nativeElement, this.caja);
+      return;
+    }
 
-  private limpiar(): void {
-    const host: HTMLElement = this.el.nativeElement;
-    while (host.firstChild) {
-      this.renderer.removeChild(host, host.firstChild);
+    this.renderer.setValue(this.texto, mensaje);
+    for (const nodo of [this.icono, this.caja]) {
+      if (mensaje) this.renderer.removeStyle(nodo, 'display');
+      else this.renderer.setStyle(nodo, 'display', 'none');
     }
   }
 }

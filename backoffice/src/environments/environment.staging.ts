@@ -19,8 +19,8 @@ export const environment = {
 
   dataSource: 'local' as 'mock' | 'local' | 'prod',
   featureOverrides: {
-    // Híbrido: alta real (POST /api/user); listado y edición en mock (no hay GET /api/user, BO-17).
-    // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.
+    // Usuarios: real (GET/POST /api/user y acciones de cuenta, BO-22). No se ofrecen la edición (sin endpoint)
+    // ni el borrado definitivo (G-13); el rol llega vacío hasta G-13.
     usuarios: 'local',
     // No desplegados en staging (mock hasta OPS-1, deploy de dev a staging; igual que en prod):
     etiquetas: 'mock',

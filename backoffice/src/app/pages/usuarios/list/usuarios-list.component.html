@@ -73,7 +73,12 @@
             <!-- Avatar con iniciales tintadas (Kitchen Sink §05). El tinte se deriva del id. -->
             <span [class]="'cell-avatar cell-avatar--round cell-avatar--' + tinte(row.id)" aria-hidden="true">{{ iniciales(row) }}</span>
             <div class="cell-name">
-                <span class="cell-name__principal">{{ nombreCompleto(row) }}</span>
+                @if (tieneNombre(row)) {
+                    <span class="cell-name__principal">{{ nombreCompleto(row) }}</span>
+                } @else {
+                    <!-- El backend todavía no informa nombre y apellido (G-13): el email sigue abajo y en su columna. -->
+                    <span class="cell-name__principal cell-muted">Sin dato</span>
+                }
                 <!-- En mobile las columnas Email y Organismo se ocultan: acá no se pierde el dato. -->
                 <span class="cell-name__meta">
                     {{ row.email }}@if (row.organismoNombre) { · {{ row.organismoNombre }} }
@@ -87,7 +92,12 @@
     </ng-template>
 
     <ng-template appTableCell="rol" let-row>
-        <span class="usuarios-list__rol">{{ row.rol | rolLabel }}</span>
+        @if (row.rol) {
+            <span class="usuarios-list__rol">{{ row.rol | rolLabel }}</span>
+        } @else {
+            <!-- El backend todavía no informa el rol en el listado (G-13). -->
+            <span class="cell-muted">Sin dato</span>
+        }
     </ng-template>
 
     <ng-template appTableCell="organismoNombre" let-row>

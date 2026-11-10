@@ -18,7 +18,8 @@ export const environment = {
 
   dataSource: 'local' as 'mock' | 'local' | 'prod',
   featureOverrides: {
-    // Híbrido: alta real; listado, edición y acciones de cuenta en mock/ocultas hasta BO-17.
+    // Usuarios: real (GET/POST /api/user y acciones de cuenta, BO-22). No se ofrecen la edición (sin endpoint)
+    // ni el borrado definitivo (G-13); el rol llega vacío hasta G-13.
     usuarios: 'local',
     // Sin backend en ningún entorno:
     dashboard: 'mock',

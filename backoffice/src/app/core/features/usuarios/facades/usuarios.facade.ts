@@ -22,11 +22,20 @@ export class UsuariosFacade {
   ) {}
 
   /**
-   * ¿Se pueden ofrecer "Cambiar email", "Cambiar contraseña" y "Eliminar definitivamente"? Lo decide
-   * la fuente de datos (sin que la pantalla sepa si es mock o real): hoy, solo el mock (BO-17).
+   * ¿Qué se puede ofrecer en la fila? Lo decide la fuente de datos, sin que la pantalla sepa si es mock
+   * o real. Con el backend real: acciones de cuenta sí; edición no (no hay endpoint) y borrado
+   * definitivo no hasta G-13.
    */
   get accionesDeCuentaDisponibles(): boolean {
     return this.usuarios.soportaAccionesDeCuenta;
+  }
+
+  get edicionDisponible(): boolean {
+    return this.usuarios.soportaEdicion;
+  }
+
+  get borradoDefinitivoDisponible(): boolean {
+    return this.usuarios.soportaBorradoDefinitivo;
   }
 
   /** Carga la lista y la publica en el stream de estado. */
@@ -56,18 +65,16 @@ export class UsuariosFacade {
     return this.usuarios.update(id, form);
   }
 
-  /** Cambia el estado y refleja el cambio en el stream de la lista. */
-  toggleActive(id: string): Observable<UsuarioVM> {
-    return this.usuarios.toggleActive(id).pipe(
-      tap((updated) =>
-        this._usuarios$.next(this._usuarios$.value.map((u) => (u.id === id ? updated : u)))
+  /**
+   * Deja la cuenta en el estado pedido (no la invierte: con la lista desactualizada o dos admins a la vez,
+   * "Desactivar" nunca termina activando) y lo refleja en la fila.
+   */
+  setAccountStatus(id: string, active: boolean): Observable<void> {
+    return this.usuarios.setAccountStatus(id, active).pipe(
+      tap(() =>
+        this._usuarios$.next(this._usuarios$.value.map((u) => (u.id === id ? { ...u, activo: active } : u)))
       )
     );
-  }
-
-  /** Activa/desactiva la cuenta (REAL: status-account). */
-  setAccountStatus(id: string, active: boolean): Observable<void> {
-    return this.usuarios.setAccountStatus(id, active);
   }
 
   changePassword(id: string, newPassword: string): Observable<void> {

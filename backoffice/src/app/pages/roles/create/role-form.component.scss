@@ -1,11 +1,5 @@
-// Layout específico de este form. Las clases comunes (.form-card, .section-header, .form-grid,
-// .form-field, .slide-toggle-field, .form-actions, .form-error-banner, .spin, .perm-group,
-// .perm-chip) viven en shared-styles/_components.scss (DRY).
-.form-toggles {
-  display: flex;
-  flex-direction: column;
-  gap: var(--theme-space-md);
-}
+// Layout específico de este form. Las clases comunes (.form-card, .form-actions, .perm-group,
+// .perm-chip) viven en shared-styles/_components.scss (DRY); los campos los dibuja `app-dynamic-form`.
 
 // Carga fallida — reemplaza al formulario con el motivo y una salida (reintentar / volver).
 .rolform-fallo {
@@ -18,6 +12,7 @@
 
 // Multi-select de permisos — grupos de badges por recurso (mismo look que el detalle de Roles,
 // pero interactivo: cada `.perm-chip--toggle` es un `<button>` que otorga/quita el permiso).
+// Va proyectado en el formulario, debajo de la sección "Permisos asignados".
 .permiso-picker {
   display: flex;
   flex-direction: column;

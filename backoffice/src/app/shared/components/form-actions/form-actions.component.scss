@@ -1,0 +1,16 @@
+@use 'shared-styles/mixins' as *;
+
+// Sin caja propia: `.form-actions` es `position: sticky` contra el formulario que la contiene. Con un
+// host en bloque, su contenedor pasaría a ser el host (del mismo alto que la barra) y dejaría de pegarse.
+:host {
+  display: contents;
+}
+
+// `.form-actions`, `__help` y `__buttons` son clases globales (shared-styles/_components.scss).
+// Acá solo el ancla del tooltip "No hay cambios para guardar", que en mobile ocupa todo el ancho.
+.form-actions__submit {
+  @include responsive(mobile) {
+    display: flex;
+    width: 100%;
+  }
+}

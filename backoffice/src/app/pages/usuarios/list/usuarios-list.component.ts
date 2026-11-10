@@ -208,9 +208,14 @@ export class UsuariosListComponent implements OnInit {
     this.router.navigate(['/dashboard/usuarios/editar', usuario.id]);
   }
 
-  /** Nombre y apellido del perfil; el backend real todavía puede no traerlos, y ahí manda el email. */
+  /** Nombre y apellido del perfil; sin ellos (el backend real todavía no los trae) los textos de diálogos y menús usan el email. */
   nombreCompleto(usuario: UsuarioVM): string {
-    return `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.email;
+    return this.tieneNombre(usuario) ? `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() : usuario.email;
+  }
+
+  /** ¿El perfil trae nombre o apellido? Si no, la columna Usuario muestra "Sin dato". */
+  tieneNombre(usuario: UsuarioVM): boolean {
+    return `${usuario.nombre ?? ''}${usuario.apellido ?? ''}`.trim().length > 0;
   }
 
   iniciales(usuario: UsuarioVM): string {
@@ -233,10 +238,15 @@ export class UsuariosListComponent implements OnInit {
   }
 
   accionEditar(usuario: UsuarioVM): RowAction {
+    const disponible = this.facade.edicionDisponible;
     return {
       label: 'Editar',
       icon: 'pencil-simple',
       rule: EDITAR_USUARIO_ACCESS,
+      // Visible pero no disponible (con motivo) mientras el backend no tenga edición de usuarios.
+      disabled: !disponible,
+      disabledReason: disponible ? undefined : 'La edición de nombre, rol y organismo todavía no está disponible en el servidor',
+      ariaLabel: `Editar a ${this.nombreCompleto(usuario)}`,
       run: () => this.onEdit(usuario),
     };
   }
@@ -244,8 +254,8 @@ export class UsuariosListComponent implements OnInit {
   /**
    * Menú de la fila. El orden va de lo cotidiano a lo irreversible: credenciales, estado de la
    * cuenta y, al final, el borrado definitivo (el componente agrupa las `danger` detrás de un divisor).
-   * Credenciales, estado de la cuenta y borrado solo si la fuente los soporta
-   * (`accionesDeCuentaDisponibles`): si no, se ocultan en vez de simular un éxito que no ocurrió en el servidor.
+   * Credenciales, estado de la cuenta y borrado solo si la fuente los soporta (`accionesDeCuentaDisponibles`,
+   * `borradoDefinitivoDisponible`): si no, se ocultan en vez de simular un éxito que no ocurrió en el servidor.
    */
   accionesDe(usuario: UsuarioVM): RowAction[] {
     const nombre = this.nombreCompleto(usuario);
@@ -262,7 +272,9 @@ export class UsuariosListComponent implements OnInit {
       });
     }
 
-    if (deCuenta && !ROLES_CON_PASSWORD_PROTEGIDA.includes(usuario.rol)) {
+    // Rol desconocido (el backend todavía no lo informa, G-13): se ofrece; si es uno protegido,
+    // el diálogo muestra el 403 del backend.
+    if (deCuenta && !(usuario.rol && ROLES_CON_PASSWORD_PROTEGIDA.includes(usuario.rol))) {
       acciones.push({
         label: 'Cambiar contraseña',
         icon: 'key',
@@ -276,8 +288,6 @@ export class UsuariosListComponent implements OnInit {
     // desde el panel y dejaría la sesión actual sin usuario.
     if (this.esMiCuenta(usuario)) return acciones;
 
-    // Activar/Desactivar también depende de la fuente: con el listado mock, la fuente real no puede
-    // cambiar el estado de una cuenta del servidor (los ids no existen allá) y un éxito sería falso.
     if (!deCuenta) return acciones;
 
     acciones.push(
@@ -298,6 +308,7 @@ export class UsuariosListComponent implements OnInit {
             run: () => this.onActivar(usuario),
           },
     );
+    if (!this.facade.borradoDefinitivoDisponible) return acciones;
     acciones.push({
       label: 'Eliminar definitivamente',
       icon: 'trash',
@@ -310,8 +321,8 @@ export class UsuariosListComponent implements OnInit {
   }
 
   /**
-   * ¿Es la fila del usuario logueado? Por id, o por email si los ids no coinciden (el listado
-   * todavía es mock). Se lee en cada detección de cambios, así que acompaña a la sesión.
+   * ¿Es la fila del usuario logueado? Por id, o por email si los ids no coinciden (con el listado
+   * mock). Se lee en cada detección de cambios, así que acompaña a la sesión.
    */
   private esMiCuenta(usuario: UsuarioVM): boolean {
     const yo = this.auth.getCurrentUser();
@@ -367,7 +378,7 @@ export class UsuariosListComponent implements OnInit {
   }
 
   onDesactivar(usuario: UsuarioVM): void {
-    this.confirmarYEjecutar(usuario, {
+    this.confirmarYEjecutar(usuario, false, {
       title: '¿Desactivar la cuenta?',
       // Cuenta la consecuencia real: pierde el acceso, pero el usuario no se borra.
       message: `${this.nombreCompleto(usuario)} dejará de poder ingresar al backoffice. La cuenta se conserva y podés volver a activarla cuando quieras.`,
@@ -379,7 +390,7 @@ export class UsuariosListComponent implements OnInit {
   }
 
   onActivar(usuario: UsuarioVM): void {
-    this.confirmarYEjecutar(usuario, {
+    this.confirmarYEjecutar(usuario, true, {
       title: '¿Activar la cuenta?',
       message: `${this.nombreCompleto(usuario)} volverá a poder ingresar al backoffice con los permisos de su rol.`,
       danger: false,
@@ -389,7 +400,7 @@ export class UsuariosListComponent implements OnInit {
     });
   }
 
-  private confirmarYEjecutar(usuario: UsuarioVM, opciones: {
+  private confirmarYEjecutar(usuario: UsuarioVM, activo: boolean, opciones: {
     title: string; message: string; danger: boolean; confirmText: string; busyText: string; exito: string;
   }): void {
     this.dialog.open(ConfirmDialogComponent, {
@@ -402,7 +413,7 @@ export class UsuariosListComponent implements OnInit {
         busyText: opciones.busyText,
         // El diálogo se queda abierto con el botón en spinner hasta que el backend
         // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
-        confirmAction: () => this.cambiarEstado(usuario),
+        confirmAction: () => this.cambiarEstado(usuario, activo),
       },
       panelClass: 'custom-modal-panel',
     })
@@ -415,13 +426,9 @@ export class UsuariosListComponent implements OnInit {
       }));
   }
 
-  /**
-   * `toggleActive` y no `setAccountStatus` porque es el único que devuelve el usuario
-   * actualizado y lo refleja en el stream de la lista: con el otro la fila seguiría
-   * mostrando el estado viejo hasta recargar.
-   */
-  private cambiarEstado(usuario: UsuarioVM): Observable<unknown> {
-    return this.conFilaOcupada(usuario, this.facade.toggleActive(usuario.id));
+  /** Estado explícito (el que confirmó el usuario), nunca un toggle: ver `UsuariosFacade.setAccountStatus`. */
+  private cambiarEstado(usuario: UsuarioVM, activo: boolean): Observable<unknown> {
+    return this.conFilaOcupada(usuario, this.facade.setAccountStatus(usuario.id, activo));
   }
 
   /** Bloquea la fila mientras corre la operación y la libera al terminar (éxito o error). */
@@ -435,7 +442,7 @@ export class UsuariosListComponent implements OnInit {
 
   private buscar(usuarios: UsuarioVM[], termino: string): UsuarioVM[] {
     return buscarEn(usuarios, termino, (u) => [
-      u.nombre, u.apellido, `${u.nombre} ${u.apellido}`, u.email, u.organismoNombre, ROLE_TO_SPANISH[u.rol],
+      u.nombre, u.apellido, `${u.nombre} ${u.apellido}`, u.email, u.organismoNombre, u.rol ? ROLE_TO_SPANISH[u.rol] : '',
     ]);
   }
 
@@ -452,7 +459,7 @@ export class UsuariosListComponent implements OnInit {
     switch (key) {
       case 'nombre':          return this.nombreCompleto(usuario);
       case 'email':           return usuario.email ?? '';
-      case 'rol':             return ROLE_TO_SPANISH[usuario.rol] ?? usuario.rol ?? '';
+      case 'rol':             return usuario.rol ? ROLE_TO_SPANISH[usuario.rol] ?? usuario.rol : '';
       case 'organismoNombre': return usuario.organismoNombre ?? '';
       case 'activo':          return usuario.activo ? 'Activa' : 'Inactiva';
       default:                return '';

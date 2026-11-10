@@ -39,7 +39,7 @@
             <span class="shared-table__th">
               <span>{{ column.label }}</span>
               <i class="ph ph-arrow-up shared-table__sort-icon" aria-hidden="true"
-                *ngIf="sortable && column.sortable && sort?.active === column.key"
+                *ngIf="sortable && column.sortable && sort?.active === column.key && sort?.direction"
                 [class.shared-table__sort-icon--desc]="sort?.direction === 'desc'"></i>
             </span>
           </ng-template>

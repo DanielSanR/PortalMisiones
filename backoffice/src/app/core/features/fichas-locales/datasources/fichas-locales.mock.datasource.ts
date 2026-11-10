@@ -14,6 +14,8 @@ const DELAY = 200;
 
 /** Texto real del `5000` (`messages.properties`): el handler genérico no manda más detalle. */
 const TEXTO_5000 = 'Ocurrió un error inesperado. Contacte al administrador.';
+/** Texto real del `4077` (`messages.properties`). */
+const TEXTO_4077 = 'La transición de publicación solicitada no es válida desde el estado actual.';
 
 /** Lo que guarda el mock: el response extendido con los obligatorios de G-1, sin nombres. */
 type FilaMock = Required<Pick<OrganismProcedureLocationExtendedResponseDTO,
@@ -77,12 +79,12 @@ function semilla(): FilaMock[] {
 
 /**
  * Implementación mock en memoria, con la forma COMPLETA del response (como si G-1 estuviera
- * resuelto) y fiel a `OrganismProcedureLocationService` con alcance global:
- * - POST siempre en `BORRADOR`, versión 1; PUT total (incluido el estado que manda el front) y
+ * resuelto) y fiel a `OrganismProcedureLocationService` de `dev` (`b6f505b`) con alcance global:
+ * - POST siempre en `BORRADOR`, versión 1; PUT del contenido (el estado se conserva, R-1) y
  *   versión N+1; cada transición válida también suma una versión. El `DELETE` no genera versión.
- * - Transiciones según `isAllowedTransition`; las inválidas → 500 `5000`, igual que el backend.
- * - Ficha inexistente o campos NOT NULL faltantes → `5000` (el backend tira `IllegalArgumentException`).
- * - Sin unicidad de `(adopción, localidad)` ni de slug (G-9): la valida el form en el cliente.
+ * - Transiciones según `isAllowedTransition`; las inválidas → 409 `4077`.
+ * - Ficha inexistente → 404 `4073`; campos NOT NULL faltantes → `5000` (sin validación del DTO, G-1).
+ * - Sin chequeo de unicidad de `(adopción, localidad)` ni de slug (`V2.27`): la valida el form en el cliente.
  * No puede validar que la adopción y la localidad existan (no conoce otros datasources).
  */
 @Injectable()
@@ -95,7 +97,7 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
 
   getById(id: string): Observable<FichaLocal> {
     const fila = this.data.find((x) => x.id === id);
-    return fila ? of(toFichaLocal({ ...fila })).pipe(delay(DELAY)) : this.error5000();
+    return fila ? of(toFichaLocal({ ...fila })).pipe(delay(DELAY)) : this.errorInexistente(id);
   }
 
   create(form: FichaLocalFormValue): Observable<FichaLocal> {
@@ -114,12 +116,12 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
   update(id: string, form: FichaLocalFormValue, estadoActual: EstadoFicha): Observable<FichaLocal> {
     const existente = this.data.find((x) => x.id === id);
     const request = toOrganismProcedureLocationRequest(form, estadoActual);
-    if (!existente || !this.completo(request)) return this.error5000();
-    // Igual que el backend (R-1): copia el estado del request sin validar la transición.
+    if (!existente) return this.errorInexistente(id);
+    if (!this.completo(request)) return this.error5000();
+    // Igual que el backend (R-1 resuelto): el PUT edita el contenido y conserva el estado vigente.
     const actualizada: FilaMock = {
       ...existente,
       ...this.contenido(request),
-      publicationStatus: request.publicationStatus,
       currentVersionNumber: existente.currentVersionNumber + 1,
     };
     this.reemplazar(actualizada);
@@ -129,7 +131,10 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
   transicion(id: string, transicion: TransicionBackend): Observable<FichaLocal> {
     const existente = this.data.find((x) => x.id === id);
     const destino = DESTINO_DE_TRANSICION[transicion];
-    if (!existente || !transicionPermitida(existente.publicationStatus, destino)) return this.error5000();
+    if (!existente) return this.errorInexistente(id);
+    if (!transicionPermitida(existente.publicationStatus, destino)) {
+      return errorDeNegocio(API_CODES.PUBLICATION_TRANSITION_INVALID, TEXTO_4077);
+    }
     const actualizada: FilaMock = {
       ...existente,
       publicationStatus: destino,
@@ -141,7 +146,7 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
 
   desactivar(id: string): Observable<void> {
     const existente = this.data.find((x) => x.id === id);
-    if (!existente) return this.error5000();
+    if (!existente) return this.errorInexistente(id);
     this.reemplazar({
       ...existente,
       active: false,
@@ -178,5 +183,9 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
 
   private error5000(): Observable<never> {
     return errorDeNegocio(API_CODES.UNEXPECTED, TEXTO_5000);
+  }
+
+  private errorInexistente(id: string): Observable<never> {
+    return errorDeNegocio(API_CODES.ENTITY_NOT_FOUND, `El objeto OrganismProcedureLocation con el identificador ${id} no existe.`);
   }
 }

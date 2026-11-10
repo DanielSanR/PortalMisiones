@@ -47,6 +47,7 @@
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [required]="field.validations?.required || false">
+        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
@@ -59,6 +60,7 @@
                [placeholder]="field.placeholder || 'https://...'"
                [required]="field.validations?.required || false">
         <i class="ph ph-link dynamic-form-field__icon" matIconSuffix aria-hidden="true"></i>
+        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
@@ -75,6 +77,7 @@
                 [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
           <i class="ph" [class.ph-eye-slash]="showPassword" [class.ph-eye]="!showPassword" aria-hidden="true"></i>
         </button>
+        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
@@ -89,6 +92,7 @@
                [attr.max]="field.validations?.max"
                [required]="field.validations?.required || false"
                (keydown)="preventE($event)">
+        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 

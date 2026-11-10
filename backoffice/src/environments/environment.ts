@@ -16,9 +16,8 @@ export const environment = {
   dataSource: 'local' as 'mock' | 'local' | 'prod',
   // Override por feature. Lo bloqueado por backend (API spec §7) se mantiene en 'mock'.
   featureOverrides: {
-    // Usuarios: híbrido. El datasource HTTP hace POST /api/user REAL (create) y delega
-    // listado/edición al mock (el backend no expone GET /api/user ni update genérico, BO-17).
-    // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.
+    // Usuarios: real (GET/POST /api/user y acciones de cuenta, BO-22). No se ofrecen la edición (sin endpoint)
+    // ni el borrado definitivo (G-13); el rol llega vacío hasta G-13.
     usuarios: 'local',
     // Trámites (PLAN_TRAMITES_API.md): la cadena plantilla → adopción → ficha → punto de atención se referencia
     // por ids, así que va TODA con la misma fuente. Mezclarlas (p. ej. plantillas real + adopciones mock) hace que

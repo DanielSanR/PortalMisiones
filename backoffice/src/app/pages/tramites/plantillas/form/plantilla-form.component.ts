@@ -11,7 +11,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { FormActionsComponent } from '../../../../shared/components/form-actions/form-actions.component';
 import { FormErrorBannerComponent } from '../../../../shared/components/form-error-banner/form-error-banner.component';
+import { resumenDeErrores } from '../../../../shared/components/dynamic-form-field/form-error-messages.util';
 import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
@@ -79,6 +81,7 @@ type CampoDelForm = keyof PlantillaFormComponent['form']['controls'];
     MatSlideToggleModule,
     MatSnackBarModule,
     MatTooltipModule,
+    FormActionsComponent,
     FormErrorBannerComponent,
     LoadingComponent,
   ],
@@ -288,14 +291,12 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
   /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
   get errorSummary(): string[] {
     if (!this.submitted) return [];
-    const campos: { nombre: CampoConResumen; label: string }[] = [
-      { nombre: 'titulo', label: 'Título' },
-      { nombre: 'slug', label: 'Slug' },
-      { nombre: 'categoriaPrincipalId', label: 'Categoría principal' },
+    const campos: { name: CampoConResumen; label: string }[] = [
+      { name: 'titulo', label: 'Título' },
+      { name: 'slug', label: 'Slug' },
+      { name: 'categoriaPrincipalId', label: 'Categoría principal' },
     ];
-    return campos
-      .filter(({ nombre }) => this.form.controls[nombre].invalid)
-      .map(({ nombre, label }) => `${label} (${this.motivo(this.form.controls[nombre])})`);
+    return resumenDeErrores(this.form, campos, (control) => this.motivo(control));
   }
 
   private motivo(control: AbstractControl): string {

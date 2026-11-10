@@ -1,9 +1,23 @@
 # Pedidos del backoffice al backend — Portal Provincial de Trámites (Misiones)
 
-**Fecha:** 2026-10-16 · **Backend relevado:** `origin/dev` @ `23fd8f9` (código y e2e local 2026-10-15/16) · **Contacto:** Daniel Romero (frontend backoffice)
+**Fecha:** 2026-11-03 · **Backend relevado:** `origin/dev` @ `b6f505b` (código) y API de staging (sondeo con el usuario SA de e2e) · **Contacto:** Daniel Romero (frontend backoffice)
 
-> **Auditoría 2026-10-16:** se revisó cada pedido contra el código de `23fd8f9`. Ninguno está resuelto: los 25 siguen
-> vigentes. No se pudo verificar si hay commits posteriores en `dev`, porque el acceso a GitLab falló el 2026-10-16.
+> **Auditoría 2026-11-03:** se revisó cada pedido contra los 22 commits de `dev` entre `23fd8f9` y `b6f505b`
+> (2026-10-16 a 2026-11-03) y contra el resumen que mandó backend el 2026-11-03. **Resueltos (6):** R-3, R-1, G-14,
+> BO-17 (con la salvedad de G-13), y del lado del código G-6 §1 (`4080`). **Parciales (6):** G-3, G-4, G-8, G-9, G-12, OPS-1.
+> El resto sigue vigente. Backend anunció **G-15** como próximo bloqueo a atacar.
+>
+> **Staging** (`origin/staging` @ `6c9e83d`) tiene `dev` solo hasta `3b4e61e` (2026-10-17): incluye G-14, PPDT-5.2 y
+> `GET /api/user`, pero **no** `V2.28` (R-3), R-1, `V2.27` ni los códigos nuevos. Sondeo 2026-11-03 con SA:
+> `/api/user` 200 (con `role: null`), `/api/procedure-template` y `/api/organism-procedure-location` 200 (vacíos),
+> `/api/tag`, `/api/organism-procedure` y `/api/attention-point` **403**. El usuario AO de e2e no existe en staging (login 404).
+>
+> **Novedades no pedidas que el front puede usar:** `POST /api/user/{id}/role-assignments` (asignar rol a un usuario
+> existente, con `effectiveFrom`/`effectiveTo`; `4081` si se superpone), `GET /api/tag/public` (sin autenticación),
+> `GET /api/procedure/search` ya no da 500 (`V2.29`), y códigos nuevos `4077` (transición inválida, 409) y `4091`
+> (edición concurrente, 409).
+>
+> Historial: la auditoría del 2026-10-16 (contra `23fd8f9`) tenía los 25 pedidos vigentes.
 
 El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles, permisos y etiquetas, y está por integrar el núcleo de trámites: plantillas (`/api/procedure-template`), adopciones (`/api/organism-procedure`), fichas por localidad (`/api/organism-procedure-location`, "OTL") y puntos de atención (`/api/attention-point`). En este documento juntamos lo que hace falta corregir o exponer del lado del backend para cerrar esa integración. Cada pedido se verificó contra el código de `origin/dev` @ `23fd8f9`. Las rutas son relativas a `src/main/java/org/silicon/misiones/portal_misiones/` (código) y a `src/main/resources/db/` (migraciones), salvo que se indique otra cosa. Cada ítem está pensado para copiarse tal cual como tarjeta de Taiga.
 
@@ -11,37 +25,41 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 
 ## Resumen
 
-| ID | Título | Prioridad | Tipo | Qué desbloquea en el front |
-|---|---|---|---|---|
-| **R-3** | Grants de `V2.20`/`V2.23`/`V2.24` filtran por `ROLE_*` y no matchean ningún rol | 🔴 bloquea | bug | Etiquetas (hoy desaparece del menú incluso para SA), Adopciones y Puntos de atención reales |
-| **R-1** | `PUT` de la ficha acepta `publicationStatus` y saltea el workflow | 🔴 bloquea | bug | Edición segura de fichas (hoy cualquiera con `UPDATE_VARIANT` puede publicar) |
-| **G-1** | Response de la ficha (OTL) incompleto y sin filtro por adopción | 🔴 bloquea | contrato | Pantallas de fichas por localidad con datos reales (hoy editar borraría requisitos, costos y URL) |
-| **G-2 / BO-20** | Organismo del usuario en `/api/auth/me` | 🔴 bloquea | contrato | AO adopta trámites; AO/AGENT crean etiquetas locales; preselección de organismo |
-| **BO-17** | Exponer `GET /api/user` | 🔴 bloquea | feature | Listado de usuarios y acciones de fila reales (hoy en mock) |
-| **G-3** | Permisos de lectura para AO y AGENT (`READ_PROCEDURE`, `READ_ADOPTION`) | 🟡 importante | contrato (seed) | AO elige plantilla para adoptar; AGENT ve de qué trámite es cada ficha |
-| **G-4** | Transiciones inválidas como 4xx + endpoints "rechazar" y "volver a borrador" | 🟡 importante | bug + feature | Mensajes de error precisos y bandeja de revisión completa |
-| **G-5 / D-3** | Definir quién publica; AB sin `READ_VARIANT`/`PUBLISH_VARIANT` | 🟡 importante | contrato (seed + doc) | Bandeja de publicación para AB y textos de la UI |
-| **G-9** | Unicidad de ficha (adopción + localidad) y de slug; cascada de vigencia | 🟡 importante | bug | Evitar fichas duplicadas, 500 en la ficha pública y trámites vencidos visibles |
-| **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | Panel de puntos de atención por ficha; listados con volumen real |
-| **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | Mensajes de error consistentes sin traducciones locales |
-| **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
-| **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
-| **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
-| **G-12** | Fichas y puntos de atención: "no existe" como 500 (ver G-4), workflow sobre inactivas, fichas sobre adopciones deshabilitadas, `DELETE` sin versión | 🟡 importante | bug | Mensajes de error precisos y datos consistentes en fichas y puntos |
-| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`), después de R-3, G-14 y G-15 | 🔴 bloquea | ops | Probar contra un backend online todo lo que `dev` trae desde el 2026-08-24: núcleo de trámites, PPDT-5.1, etiquetas, puntos de atención, búsqueda pública |
-| **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments`; además el `UserResponseDTO` llega con `role` y `activeAssignments` en `null` | 🔴 bloquea | bug | "Eliminar definitivamente" de usuarios (BO-3), limpieza de datos de prueba y rol/organismo en el detalle de usuario |
-| **OPS-2** | Purgar en staging los registros de prueba `E2E-*` que la API no permite borrar | 🔵 mejora | ops | Staging limpio (entorno compartido) |
-| **G-14** | `V2.21` impide arrancar: `ALTER TYPE publication_status` de un tipo que no existe | 🔴 bloquea | bug | Desplegar OPS-1 (staging no arrancaría con su base actual) y levantar `dev` desde cero (devs nuevos, CI) |
-| **G-15** | Adopciones: `POST`/`PUT /api/organism-procedure` habilitadas responden 500 (consulta de solapamiento con parámetros sin tipo) | 🔴 bloquea | bug | Adoptar trámites y editar vigencias (toda la sección "Trámites del organismo") |
-| **G-16** | Borrar una categoría, etiqueta o destinatario en uso responde 500 (FK) en vez de 409 | 🟡 importante | bug | Mensaje claro al borrar datos de catálogo en uso |
-| **G-17** | ¿AO/AGENT deben ver las etiquetas globales? Hoy `GET /api/tag` les devuelve solo las locales de su organismo | 🔵 decisión | contrato | Etiquetar plantillas/fichas desde un organismo con etiquetas provinciales |
-| **G-18** | Excepciones de Spring sin manejar responden 500: id no UUID (→ 400), método no soportado (→ 405), body ilegible (→ 400) | 🔵 mejora | bug | Errores precisos; no confundir un request inválido con una caída |
-| **G-19** | Seed de ejemplo para el núcleo de trámites en `dev` (plantillas, adopción, fichas) | 🔵 mejora | ops | QA y demos sobre una base nueva sin cargar todo a mano |
-| **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | Evitar que otros equipos (portal) integren contra información vieja |
+Estado: ✅ resuelto en `dev` · 🟠 parcial · ⬜ pendiente. "En staging" indica si ya se puede probar online.
+
+| ID | Título | Prioridad | Tipo | Estado (2026-11-03) | Qué desbloquea en el front |
+|---|---|---|---|---|---|
+| **G-15** | Adopciones: `POST`/`PUT /api/organism-procedure` habilitadas responden 500 (consulta de solapamiento con parámetros sin tipo) | 🔴 bloquea | bug | ⬜ — **próximo según backend** | Adoptar trámites y editar vigencias (toda la sección "Trámites del organismo") |
+| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | 🟠 staging tiene `dev` hasta 2026-10-17; falta todo lo posterior (R-3, R-1, `V2.27`–`V2.29`) | Probar online etiquetas, adopciones, puntos de atención y el workflow de fichas |
+| **G-1** | Response de la ficha (OTL) incompleto y sin filtro por adopción | 🔴 bloquea | contrato | ⬜ | Pantallas de fichas por localidad con datos reales (hoy editar borraría requisitos, costos y URL) |
+| **G-2 / BO-20** | Organismo del usuario en `/api/auth/me` | 🔴 bloquea | contrato | ⬜ (`/me` sigue con `userId, email, roles, permissions`) | AO adopta trámites; AO/AGENT crean etiquetas locales; preselección de organismo |
+| **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments`; además el `UserResponseDTO` llega con `role` y `activeAssignments` en `null` | 🔴 bloquea | bug | ⬜ — confirmado en staging: `GET /api/user` trae `role: null` | "Eliminar definitivamente" de usuarios (BO-3) y rol/organismo en el listado y el detalle |
+| **R-3** | Grants de `V2.20`/`V2.23`/`V2.24` filtran por `ROLE_*` y no matchean ningún rol | 🔴 bloquea | bug | ✅ `V2.28` (`bab0993`) · no en staging | Etiquetas, Adopciones y Puntos de atención reales |
+| **R-1** | `PUT` de la ficha acepta `publicationStatus` y saltea el workflow | 🔴 bloquea | bug | ✅ `5186ab1` · no en staging | Edición segura de fichas |
+| **G-14** | `V2.21` impide arrancar: `ALTER TYPE publication_status` de un tipo que no existe | 🔴 bloquea | bug | ✅ `4a71cfa` · en staging | Levantar `dev` desde cero y desplegar staging |
+| **BO-17** | Exponer `GET /api/user` | 🔴 bloquea | feature | ✅ `4715be1` · en staging (sin rol: ver G-13) | Listado de usuarios y acciones de fila reales |
+| **G-3** | Permisos de lectura para AO y AGENT (`READ_PROCEDURE`, `READ_ADOPTION`) | 🟡 importante | contrato (seed) | 🟠 `V2.28` da `READ_ADOPTION` a AO y AGENT; falta `READ_PROCEDURE` para AO/AGENT | AO elige plantilla para adoptar; AGENT ve de qué trámite es cada ficha |
+| **G-4** | Transiciones inválidas como 4xx + endpoints "rechazar" y "volver a borrador" | 🟡 importante | bug + feature | 🟠 transición inválida → 409 `4077` y "no existe" → 404 `4073`; faltan `reject` y `return-to-draft` | Mensajes de error precisos y bandeja de revisión completa |
+| **G-5 / D-3** | Definir quién publica; AB sin `READ_VARIANT`/`PUBLISH_VARIANT` | 🟡 importante | contrato (seed + doc) | ⬜ | Bandeja de publicación para AB y textos de la UI |
+| **G-9** | Unicidad de ficha (adopción + localidad) y de slug; cascada de vigencia | 🟡 importante | bug | 🟠 constraints únicas en `V2.27`; falta la cascada de vigencia | Evitar fichas duplicadas y trámites vencidos visibles |
+| **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | ⬜ | Panel de puntos de atención por ficha; listados con volumen real |
+| **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | ⬜ | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
+| **G-12** | Fichas y puntos de atención: "no existe" como 500 (ver G-4), workflow sobre inactivas, fichas sobre adopciones deshabilitadas, `DELETE` sin versión | 🟡 importante | bug | 🟠 "no existe" de fichas → 404 `4073`; puntos de atención y el resto sin cambios | Mensajes de error precisos y datos consistentes en fichas y puntos |
+| **G-16** | Borrar una categoría, etiqueta o destinatario en uso responde 500 (FK) en vez de 409 | 🟡 importante | bug | ⬜ | Mensaje claro al borrar datos de catálogo en uso |
+| **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | 🟠 `4080` con mensaje; `4072` sigue en 400 | Mensajes de error consistentes sin traducciones locales |
+| **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | 🟠 `@Version` en la ficha → 409 `4091`; falta el endpoint de versiones (y el `lockVersion` en el contrato) | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
+| **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | ⬜ | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
+| **G-17** | ¿AO/AGENT deben ver las etiquetas globales? Hoy `GET /api/tag` les devuelve solo las locales de su organismo | 🔵 decisión | contrato | ⬜ (existe `GET /api/tag/public`, pero no resuelve la decisión) | Etiquetar plantillas/fichas desde un organismo con etiquetas provinciales |
+| **G-18** | Excepciones de Spring sin manejar responden 500: id no UUID (→ 400), método no soportado (→ 405), body ilegible (→ 400) | 🔵 mejora | bug | ⬜ | Errores precisos; no confundir un request inválido con una caída |
+| **G-19** | Seed de ejemplo para el núcleo de trámites en `dev` (plantillas, adopción, fichas) | 🔵 mejora | ops | ⬜ | QA y demos sobre una base nueva sin cargar todo a mano |
+| **OPS-2** | Purgar en staging los registros de prueba `E2E-*` que la API no permite borrar | 🔵 mejora | ops | ⬜ | Staging limpio (entorno compartido) |
+| **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | ⬜ (la guía tuvo un cambio menor en `dev`; sin verificar) | Evitar que otros equipos (portal) integren contra información vieja |
 
 ---
 
 ## R-3 · Grants de `V2.20`, `V2.23` y `V2.24` sin efecto por el prefijo `ROLE_`
+
+> **Estado 2026-11-03:** ✅ **Resuelto en `dev`** (`bab0993`, `V2.28__grant_missing_module_permissions.sql`): grants de `*_ADOPTION`, `*_ATTENTION_POINT` y `*_TAG` a SA, AB, AO y AGENT por el código sin prefijo. **No está en staging**: ahí `/api/tag`, `/api/organism-procedure` y `/api/attention-point` siguen en 403 para SA.
 
 > **Actualización 2026-10-15:** reproducido también en `dev` @ `23fd8f9` con base nueva: se aplican las 43
 > migraciones (con el parche local de G-14; sin él, el arranque corta en `V2.21`) y ningún rol recibe `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT`. Aplicando los mismos grants con
@@ -108,6 +126,8 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 
 ## R-1 · El `PUT` de la ficha acepta `publicationStatus`
 
+> **Estado 2026-11-03:** ✅ **Resuelto en `dev`** (`5186ab1`): `update()` ya no asigna `publicationStatus` y `create()` arranca siempre en `BORRADOR`. El campo sigue en el request DTO por compatibilidad (se ignora). No está en staging.
+
 **Prioridad:** 🔴 · **Tipo:** bug (autorización)
 
 **Problema**
@@ -133,6 +153,8 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 ---
 
 ## G-1 · Response completo de la ficha por localidad + filtro por adopción
+
+> **Estado 2026-11-03:** ⬜ **Pendiente** (backend lo tiene en su lista: "completar el response de OTL y sus filtros").
 
 **Prioridad:** 🔴 · **Tipo:** contrato
 
@@ -173,6 +195,8 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 
 ## G-2 / BO-20 · Organismo del usuario en `/api/auth/me`
 
+> **Estado 2026-11-03:** ⬜ **Pendiente.** `/api/auth/me` sigue devolviendo solo `userId, email, roles, permissions` (verificado en staging). Backend lo tiene en su lista.
+
 **Prioridad:** 🔴 · **Tipo:** contrato
 
 **Problema**
@@ -208,6 +232,8 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 
 ## BO-17 · Exponer `GET /api/user`
 
+> **Estado 2026-11-03:** ✅ **Resuelto** (`4715be1`, también en staging): `GET /api/user` con `READ_USER`, filtrado por organismo para AO. **Salvedad:** cada usuario llega con `role: null` y `activeAssignments` vacío (ver G-13), así que el listado todavía no puede mostrar rol ni organismo.
+
 **Prioridad:** 🔴 · **Tipo:** feature
 
 **Problema**
@@ -242,6 +268,8 @@ Más adelante se puede paginar (ver G-7).
 
 ## G-3 · Permisos de lectura para AO y AGENT
 
+> **Estado 2026-11-03:** 🟠 **Parcial.** `V2.28` asigna `READ_ADOPTION` también a AO y AGENT. Falta `READ_PROCEDURE` para AO y AGENT (no aparece en ninguna migración nueva). Backend: "verificar permisos de lectura para AO y AGENT".
+
 **Prioridad:** 🟡 · **Tipo:** contrato (seed) — requiere confirmación de producto
 
 **Problema** — seed vigente (`V0.1:53-92`, `V2.9:54-70`, `V2.20`):
@@ -270,6 +298,8 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 ---
 
 ## G-4 · Transiciones de la ficha: errores 4xx y endpoints faltantes
+
+> **Estado 2026-11-03:** 🟠 **Parcial** (`5186ab1`): transición inválida → **409 `4077`** ("La transición de publicación solicitada no es válida desde el estado actual."); ficha, adopción o localidad inexistente o fuera de alcance → **404 `4073`**. Faltan los endpoints `reject` y `return-to-draft` (backend lo tiene en su lista). El punto 3 (`BORRADOR → DESPUBLICADO`) sigue sin respuesta. Nota: el código usado fue `4077`, no el `4081` propuesto; el `4081` quedó para asignaciones de rol superpuestas.
 
 **Prioridad:** 🟡 · **Tipo:** bug + feature
 
@@ -323,6 +353,8 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 ---
 
 ## G-9 · Unicidad de fichas y de slug; cascada de vigencia
+
+> **Estado 2026-11-03:** 🟠 **Parcial** (`965fb21`, `V2.27`): `UNIQUE (organism_procedure_id, location_id)` y `UNIQUE (slug, organism_procedure_id)` en fichas. Falta la cascada de vigencia (backend lo tiene en su lista). Sin verificar qué status devuelve hoy una violación de esas constraints (si no se maneja, sería 500).
 
 **Prioridad:** 🟡 · **Tipo:** bug (integridad)
 
@@ -399,6 +431,8 @@ Además:
 
 ## G-6 · Mensaje del `4080` y status del `4072`
 
+> **Estado 2026-11-03:** 🟠 **Parcial:** `response.code.4080` ya tiene mensaje. El `4072` sigue respondiendo 400 (`CategoryService`, `LifeEventService`).
+
 **Prioridad:** 🔵 · **Tipo:** bug
 
 **Problema**
@@ -419,6 +453,8 @@ Además:
 ---
 
 ## G-8 · Historial de versiones y control de concurrencia
+
+> **Estado 2026-11-03:** 🟠 **Parcial** (`965fb21`): `@Version lockVersion` en `OrganismProcedureLocation` y handler de `OptimisticLockException` → **409 `4091`** ("El recurso fue modificado por otro usuario."). Pendiente: exponer `lockVersion` en request/response para que el control funcione entre requests, y el endpoint de versiones.
 
 **Prioridad:** 🔵 · **Tipo:** feature
 
@@ -500,6 +536,8 @@ clientes. El "no encontrado" no permite señalar qué selección está mal.
 
 ## G-12 · Fichas por localidad y puntos de atención: validaciones faltantes
 
+> **Estado 2026-11-03:** 🟠 **Parcial:** en fichas, "no existe" responde 404 `4073` (ver G-4). Puntos de atención, workflow sobre fichas inactivas, fichas sobre adopciones deshabilitadas y `DELETE` sin versión: sin cambios.
+
 **Prioridad:** 🟡 importante · **Tipo:** bug · Detectado al integrar fichas y puntos de atención (fases 3 y 4 del front).
 
 **Problema** (todo en `origin/dev` @ `23fd8f9`)
@@ -530,6 +568,8 @@ fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o v
 ---
 
 ## OPS-1 · Desplegar `dev` en staging
+
+> **Estado 2026-11-03:** 🟠 **Parcial.** Hubo un merge `dev` → `staging` el 2026-10-17 (`2e3f277`, hasta `3b4e61e`): staging ya arranca (G-14) y tiene `GET /api/user`. Falta desplegar todo lo posterior: R-3 (`V2.28`), R-1, `V2.25`–`V2.29`, asignación de roles y búsqueda pública.
 
 **Prioridad:** 🔴 bloquea · **Tipo:** ops · Verificado el 2026-10-15.
 
@@ -576,6 +616,8 @@ levantando el backend local con Docker.
 ---
 
 ## G-13 · El borrado definitivo de usuario siempre falla (500)
+
+> **Estado 2026-11-03:** ⬜ **Pendiente.** Confirmado en staging el 2026-11-03: `GET /api/user` devuelve cada usuario con `role: null` y `activeAssignments` vacío. El borrado definitivo no se tocó.
 
 **Prioridad:** 🔴 bloquea · **Tipo:** bug · Detectado por el e2e contra staging (2026-10-15); la causa también está en `dev`.
 
@@ -632,6 +674,8 @@ backend real. Los usuarios de prueba no se pueden limpiar.
 
 ## G-14 · `V2.21` impide arrancar el backend
 
+> **Estado 2026-11-03:** ✅ **Resuelto** (`4a71cfa`, también en staging): `V2.21` ahora rehace los `CHECK` de `publication_status` en vez de alterar un enum inexistente. El parche local del e2e ya no hace falta.
+
 **Prioridad:** 🔴 bloquea · **Tipo:** bug · Reproducido el 2026-10-15 levantando `dev` @ `23fd8f9` con Docker y una base vacía.
 
 **Problema**
@@ -666,6 +710,8 @@ editar `V2.21` si ya está aplicada en alguna base: agregar una migración super
 ---
 
 ## G-15 · Adopciones: crear y editar una adopción habilitada responde 500
+
+> **Estado 2026-11-03:** ⬜ **Pendiente — es el próximo bloqueo que backend anunció atacar** (2026-11-03).
 
 **Prioridad:** 🔴 bloquea · **Tipo:** bug · Reproducido por el e2e contra `dev` @ `23fd8f9` en local (2026-10-15).
 
@@ -812,46 +858,45 @@ vigente y fichas en distintos estados, usando ids fijos documentados.
 
 ## Orden sugerido de atención
 
-1. **R-3:** una migración chica que habilita Etiquetas, Adopciones y Puntos de atención para todos los roles. Conviene sumar en el mismo archivo los grants que se decidan en **G-3** y **G-5**.
-2. **G-14:** `V2.21` impide arrancar, también sobre la base actual de staging. Es requisito duro de OPS-1.
-3. **G-15:** crear o editar adopciones habilitadas da 500. Sin esto no se puede adoptar ni en local ni en staging.
-4. **OPS-1:** merge de `dev` a `staging`. Va después de R-3, G-14 y G-15 porque depende de ellos; sin esto, nada de lo que `dev` trae desde el 2026-08-24 se puede probar online.
-5. **G-13:** el borrado definitivo de usuarios nunca funciona (FK `RESTRICT`), y el `UserResponseDTO` llega sin rol ni asignaciones.
-6. **R-1:** cambio de una línea, y cierra un agujero de autorización.
-7. **G-1:** mapear campos que ya están en la entidad. Desbloquea toda la sección de fichas.
-8. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
-9. **BO-17:** un método de controller sobre un servicio que ya existe (con el mapeo de G-13 para que traiga rol y organismo).
-10. **G-4 (+ G-12 §1):** errores 4xx para transiciones inválidas y "no existe", y endpoints de rechazo y vuelta a borrador.
-11. **G-9:** unicidad y vigencia, antes de que haya datos reales duplicados.
-12. **G-11:** editar adopciones de plantillas desactivadas y cascada al desactivar una plantilla.
-13. **G-12:** resto de las validaciones de fichas y puntos de atención (resolver §3 junto con G-9 §3).
-14. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación (incluye los filtros de G-1 y G-11 §3).
-15. **G-3 / G-5:** decisiones de producto; los grants que salgan se suman a una migración tipo R-3.
-16. Mejoras y resto: **G-16**, **G-6**, **G-8**, **G-10**, **G-17** (decisión), **G-18**, **G-19**, **DOC-1** y **OPS-2**.
+Actualizado el 2026-11-03. Ya resueltos en `dev`: R-3, G-14, R-1 y BO-17.
+
+1. **G-15:** crear o editar adopciones habilitadas da 500. Sin esto no se puede adoptar ni en local ni en staging. (Backend lo anunció como próximo.)
+2. **OPS-1:** desplegar en staging lo que `dev` tiene después del 2026-10-17 (R-3, R-1, `V2.25`–`V2.29`), idealmente junto con G-15. Sin esto, Etiquetas, Adopciones y Puntos de atención dan 403 online incluso para SA.
+3. **G-13:** que `UserResponseDTO` traiga `role`, `activeAssignments` y el organismo (hoy `GET /api/user` los trae vacíos), y que el borrado definitivo funcione.
+4. **G-1:** mapear campos que ya están en la entidad. Desbloquea toda la sección de fichas.
+5. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
+6. **G-4:** endpoints `reject` y `return-to-draft` (los 4xx ya están).
+7. **G-9:** cascada de vigencia (la unicidad ya está), y que una violación de `uk_otl_*` responda 409 y no 500.
+8. **G-11:** editar adopciones de plantillas desactivadas y cascada al desactivar una plantilla.
+9. **G-12:** resto de las validaciones de fichas y puntos de atención (resolver §3 junto con G-9 §3).
+10. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación (incluye los filtros de G-1 y G-11 §3).
+11. **G-3 / G-5:** `READ_PROCEDURE` para AO/AGENT y la definición de quién publica (decisiones de producto).
+12. Mejoras y resto: **G-16**, **G-6** (`4072`), **G-8** (versiones y `lockVersion` en el contrato), **G-10**, **G-17** (decisión), **G-18**, **G-19**, **DOC-1** y **OPS-2**.
 
 ## Qué hace el front mientras tanto
 
-- **R-3:** SUPERADMIN puede asignar los permisos a mano desde la pantalla de Roles. Si no, Etiquetas queda oculta.
-- **R-1:** el `PUT` de la ficha reenvía siempre el estado actual. La UI nunca ofrece cambiar el estado desde el formulario.
+- **R-3:** resuelto en `dev`. Mientras no llegue a staging, SUPERADMIN puede asignar los permisos a mano desde la pantalla de Roles; si no, Etiquetas queda oculta.
+- **R-1:** resuelto en `dev` (el backend ignora el estado en el `PUT`). El front igual reenvía el estado actual y nunca ofrece cambiarlo desde el formulario.
 - **Cadena de trámites (plantillas → adopciones → fichas → puntos):** va toda con la misma fuente, porque se referencia por ids. En `ng serve`, staging y prod va en **mock con la forma real del contrato**; solo `npm run start:local` (`environment.local.ts`, contra `dev` local) la usa en real, fichas y puntos de atención incluidos.
 - **G-1:** el `HttpDataSource` de fichas está escrito y se ejercita con `start:local`, pero con el response mínimo la edición de fichas perdería contenido; por eso fuera de local sigue en mock.
 - **G-2 / G-3:** "Adoptar" se oculta para AO, y el select de organismo de etiquetas solo ofrece lo que el backend acepta.
-- **BO-17:** el listado de usuarios sigue en mock. El detalle (`GET /api/user/{id}`) ya es real, aunque hoy llega sin rol ni asignaciones (G-13).
-- **G-4 / G-12:** los 500 (`5000`) de fichas se muestran con un mensaje prudente ("no se pudo completar la acción"), sin afirmar la causa. "Rechazar" no se ofrece.
+- **BO-17:** el listado de usuarios ya es real (BO-22, 2026-11-10). Mientras el rol llegue en `null` se muestra "Sin dato"; "Editar" queda no disponible (no hay endpoint de edición).
+- **G-4 / G-12:** con el backend de `dev`, transición inválida → 409 `4077` y "no existe" → 404 `4073`; el front ya traduce los dos. "Rechazar" no se ofrece.
+- **G-8:** el front traduce el `4091` ("Otro usuario modificó la ficha mientras la editabas. Recargá para ver los cambios.").
 - **G-5:** el front decide todo por permiso (`PUBLISH_VARIANT`) y nunca por rol, así que se adapta al seed sin cambios de código. Solo los textos dependen de D-3.
-- **G-6:** el front traduce el `4080` y trata el `4072` como conflicto, sin mirar el status.
+- **G-6:** el front traduce el `4080` (el backend ya trae su mensaje) y trata el `4072` como conflicto, sin mirar el status.
 - **G-7:** paginación, orden y filtros en el cliente.
 - **G-8:** el historial de versiones no se muestra.
 - **G-9:** el front sugiere slugs a partir de la plantilla y la localidad para bajar la chance de duplicados, pero no los puede garantizar.
 - **G-10:** el front canonicaliza `slugBase` antes de enviar (mismo criterio que `TagService`). No protege a otros clientes.
 - **G-11:** adopciones en mock fuera de `start:local`; la vista "Organismos que la adoptaron" filtra en el cliente.
-- **G-13:** con la fuente real, "Eliminar definitivamente" no se ofrece; queda la baja lógica (desactivar).
-- **G-14:** para el e2e local se crea el tipo `publication_status` vacío antes de arrancar el backend (ver G-14).
+- **G-13:** con la fuente real, "Eliminar definitivamente" no se ofrece; queda la baja lógica (desactivar). La columna Rol muestra "Sin dato".
+- **G-14:** resuelto; el paso de crear el tipo `publication_status` antes de arrancar el backend local ya no hace falta.
 - **G-15:** adopciones en mock fuera de `start:local`. El e2e local siembra la adopción por SQL (`E2E_SEED_SQL`) para poder probar fichas y puntos de atención.
 - **G-16:** el error de borrado en uso se muestra con el mensaje genérico de 500.
 - **G-17:** el front muestra lo que devuelve `GET /api/tag`, sin cambios de código: si se amplía el alcance, AO/AGENT las ven solas.
 - **G-18:** los 500 se muestran con el mensaje genérico prudente; el front envía fechas completas (`yyyy-MM-ddTHH:mm:ss`) y nunca ids de mock contra el backend (por eso la cadena de trámites va con una sola fuente).
 - **G-19:** el e2e local siembra por SQL lo que no se puede crear por API; QA y demos usan el mock.
-- **OPS-1:** staging corre con la cadena de trámites y etiquetas en mock (`environment.staging.ts`); lo nuevo se prueba con el backend local en Docker.
+- **OPS-1:** staging corre con la cadena de trámites y etiquetas en mock (`environment.staging.ts`); lo nuevo se prueba con el backend local en Docker. Cuando staging tenga `V2.28`, se pasan Etiquetas y Plantillas a real; Adopciones esperan G-15.
 - **OPS-2:** el e2e ya no deja registros nuevos en staging; los existentes quedan inactivos.
 - **DOC-1:** el front se integra contra el código de `dev` y este documento, no contra la guía.

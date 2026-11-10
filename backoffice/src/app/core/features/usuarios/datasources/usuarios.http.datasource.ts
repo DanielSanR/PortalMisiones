@@ -4,107 +4,97 @@ import { Observable, map, throwError } from 'rxjs';
 import { environment } from '@env/environment';
 import { ResponseDTO } from '@core/models/api-response.model';
 import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
-import { UsuarioService } from '@core/services/usuario.service';
 import { UsuariosDataSource } from './usuarios.datasource';
-import { toUsuarioVM, mockUsuarioToVM } from '../mappers/usuarios.mapper';
-import { CreateUserRequest, UserResponseDTO } from '../models/usuario.dto';
+import { toCreateUserRequest, toUsuarioVM } from '../mappers/usuarios.mapper';
+import {
+  ChangeEmailRequest, ChangePasswordRequest, StatusAccountRequest, UserResponseDTO,
+} from '../models/usuario.dto';
 import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
-import { UserRole } from '@core/enums/user-role.enum';
 
 /**
- * DataSource híbrido de usuarios (backend parcial, BACKEND_API_SPEC.md §3 + §7):
- *  - `create` → REAL `POST /api/user` (el form provee el UUID del rol y profileDto).
- *  - `list`/`getById`/`update` → MOCK (el backend no expone `GET /api/user`
- *    ni update genérico). Cuando el backend los exponga, se reemplazan por HTTP real.
- *  - `toggleActive`/`changePassword`/`changeEmail`/`deleteDefinitive` → NO DISPONIBLES (`soportaAccionesDeCuenta =
- *    false`, la lista no las ofrece). Ver el bloque al final.
+ * DataSource real de usuarios (`/api/user`, backend `dev` @ `b6f505b`):
+ *  - `list` → `GET /api/user` (`READ_USER`; AO recibe solo los de su organismo, PPDT-5.2).
+ *  - `getById` → `GET /api/user/{id}`. `create` → `POST /api/user`.
+ *  - Estado de la cuenta (explícito, nunca un toggle), email y contraseña → endpoints reales por usuario.
+ *  - `update` → NO DISPONIBLE: el backend no tiene edición de perfil/rol (`PUT /api/user/{id}` es la baja
+ *    lógica). `soportaEdicion = false`, la lista no ofrece "Editar".
+ *  - `deleteDefinitive` → NO DISPONIBLE hasta G-13 (hoy siempre 500 por la FK de `user_role_assignments`).
+ * ⚠️ G-13: el response trae `role: null` y sin nombre/organismo; el mapper los deja vacíos.
  */
 @Injectable()
 export class UsuariosHttpDataSource extends UsuariosDataSource {
-  /** Hasta BO-17 (`GET /api/user`): ver `accionDeCuentaNoDisponible`. */
-  readonly soportaAccionesDeCuenta = false;
+  readonly soportaAccionesDeCuenta = true;
+  readonly soportaEdicion = false;
+  readonly soportaBorradoDefinitivo = false;
 
   private readonly apiUrl = `${environment.apiBaseUrl}/api/user`;
 
-  constructor(
-    private http: HttpClient,
-    private usuariosMock: UsuarioService
-  ) {
+  constructor(private http: HttpClient) {
     super();
   }
 
-  /** REAL: POST /api/user. `form.rol` = UUID del rol. organizationId se omite (organismos aún sin API). */
+  list(): Observable<UsuarioVM[]> {
+    return this.http
+      .get<ResponseDTO<UserResponseDTO[]>>(this.apiUrl)
+      .pipe(map((res) => (res.data ?? []).map(toUsuarioVM)));
+  }
+
+  getById(id: string): Observable<UsuarioVM> {
+    return this.http
+      .get<ResponseDTO<UserResponseDTO>>(this.urlDe(id))
+      .pipe(map((res) => toUsuarioVM(res.data)));
+  }
+
+  /**
+   * REAL: POST /api/user (`CreateUserRequest`, backend `dev` @ `b6f505b`). `form.rol` = UUID del rol.
+   * `form.organismoId` viaja como `organizationId`: el backend lo exige si el rol es de scope
+   * `organismo` (si falta → 403 `4029`) y, si quien crea es ADMIN_ORGANIZATION, lo pisa con el suyo.
+   * Para un rol `global` el form manda `null` y el campo se omite: el backend NO lo rechaza y dejaría
+   * la asignación del rol global atada a ese organismo.
+   */
   create(form: UsuarioFormValue): Observable<UsuarioVM> {
-    const body: CreateUserRequest = {
-      email: form.email,
-      password: form.password,
-      role: form.rol,
-      profileDto: { firstName: form.nombre, lastName: form.apellido },
-    };
+    const body = toCreateUserRequest(form, form.rol);
     return this.http
       // El form muestra el error inline; se salta el diálogo de error global.
       .post<ResponseDTO<UserResponseDTO>>(this.apiUrl, body, sinDialogoGlobal())
       .pipe(map((res) => toUsuarioVM(res.data)));
   }
 
-  // ── Operaciones aún no expuestas por el backend → delegan al mock ──
-  list(): Observable<UsuarioVM[]> {
-    return this.usuariosMock.getAll().pipe(map((res) => res.data.map(mockUsuarioToVM)));
+  update(_id: string, _form: UsuarioFormValue): Observable<UsuarioVM> {
+    return noDisponible('editar el usuario', 'el backend no tiene edición de perfil ni de rol');
   }
 
-  getById(id: string): Observable<UsuarioVM> {
-    return this.usuariosMock.getById(id).pipe(map(mockUsuarioToVM));
-  }
-
-  update(id: string, form: UsuarioFormValue): Observable<UsuarioVM> {
-    return this.usuariosMock
-      .update(id, {
-        nombre: form.nombre,
-        apellido: form.apellido,
-        rol: form.rol as UserRole,
-        organismoId: form.organismoId ?? undefined,
-      })
-      .pipe(map(mockUsuarioToVM));
-  }
-
-  toggleActive(_id: string): Observable<UsuarioVM> {
-    return accionDeCuentaNoDisponible('cambiar el estado de la cuenta');
-  }
-
-  /** REAL: PUT /api/user/{id}/status-account. */
   setAccountStatus(id: string, active: boolean): Observable<void> {
+    const body: StatusAccountRequest = { accountActive: active };
     return this.http
-      .put<unknown>(
-        `${this.apiUrl}/${encodeURIComponent(id)}/status-account`,
-        { accountActive: active },
-        sinDialogoGlobal()
-      )
+      .put<unknown>(`${this.urlDe(id)}/status-account`, body, sinDialogoGlobal())
       .pipe(map(() => void 0));
   }
 
-  // ── Acciones de cuenta por fila: el backend las expone (change-password, change-email,
-  // DELETE /admin), pero mientras el listado sea mock (sin `GET /api/user`, BO-17) los ids de las filas
-  // no existen en el backend y cada llamada real daría 404. Antes iban al mock y reportaban éxito sin
-  // tocar el backend, lo que es peligroso (un admin cree que reseteó una contraseña comprometida). Ahora
-  // no se ofrecen (`soportaAccionesDeCuenta = false`) y, si igual se llaman, fallan explícitamente.
-  // Al exponerse `GET /api/user`: HTTP real con los DTOs de `usuario.dto.ts` + `sinDialogoGlobal()`,
-  // y `soportaAccionesDeCuenta = true`.
-  changePassword(_id: string, _newPassword: string): Observable<void> {
-    return accionDeCuentaNoDisponible('cambiar la contraseña');
+  changePassword(id: string, newPassword: string): Observable<void> {
+    const body: ChangePasswordRequest = { newPassword };
+    return this.http
+      .put<unknown>(`${this.urlDe(id)}/change-password`, body, sinDialogoGlobal())
+      .pipe(map(() => void 0));
   }
 
-  changeEmail(_id: string, _newEmail: string): Observable<void> {
-    return accionDeCuentaNoDisponible('cambiar el email');
+  changeEmail(id: string, newEmail: string): Observable<void> {
+    const body: ChangeEmailRequest = { newEmail };
+    return this.http
+      .patch<unknown>(`${this.urlDe(id)}/change-email`, body, sinDialogoGlobal())
+      .pipe(map(() => void 0));
   }
 
   deleteDefinitive(_id: string): Observable<void> {
-    return accionDeCuentaNoDisponible('eliminar el usuario');
+    return noDisponible('eliminar el usuario', 'el backend todavía no permite el borrado definitivo (G-13)');
+  }
+
+  private urlDe(id: string): string {
+    return `${this.apiUrl}/${encodeURIComponent(id)}`;
   }
 }
 
-/** Error explícito (nunca un éxito falso) para una acción de cuenta sin backend utilizable (BO-17). */
-function accionDeCuentaNoDisponible(accion: string): Observable<never> {
-  return throwError(() => new Error(
-    `No se puede ${accion} todavía: el listado de usuarios no viene del servidor (falta GET /api/user, BO-17).`,
-  ));
+/** Error explícito (nunca un éxito falso) para una operación que el backend no ofrece. */
+function noDisponible(accion: string, motivo: string): Observable<never> {
+  return throwError(() => new Error(`No se puede ${accion}: ${motivo}.`));
 }

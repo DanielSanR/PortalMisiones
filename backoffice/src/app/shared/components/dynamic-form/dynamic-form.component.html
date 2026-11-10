@@ -8,7 +8,8 @@
   <app-form-error-banner *ngIf="submitted" [live]="false" [errors]="invalidFieldMessages()"></app-form-error-banner>
 
   <div class="form-fields">
-    <div *ngFor="let field of fields; trackBy: trackByName"
+    <ng-container *ngFor="let field of fields; trackBy: trackByName">
+    <div *ngIf="seDibuja(field)"
          class="form-field"
          [ngClass]="getFieldCssClass(field)">
       <label *ngIf="showExternalLabel(field)"
@@ -28,30 +29,19 @@
         Campo de ejemplo, no persiste.
       </span>
     </div>
+    </ng-container>
   </div>
 
-  <div class="form-actions" *ngIf="!hideButtons">
-    <span class="form-actions__help">{{ helpText }}</span>
-    <div class="form-actions__buttons">
-      <button mat-stroked-button color="primary" type="button"
-              [disabled]="saving"
-              (click)="formCancel.emit()">
-        {{ cancelButtonText }}
-      </button>
-      <!-- El tooltip no se dispara sobre un botón `disabled`: se ancla al contenedor, que es
-           focusable por teclado solo cuando el motivo del bloqueo es "sin cambios". -->
-      <span class="form-actions__submit"
-            [matTooltip]="sinCambios ? 'No hay cambios para guardar' : ''"
-            [attr.tabindex]="sinCambios && !saving ? 0 : null">
-        <button mat-raised-button color="primary"
-                type="submit"
-                [attr.aria-busy]="saving || null"
-                [disabled]="saving || sinCambios">
-          <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
-          <i *ngIf="!saving" class="ph ph-floppy-disk" aria-hidden="true"></i>
-          <span>{{ saving ? savingButtonText : submitButtonText }}</span>
-        </button>
-      </span>
-    </div>
-  </div>
+  <!-- Widgets propios de la página, atados a campos `custom` (ver `FieldConfig.type`). -->
+  <ng-content></ng-content>
+
+  <app-form-actions *ngIf="!hideButtons"
+                    [helpText]="helpText"
+                    [cancelText]="cancelButtonText"
+                    [submitText]="submitButtonText"
+                    [savingText]="savingButtonText"
+                    [saving]="saving"
+                    [sinCambios]="sinCambios"
+                    (cancelar)="formCancel.emit()">
+  </app-form-actions>
 </form>

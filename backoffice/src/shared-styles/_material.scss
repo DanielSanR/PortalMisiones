@@ -543,21 +543,24 @@
     font-size: var(--theme-font-size-sm);
   }
 
+  // Texto y acción de cada variante cumplen WCAG AA (>= 4.5:1) sobre su fondo: los ratios están
+  // junto a los tokens `--theme-snackbar-*` en `_themes.scss`.
   &.snackbar-success {
     --mdc-snackbar-container-color: var(--theme-snackbar-success-bg);
-    --mdc-snackbar-supporting-text-color: #FFFFFF;
+    --mdc-snackbar-supporting-text-color: var(--theme-snackbar-text);
     --mat-snack-bar-button-color: var(--theme-snackbar-success-action);
   }
 
   &.snackbar-error {
     --mdc-snackbar-container-color: var(--theme-snackbar-error-bg);
-    --mdc-snackbar-supporting-text-color: #FFFFFF;
+    --mdc-snackbar-supporting-text-color: var(--theme-snackbar-text);
     --mat-snack-bar-button-color: var(--theme-snackbar-error-action);
   }
 
   &.snackbar-warning {
-    --mdc-snackbar-container-color: var(--theme-warning);
-    --mdc-snackbar-supporting-text-color: #FFFFFF;
+    --mdc-snackbar-container-color: var(--theme-snackbar-warning-bg);
+    --mdc-snackbar-supporting-text-color: var(--theme-snackbar-text);
+    --mat-snack-bar-button-color: var(--theme-snackbar-warning-action);
   }
 }
 

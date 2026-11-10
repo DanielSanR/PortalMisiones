@@ -48,9 +48,15 @@ export const API_CODES = {
   // fichas y puntos de atención los usan para "ya existe" / "no existe o está fuera de tu alcance").
   ENTITY_CONFLICT: 4072,
   ENTITY_NOT_FOUND: 4073,
-  // Adopción solapada: misma plantilla, mismo organismo, vigencias que se pisan (409). Sin mensaje en
-  // `messages.properties`: llega `"response.code.4080"` y el front lo traduce.
+  // Transición de publicación de la ficha no permitida desde el estado actual (409, backend `dev` 5186ab1).
+  PUBLICATION_TRANSITION_INVALID: 4077,
+  // Adopción solapada: misma plantilla, mismo organismo, vigencias que se pisan (409). El backend de `dev`
+  // ya trae el mensaje; staging todavía manda la clave cruda `"response.code.4080"` y el front lo traduce.
   ADOPTION_OVERLAP: 4080,
+  // Asignación de rol que se superpone en vigencia con otra del mismo usuario (409).
+  ROLE_ASSIGNMENT_OVERLAP: 4081,
+  // Edición concurrente: otro usuario guardó el recurso antes (409, `@Version` de la ficha).
+  CONCURRENT_MODIFICATION: 4091,
 
   // Sistema
   UNEXPECTED: 5000,

@@ -16,6 +16,7 @@
         {{ option.name }}
       </mat-option>
     </mat-select>
+    <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
     <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
   </mat-form-field>
 </ng-container>

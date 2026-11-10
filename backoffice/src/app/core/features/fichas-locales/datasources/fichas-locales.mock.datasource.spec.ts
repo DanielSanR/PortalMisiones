@@ -50,9 +50,9 @@ describe('FichasLocalesMockDataSource', () => {
     expect(publicada.version).toBe(4);
   });
 
-  it('una transición inválida responde 5000 y no cambia nada', async () => {
+  it('una transición inválida responde 4077 y no cambia nada', async () => {
     const creada = await firstValueFrom(ds.create(FORM));
-    expect(await codigoDeError(firstValueFrom(ds.transicion(creada.id, 'publish')))).toBe(5000);
+    expect(await codigoDeError(firstValueFrom(ds.transicion(creada.id, 'publish')))).toBe(4077);
     const releida = await firstValueFrom(ds.getById(creada.id));
     expect(releida.estado).toBe('BORRADOR');
     expect(releida.version).toBe(1);
@@ -70,8 +70,14 @@ describe('FichasLocalesMockDataSource', () => {
     expect(f.estado).toBe('DESPUBLICADO');
   });
 
-  it('ficha inexistente o campos NOT NULL faltantes → 5000', async () => {
-    expect(await codigoDeError(firstValueFrom(ds.getById('no-existe')))).toBe(5000);
+  it('el PUT conserva el estado aunque el request mande otro (R-1)', async () => {
+    const editada = await firstValueFrom(ds.update('fl-8', { ...FORM, costos: '$1' }, 'PUBLICADO'));
+    expect(editada.estado).toBe('EN_REVISION');
+  });
+
+  it('ficha inexistente → 4073; campos NOT NULL faltantes → 5000', async () => {
+    expect(await codigoDeError(firstValueFrom(ds.getById('no-existe')))).toBe(4073);
+    expect(await codigoDeError(firstValueFrom(ds.transicion('no-existe', 'publish')))).toBe(4073);
     expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, localidadId: '' })))).toBe(5000);
   });
 });

@@ -177,12 +177,21 @@
   // Snackbar (nuevo, Fase 2a) — paleta propia, no reutiliza los semánticos
   // inline (success/error de texto/badges); el toast usa tonos inversos.
   // ---------------------------------------------------------------------------
+  // Contraste WCAG 2.2 AA (>= 4.5:1) verificado para texto y acción sobre cada fondo:
+  //   success  texto 17.06:1 · acción 9.35:1
+  //   error    texto  9.22:1 · acción 6.55:1
+  //   warning  texto  5.60:1 · acción 5.11:1
+  --theme-snackbar-text: #FFFFFF;             // texto de las tres variantes
   --theme-snackbar-success-bg: #1A1A2E;       // = --theme-text-primary
   --theme-snackbar-success-icon: #86EFAC;     // = --theme-success-border
   --theme-snackbar-success-action: #9EC4E8;   // = --theme-primary-200
   --theme-snackbar-error-bg: #8E1616;
   --theme-snackbar-error-icon: #FFFFFF;
   --theme-snackbar-error-action: #FFCDD2;
+  // No usar --theme-warning (#E65100) de fondo: con texto blanco da 3.79:1.
+  --theme-snackbar-warning-bg: #BF360C;       // = --theme-warning-text
+  --theme-snackbar-warning-icon: #FFFFFF;
+  --theme-snackbar-warning-action: #FFF3E0;   // = --theme-warning-bg (--theme-warning-border daría 3.79:1)
 
   // ---------------------------------------------------------------------------
   // Estado de Tramites — colores accesibles con contraste >= 4.5:1

@@ -6,6 +6,7 @@ import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AccessRule } from '../../../core/models/access-rule.model';
 import { AriaDisabledDirective } from '../../directives/aria-disabled.directive';
+import { UnavailableDirective } from '../../directives/unavailable.directive';
 
 let nextUid = 0;
 
@@ -49,7 +50,7 @@ export interface RowAction {
   selector: 'app-row-actions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncPipe, MatMenuModule, MatTooltipModule, AriaDisabledDirective],
+  imports: [AsyncPipe, MatMenuModule, MatTooltipModule, AriaDisabledDirective, UnavailableDirective],
   templateUrl: './row-actions.component.html',
   styleUrl: './row-actions.component.scss',
 })

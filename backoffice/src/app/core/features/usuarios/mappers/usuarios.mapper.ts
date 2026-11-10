@@ -1,4 +1,4 @@
-import { BACKEND_TO_ENUM, UserRole } from '@core/enums/user-role.enum';
+import { BACKEND_TO_ENUM } from '@core/enums/user-role.enum';
 import { CreateUserRequest, UserResponseDTO } from '../models/usuario.dto';
 import { Usuario } from '@core/models/usuario.model';
 import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
@@ -6,12 +6,12 @@ import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 /**
  * Mapea el DTO real del backend (`UserResponseDTO`) al ViewModel de la UI.
  * ⚠️ El backend NO expone `nombre`/`apellido`/`organismo` en este DTO (vienen del perfil/relaciones),
- * por eso quedan vacíos hasta que se complete con esos datos. Absorbe el `role` anidado.
+ * por eso quedan vacíos. El rol sale de `role` o, si no viene, de la primera asignación vigente; hoy
+ * (G-13) los dos llegan vacíos y queda `null`: nunca se inventa un rol.
  */
 export function toUsuarioVM(dto: UserResponseDTO): UsuarioVM {
-  const rol = dto.role?.code
-    ? BACKEND_TO_ENUM[`ROLE_${dto.role.code}`] ?? UserRole.AGENT
-    : UserRole.AGENT;
+  const codigo = dto.role?.code ?? dto.activeAssignments?.[0]?.code;
+  const rol = codigo ? BACKEND_TO_ENUM[`ROLE_${codigo.replace(/^ROLE_/, '')}`] ?? null : null;
 
   return {
     id: dto.id,
@@ -39,15 +39,16 @@ export function mockUsuarioToVM(u: Usuario): UsuarioVM {
 }
 
 /**
- * Construye el request real de creación. `roleId` es el UUID del rol (el backend exige UUID,
- * no el código). El form trabaja con el enum; la resolución código→UUID la hace el DataSource HTTP.
+ * Construye el request real de creación. `roleId` es el UUID del rol (el backend exige UUID, no el
+ * código); en el alta el form ya trabaja con el UUID del catálogo `/api/role/allowed`.
+ * `organizationId` solo viaja si el form trae organismo (rol de scope `organismo`).
  */
 export function toCreateUserRequest(form: UsuarioFormValue, roleId: string): CreateUserRequest {
   return {
     email: form.email,
     password: form.password,
     role: roleId,
-    organizationId: form.organismoId ?? undefined,
+    organizationId: form.organismoId || undefined,
     profileDto: { firstName: form.nombre, lastName: form.apellido },
   };
 }

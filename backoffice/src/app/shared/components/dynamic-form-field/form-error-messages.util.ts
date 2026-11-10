@@ -1,4 +1,4 @@
-import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { AbstractControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { FieldConfig } from '../../../core/models/field.interface';
 
 /** Generadores de mensaje por clave de error de validación (es-AR). */
@@ -57,4 +57,32 @@ export function getControlErrorMessage(
     return Object.keys(errors).length ? 'Este campo tiene un error' : null;
   }
   return FORM_ERROR_MESSAGES[errorKey]?.(field) ?? 'Este campo tiene un error';
+}
+
+/** Lo mínimo que el resumen necesita de un campo: su control y cómo se llama en pantalla. */
+export interface CampoDeResumen {
+  name: string;
+  label: string;
+}
+
+/**
+ * Mensajes "Label (motivo)" del banner resumen: uno por cada campo de `campos` cuyo control está
+ * inválido y tocado, en ese orden. Los controles que no existen o están deshabilitados no cuentan.
+ *
+ * `motivo` resuelve el texto de cada error: `app-dynamic-form` usa `getControlErrorMessage`; un
+ * formulario a mano con validadores propios pasa el suyo. Si devuelve vacío, el campo no se lista.
+ */
+export function resumenDeErrores<T extends CampoDeResumen>(
+  form: FormGroup,
+  campos: readonly T[],
+  motivo: (control: AbstractControl, campo: T) => string | null,
+): string[] {
+  return campos
+    .map((campo) => {
+      const control = form.get(campo.name);
+      if (!control || !control.invalid || !control.touched) return null;
+      const mensaje = motivo(control, campo);
+      return mensaje ? `${campo.label} (${mensaje})` : null;
+    })
+    .filter((mensaje): mensaje is string => !!mensaje);
 }

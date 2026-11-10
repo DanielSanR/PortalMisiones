@@ -17,8 +17,8 @@ export const environment = {
   // production → fileReplacements → core/mocks/excluded-mock.datasource.ts). Si pasás un feature a 'mock',
   // quitá su reemplazo; si pasás uno a real, agregalo. `npm run check:prod-mocks` (prebuild) lo valida.
   featureOverrides: {
-    // Híbrido: alta real (POST /api/user); listado y edición en mock (no hay GET /api/user, BO-17).
-    // Cambiar email/contraseña y borrado definitivo no se ofrecen con esta fuente.
+    // Usuarios: real (GET/POST /api/user y acciones de cuenta, BO-22). No se ofrecen la edición (sin endpoint)
+    // ni el borrado definitivo (G-13); el rol llega vacío hasta G-13.
     usuarios: 'local',
     // Trámites (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
     plantillas: 'mock',       // fase 1: /api/procedure-template — mock hasta OPS-1 (deploy de dev a staging)

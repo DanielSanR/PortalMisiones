@@ -8,13 +8,17 @@ export interface UsuarioVM {
   nombre: string;
   apellido: string;
   email: string;
-  rol: UserRole;
+  /** `null` si la fuente no lo informa (hoy el backend real lo manda vacío, G-13). */
+  rol: UserRole | null;
   organismoId: string | null;
   organismoNombre?: string;
   activo: boolean;
 }
 
-/** Valor crudo del formulario de usuario. `rol` = UUID del rol (create real) o código de rol (edición mock). */
+/**
+ * Valor crudo del formulario de usuario. `rol` = UUID del rol (create real) o código de rol (edición mock).
+ * `organismoId` va con valor solo si el rol elegido es de scope `organismo`; para un rol `global` es `null`.
+ */
 export interface UsuarioFormValue {
   nombre: string;
   apellido: string;

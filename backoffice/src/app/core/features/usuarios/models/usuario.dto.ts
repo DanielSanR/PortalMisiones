@@ -15,12 +15,20 @@ export interface ProfileDto {
   phone?: string;
 }
 
-/** Body de POST /api/user (`CreateUserRequest`). `role` y `organizationId` son UUIDs. */
+/**
+ * Body de POST /api/user (`CreateUserRequest`). `role` y `organizationId` son UUIDs.
+ * Backend: email 5–50, password 8–20 (`AppConstants`), `role` @NotNull, `organizationId` sin anotación.
+ */
 export interface CreateUserRequest {
   email: string;
   password: string;
   role: string; // UUID del rol
-  organizationId?: string; // UUID; para ADMIN_ORGANIZATION se sobreescribe con su org
+  /**
+   * UUID del organismo. Obligatorio de hecho si el rol es de scope `organismo` (`UserService.
+   * validateOrganismScopeRequirement` → 403 `4029`); si quien crea es ADMIN_ORGANIZATION se pisa con el suyo.
+   * Con un rol `global` no se valida: hay que omitirlo.
+   */
+  organizationId?: string;
   profileDto?: ProfileDto;
 }
 

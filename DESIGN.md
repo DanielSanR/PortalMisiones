@@ -100,8 +100,17 @@ etiqueta sale de `EstadoBadgePipe`). No recrear el badge a mano.
 - Series: `--theme-chart-1…6` (`#1A4779 #2F6EB1 #77ABDE #C5DCF2 #0F8A8A #7C5CBF`); histórico
   `--theme-chart-historic` `#5A98D6` (tramo reciente en `--theme-chart-2`). Nunca donut con más de 4 categorías.
 - Skeleton: `--theme-skeleton-base` / `--theme-skeleton-highlight`.
-- Snackbar: `--theme-snackbar-{success|error}-{bg|icon|action}`; se aplica con
-  `panelClass: 'snackbar-success' | 'snackbar-error' | 'snackbar-warning'`.
+- Snackbar: `--theme-snackbar-{success|error|warning}-{bg|icon|action}` + `--theme-snackbar-text` (texto de las
+  tres); se aplica con `panelClass: 'snackbar-success' | 'snackbar-error' | 'snackbar-warning'`. Texto y acción
+  cumplen AA (≥ 4,5:1) sobre su fondo:
+
+  | Variante | Fondo | Texto `#FFFFFF` | Acción |
+  |---|---|---|---|
+  | success | `#1A1A2E` | 17,06:1 | `#9EC4E8` · 9,35:1 |
+  | error | `#8E1616` | 9,22:1 | `#FFCDD2` · 6,55:1 |
+  | warning | `#BF360C` | 5,60:1 | `#FFF3E0` · 5,11:1 |
+
+  El fondo de warning NO es `--theme-warning` (`#E65100`): con texto blanco da 3,79:1. No hay variante `info`.
 
 ## 4. Tipografía
 

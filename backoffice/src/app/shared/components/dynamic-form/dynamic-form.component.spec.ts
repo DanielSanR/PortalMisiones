@@ -1,5 +1,6 @@
+import { Component, ViewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { BrowserAnimationsModule, NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { FieldConfig } from '../../../core/models/field.interface';
 import { DynamicFormComponent } from './dynamic-form.component';
 import { getFormConfig, updateFormConfigOptions } from './dynamic-form.config';
@@ -141,5 +142,253 @@ describe('DynamicFormComponent — errores al enviar', () => {
 
     expect(textoDeError('nombre')).not.toBe('');
     expect(textoDeError('tipo')).not.toBe('');
+  });
+});
+
+/**
+ * Regresión (E2E): enviar el form inválido y después corregir un campo colgaba la pestaña. El mensaje
+ * se borraba con `while (host.firstChild) renderer.removeChild(...)` y, con las animaciones reales de
+ * `mat-form-field`, el renderer difiere esa baja: el bucle no terminaba. Por eso acá van las
+ * animaciones de verdad (`BrowserAnimationsModule`), no las `Noop`.
+ */
+describe('DynamicFormComponent — corregir un campo después de un envío inválido', () => {
+  let fixture: ComponentFixture<DynamicFormComponent>;
+
+  const mensajeDe = (nombre: string): string => {
+    const error: HTMLElement | null = fixture.nativeElement.querySelector(`#${nombre}`)
+      ?.closest('mat-form-field')?.querySelector('mat-error') ?? null;
+    if (!error) return '';
+    // Lo que se ve: los nodos ocultos (`display: none`) no cuentan.
+    return Array.from(error.children)
+      .filter((nodo) => (nodo as HTMLElement).style.display !== 'none')
+      .map((nodo) => nodo.textContent ?? '').join('').trim();
+  };
+
+  function tipear(nombre: string, valor: string): void {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector(`input#${nombre}`);
+    input.value = valor;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, BrowserAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DynamicFormComponent);
+    fixture.componentRef.setInput('fields', [
+      { name: 'codigo', label: 'Código', type: 'text', hint: 'Ayuda', validations: { required: true, maxLength: 5 } },
+      { name: 'descripcion', label: 'Descripción', type: 'text', validations: { required: true } },
+    ] as FieldConfig[]);
+    fixture.detectChanges();
+  });
+
+  it('el mensaje desaparece al corregir, cambia con el error y vuelve si el campo se vacía', () => {
+    fixture.componentInstance.submit();
+    fixture.detectChanges();
+    expect(mensajeDe('codigo')).toBe('Este campo es obligatorio');
+    expect(mensajeDe('descripcion')).toBe('Este campo es obligatorio');
+
+    tipear('codigo', 'ABC');
+    expect(mensajeDe('codigo')).toBe('');
+    expect(mensajeDe('descripcion')).toBe('Este campo es obligatorio');
+
+    tipear('codigo', 'ABCDEFG');
+    expect(mensajeDe('codigo')).toBe('No puede superar los 5 caracteres');
+
+    tipear('codigo', '');
+    expect(mensajeDe('codigo')).toBe('Este campo es obligatorio');
+  });
+});
+
+/**
+ * E1: `(valueChanges)` le avisa a la página que cambió un valor, para que recalcule `fields`
+ * (campo condicional). Re-entregar `fields` o `initialData` no puede reemitir: sería un loop.
+ */
+describe('DynamicFormComponent — valueChanges', () => {
+  let fixture: ComponentFixture<DynamicFormComponent>;
+  let component: DynamicFormComponent;
+  let emitidos: Record<string, unknown>[];
+
+  const base: FieldConfig[] = [
+    { name: 'nombre', label: 'Nombre', type: 'text' },
+    { name: 'bloqueado', label: 'Bloqueado', type: 'text', value: 'fijo', disabled: true },
+  ];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, NoopAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DynamicFormComponent);
+    component = fixture.componentInstance;
+    emitidos = [];
+    component.valueChanges.subscribe((valor) => emitidos.push(valor));
+    fixture.componentRef.setInput('fields', base);
+    fixture.detectChanges();
+  });
+
+  it('no emite al crear el formulario', () => {
+    expect(emitidos).toEqual([]);
+  });
+
+  it('emite el valor completo (con deshabilitados) al tipear', () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input#nombre');
+    input.value = 'Ana';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(emitidos).toEqual([{ nombre: 'Ana', bloqueado: 'fijo' }]);
+  });
+
+  it('emite cuando la página setea un control', () => {
+    component.form.get('nombre')?.setValue('Juan');
+
+    expect(emitidos).toEqual([{ nombre: 'Juan', bloqueado: 'fijo' }]);
+  });
+
+  it('NO emite al re-entregar fields (agregar, quitar, cambiar validadores o disabled)', () => {
+    fixture.componentRef.setInput('fields', [
+      { name: 'nombre', label: 'Nombre', type: 'text', validations: { required: true }, disabled: true },
+      { name: 'extra', label: 'Extra', type: 'text', value: 'x' },
+    ]);
+    fixture.detectChanges();
+
+    expect(component.form.contains('bloqueado')).toBeFalse();
+    expect(component.form.get('extra')?.value).toBe('x');
+    expect(emitidos).toEqual([]);
+  });
+
+  it('NO emite al aplicar initialData', () => {
+    fixture.componentRef.setInput('initialData', { nombre: 'Precargado' });
+    fixture.detectChanges();
+
+    expect(component.form.get('nombre')?.value).toBe('Precargado');
+    expect(emitidos).toEqual([]);
+  });
+});
+
+/**
+ * E4: un campo `custom` tiene control pero no se dibuja; la página proyecta su widget y escribe el
+ * valor. Tiene que contar para `requireChanges` aunque el cambio no nazca en un input del formulario.
+ */
+@Component({
+  standalone: true,
+  imports: [DynamicFormComponent],
+  template: `
+    <app-dynamic-form [fields]="fields" [initialData]="initialData" [requireChanges]="true">
+      <button type="button" class="widget" (click)="elegir()">Elegir</button>
+    </app-dynamic-form>`,
+})
+class HostConCustomComponent {
+  @ViewChild(DynamicFormComponent) dynamicForm!: DynamicFormComponent;
+  fields: FieldConfig[] = [
+    { name: 'nombre', label: 'Nombre', type: 'text' },
+    { name: 'ids', label: 'Elegidos', type: 'custom', value: [], validations: { required: true } },
+  ];
+  initialData = { nombre: 'Rol', ids: ['a'] };
+
+  elegir(): void {
+    const control = this.dynamicForm.form.get('ids')!;
+    control.setValue([...(control.value as string[]), 'b']);
+    control.markAsDirty();
+  }
+}
+
+describe('DynamicFormComponent — campo custom con widget proyectado', () => {
+  let fixture: ComponentFixture<HostConCustomComponent>;
+  let form: DynamicFormComponent;
+
+  const submit = (): HTMLButtonElement => fixture.nativeElement.querySelector('button[type="submit"]');
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [HostConCustomComponent, NoopAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(HostConCustomComponent);
+    fixture.detectChanges();
+    form = fixture.componentInstance.dynamicForm;
+  });
+
+  it('crea el control con su valor inicial y no dibuja celda ni label para él', () => {
+    expect(form.form.get('ids')?.value).toEqual(['a']);
+    expect(fixture.nativeElement.querySelectorAll('.form-field').length).toBe(1);
+    expect(fixture.nativeElement.querySelector('#ids-label')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Tipo de campo no soportado');
+  });
+
+  it('proyecta el widget dentro del <form>, antes de los botones', () => {
+    const widget: HTMLElement = fixture.nativeElement.querySelector('form .widget');
+    expect(widget).not.toBeNull();
+    expect(widget.compareDocumentPosition(submit()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('un cambio hecho por el widget habilita "Guardar" (requireChanges) y viaja en el submit', () => {
+    expect(submit().disabled).toBeTrue();
+
+    (fixture.nativeElement.querySelector('.widget') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(form.form.dirty).toBeTrue();
+    expect(submit().disabled).toBeFalse();
+
+    let enviado: Record<string, unknown> | undefined;
+    form.formSubmit.subscribe((valor) => (enviado = valor));
+    submit().click();
+    expect(enviado).toEqual({ nombre: 'Rol', ids: ['a', 'b'] });
+  });
+});
+
+/**
+ * E3: `hint` se pinta en todos los tipos con `mat-form-field`, no solo en `text`/`textarea`
+ * (antes un select o un email con `hint` declarado lo perdían en silencio).
+ */
+describe('DynamicFormComponent — hint por tipo de campo', () => {
+  let fixture: ComponentFixture<DynamicFormComponent>;
+
+  const fields: FieldConfig[] = [
+    { name: 'correo', label: 'Email', type: 'email', hint: 'Ayuda de email' },
+    { name: 'clave', label: 'Contraseña', type: 'password', hint: 'Ayuda de contraseña' },
+    { name: 'sitio', label: 'Sitio', type: 'url', hint: 'Ayuda de url' },
+    { name: 'orden', label: 'Orden', type: 'number', hint: 'Ayuda de número' },
+    {
+      name: 'tipo', label: 'Tipo', type: 'select', hint: 'Ayuda de select',
+      options: [{ id: 'a', name: 'A' }], optionsLoaded: true,
+    },
+    { name: 'desde', label: 'Desde', type: 'datepicker', hint: 'Ayuda de fecha' },
+    { name: 'sinAyuda', label: 'Sin ayuda', type: 'email' },
+  ];
+
+  const hintDe = (nombre: string): string => {
+    const campo: HTMLElement | null = fixture.nativeElement.querySelector(`#${nombre}`)
+      ?.closest('mat-form-field');
+    return campo?.querySelector('mat-hint')?.textContent?.trim() ?? '';
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, NoopAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DynamicFormComponent);
+    fixture.componentRef.setInput('fields', fields);
+    fixture.detectChanges();
+    await fixture.whenStable(); // resuelve los @defer (select, datepicker)
+    fixture.detectChanges();
+  });
+
+  it('pinta el hint en email, password, url, number, select y datepicker', () => {
+    expect(hintDe('correo')).toBe('Ayuda de email');
+    expect(hintDe('clave')).toBe('Ayuda de contraseña');
+    expect(hintDe('sitio')).toBe('Ayuda de url');
+    expect(hintDe('orden')).toBe('Ayuda de número');
+    expect(hintDe('tipo')).toBe('Ayuda de select');
+    expect(hintDe('desde')).toBe('Ayuda de fecha');
+  });
+
+  it('sin `hint` declarado no deja un mat-hint vacío', () => {
+    expect(hintDe('sinAyuda')).toBe('');
   });
 });

@@ -1,16 +1,15 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FieldConfig } from '../../../core/models/field.interface';
 import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-field.component';
+import { FormActionsComponent } from '../form-actions/form-actions.component';
 import { FormErrorBannerComponent } from '../form-error-banner/form-error-banner.component';
-import { getControlErrorMessage } from '../dynamic-form-field/form-error-messages.util';
+import { getControlErrorMessage, resumenDeErrores } from '../dynamic-form-field/form-error-messages.util';
 
-/** Tipos de campo sin control reactivo propio ni label overline externo. */
-const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox'];
+/** Tipos de campo sin label overline externo (y que por eso no entran al resumen de validación). */
+const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox', 'custom'];
 
 /** Tipos de campo puramente visuales: no tienen control en el `FormGroup`. */
 const NO_CONTROL_TYPES = ['tip', 'section-header'];
@@ -21,10 +20,8 @@ const NO_CONTROL_TYPES = ['tip', 'section-header'];
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    MatTooltipModule,
     DynamicFormFieldComponent,
+    FormActionsComponent,
     FormErrorBannerComponent,
   ],
   templateUrl: './dynamic-form.component.html',
@@ -59,6 +56,17 @@ export class DynamicFormComponent implements OnInit, OnChanges {
 
   @Output() formSubmit = new EventEmitter<any>();
   @Output() formCancel = new EventEmitter<void>();
+  /**
+   * Valor completo del formulario (`getRawValue()`, incluye deshabilitados) cada vez que cambia un
+   * control: por el usuario o por un `setValue` de la página. Es para que la página reaccione a un
+   * campo (rol → organismo) recalculando `fields` y volviéndolos a entregar.
+   *
+   * NO emite al re-entregar `fields` ni al aplicar `initialData`: las dos cosas las origina la
+   * página, que ya conoce esos valores, y emitir en pleno `ngOnChanges` la haría cambiar su estado
+   * durante la detección de cambios. Tampoco emite si el valor no cambió: `FormGroup.valueChanges`
+   * también dispara por revalidaciones (p. ej. el `[required]` de un input al cambiar `fields`).
+   */
+  @Output() valueChanges = new EventEmitter<Record<string, unknown>>();
 
   form!: FormGroup;
   /** true luego del primer intento de envío inválido: habilita el banner resumen. */
@@ -71,6 +79,12 @@ export class DynamicFormComponent implements OnInit, OnChanges {
 
   /** Banner de resumen de validación: se enfoca al enviar un formulario inválido. */
   @ViewChild(FormErrorBannerComponent) private resumen?: FormErrorBannerComponent;
+
+  private readonly destroyRef = inject(DestroyRef);
+  /** true mientras se aplica `initialData`: ese `patchValue` no se reemite por `valueChanges`. */
+  private aplicandoInitialData = false;
+  /** Último valor conocido del formulario: `valueChanges` solo emite si difiere de este. */
+  private ultimoValor: Record<string, unknown> = {};
 
   constructor(private fb: FormBuilder, private cdr: ChangeDetectorRef) {}
 
@@ -110,6 +124,20 @@ export class DynamicFormComponent implements OnInit, OnChanges {
 
     this.form = group;
     this.form.markAsPristine();
+
+    // El grupo es el mismo durante toda la vida del componente (`syncControls` lo conserva).
+    this.ultimoValor = this.form.getRawValue();
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        // Un `setValue` hecho por la página (campo `custom`) no pasa por un evento de esta vista:
+        // sin esto "Guardar" (`sinCambios`) y los campos no se enterarían del cambio.
+        this.cdr.markForCheck();
+        const valor: Record<string, unknown> = this.form.getRawValue();
+        const cambio = !mismoValor(valor, this.ultimoValor);
+        this.ultimoValor = valor;
+        if (cambio && !this.aplicandoInitialData) this.valueChanges.emit(valor);
+      });
   }
 
   private createControl(field: FieldConfig) {
@@ -145,6 +173,8 @@ export class DynamicFormComponent implements OnInit, OnChanges {
       control.updateValueAndValidity({ emitEvent: false });
     });
     this.form.updateValueAndValidity({ emitEvent: false });
+    // Controles agregados o quitados cambian el valor crudo sin que nadie haya editado nada.
+    this.ultimoValor = this.form.getRawValue();
   }
 
   /**
@@ -153,7 +183,12 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    * usuario ya escribió en los demás campos.
    */
   private applyInitialData(data: Record<string, unknown>) {
-    this.form.patchValue(data);
+    this.aplicandoInitialData = true;
+    try {
+      this.form.patchValue(data);
+    } finally {
+      this.aplicandoInitialData = false;
+    }
     Object.keys(data).forEach((nombre) => this.form.get(nombre)?.markAsPristine());
   }
 
@@ -173,7 +208,12 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     return validators;
   }
 
-  /** El campo lleva label overline externo (todos salvo tip/section-header/checkbox). */
+  /** El campo ocupa una celda de la grilla (todos salvo `custom`, que lo dibuja la página). */
+  seDibuja(field: FieldConfig): boolean {
+    return field.type !== 'custom';
+  }
+
+  /** El campo lleva label overline externo (todos salvo tip/section-header/checkbox/custom). */
   showExternalLabel(field: FieldConfig): boolean {
     return !NO_EXTERNAL_LABEL_TYPES.includes(field.type);
   }
@@ -181,15 +221,11 @@ export class DynamicFormComponent implements OnInit, OnChanges {
   /** Mensajes "Label (motivo)" de los campos inválidos y tocados — banner resumen. */
   invalidFieldMessages(): string[] {
     if (!this.form) return [];
-    return this.fields
-      .filter((field) => this.showExternalLabel(field) && this.form.contains(field.name))
-      .map((field) => {
-        const control = this.form.get(field.name);
-        if (!control || control.valid || !control.touched) return null;
-        const message = getControlErrorMessage(control, field);
-        return message ? `${field.label} (${message})` : null;
-      })
-      .filter((msg): msg is string => !!msg);
+    return resumenDeErrores(
+      this.form,
+      this.fields.filter((field) => this.showExternalLabel(field)),
+      (control, field) => getControlErrorMessage(control, field),
+    );
   }
 
   getFieldCssClass(field: FieldConfig): string {
@@ -225,4 +261,18 @@ export class DynamicFormComponent implements OnInit, OnChanges {
       this.resumen?.focus();
     }
   }
+}
+
+/** Igualdad superficial de dos valores crudos del form (los arrays de un multi-select, por elemento). */
+function mismoValor(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const claves = Object.keys(a);
+  if (claves.length !== Object.keys(b).length) return false;
+  return claves.every((clave) => {
+    const x = a[clave];
+    const y = b[clave];
+    if (Array.isArray(x) && Array.isArray(y)) {
+      return x.length === y.length && x.every((item, i) => item === y[i]);
+    }
+    return clave in b && x === y;
+  });
 }

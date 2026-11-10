@@ -11,7 +11,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { FormActionsComponent } from '../../../../shared/components/form-actions/form-actions.component';
 import { FormErrorBannerComponent } from '../../../../shared/components/form-error-banner/form-error-banner.component';
+import { resumenDeErrores } from '../../../../shared/components/dynamic-form-field/form-error-messages.util';
 import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
@@ -88,6 +90,7 @@ type CampoConResumen = 'localidadId' | 'slug' | 'url' | 'activa';
     MatSlideToggleModule,
     MatSnackBarModule,
     MatTooltipModule,
+    FormActionsComponent,
     FormErrorBannerComponent,
     LoadingComponent,
     EstadoBadgeComponent,
@@ -337,15 +340,13 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
   /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
   get errorSummary(): string[] {
     if (!this.submitted) return [];
-    const campos: { nombre: CampoConResumen; label: string }[] = [
-      { nombre: 'localidadId', label: 'Localidad' },
-      { nombre: 'slug', label: 'Slug' },
-      { nombre: 'url', label: 'URL' },
-      { nombre: 'activa', label: 'Activa' },
+    const campos: { name: CampoConResumen; label: string }[] = [
+      { name: 'localidadId', label: 'Localidad' },
+      { name: 'slug', label: 'Slug' },
+      { name: 'url', label: 'URL' },
+      { name: 'activa', label: 'Activa' },
     ];
-    return campos
-      .filter(({ nombre }) => this.form.controls[nombre].invalid)
-      .map(({ nombre, label }) => `${label} (${this.motivo(this.form.controls[nombre])})`);
+    return resumenDeErrores(this.form, campos, (control) => this.motivo(control));
   }
 
   /**

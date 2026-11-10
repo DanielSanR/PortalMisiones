@@ -14,7 +14,14 @@ export interface FieldConfig {
   | 'email'
   | 'password'
   | 'tip'
-  | 'section-header';
+  | 'section-header'
+  /**
+   * Control en el `FormGroup` sin nada dibujado por el formulario: el widget lo pone la página,
+   * proyectado dentro de `<app-dynamic-form>` (queda entre los campos y los botones), y escribe
+   * el valor en `form.get(name)`. Así un widget propio (p. ej. la grilla de permisos de un rol)
+   * participa de `requireChanges`, del guard de cambios sin guardar y del valor enviado.
+   */
+  | 'custom';
   placeholder?: string;
   hint?: string;
   cssClass?: 'colspan-full' | 'colspan-half' | 'colspan-third' | 'colspan-wide';

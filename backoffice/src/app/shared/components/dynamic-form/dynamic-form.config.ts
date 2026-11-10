@@ -357,6 +357,171 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
     submitButtonText: 'Crear modalidad',
     cancelButtonText: 'Cancelar',
   },
+
+  // Backend real (§4): Permission = code + description (los dos obligatorios).
+  PERMISO: {
+    fields: [
+      {
+        name: '_section_datos',
+        label: 'Datos del permiso',
+        type: 'section-header',
+      },
+      {
+        name: 'codigo',
+        label: 'Código',
+        type: 'text',
+        placeholder: 'Ej: CREATE_PROCEDURE',
+        hint: 'Formato ACCION_RECURSO (en mayúsculas)',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 100 },
+      },
+      {
+        name: 'descripcion',
+        label: 'Descripción',
+        type: 'text',
+        placeholder: 'Ej: Permite crear trámites',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 255 },
+      },
+    ],
+    submitButtonText: 'Crear permiso',
+    cancelButtonText: 'Cancelar',
+  },
+
+  // Backend real (`CreateUserRequest`): email 5–50, password 8–20, role (UUID), organizationId? y
+  // profileDto {firstName, lastName}. La página (`usuario-form`) quita lo que no aplica: contraseña y
+  // estado en edición, y `organismoId` cuando el rol elegido no es de scope `organismo`.
+  USUARIO: {
+    fields: [
+      { name: '_section_datos', label: 'Datos personales', type: 'section-header' },
+      {
+        name: 'nombre',
+        label: 'Nombre',
+        type: 'text',
+        placeholder: 'Ej: María',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 100 },
+      },
+      {
+        name: 'apellido',
+        label: 'Apellido',
+        type: 'text',
+        placeholder: 'Ej: González',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 100 },
+      },
+
+      { name: '_section_acceso', label: 'Acceso', type: 'section-header' },
+      {
+        name: 'email',
+        label: 'Email',
+        type: 'email',
+        placeholder: 'usuario@misiones.gob.ar',
+        cssClass: 'colspan-half',
+        validations: { required: true, email: true, maxLength: 50 },
+      },
+      {
+        name: 'password',
+        label: 'Contraseña',
+        type: 'password',
+        placeholder: 'Entre 8 y 20 caracteres',
+        cssClass: 'colspan-half',
+        validations: { required: true, minLength: 8, maxLength: 20 },
+      },
+
+      { name: '_section_rol', label: 'Rol y ubicación', type: 'section-header' },
+      {
+        name: 'rol',
+        label: 'Rol',
+        type: 'select',
+        placeholder: 'Seleccioná un rol',
+        hint: 'Define qué puede ver y hacer dentro del backoffice',
+        cssClass: 'colspan-half',
+        validations: { required: true },
+        options: [],
+        emptyOptionsMessage: 'No hay roles que puedas asignar.',
+      },
+      {
+        name: 'organismoId',
+        label: 'Organismo',
+        type: 'select',
+        placeholder: 'Seleccioná un organismo',
+        hint: 'Obligatorio para este rol: sus permisos valen dentro de un organismo',
+        cssClass: 'colspan-half',
+        validations: { required: true },
+        options: [],
+        emptyOptionsMessage: 'No hay organismos activos. Creá uno primero en Organismos.',
+      },
+
+      { name: '_section_estado', label: 'Estado', type: 'section-header' },
+      {
+        name: 'activo',
+        label: 'Activar la cuenta al crear',
+        type: 'checkbox',
+        value: false,
+      },
+    ],
+    submitButtonText: 'Crear usuario',
+    cancelButtonText: 'Cancelar',
+  },
+
+  // Backend real (`RoleRequestDTO`): code, description, scopeType, assignableByOrgAdmin,
+  // assignableByBackoffice, active y permissionsIds. La grilla de permisos la dibuja la página
+  // (`role-form`), proyectada en el formulario y atada al campo `custom` `permissionsIds`.
+  ROL: {
+    fields: [
+      { name: '_section_identificacion', label: 'Identificación', type: 'section-header' },
+      {
+        name: 'codigo',
+        label: 'Código',
+        type: 'text',
+        placeholder: 'Ej: EDITOR_TRAMITES',
+        hint: 'Sin espacios, en mayúsculas',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 100 },
+      },
+      {
+        name: 'descripcion',
+        label: 'Descripción',
+        type: 'text',
+        placeholder: 'Ej: Editor de trámites',
+        cssClass: 'colspan-half',
+        validations: { required: true, maxLength: 255 },
+      },
+
+      { name: '_section_configuracion', label: 'Configuración', type: 'section-header' },
+      {
+        name: 'scopeTipo',
+        label: 'Scope',
+        type: 'select',
+        value: 'global',
+        validations: { required: true },
+        options: [
+          { id: 'global', name: 'Global' },
+          { id: 'organismo', name: 'Organismo' },
+        ],
+        optionsLoaded: true,
+      },
+      {
+        name: 'asignablePorOrgAdmin',
+        label: 'Asignable por Administrador de Organismo',
+        type: 'checkbox',
+        value: false,
+      },
+      {
+        name: 'asignablePorBackoffice',
+        label: 'Asignable por Administrador de Backoffice',
+        type: 'checkbox',
+        value: false,
+      },
+      { name: 'active', label: 'Activo', type: 'checkbox', value: true },
+
+      { name: '_section_permisos', label: 'Permisos asignados', type: 'section-header' },
+      { name: 'permissionsIds', label: 'Permisos asignados', type: 'custom', value: [] },
+    ],
+    submitButtonText: 'Crear rol',
+    cancelButtonText: 'Cancelar',
+  },
 };
 
 /**

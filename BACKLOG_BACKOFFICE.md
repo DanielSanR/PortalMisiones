@@ -7,6 +7,10 @@ backend `PortalMisiones-backend@d800be0`. Estado base: `check:circular` 0 ciclos
 Cierre 2026-09-30: `tsc`, `lint`, `check:circular` (0 ciclos / 265 archivos) y `ng build` sin warnings
 (inicial 854 KB). Sin commitear.
 
+**Actualización 2026-11-03:** relevado contra el backend `origin/dev` @ `b6f505b` y la API de staging. Resueltos en
+backend: R-3 (BO-21), G-14, R-1 y `GET /api/user` (BO-17, con `role: null`: G-13). Detalle por pedido en
+`PEDIDOS_BACKEND.md` (auditoría 2026-11-03). Staging tiene el backend de `dev` solo hasta el 2026-10-17.
+
 Leyenda: `[ ]` pendiente · `[~]` en curso · `[x]` hecho · `[-]` descartado (con motivo)
 
 ## Implementable ahora
@@ -84,11 +88,11 @@ Leyenda: `[ ]` pendiente · `[~]` en curso · `[x]` hecho · `[-]` descartado (c
 | Funcionalidad | Falta en backend | Estado front |
 |---|---|---|
 | Plantillas provinciales (`/api/procedure-template`) | ✅ expuesta (PPDT-5.4) | **real** (BO-15, fase 1) |
-| Trámites del organismo / adopciones (`/api/organism-procedure`) | ✅ expuesta (PPDT-5.5), pero **R-3** deja `*_ADOPTION` sin asignar; **G-2** impide que AO adopte | **mock** (HTTP escrito) hasta R-3; "Adoptar" solo con `READ_ORGANISM` (P-2) |
+| Trámites del organismo / adopciones (`/api/organism-procedure`) | ✅ expuesta (PPDT-5.5); R-3 ✅ en `dev` (no en staging); **G-15** (crear/editar da 500) y **G-2** (AO adopta) pendientes | **mock** (HTTP escrito) hasta G-15 + deploy; "Adoptar" solo con `READ_ORGANISM` (P-2) |
 | Fichas por localidad (`/api/organism-procedure-location`) | **G-1**: el response no trae adopción, localidad, URL, requisitos ni costos, y no filtra por adopción; G-4 (transiciones) | **mock** (HTTP escrito) hasta G-1 |
-| Puntos de atención (`/api/attention-point`) | ✅ expuesta (PPDT-5.7), pero **R-3** (`*_ATTENTION_POINT`) y cuelga de fichas (G-1) | **mock** (HTTP escrito); se activa junto con fichas |
-| Etiquetas | ✅ `TagController` expuesto (`84fde37`) | **real** (BO-16) |
-| Listado de usuarios | `GET /api/user` paginado — ⚠️ **no figura en el backlog de Taiga** | híbrido: alta real; listado, edición y acciones de fila en mock |
+| Puntos de atención (`/api/attention-point`) | ✅ expuesta (PPDT-5.7); R-3 ✅ en `dev` (no en staging); cuelga de fichas (G-1) | **mock** (HTTP escrito); se activa junto con fichas |
+| Etiquetas | ✅ `TagController` expuesto (`84fde37`); grants R-3 ✅ en `dev`, **no en staging** (403 para SA) | **real** en local; mock en staging/prod hasta el deploy |
+| Listado de usuarios | ✅ `GET /api/user` (`4715be1`, también en staging), pero cada usuario llega con `role: null` (**G-13**) | híbrido: alta real; listado, edición y acciones de fila en mock → **cablear (BO-22)** |
 | Feedback | moderación (Taiga **PPDT-5.15**; la tabla `procedure_feedbacks` ya existe) | mock en capas (BO-4) |
 | Auditoría | auditoría de cambios sensibles (Taiga **PPDT-5.21**; la tabla `audit_events` ya existe) | mock en capas (BO-4) |
 | Dashboard | API de métricas (Taiga **PPDT-5.13**, rol `MANAGER`) | mock en capas (BO-4) |
@@ -96,8 +100,10 @@ Leyenda: `[ ]` pendiente · `[~]` en curso · `[x]` hecho · `[-]` descartado (c
 | Adjuntos | upload de archivos | `storage.service` sin consumidor |
 | reCAPTCHA | claves reales | solo mock |
 
-Relevado contra `PortalMisiones-backend` `origin/dev` @ `2e41090` (2026-10-06): sin endpoints nuevos de backoffice
-ni permisos nuevos en el seed. Detalle en `BACKEND_API_SPEC.md` §7.0.
+Relevado contra `PortalMisiones-backend` `origin/dev` @ `b6f505b` (2026-11-03). Novedades no pedidas: asignar rol a un
+usuario existente (`POST /api/user/{id}/role-assignments`, con vigencia; `4081` si se superpone), `GET /api/tag/public`,
+búsqueda pública sin 500 (`V2.29`) y códigos `4077` (transición inválida) y `4091` (edición concurrente).
+Relevamiento anterior: `2e41090` (2026-10-06), en `BACKEND_API_SPEC.md` §7.0.
 
 ## Próximo: impactos anunciados por el backlog del backend (Taiga)
 
@@ -113,6 +119,8 @@ ni permisos nuevos en el seed. Detalle en `BACKEND_API_SPEC.md` §7.0.
 - [x] El detalle de la lista de roles muestra "asignable por Admin de Backoffice".
 
 ### BO-14 · Aislamiento por organismo — cuando salga PPDT-5.2 · Alta
+- Backend: PPDT-5.2 entró a `dev` el 2026-10-16 (`4715be1`) para el listado de usuarios (AO ve solo los de su organismo).
+  Revisar si cubre el resto de los recursos antes de cerrar.
 - [ ] ADMIN_ORGANIZATION y AGENT van a ver solo datos de su organismo. Revisar listas y selects de organismo
   (usuarios, etiquetas locales, trámites) para no ofrecer opciones que el backend va a rechazar.
 
@@ -141,7 +149,8 @@ Plan y decisiones en `PLAN_TRAMITES_API.md` (§5 fases, §8 decisiones, §9 esta
   necesita `READ_ORGANISM` (que no tienen) y la sesión no trae su organismo. Hoy esos roles ven y editan sus etiquetas,
   pero al crear solo se les ofrece "global" → el backend responde `4073`.
 
-### BO-21 · Permisos `*_TAG` / `*_ADOPTION` / `*_ATTENTION_POINT` sin asignar (R-3) · 🔴 Alta (backend) — confirmado en staging y en `dev`; fix validado en local
+### BO-21 · Permisos `*_TAG` / `*_ADOPTION` / `*_ATTENTION_POINT` sin asignar (R-3) · ✅ resuelto en `dev` (`V2.28`, `bab0993`) — falta deploy a staging
+- Al 2026-11-03 staging sigue sin `V2.28`: `/api/tag`, `/api/organism-procedure` y `/api/attention-point` → 403 para SA.
 - [ ] `V2.20`, `V2.23` y `V2.24` asignan con `WHERE roles.code IN ('ROLE_SUPERADMIN', …)`, pero `V0.4` quitó el prefijo
   `ROLE_` a los códigos de rol (`V2.16`/`V2.17` sí contemplan ambas formas). Si se confirma, **ningún rol tiene `READ_TAG`**:
   Etiquetas (ya real, gateada por `READ_TAG`) desaparece del menú incluso para SUPERADMIN.
@@ -159,34 +168,78 @@ Plan y decisiones en `PLAN_TRAMITES_API.md` (§5 fases, §8 decisiones, §9 esta
   por localidad). `/api/auth/me` no lo trae. Opciones: pedir al backend que `/me` incluya el organismo, o leerlo de
   `GET /api/user/{id}` (requiere `READ_USER`, que AGENT no tiene). Decisión a coordinar con backend.
 
-### BO-17 · Pedir `GET /api/user` al backend · Alta (coordinación)
-- [ ] No tiene tarjeta en Taiga. Desde `0ea13a0` el servicio ya existe (`UserService.findAllUserDTO()`, filtrado por organismo
+### BO-17 · Pedir `GET /api/user` al backend · ✅ entregado (`4715be1`, en staging) — sigue en BO-22
+- [x] Endpoint disponible con `READ_USER`. Pendiente del backend: que traiga `role`/organismo (G-13).
+- Contexto original: no tenía tarjeta en Taiga. Desde `0ea13a0` el servicio ya existe (`UserService.findAllUserDTO()`, filtrado por organismo
   para AO): solo falta exponerlo en `UserController`. Sin ese endpoint, el listado de usuarios y las acciones de fila (BO-3) siguen en mock.
 
 
+### BO-22 · Listado de usuarios contra `GET /api/user` · Alta — ✅ hecho (2026-11-10), verificado contra staging
+- [x] `UsuariosHttpDataSource` real: `list`, `getById`, activar/desactivar (`status-account` con el estado explícito que
+  confirmó el admin, nunca un toggle), cambiar email y contraseña. Ya no depende del mock. Se quitó `toggleActive`.
+- [x] Edición por URL directa (`/usuarios/editar/:id`) con la fuente real: el form muestra "Edición no disponible" y vuelve
+  a la lista, en vez de dejar completar algo que iba a fallar al guardar.
+- [x] Capacidades de la fuente: `soportaAccionesDeCuenta` / `soportaEdicion` / `soportaBorradoDefinitivo`. Con la fuente
+  real, "Editar" queda visible pero no disponible (motivo en tooltip; no hay endpoint de edición) y "Eliminar
+  definitivamente" no se ofrece (G-13). La acción principal de `row-actions` ahora soporta `disabledReason`.
+- [x] `UsuarioVM.rol` admite `null`: la columna muestra "Sin dato" en vez de inventar "Agente" (G-13). Sin nombre, la
+  fila muestra el email una sola vez.
+- [x] Staging: 4 usuarios reales, menú con Cambiar email / Cambiar contraseña / Desactivar cuenta, sin errores de consola.
+- Sigue el override `usuarios: 'local'` (equivale al default HTTP); pendiente de backend: rol, nombre y organismo (G-13).
+
+### BO-23 · Mensajes para los códigos nuevos del backend · Media — ✅ hecho (2026-11-10), salvo `4081`
+- [x] `API_CODES`: `PUBLICATION_TRANSITION_INVALID` (4077), `ROLE_ASSIGNMENT_OVERLAP` (4081), `CONCURRENT_MODIFICATION` (4091).
+- [x] `4077` en las acciones del workflow de fichas (`mensajeErrorAccion`); `4091` en el guardado y en las acciones.
+- [x] Mock de fichas alineado con `dev`: el PUT conserva el estado (R-1), transición inválida → `4077`, inexistente → `4073`.
+- [ ] `4081`: sin pantalla todavía; se usa con BO-24.
+
+### BO-25 · Formularios a `app-dynamic-form` · Media — ✅ hecho (2026-11-10), sin commitear
+- [x] Dynamic form: `hint` en todos los tipos con `mat-form-field`, `@Output() valueChanges` (solo si cambia el valor),
+  tipo `custom` + `<ng-content>`, `form-actions` compartido y `resumenDeErrores` en `form-error-messages.util.ts`.
+- [x] Migrados: Permiso (entero), Usuario (entero; el organismo se pide según el `scopeType` del rol y viaja como
+  `organizationId` en el POST: corregía un bug que dejaba crear AO/AGENT sin organismo) y Rol (la grilla de permisos queda
+  custom dentro del form). Plantilla y Ficha usan `form-actions` y el resumen compartido; los diálogos quedan a mano.
+- [x] Bug previo corregido: `FormErrorMessageDirective` colgaba la pestaña al corregir un campo tras un envío inválido
+  (afectaba a todos los ABM con dynamic form).
+- [x] Helper `core/utils/one-shot.utils.ts` (`unaVez`) para llamadas one-shot; `snackbar-warning` con contraste AA.
+- Verificado: 133 tests, lint, circular, tsc/ngc, build; e2e contra staging 15/15 (`e2e/final_runs/forms_run_*`);
+  3 rondas de `angular-ssr-reviewer` hasta OK.
+- Residuo en staging: 4 usuarios `e2e.qa.*` inactivos que no se pueden borrar (G-13).
+
+### BO-24 · Asignar rol a un usuario existente · Baja — opcional
+- [ ] Acción en el detalle del usuario contra `POST /api/user/{id}/role-assignments` (rol, organismo, vigencia desde/hasta).
+  Depende de G-13 para mostrar el rol actual.
+
 ---
 
-## Roadmap (actualizado 2026-10-15, tras el e2e final contra `dev` local)
+## Roadmap (actualizado 2026-11-03; base: e2e final contra `dev` local del 2026-10-15)
+
+**Hecho desde el 2026-10-15 (front):** merge de `feat/abm-secciones` a `main`; refactor de estilos globales (mixins y
+clases compartidas) y bundle inicial ~504 KB; accesibilidad WCAG 2.2 AA; features sin backend visibles con
+`appUnavailable`; identidad visual alineada con el portal (Oak Sans self-hosted, azul oscuro, filtros pill); build de
+producción compatible con la CSP de staging (`inlineCritical: false`). 89 tests unitarios en verde.
 
 **Estado del front:** todo lo implementable está hecho y verificado (74 tests unitarios; e2e local 20 OK / 3 FALLA
 de backend / 5 no cubiertos, `e2e/final_runs/run_7`). Lo que falta depende del backend o de una decisión.
 
 ### Ahora (front, sin dependencias)
 - [ ] **QA humano** con `QA e2e en vivo — staging.md` y la sección "backend local" del QA manual (`npm run start:local`).
-- [ ] Merge de `feat/abm-secciones` a `main` después del QA humano.
+- [x] Merge de `feat/abm-secciones` a `main`.
+- [x] **BO-22** listado de usuarios real y **BO-23** mensajes `4077`/`4091` (2026-11-10).
+- [ ] Quitar del QA local el paso de preparación de G-14 (ya resuelto en backend).
 - [ ] Usuario AGENT de prueba en el seed local para cubrir CP20 del e2e (hoy no hay credenciales de AGENT).
 
 ### Cuando el backend entregue (en este orden; detalle en `PEDIDOS_BACKEND.md`)
 | Pedido backend | Qué destraba en el front | Trabajo front estimado |
 |---|---|---|
-| **R-3** grants | Etiquetas, Adopciones y Puntos visibles para los roles que corresponde | Ninguno (verificar con el e2e) |
-| **G-14** migración `V2.21` | Levantar `dev` desde cero sin parche manual | Quitar el paso de preparación del QA local |
-| **G-15** adopciones 500 | "Adoptar trámite" y editar vigencias reales | Sacar el seed SQL del e2e (`E2E_SEED_SQL`) y cubrir CP16 |
-| **OPS-1** deploy de `dev` a staging | Probar online sin Docker | Volver `etiquetas`/`plantillas` (y luego el resto) a real en `environment.staging.ts` y `environment.prod.ts` |
+| ~~**R-3** grants~~ ✅ en `dev` | Etiquetas, Adopciones y Puntos visibles para los roles que corresponde | Ninguno (verificar con el e2e) |
+| ~~**G-14** migración `V2.21`~~ ✅ | Levantar `dev` desde cero sin parche manual | Quitar el paso de preparación del QA local |
+| **G-15** adopciones 500 (próximo según backend) | "Adoptar trámite" y editar vigencias reales | Sacar el seed SQL del e2e (`E2E_SEED_SQL`) y cubrir CP16 |
+| **OPS-1** deploy de `dev` a staging (parcial: hasta 2026-10-17) | Probar online sin Docker | Volver `etiquetas`/`plantillas` (y luego el resto) a real en `environment.staging.ts` y `environment.prod.ts` |
 | **G-1** response completo de la ficha | Fichas y puntos de atención en real; agrupar fichas por adopción | Quitar overrides `fichas-locales`/`puntos-atencion`; ya no hace falta el estado "no disponible" |
 | **G-2 / BO-20** organismo en `/me` | AO/AGENT crean etiquetas locales y adoptan | Revertir `CREAR_ETIQUETA_ACCESS` y la regla de "Adoptar" sin `READ_ORGANISM` |
-| **BO-17** `GET /api/user` (+ **G-13**) | Listado de usuarios real y acciones de cuenta reales | HTTP real en `UsuariosHttpDataSource` y `soportaAccionesDeCuenta = true` |
-| **R-1 / G-4** workflow de fichas | Rechazar revisiones; errores 4xx precisos | Botón "Devolver a borrador" y mensajes por código |
+| ~~**BO-17** `GET /api/user`~~ ✅ (+ **G-13** pendiente) | Listado de usuarios real y acciones de cuenta reales | BO-22 (ya se puede); rol y organismo cuando salga G-13 |
+| **R-1** ✅ / **G-4** 🟠 workflow de fichas | Rechazar revisiones; errores 4xx precisos (ya: `4077`, `4073`) | BO-23 ya; botón "Devolver a borrador" cuando salgan `reject`/`return-to-draft` |
 | **G-9 / G-12** unicidad y validaciones | Datos consistentes | Quitar validaciones de duplicado del cliente que pasen a ser del servidor |
 | **G-7 / G-11** filtros y paginación | Listados con volumen real | Paginado server-side en listas grandes |
 | **G-16 / G-17 / G-6 / G-8 / G-10** | Mensajes, decisiones de producto, historial de versiones | Ajustes puntuales |

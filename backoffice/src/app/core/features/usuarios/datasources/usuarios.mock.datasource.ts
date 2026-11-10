@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { UsuariosDataSource } from './usuarios.datasource';
 import { mockUsuarioToVM } from '../mappers/usuarios.mapper';
 import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
@@ -9,8 +9,10 @@ import { UserRole } from '@core/enums/user-role.enum';
 /** Implementación mock: envuelve el `UsuarioService` (mockApiInterceptor) y mapea a VM. */
 @Injectable()
 export class UsuariosMockDataSource extends UsuariosDataSource {
-  /** El mock simula las acciones de cuenta (dev/QA). */
+  /** El mock simula todo (dev/QA). */
   readonly soportaAccionesDeCuenta = true;
+  readonly soportaEdicion = true;
+  readonly soportaBorradoDefinitivo = true;
 
   constructor(private usuarios: UsuarioService) {
     super();
@@ -48,12 +50,12 @@ export class UsuariosMockDataSource extends UsuariosDataSource {
       .pipe(map(mockUsuarioToVM));
   }
 
-  toggleActive(id: string): Observable<UsuarioVM> {
-    return this.usuarios.toggleActive(id).pipe(map(mockUsuarioToVM));
-  }
-
-  setAccountStatus(id: string, _active: boolean): Observable<void> {
-    return this.usuarios.toggleActive(id).pipe(map(() => void 0));
+  /** Idempotente, como el backend: solo invierte si el estado actual no es el pedido. */
+  setAccountStatus(id: string, active: boolean): Observable<void> {
+    return this.usuarios.getById(id).pipe(
+      switchMap((u) => (u.activo === active ? of(u) : this.usuarios.toggleActive(id))),
+      map(() => void 0),
+    );
   }
 
   // La contraseña no vive en el mock: basta con validar que el usuario exista.

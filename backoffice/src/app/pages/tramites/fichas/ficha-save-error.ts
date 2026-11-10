@@ -4,11 +4,14 @@ import { extractErrorCode, extractErrorMessage } from '@core/models/api-response
 import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 
 /**
- * Texto prudente para el `5000` de las fichas (decisión de §8, R-2/G-4): el backend responde 500 a
- * casi todo (transición inválida, ficha/adopción/localidad inexistente o fuera del alcance, campo
- * obligatorio faltante) y no dice cuál fue.
+ * Texto prudente para el `5000` de las fichas (decisión de §8, R-2/G-4). Staging todavía responde 500
+ * a casi todo; el backend de `dev` ya distingue transición inválida (`4077`), inexistente (`4073`) y
+ * edición concurrente (`4091`), y el `5000` queda para campos obligatorios faltantes (G-1).
  */
 export const TEXTO_5000_FICHA = 'Puede que la ficha haya cambiado de estado; recargá e intentá de nuevo.';
+
+/** `4091`: otro usuario guardó la ficha antes. */
+export const TEXTO_EDICION_CONCURRENTE = 'Otro usuario modificó la ficha mientras la editabas. Recargá para ver los cambios.';
 
 /** Errores de guardado de una ficha con texto propio (`OrganismProcedureLocationService`). Van al banner. */
 export const CONFLICTOS_FICHA: ConflictoDeCampo[] = [
@@ -22,7 +25,12 @@ export const CONFLICTOS_FICHA: ConflictoDeCampo[] = [
     mensaje: 'Revisá los campos obligatorios: localidad y slug.',
   },
   {
-    // G-4 propone `4073` para "no existe o fuera del alcance" (hoy llega como `5000`).
+    // Otro usuario guardó la ficha mientras se editaba (`@Version`, G-8).
+    code: API_CODES.CONCURRENT_MODIFICATION,
+    mensaje: TEXTO_EDICION_CONCURRENTE,
+  },
+  {
+    // "No existe o fuera del alcance" (G-4; en staging todavía llega como `5000`).
     code: API_CODES.ENTITY_NOT_FOUND,
     mensaje: 'La ficha, el trámite del organismo o la localidad ya no existe o quedó fuera de tu alcance. Recargá e intentá de nuevo.',
   },
@@ -45,6 +53,10 @@ export function mensajeErrorAccion(err: unknown): string {
   const body = (err as { error?: unknown } | null)?.error;
   const code = extractErrorCode(body);
   if (status === 403 || code === API_CODES.NO_PERMISSION) return 'No tenés permiso para hacer esto con la ficha.';
+  if (code === API_CODES.PUBLICATION_TRANSITION_INVALID) {
+    return 'La ficha cambió de estado y esta acción ya no corresponde. Recargá para ver su estado actual.';
+  }
+  if (code === API_CODES.CONCURRENT_MODIFICATION) return TEXTO_EDICION_CONCURRENTE;
   if (code === API_CODES.UNEXPECTED || status === 500) return `No se pudo completar la acción. ${TEXTO_5000_FICHA}`;
   if (status === 404 || code === API_CODES.ENTITY_NOT_FOUND) return 'La ficha ya no existe o quedó fuera de tu alcance.';
   return extractErrorMessage(body) || 'No se pudo completar la acción. Intentá de nuevo.';
