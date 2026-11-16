@@ -56,7 +56,7 @@
 <!-- Toolbar de lista (well): fila A = búsqueda/fechas reales + contador · fila B = filter-tabs de valoración. -->
 <div class="list-toolbar list-toolbar--stacked">
   <form [formGroup]="filterForm" class="list-toolbar__row">
-    <app-list-search
+    <app-list-search [atajoFoco]="true"
       [control]="filterForm.controls.search"
       placeholder="Buscar trámite u organismo…"
       ariaLabel="Buscar opiniones por trámite o por organismo">

@@ -10,7 +10,7 @@
       <mat-option *ngIf="!field.options?.length" disabled>
         {{ field.optionsLoaded
             ? (field.emptyOptionsMessage || 'No hay opciones disponibles')
-            : 'Cargando opciones...' }}
+            : 'Cargando opciones…' }}
       </mat-option>
       <mat-option *ngFor="let option of field.options" [value]="option.id">
         {{ option.name }}

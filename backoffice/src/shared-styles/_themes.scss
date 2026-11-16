@@ -367,6 +367,14 @@
   --theme-icon-size-sm: 16px;
   --theme-icon-size-md: 17px;
   --theme-icon-size-lg: 20px;
+  --theme-icon-size-xl: 24px;
+  // Interruptor: los usan el switch de Material (_material) y su gemelo bloqueado (`.form-toggle__pista`).
+  --theme-switch-track-width: 40px;
+  --theme-switch-track-height: 22px;
+  --theme-switch-handle-size: 16px;
+  // Encendido el pulgar de Material crece (medido 20px en el switch real): el gemelo bloqueado, siempre
+  // encendido, usa este mismo valor. `_material` lo fija en los tokens `selected-handle-*` del switch.
+  --theme-switch-handle-size-selected: 20px;
 
   // ---------------------------------------------------------------------------
   // Table (nuevo)
@@ -384,6 +392,14 @@
   --theme-header-height-mobile: 56px;
   --theme-content-max-width: 1400px;
   --theme-form-max-width: 1400px; // igual que content-max-width: el form ocupa la columna completa
+  // Alto que el pie de guardar pegado abajo (`.form-actions--integrada`) le quita a la ventana; lo usa el
+  // `scroll-padding-bottom` del contenedor que scrollea para que el foco no quede detrás (WCAG 2.4.11).
+  --theme-sticky-footer-clearance: 80px;
+
+  // Ancho de los diálogos (en mobile pasan a `auto`, ver `form-dialog` en _mixins y `.dialogo-formulario`).
+  --theme-dialog-width-sm: 420px; // confirmaciones y avisos (`.form-dialog--sm`)
+  --theme-dialog-width-md: 560px; // cáscara con ícono (`.form-dialog`)
+  --theme-dialog-width-lg: 640px; // formularios (`.dialogo-formulario`)
 
   // ---------------------------------------------------------------------------
   // Transitions

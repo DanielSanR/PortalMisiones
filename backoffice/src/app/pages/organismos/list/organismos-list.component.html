@@ -4,7 +4,7 @@
           appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint">
     <i class="ph ph-download-simple" aria-hidden="true"></i> Exportar
   </button>
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_ORGANISM'">
+  <button appAtajo="n" mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_ORGANISM'">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo organismo
   </button>
 </ng-template>
@@ -14,7 +14,7 @@
      fila A = buscador + contador + acciones · fila B = chips de filtro. -->
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
-    <app-list-search
+    <app-list-search [atajoFoco]="true"
       [control]="searchCtrl"
       placeholder="Buscar por nombre o sigla…"
       ariaLabel="Buscar organismos por nombre, sigla, tipo o dependencia">

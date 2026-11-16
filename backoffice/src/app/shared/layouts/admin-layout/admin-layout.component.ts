@@ -1,10 +1,11 @@
 import { Component, OnInit, DestroyRef, ElementRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
-import { distinctUntilChanged, filter, fromEvent, map } from 'rxjs';
+import { distinctUntilChanged, filter, map } from 'rxjs';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { UserMenuComponent } from '../user-menu/user-menu.component';
 import { AppFooterComponent } from '../app-footer/app-footer.component';
 import { UnavailableDirective } from '../../directives/unavailable.directive';
@@ -12,6 +13,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthTokenService } from '../../../core/services/auth-token.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LayoutChromeService } from '../../../core/services/layout-chrome.service';
+import { AtajosService } from '../../../core/services/atajos.service';
+import { abrirAyudaAtajos } from '../../utils/abrir-ayuda-atajos';
 import { AuthUser } from '../../../core/models/auth.model';
 import { COMANDOS } from '../../../core/constants/comandos.constants';
 import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
@@ -107,6 +110,9 @@ export class AdminLayoutComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly dialog = inject(MatDialog);
+  /** Atajos de una tecla (`appAtajo`) y su preferencia on/off. */
+  readonly atajos = inject(AtajosService);
   private readonly activatedRoute = inject(ActivatedRoute);
 
   /** Grupos accesibles para el usuario actual (gateados por permiso), previos al filtro de búsqueda. */
@@ -163,23 +169,30 @@ export class AdminLayoutComponent implements OnInit {
         this.mainContentRef?.nativeElement.focus({ preventScroll: true });
       });
 
-    // Atajo "/": foca el buscador de la sidebar, salvo que el foco ya esté en un campo editable.
-    fromEvent<KeyboardEvent>(document, 'keydown')
-      .pipe(
-        filter((event) => event.key === '/' && !this.isEditableTarget(event.target)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((event) => {
-        event.preventDefault();
+    // Atajos del shell: "/" foca el buscador de la sidebar (en mobile abre antes el sidenav) y "?" lista
+    // los atajos de la pantalla. Se registran en `AtajosService`, que decide cuándo NO disparan
+    // (campo editable, diálogo/menú abierto, preferencia apagada).
+    const quitarBuscar = this.atajos.registrar({
+      teclas: ['/'],
+      descripcion: 'Buscar en el menú lateral',
+      accion: () => {
         if (this.isMobile) this.sidenav.open();
-        this.searchInputRef?.nativeElement.focus();
-      });
-  }
-
-  private isEditableTarget(target: EventTarget | null): boolean {
-    const el = target as HTMLElement | null;
-    if (!el) return false;
-    return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+        // Colapsado el buscador está oculto: se expande para poder escribir.
+        if (!this.isMobile && this.isCollapsed) this.isCollapsed = false;
+        this.cdr.markForCheck();
+        // Tras el render (el menú abriéndose o expandiéndose): antes, el campo todavía no es enfocable.
+        setTimeout(() => this.searchInputRef?.nativeElement.focus());
+      },
+    });
+    const quitarAyuda = this.atajos.registrar({
+      teclas: ['?'],
+      descripcion: 'Ver los atajos de teclado',
+      accion: () => abrirAyudaAtajos(this.dialog, this.atajos.listar()),
+    });
+    this.destroyRef.onDestroy(() => {
+      quitarBuscar();
+      quitarAyuda();
+    });
   }
 
   /** "juan.perez@misiones.gob.ar" → "Juan Perez". Respaldo cuando el JWT no trae el nombre. */
@@ -322,6 +335,8 @@ export class AdminLayoutComponent implements OnInit {
       // `MatDrawer` escucha Escape en su propio elemento y cierra el sidenav. Cortamos
       // la propagación solo cuando hay algo que limpiar: si no, Escape con el buscador
       // vacío deja de cerrar el drawer en mobile, que ahí sí es lo que se espera.
+      // En desktop el sidenav es fijo y no se cierra con Escape (`[disableClose]` en el
+      // template): no hay botón para volver a abrirlo.
       if (!this.searchQuery) return;
       event.stopPropagation();
       this.limpiarBusqueda();
@@ -341,6 +356,17 @@ export class AdminLayoutComponent implements OnInit {
       event.preventDefault();
       this.ejecutar(this.resultados[this.indiceActivo]);
     }
+  }
+
+  /**
+   * Escape que llega al `mat-sidenav` (buscador vacío o foco en cualquier otro control del menú).
+   * `MatDrawer` lo atiende con un listener propio y llama a `close()`, pero eso solo cambia su estado
+   * interno: la animación y la clase `mat-drawer-opened` son host bindings que se pintan en la vista de
+   * ESTE componente, que es OnPush y nadie marcó. Sin esto el foco volvía a la hamburguesa y el menú y el
+   * fondo oscuro seguían en pantalla.
+   */
+  alEscapeEnMenu(): void {
+    this.cdr.markForCheck();
   }
 
   /** La lista vive dentro del nav, que scrollea: sin esto el cursor se va de vista

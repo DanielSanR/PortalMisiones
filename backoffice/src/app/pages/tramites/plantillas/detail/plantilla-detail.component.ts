@@ -1,23 +1,25 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, Observable, catchError, combineLatest, filter, map, of, shareReplay, startWith, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
 import { PlantillaRef, PlantillaVM, PlantillasFacade } from '@features/plantillas';
 import { RUTA_EDITAR_PLANTILLA, RUTA_LISTA_PLANTILLAS } from '../plantillas.rutas';
+import { RUTA_LISTA_ADOPCIONES } from '../../adopciones/adopciones.rutas';
 import { TEXTOS_PLANTILLA_INEXISTENTE, esPlantillaInexistente } from '../plantilla-save-error';
 import { AdopcionesDePlantillaComponent } from '../../adopciones/de-plantilla/adopciones-de-plantilla.component';
+import { PlantillaMembreteComponent } from '../membrete/plantilla-membrete.component';
+import { DatoRecomendado, datosRecomendados } from '../plantilla-recomendados';
 
 /** Grupo de referencias de catálogo que se muestra como chips. */
 interface GrupoDeRefs {
   label: string;
-  icono: string;
   refs: PlantillaRef[];
   vacio: string;
 }
@@ -25,7 +27,7 @@ interface GrupoDeRefs {
 type EstadoDetalle =
   | { tipo: 'cargando' }
   | { tipo: 'error'; noExiste: boolean }
-  | { tipo: 'ok'; plantilla: PlantillaVM; grupos: GrupoDeRefs[] };
+  | { tipo: 'ok'; plantilla: PlantillaVM; grupos: GrupoDeRefs[]; recomendados: DatoRecomendado[]; recomendadosListos: number };
 
 /**
  * Detalle de una plantilla provincial (activa o no: `GET /{id}` devuelve también las inactivas).
@@ -37,7 +39,8 @@ type EstadoDetalle =
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AsyncPipe, MatButtonModule, MatSnackBarModule, HasPermissionDirective, PageActionsDirective, AdopcionesDePlantillaComponent,
+    AsyncPipe, RouterLink, MatButtonModule, MatSnackBarModule, HasPermissionDirective, PageActionsDirective, AdopcionesDePlantillaComponent,
+    PlantillaMembreteComponent,
   ],
   templateUrl: './plantilla-detail.component.html',
   styleUrl: './plantilla-detail.component.scss',
@@ -51,6 +54,7 @@ export class PlantillaDetailComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly noDisponible = 'No disponible';
+  readonly rutaAdopciones = RUTA_LISTA_ADOPCIONES;
   readonly textosInexistente = TEXTOS_PLANTILLA_INEXISTENTE;
   /** Id de la plantilla mostrada (lo actualiza `estado$` al cambiar el `:id`). */
   private id = '';
@@ -67,7 +71,17 @@ export class PlantillaDetailComponent {
     switchMap(([id]) => {
       this.id = id;
       return this.facade.getDetalle(id).pipe(
-        map((plantilla): EstadoDetalle => ({ tipo: 'ok', plantilla, grupos: gruposDe(plantilla) })),
+        map((plantilla): EstadoDetalle => {
+          const recomendados = datosRecomendados({
+            resumen: plantilla.resumen,
+            tieneModalidad: !!plantilla.modalidad,
+            tieneCategoriaPrincipal: !!plantilla.categoriaPrincipal,
+          });
+          return {
+            tipo: 'ok', plantilla, grupos: gruposDe(plantilla), recomendados,
+            recomendadosListos: recomendados.filter((d) => d.completo).length,
+          };
+        }),
         catchError((err: unknown) => of<EstadoDetalle>({ tipo: 'error', noExiste: esPlantillaInexistente(err) })),
         startWith<EstadoDetalle>({ tipo: 'cargando' }),
       );
@@ -88,7 +102,7 @@ export class PlantillaDetailComponent {
   }
 
   desactivar(plantilla: PlantillaVM): void {
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Desactivar la plantilla?',
         message: `La plantilla ${plantilla.titulo} deja de listarse y no se va a poder adoptar. `
@@ -96,12 +110,11 @@ export class PlantillaDetailComponent {
         highlight: plantilla.titulo,
         danger: true,
         confirmText: 'Sí, desactivar',
-        busyText: 'Desactivando...',
+        busyText: 'Desactivando…',
         confirmAction: () => this.facade.desactivar(plantilla.id),
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.snackBar.open('Plantilla desactivada', 'OK', { duration: 3000, panelClass: 'snackbar-success' });
@@ -112,9 +125,9 @@ export class PlantillaDetailComponent {
 
 function gruposDe(p: PlantillaVM): GrupoDeRefs[] {
   return [
-    { label: 'Categorías', icono: 'folders', refs: p.categorias, vacio: 'Sin categorías' },
-    { label: 'Etiquetas', icono: 'tag', refs: p.etiquetas, vacio: 'Sin etiquetas' },
-    { label: 'Destinatarios', icono: 'user-focus', refs: p.destinatarios, vacio: 'Sin destinatarios' },
-    { label: 'Eventos de vida', icono: 'bookmarks-simple', refs: p.eventosDeVida, vacio: 'Sin eventos de vida' },
+    { label: 'Categorías', refs: p.categorias, vacio: 'Sin categorías asignadas.' },
+    { label: 'Etiquetas', refs: p.etiquetas, vacio: 'Sin etiquetas asignadas.' },
+    { label: 'Destinatarios', refs: p.destinatarios, vacio: 'Sin destinatarios asignados.' },
+    { label: 'Eventos de vida', refs: p.eventosDeVida, vacio: 'Sin eventos de vida asignados.' },
   ];
 }

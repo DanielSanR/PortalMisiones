@@ -1,0 +1,163 @@
+// ==========================================================================
+// Selección múltiple con chips (patrón del panel de permisos de Roles). El grupo, el contador y el
+// chip son las clases globales `.perm-group*` / `.perm-chip*` (shared-styles/_components.scss);
+// acá solo lo propio: el botón Elegir/Listo y la caja con buscador y lista.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+.seleccion-multiple {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  min-width: 0;
+
+  // El botón va al final de la fila aunque `.perm-group__header` reparta con space-between.
+  &__encabezado {
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--theme-space-sm);
+    margin-bottom: 0;
+    // Con poco ancho el botón baja de renglón; etiqueta y contador se quedan juntos en una sola línea.
+    flex-wrap: wrap;
+
+    // La etiqueta puede cortarse con puntos suspensivos si no entra sola; el contador ("1 de 6") nunca se parte.
+    .perm-group__label {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .perm-group__count {
+      flex: none;
+      white-space: nowrap;
+    }
+  }
+
+  &__alternar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    flex: none;
+    min-height: var(--theme-control-height-sm);
+    margin-left: auto;
+    padding: 0 var(--theme-space-gap);
+    border: 1px solid var(--theme-border-strong);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-card);
+    color: var(--theme-primary-700);
+    font-family: inherit;
+    font-size: var(--theme-font-small-size);
+    font-weight: var(--theme-font-weight-semibold);
+    cursor: pointer;
+    transition: border-color var(--theme-transition-fast), background var(--theme-transition-fast);
+
+    i.ph {
+      font-size: var(--theme-font-size-sm);
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--theme-primary);
+      background: var(--theme-primary-50);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      color: var(--theme-text-tertiary);
+    }
+
+    @include focus-ring;
+  }
+
+  &__chips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: inline-flex;
+  }
+
+  // El chip entero es el botón de quitar: aspecto, hover y foco los da `.perm-chip--toggle` (global),
+  // igual que en los permisos del Rol. Acá solo el estado deshabilitado.
+  &__chip:disabled {
+    cursor: not-allowed;
+  }
+
+  &__vacio {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+
+  // Caja de la lista abierta.
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--theme-border-strong);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-card);
+  }
+
+  &__buscador {
+    position: relative;
+    display: flex;
+    padding: var(--theme-space-sm);
+    border-bottom: 1px solid var(--theme-border-subtle);
+
+    > i.ph {
+      position: absolute;
+      top: 50%;
+      left: var(--theme-space-gap);
+      transform: translateY(-50%);
+      font-size: var(--theme-icon-size-sm);
+      color: var(--theme-text-tertiary);
+      pointer-events: none;
+    }
+  }
+
+  &__busqueda {
+    width: 100%;
+    height: var(--theme-control-height-md);
+    padding: 0 var(--theme-space-gap) 0 var(--theme-space-xl);
+    border: 1px solid var(--theme-border-input);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-card);
+    color: var(--theme-text-primary);
+    font-family: inherit;
+    font-size: var(--theme-font-size-sm);
+
+    @include focus-ring;
+  }
+
+  // Alto máximo del diseño (216px, sin token): la lista scrollea por dentro y el formulario no crece.
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    max-height: 216px;
+    overflow-y: auto;
+    padding: var(--theme-space-xs);
+    @include custom-scrollbar;
+  }
+
+  &__opcion {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--theme-font-size-sm);
+
+    &.is-marcada {
+      font-weight: var(--theme-font-weight-semibold);
+    }
+  }
+
+  &__sin-resultados {
+    margin: 0;
+    padding: var(--theme-space-gap) var(--theme-space-sm);
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+}

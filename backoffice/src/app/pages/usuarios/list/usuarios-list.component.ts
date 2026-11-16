@@ -1,17 +1,17 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, Observable, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, firstValueFrom, map, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../shared/components/list-search';
+import { AtajoDirective } from '../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { RolLabelPipe } from '../../../shared/pipes/rol-label.pipe';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -20,13 +20,13 @@ import { PageActionsDirective } from '../../../shared/directives/page-actions.di
 import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
 import { ROLE_TO_SPANISH, UserRole } from '@core/enums/user-role.enum';
 import { EDITAR_USUARIO_ACCESS } from '@core/constants/policy-overrides.constants';
-import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
-import { AuthTokenService } from '@core/services/auth-token.service';
+import { SesionUsuariosVM, UsuariosFacade, UsuarioVM } from '@features/usuarios';
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 import { tinteDeAvatar } from '@shared/utils/avatar-tinte';
-import {
-  CredencialModo, UsuarioCredencialDialogComponent, UsuarioCredencialDialogData,
-} from '../credencial-dialog/usuario-credencial-dialog.component';
+import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
+import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
+import { UsuarioGuardado, dialogoDeUsuario } from '../usuario-dialogo';
+import { CredencialModo, dialogoDeCredencial } from '../usuario-credencial-dialogo';
 
 /**
  * Roles cuya contraseña el backend no deja cambiar desde el panel (403 `4029` en
@@ -70,6 +70,7 @@ interface UsuariosVista extends EstadoVacio {
     RolLabelPipe,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
     UnavailableDirective,
   ],
   templateUrl: './usuarios-list.component.html',
@@ -77,9 +78,11 @@ interface UsuariosVista extends EstadoVacio {
 })
 export class UsuariosListComponent implements OnInit {
   private readonly facade = inject(UsuariosFacade);
-  /** Excepción documentada (sesión): solo para reconocer la fila del usuario logueado. */
-  private readonly auth = inject(AuthTokenService);
   readonly usuarios$ = this.facade.usuarios$;
+  /** Quién opera la pantalla (la publica el facade): reconoce "mi cuenta" y decide qué ofrece el alta. */
+  private sesion: SesionUsuariosVM | null = null;
+  /** Hay un diálogo de credencial abriéndose o abierto: no se abre otro encima. */
+  private abriendoCredencial = false;
 
   loading = true;
   /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
@@ -142,24 +145,49 @@ export class UsuariosListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
-  constructor(
-    private router: Router,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-  ) {}
+  /** Alta y edición van en diálogo sobre la lista; el diálogo guarda y acá solo se avisa y se refresca. */
+  private readonly dialogo = new DialogoEnLista<UsuarioVM, UsuarioGuardado>({
+    abrir: async (usuario) => {
+      const { esSuperAdmin, organismoId } = await firstValueFrom(this.facade.sesion$);
+      return abrirFormDialog(this.dialog, dialogoDeUsuario(this.facade, usuario?.id ?? null, { esSuperAdmin, organismoId }));
+    },
+    buscar: async (id) => (await firstValueFrom(this.usuarios$)).find((fila) => fila.id === id),
+    alGuardar: (guardado, usuario) => {
+      this.refrescar();
+      if (usuario) {
+        this.avisarExito('Usuario actualizado');
+      } else if (guardado.desactivacionFallida) {
+        // El alta ya ocurrió pero la cuenta quedó activa: más tiempo en pantalla y variante de advertencia.
+        this.snackBar.open('Usuario creado, pero no se pudo desactivar la cuenta. Desactivala desde la lista.', 'OK', {
+          duration: 10000,
+          panelClass: 'snackbar-warning',
+        });
+      } else {
+        this.avisarExito('Usuario creado');
+      }
+    },
+    noEncontrada: 'No encontramos ese usuario. Puede que lo hayan eliminado.',
+  });
 
   ngOnInit(): void {
+    // Emite en el acto (la sesión es un BehaviorSubject), así que está lista antes del primer render.
+    this.facade.sesion$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((sesion) => { this.sesion = sesion; this.cdr.markForCheck(); });
     this.load();
   }
 
   load(): void {
     this.loading = true;
     this.error = false;
+    this.dialogo.listaLista(false);
     this.facade.loadUsuarios()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
+        next: () => { this.loading = false; this.cdr.markForCheck(); this.dialogo.listaLista(true); },
         // Antes la carga era un `try/finally` sin `catch`: el error se perdía como
         // rechazo no manejado y la lista afirmaba "no hay usuarios" cuando en
         // realidad la API no había respondido.
@@ -201,11 +229,23 @@ export class UsuariosListComponent implements OnInit {
   }
 
   onCreate(): void {
-    this.router.navigate(['/dashboard/usuarios/nuevo']);
+    void this.dialogo.abrir(null);
   }
 
   onEdit(usuario: UsuarioVM): void {
-    this.router.navigate(['/dashboard/usuarios/editar', usuario.id]);
+    void this.dialogo.abrir(usuario);
+  }
+
+  /** Vuelve a pedir la lista sin el estado de carga: el alta suma una fila que el stream todavía no tiene. */
+  private refrescar(): void {
+    this.facade.loadUsuarios()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ error: () => undefined });
+  }
+
+  private avisarExito(mensaje: string): void {
+    // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+    this.snackBar.open(mensaje, 'OK', { duration: 3000, panelClass: 'snackbar-success' });
   }
 
   /** Nombre y apellido del perfil; sin ellos (el backend real todavía no los trae) los textos de diálogos y menús usan el email. */
@@ -325,35 +365,49 @@ export class UsuariosListComponent implements OnInit {
    * mock). Se lee en cada detección de cambios, así que acompaña a la sesión.
    */
   private esMiCuenta(usuario: UsuarioVM): boolean {
-    const yo = this.auth.getCurrentUser();
-    if (!yo) return false;
-    return usuario.id === yo.id || (!!yo.email && usuario.email?.toLowerCase() === yo.email.toLowerCase());
+    const yo = this.sesion;
+    if (!yo?.usuarioId) return false;
+    return usuario.id === yo.usuarioId || (!!yo.email && usuario.email?.toLowerCase() === yo.email.toLowerCase());
   }
 
-  private abrirCredencial(usuario: UsuarioVM, modo: CredencialModo): void {
-    const data: UsuarioCredencialDialogData = {
+  private async abrirCredencial(usuario: UsuarioVM, modo: CredencialModo): Promise<void> {
+    // El diálogo se carga en diferido: un segundo clic mientras llega no abre otro.
+    if (this.abriendoCredencial) return;
+    this.abriendoCredencial = true;
+    const data = dialogoDeCredencial({
       modo,
       nombre: this.nombreCompleto(usuario),
       emailActual: usuario.email,
       guardar: (valor) => modo === 'email'
         ? this.facade.changeEmail(usuario.id, valor)
         : this.facade.changePassword(usuario.id, valor),
-    };
-    this.dialog.open(UsuarioCredencialDialogComponent, { data, panelClass: 'custom-modal-panel' })
-      .afterClosed()
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open(
-        modo === 'email' ? 'Email actualizado' : 'Contraseña actualizada',
-        'OK',
-        { duration: 3000, panelClass: 'snackbar-success' },
-      ));
+    });
+    let guardado: unknown;
+    try {
+      const ref = await abrirFormDialog(this.dialog, data);
+      guardado = await firstValueFrom(ref.afterClosed(), { defaultValue: undefined });
+    } catch {
+      // No llegó el código del diálogo (sin conexión): se avisa en vez de fallar en silencio.
+      this.snackBar.open('No pudimos abrir el formulario. Revisá tu conexión e intentá de nuevo.', 'OK', {
+        duration: 5000, panelClass: 'snackbar-error',
+      });
+      return;
+    } finally {
+      this.abriendoCredencial = false;
+    }
+    if (!guardado) return;
+    this.snackBar.open(
+      modo === 'email' ? 'Email actualizado' : 'Contraseña actualizada',
+      'OK',
+      { duration: 3000, panelClass: 'snackbar-success' },
+    );
   }
 
   onEliminar(usuario: UsuarioVM): void {
     // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
     const indice = indiceDeFilaActiva(this.host);
     const nombre = this.nombreCompleto(usuario);
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar el usuario definitivamente?',
         // Distinto de desactivar: acá no hay vuelta atrás, y conviene ofrecer la alternativa.
@@ -361,12 +415,11 @@ export class UsuariosListComponent implements OnInit {
         highlight: nombre,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         confirmAction: () => this.conFilaOcupada(usuario, this.facade.deleteDefinitive(usuario.id)),
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef);
@@ -384,7 +437,7 @@ export class UsuariosListComponent implements OnInit {
       message: `${this.nombreCompleto(usuario)} dejará de poder ingresar al backoffice. La cuenta se conserva y podés volver a activarla cuando quieras.`,
       danger: true,
       confirmText: 'Sí, desactivar',
-      busyText: 'Desactivando...',
+      busyText: 'Desactivando…',
       exito: 'Cuenta desactivada',
     });
   }
@@ -395,7 +448,7 @@ export class UsuariosListComponent implements OnInit {
       message: `${this.nombreCompleto(usuario)} volverá a poder ingresar al backoffice con los permisos de su rol.`,
       danger: false,
       confirmText: 'Sí, activar',
-      busyText: 'Activando...',
+      busyText: 'Activando…',
       exito: 'Cuenta activada',
     });
   }
@@ -403,7 +456,7 @@ export class UsuariosListComponent implements OnInit {
   private confirmarYEjecutar(usuario: UsuarioVM, activo: boolean, opciones: {
     title: string; message: string; danger: boolean; confirmText: string; busyText: string; exito: string;
   }): void {
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: opciones.title,
         message: opciones.message,
@@ -417,7 +470,6 @@ export class UsuariosListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.snackBar.open(opciones.exito, 'OK', {
         duration: 3000,

@@ -39,7 +39,11 @@ export const API_CODES = {
   PERMISSION_NOT_FOUND: 4060,
   ROLE_ALREADY_EXISTS: 4061,
   PERMISSION_ALREADY_EXISTS: 4062,
+  // Tipo de organismo: el `code` derivado del nombre ya existe (409) / tiene organismos activos y no
+  // se puede desactivar ni eliminar (409).
+  ORGANISM_TYPE_CODE_TAKEN: 4063,
   REFRESH_INVALID: 4064,
+  ORGANISM_TYPE_IN_USE: 4066,
   ORGANISM_ACRONYM_TAKEN: 4069,
   // Taxonomía (genéricos): conflicto de unicidad (ej. slug repetido en el alcance) / entidad inexistente.
   TAXONOMY_CONFLICT: 4072,
@@ -48,6 +52,8 @@ export const API_CODES = {
   // fichas y puntos de atención los usan para "ya existe" / "no existe o está fuera de tu alcance").
   ENTITY_CONFLICT: 4072,
   ENTITY_NOT_FOUND: 4073,
+  // Evento de vida asignado a un trámite: no se puede renombrar (409).
+  LIFE_EVENT_ASSIGNED: 4076,
   // Transición de publicación de la ficha no permitida desde el estado actual (409, backend `dev` 5186ab1).
   PUBLICATION_TRANSITION_INVALID: 4077,
   // Adopción solapada: misma plantilla, mismo organismo, vigencias que se pisan (409). El backend de `dev`

@@ -9,15 +9,21 @@ import { FormActionsComponent } from './form-actions.component';
   imports: [ReactiveFormsModule, FormActionsComponent],
   template: `
     <form [formGroup]="form" (ngSubmit)="envios = envios + 1">
-      <app-form-actions [saving]="saving" [sinCambios]="sinCambios" [apariencia]="apariencia"
-          helpText="Ayuda" submitText="Crear" (cancelar)="cancelaciones = cancelaciones + 1"></app-form-actions>
+      <app-form-actions [saving]="saving" [sinCambios]="sinCambios"
+          [helpText]="ayuda" [integrada]="integrada" submitText="Crear" (cancelar)="cancelaciones = cancelaciones + 1">
+        @if (conInfo) {
+          <span formActionsInfo class="indicador">Falta algo</span>
+        }
+      </app-form-actions>
     </form>`,
 })
 class HostComponent {
   form = new FormGroup({ nombre: new FormControl('') });
   saving = false;
   sinCambios = false;
-  apariencia: 'raised' | 'flat' = 'raised';
+  ayuda = 'Ayuda';
+  integrada = false;
+  conInfo = false;
   envios = 0;
   cancelaciones = 0;
 }
@@ -70,12 +76,25 @@ describe('FormActionsComponent', () => {
     expect(el('.form-actions__submit').getAttribute('tabindex')).toBeNull();
   });
 
-  it('respeta la variante de botón de cada pantalla', () => {
-    expect(submit().hasAttribute('mat-raised-button')).toBeTrue();
+  it('el botón de envío es plano, igual que en los diálogos', () => {
+    expect(submit().hasAttribute('mat-flat-button')).toBeTrue();
+  });
 
-    host.apariencia = 'flat';
+  it('integrada: suma el modificador del pie de tarjeta; por defecto es la barra de siempre', () => {
+    expect(el('.form-actions').classList).not.toContain('form-actions--integrada');
+
+    host.integrada = true;
     fixture.detectChanges();
 
-    expect(submit().hasAttribute('mat-flat-button')).toBeTrue();
+    expect(el('.form-actions').classList).toContain('form-actions--integrada');
+  });
+
+  it('proyecta el indicador a la izquierda y sin ayuda no deja un hueco vacío', () => {
+    host.conInfo = true;
+    host.ayuda = '';
+    fixture.detectChanges();
+
+    expect(el('.form-actions__info .indicador').textContent).toContain('Falta algo');
+    expect(el('.form-actions__help')).toBeNull();
   });
 });

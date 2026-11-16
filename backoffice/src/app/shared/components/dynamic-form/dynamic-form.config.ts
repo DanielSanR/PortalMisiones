@@ -1,4 +1,4 @@
-import { FieldConfig, FormConfig } from '../../../core/models/field.interface';
+import { FieldConfig, FormConfig, TreeFieldConfig } from '../../../core/models/field.interface';
 import { canonicalizarSlug } from '../../../core/utils/slug.utils';
 
 const FORM_CONFIGS: Record<string, FormConfig> = {
@@ -6,22 +6,15 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
   // Sin sitioWeb/logoUrl (no existen en el backend).
   ORGANISMO: {
     fields: [
-      // Estructura del diseño "Pantallas · Backoffice Misiones", pantalla FORM.
-      // Los campos marcados `pendiente` están en el diseño pero el backend no los
-      // persiste (`OrganismRequestDTO` solo acepta typeId, parentId, baseLocationId,
-      // name, acronym y active): van deshabilitados para que nadie escriba y pierda.
-      {
-        name: '_section_datos',
-        label: 'Datos institucionales',
-        type: 'section-header',
-        placeholder: 'Identificación y jerarquía del organismo',
-      },
+      // Diseño "Pantallas · Backoffice Misiones", ficha de organismo en modo edición / alta.
+      // Solo lo que `OrganismRequestDTO` persiste. El título de la sección lo pone la tarjeta
+      // "Datos institucionales" de la ficha, por eso acá no hay `section-header`.
       {
         name: 'nombre',
         label: 'Nombre',
         type: 'text',
-        placeholder: 'Nombre del organismo',
-        cssClass: 'colspan-wide',
+        placeholder: 'Ej. Ministerio de Salud Pública',
+        cssClass: 'colspan-full',
         validations: {
           required: true,
           maxLength: 255,
@@ -31,25 +24,17 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         name: 'acronym',
         label: 'Sigla',
         type: 'text',
-        placeholder: 'Ej: IPS',
-        cssClass: 'colspan-third',
+        placeholder: 'Ej. MSP',
+        hint: 'Opcional. No puede repetirse entre organismos.',
+        cssClass: 'colspan-half',
         validations: { maxLength: 50 },
-      },
-      {
-        name: 'cuit',
-        label: 'CUIT',
-        type: 'text',
-        placeholder: 'Ej. 30-67890123-4',
-        cssClass: 'colspan-third',
-        disabled: true,
-        pendiente: true,
       },
       {
         name: 'typeId',
         label: 'Tipo de organismo',
         type: 'select',
-        placeholder: 'Seleccione un tipo',
-        cssClass: 'colspan-wide',
+        placeholder: 'Seleccioná un tipo',
+        cssClass: 'colspan-half',
         validations: { required: true },
         options: [],
         // Es requerido y sin opción "ninguno": si no hay tipos cargados, el alta
@@ -57,210 +42,37 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         emptyOptionsMessage: 'No hay tipos de organismo cargados. Creá uno primero en Tipos de organismo.',
       },
       {
+        // El árbol (`tree.nodes`) lo arma la ficha con los organismos y sus motivos de bloqueo.
         name: 'parentId',
         label: 'Organismo superior',
-        type: 'select',
-        placeholder: 'Sin organismo superior',
-        cssClass: 'colspan-third',
-        options: [],
-      },
-      {
-        name: 'jurisdiccion',
-        label: 'Jurisdicción',
-        type: 'radio',
-        cssClass: 'colspan-third',
-        disabled: true,
-        pendiente: true,
-        options: [
-          { id: 'provincial', name: 'Provincial' },
-          { id: 'municipal', name: 'Municipal' },
-        ],
+        type: 'tree-select',
+        hint: 'Opcional. De quién depende en la estructura.',
+        cssClass: 'colspan-half',
+        tree: {
+          nodes: [],
+          emptyLabel: 'Sin organismo superior',
+          emptyMeta: 'Queda como organismo raíz',
+          searchLabel: 'Buscar por nombre o sigla',
+        },
       },
       {
         name: 'baseLocationId',
         label: 'Localidad base',
         type: 'select',
         placeholder: 'Sin localidad',
-        hint: 'Localidad de referencia del organismo (opcional)',
+        hint: 'Opcional. Localidad de referencia del organismo.',
         cssClass: 'colspan-half',
         options: [],
-      },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'textarea',
-        placeholder: 'Se muestra en la ficha pública del organismo.',
-        cssClass: 'colspan-full',
-        disabled: true,
-        pendiente: true,
-        validations: { maxLength: 500 },
       },
       {
         name: 'activo',
         label: 'Organismo activo',
         type: 'checkbox',
+        hint: 'Un organismo inactivo no se puede elegir como organismo superior de otro.',
         value: true,
       },
-
-      {
-        name: '_section_contacto',
-        label: 'Contacto y visibilidad',
-        type: 'section-header',
-        placeholder: 'Datos que se publican en el portal ciudadano',
-      },
-      {
-        name: 'domicilio',
-        label: 'Domicilio',
-        type: 'text',
-        placeholder: 'Ej. Av. López y Planes 2760, Posadas',
-        cssClass: 'colspan-wide',
-        disabled: true,
-        pendiente: true,
-      },
-      {
-        name: 'telefono',
-        label: 'Teléfono',
-        type: 'text',
-        placeholder: 'Ej. 376 444-7000',
-        cssClass: 'colspan-third',
-        disabled: true,
-        pendiente: true,
-      },
-      {
-        name: 'correo',
-        label: 'Correo institucional',
-        type: 'email',
-        placeholder: 'Ej. contacto@salud.misiones.gob.ar',
-        cssClass: 'colspan-third',
-        disabled: true,
-        pendiente: true,
-      },
-      {
-        name: 'sitioWeb',
-        label: 'Sitio web',
-        type: 'url',
-        placeholder: 'Ej. salud.misiones.gob.ar',
-        cssClass: 'colspan-third',
-        disabled: true,
-        pendiente: true,
-      },
-      {
-        name: 'visiblePortal',
-        label: 'Visible en el portal ciudadano',
-        type: 'checkbox',
-        disabled: true,
-        pendiente: true,
-      },
-      {
-        name: 'destacado',
-        label: 'Destacar en la página de inicio',
-        type: 'checkbox',
-        disabled: true,
-        pendiente: true,
-      },
-
     ],
     submitButtonText: 'Crear organismo',
-    cancelButtonText: 'Cancelar',
-  },
-
-  // Backend real (§5.2): OrganismType = name (req) + description? + active.
-  TIPO_ORGANISMO: {
-    fields: [
-      {
-        name: '_section_datos',
-        label: 'Datos del tipo de organismo',
-        type: 'section-header',
-      },
-      {
-        name: 'nombre',
-        label: 'Nombre',
-        type: 'text',
-        placeholder: 'Ej: Ministerio, Secretaría',
-        cssClass: 'colspan-full',
-        validations: { required: true, maxLength: 100 },
-      },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'textarea',
-        placeholder: 'Descripción breve del tipo de organismo',
-        cssClass: 'colspan-full',
-      },
-      {
-        name: 'activo',
-        label: 'Tipo activo',
-        type: 'checkbox',
-        value: true,
-      },
-    ],
-    submitButtonText: 'Crear tipo',
-    cancelButtonText: 'Cancelar',
-  },
-  ETIQUETA: {
-    fields: [
-      {
-        name: '_section_datos',
-        label: 'Datos de la etiqueta',
-        type: 'section-header',
-      },
-      // Contrato real `Tag` (BACKEND_API_SPEC.md §5.5): solo `slug` + organismo opcional.
-      // `local` no se pide: lo deriva el alcance (con organismo ⇒ local; sin ⇒ global).
-      {
-        name: 'slug',
-        label: 'Slug',
-        type: 'text',
-        placeholder: 'Ej: salud, adultos-mayores',
-        hint: 'Se guarda en minúsculas, sin tildes y con guiones en lugar de espacios.',
-        // El backend canonicaliza (`TagService.createTag`): se muestra cómo va a quedar.
-        preview: { label: 'Se guardará como:', transform: canonicalizarSlug },
-        cssClass: 'colspan-half',
-        validations: {
-          required: true,
-          maxLength: 100,
-        },
-      },
-      {
-        name: 'organismoId',
-        label: 'Organismo',
-        type: 'select',
-        // Sin organismo ⇒ global; con organismo ⇒ local de ese organismo. La primera opción
-        // ("Ninguno — etiqueta global") la agrega el form al cargar el catálogo.
-        placeholder: 'Ninguno — etiqueta global',
-        cssClass: 'colspan-half',
-        options: [],
-      },
-    ],
-    submitButtonText: 'Crear etiqueta',
-    cancelButtonText: 'Cancelar',
-  },
-
-  // Backend real (post-pull): LifeEvent request = solo `name`; el `slug` lo genera el backend.
-  EVENTO_DE_VIDA: {
-    fields: [
-      {
-        name: '_section_datos',
-        label: 'Datos del evento de vida',
-        type: 'section-header',
-      },
-      {
-        name: 'nombre',
-        label: 'Nombre',
-        type: 'text',
-        placeholder: 'Ej: Nacimiento de un hijo, Iniciar un emprendimiento',
-        hint: 'El identificador (slug) se genera automáticamente desde el nombre.',
-        // No hay campo `slug`: el backend lo deriva del `name` (`generateSlug`), así que la
-        // vista previa va sobre el nombre y muestra el identificador resultante.
-        preview: { label: 'Identificador (slug):', transform: canonicalizarSlug },
-        cssClass: 'colspan-full',
-        validations: {
-          required: true,
-          minLength: 3,
-          maxLength: 100,
-        },
-      },
-    ],
-    submitButtonText: 'Crear evento de vida',
     cancelButtonText: 'Cancelar',
   },
 
@@ -305,86 +117,6 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
       },
     ],
     submitButtonText: 'Crear categoría',
-    cancelButtonText: 'Cancelar',
-  },
-
-  // Backend real (§5.4): Recipient solo persiste `name`.
-  DESTINATARIO: {
-    fields: [
-      {
-        name: '_section_datos',
-        label: 'Datos del destinatario',
-        type: 'section-header',
-      },
-      {
-        name: 'nombre',
-        label: 'Nombre',
-        type: 'text',
-        placeholder: 'Ej: persona_humana, empresa, extranjero',
-        cssClass: 'colspan-full',
-        validations: {
-          required: true,
-          minLength: 3,
-          maxLength: 100,
-        },
-      },
-    ],
-    submitButtonText: 'Crear destinatario',
-    cancelButtonText: 'Cancelar',
-  },
-
-  // Backend real (§5.3): Modality solo persiste `name`. Sin descripción/ícono/color.
-  MODALIDAD: {
-    fields: [
-      {
-        name: '_section_datos',
-        label: 'Datos de la modalidad',
-        type: 'section-header',
-      },
-      {
-        name: 'nombre',
-        label: 'Nombre',
-        type: 'text',
-        placeholder: 'Ej: Digital de punta a punta',
-        cssClass: 'colspan-full',
-        validations: {
-          required: true,
-          minLength: 3,
-          maxLength: 100,
-        },
-      },
-    ],
-    submitButtonText: 'Crear modalidad',
-    cancelButtonText: 'Cancelar',
-  },
-
-  // Backend real (§4): Permission = code + description (los dos obligatorios).
-  PERMISO: {
-    fields: [
-      {
-        name: '_section_datos',
-        label: 'Datos del permiso',
-        type: 'section-header',
-      },
-      {
-        name: 'codigo',
-        label: 'Código',
-        type: 'text',
-        placeholder: 'Ej: CREATE_PROCEDURE',
-        hint: 'Formato ACCION_RECURSO (en mayúsculas)',
-        cssClass: 'colspan-half',
-        validations: { required: true, maxLength: 100 },
-      },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'text',
-        placeholder: 'Ej: Permite crear trámites',
-        cssClass: 'colspan-half',
-        validations: { required: true, maxLength: 255 },
-      },
-    ],
-    submitButtonText: 'Crear permiso',
     cancelButtonText: 'Cancelar',
   },
 
@@ -436,7 +168,8 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'select',
         placeholder: 'Seleccioná un rol',
         hint: 'Define qué puede ver y hacer dentro del backoffice',
-        cssClass: 'colspan-half',
+        // Ancho completo: Organismo solo aparece con algunos roles, y a media fila Rol quedaba con un hueco al lado.
+        cssClass: 'colspan-full',
         validations: { required: true },
         options: [],
         emptyOptionsMessage: 'No hay roles que puedas asignar.',
@@ -447,7 +180,7 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
         type: 'select',
         placeholder: 'Seleccioná un organismo',
         hint: 'Obligatorio para este rol: sus permisos valen dentro de un organismo',
-        cssClass: 'colspan-half',
+        cssClass: 'colspan-full',
         validations: { required: true },
         options: [],
         emptyOptionsMessage: 'No hay organismos activos. Creá uno primero en Organismos.',
@@ -462,64 +195,6 @@ const FORM_CONFIGS: Record<string, FormConfig> = {
       },
     ],
     submitButtonText: 'Crear usuario',
-    cancelButtonText: 'Cancelar',
-  },
-
-  // Backend real (`RoleRequestDTO`): code, description, scopeType, assignableByOrgAdmin,
-  // assignableByBackoffice, active y permissionsIds. La grilla de permisos la dibuja la página
-  // (`role-form`), proyectada en el formulario y atada al campo `custom` `permissionsIds`.
-  ROL: {
-    fields: [
-      { name: '_section_identificacion', label: 'Identificación', type: 'section-header' },
-      {
-        name: 'codigo',
-        label: 'Código',
-        type: 'text',
-        placeholder: 'Ej: EDITOR_TRAMITES',
-        hint: 'Sin espacios, en mayúsculas',
-        cssClass: 'colspan-half',
-        validations: { required: true, maxLength: 100 },
-      },
-      {
-        name: 'descripcion',
-        label: 'Descripción',
-        type: 'text',
-        placeholder: 'Ej: Editor de trámites',
-        cssClass: 'colspan-half',
-        validations: { required: true, maxLength: 255 },
-      },
-
-      { name: '_section_configuracion', label: 'Configuración', type: 'section-header' },
-      {
-        name: 'scopeTipo',
-        label: 'Scope',
-        type: 'select',
-        value: 'global',
-        validations: { required: true },
-        options: [
-          { id: 'global', name: 'Global' },
-          { id: 'organismo', name: 'Organismo' },
-        ],
-        optionsLoaded: true,
-      },
-      {
-        name: 'asignablePorOrgAdmin',
-        label: 'Asignable por Administrador de Organismo',
-        type: 'checkbox',
-        value: false,
-      },
-      {
-        name: 'asignablePorBackoffice',
-        label: 'Asignable por Administrador de Backoffice',
-        type: 'checkbox',
-        value: false,
-      },
-      { name: 'active', label: 'Activo', type: 'checkbox', value: true },
-
-      { name: '_section_permisos', label: 'Permisos asignados', type: 'section-header' },
-      { name: 'permissionsIds', label: 'Permisos asignados', type: 'custom', value: [] },
-    ],
-    submitButtonText: 'Crear rol',
     cancelButtonText: 'Cancelar',
   },
 };
@@ -567,6 +242,23 @@ export function getFormConfig(key: string): FormConfig {
 /**
  * Devuelve un nuevo FormConfig con las options del campo indicado actualizadas.
  */
+/**
+ * Devuelve una copia del FormConfig con la jerarquía de un campo `tree-select` resuelta
+ * (nodos + la entidad en edición). Los textos del campo se conservan de la config base.
+ */
+export function updateFormConfigTree(
+  config: FormConfig,
+  fieldName: string,
+  tree: Pick<TreeFieldConfig, 'nodes' | 'self'>,
+): FormConfig {
+  const clone = clonarConfig(config);
+  const field = clone.fields?.find((f: FieldConfig) => f.name === fieldName);
+  if (field?.tree) {
+    field.tree = { ...field.tree, ...tree, loaded: true };
+  }
+  return clone;
+}
+
 export function updateFormConfigOptions(
   config: FormConfig,
   fieldName: string,
@@ -577,7 +269,7 @@ export function updateFormConfigOptions(
   if (field) {
     field.options = options;
     // Aunque `options` venga vacío: el catálogo se resolvió, y el select debe decir
-    // "no hay opciones" en vez de quedarse en "Cargando opciones...".
+    // "no hay opciones" en vez de quedarse en "Cargando opciones…".
     field.optionsLoaded = true;
   }
   return clone;

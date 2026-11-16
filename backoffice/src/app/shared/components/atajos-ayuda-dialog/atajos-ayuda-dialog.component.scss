@@ -1,0 +1,53 @@
+// Lista de atajos del diálogo `?`. La cáscara (`.form-dialog`) es global (_components.scss).
+
+.atajos-ayuda {
+    &__lista {
+        display: flex;
+        flex-direction: column;
+        margin: var(--theme-space-md) 0 0;
+    }
+
+    &__fila {
+        display: flex;
+        align-items: center;
+        gap: var(--theme-space-md);
+        padding: var(--theme-space-sm) 0;
+        border-top: 1px solid var(--theme-border-subtle);
+    }
+
+    &__teclas {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: var(--theme-space-xs);
+        min-width: 72px;
+    }
+
+    &__tecla {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 var(--theme-space-xs);
+        border: 1px solid var(--theme-border-primary);
+        border-radius: var(--theme-radius-sm);
+        background-color: var(--theme-surface-sunken);
+        color: var(--theme-text-primary);
+        font-family: inherit;
+        font-size: var(--theme-font-size-xs);
+        font-weight: var(--theme-font-weight-semibold);
+        line-height: 1;
+    }
+
+    &__o {
+        font-size: var(--theme-font-caption-size);
+        color: var(--theme-text-tertiary);
+    }
+
+    &__descripcion {
+        margin: 0;
+        font-size: var(--theme-font-body-size);
+        color: var(--theme-text-secondary);
+    }
+}

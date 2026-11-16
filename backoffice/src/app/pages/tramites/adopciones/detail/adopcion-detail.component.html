@@ -16,7 +16,7 @@
   @if (estado.tipo === 'cargando') {
     <div class="loading-inline" role="status">
       <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-      <span>Cargando el trámite del organismo...</span>
+      <span>Cargando el trámite del organismo…</span>
     </div>
   } @else if (estado.tipo === 'error') {
     <div class="load-state" role="alert">
@@ -92,21 +92,21 @@
           <form class="adopdet-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
             <app-vigencia-campos [grupo]="form.controls.vigencia" idPrefijo="adopdet" [intentos]="intentos"></app-vigencia-campos>
 
-            <div class="adopdet-form__habilitada">
-              <mat-slide-toggle formControlName="habilitada" color="primary">Habilitado</mat-slide-toggle>
-              @if (!form.controls.habilitada.value) {
-                <p class="adopdet-form__aviso">
-                  <i class="ph ph-warning" aria-hidden="true"></i>
-                  Al guardar deja de listarse en Trámites del organismo y el trámite deja de verse en el portal.
-                </p>
-              }
+            <div class="form-toggle">
+              <mat-slide-toggle formControlName="habilitada" color="primary" aria-describedby="adopdet-habilitada-ayuda">Habilitado</mat-slide-toggle>
+              <!-- Montado siempre: es el destino de `aria-describedby` del toggle. -->
+              <div class="form-toggle__ayuda" id="adopdet-habilitada-ayuda">
+                @if (!form.controls.habilitada.value) {
+                  <p class="form-toggle__aviso form-toggle__aviso--alerta">
+                    <i class="ph ph-warning" aria-hidden="true"></i>
+                    Al guardar deja de listarse en Trámites del organismo y el trámite deja de verse en el portal.
+                  </p>
+                }
+              </div>
             </div>
 
             @if (errorMensaje) {
-              <p class="adopdet-form__error" role="alert">
-                <i class="ph ph-warning-circle" aria-hidden="true"></i>
-                <span>{{ errorMensaje }}</span>
-              </p>
+              <app-form-error-banner [errors]="[errorMensaje]" titulo="No se pudo guardar"></app-form-error-banner>
             }
 
             <div class="adopdet-form__acciones">
@@ -119,7 +119,7 @@
                 } @else {
                   <i class="ph ph-floppy-disk" aria-hidden="true"></i>
                 }
-                <span>{{ guardando ? 'Guardando...' : 'Guardar cambios' }}</span>
+                <span>{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</span>
               </button>
             </div>
           </form>

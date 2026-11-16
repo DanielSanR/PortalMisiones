@@ -146,6 +146,40 @@
     .mat-mdc-row .mat-mdc-cell {
       font-size: var(--theme-font-body-size);
     }
+
+    // Columna "Acciones" (key `acciones`, igual en todas las listas): pegada al borde derecho del wrapper
+    // con scroll, así el botón nunca queda detrás del scroll horizontal (tablet y mobile). Lleva fondo propio
+    // (sin transparencia: si no, las celdas que pasan por detrás se verían a través) y un filete a la izquierda.
+    .mat-column-acciones {
+      position: sticky;
+      right: 0;
+      z-index: 1;
+      border-left: 1px solid var(--theme-border-subtle);
+      background-color: var(--theme-surface-card);
+    }
+
+    .mat-mdc-header-row .mat-column-acciones {
+      background-color: var(--theme-table-header-bg);
+    }
+
+    // Mismos fondos que la fila para que la celda fija acompañe hover, selección y cebra.
+    .mat-mdc-row:hover .mat-column-acciones {
+      background-color: var(--theme-table-hover-bg);
+    }
+  }
+
+  &--striped .shared-table__mat-table .mat-mdc-row:nth-child(even) .mat-column-acciones {
+    background-color: var(--theme-bg-table-stripe);
+  }
+
+  &--striped .shared-table__mat-table .mat-mdc-row:nth-child(even):hover .mat-column-acciones {
+    background-color: var(--theme-table-hover-bg);
+  }
+
+  // La fila seleccionada manda sobre hover y cebra (misma prioridad que `&__row--selected` más abajo).
+  .shared-table__mat-table .mat-mdc-row.shared-table__row--selected .mat-column-acciones,
+  .shared-table__mat-table .mat-mdc-row.shared-table__row--selected:hover .mat-column-acciones {
+    background-color: var(--theme-info-bg) !important;
   }
 
   // ---------------------------------------------------------------------------

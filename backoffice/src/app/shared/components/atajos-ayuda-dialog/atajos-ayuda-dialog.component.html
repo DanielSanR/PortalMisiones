@@ -1,0 +1,31 @@
+<div class="form-dialog form-dialog--sm">
+    <div class="form-dialog__header">
+        <div class="form-dialog__icono">
+            <i class="ph ph-keyboard" aria-hidden="true"></i>
+        </div>
+        <div class="form-dialog__encabezado">
+            <h2 mat-dialog-title class="form-dialog__titulo">Atajos de teclado</h2>
+            <p class="form-dialog__subtitulo">Disponibles en esta pantalla. No funcionan mientras escribís en un campo.</p>
+        </div>
+    </div>
+
+    <dl class="atajos-ayuda__lista">
+        @for (atajo of data.atajos; track $index) {
+            <div class="atajos-ayuda__fila">
+                <dt class="atajos-ayuda__teclas">
+                    @for (tecla of atajo.teclas; track tecla; let ultima = $last) {
+                        <kbd class="atajos-ayuda__tecla">{{ tecla.length === 1 ? tecla.toLocaleUpperCase('es-AR') : tecla }}</kbd>
+                        @if (!ultima) {
+                            <span class="atajos-ayuda__o">o</span>
+                        }
+                    }
+                </dt>
+                <dd class="atajos-ayuda__descripcion">{{ atajo.descripcion }}</dd>
+            </div>
+        }
+    </dl>
+
+    <mat-dialog-actions align="end">
+        <button mat-flat-button color="primary" type="button" mat-dialog-close cdkFocusInitial>Cerrar</button>
+    </mat-dialog-actions>
+</div>

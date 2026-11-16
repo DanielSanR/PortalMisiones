@@ -1,17 +1,17 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
+import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, firstValueFrom, map, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../shared/components/list-search';
+import { AtajoDirective } from '../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
@@ -21,6 +21,9 @@ import { FilterTabOption } from '../../../shared/components/filter-tabs';
 import { CREAR_ETIQUETA_ACCESS } from '@core/constants/policy-overrides.constants';
 import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
+import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
+import { dialogoDeEtiqueta } from '../etiqueta-dialogo';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -80,6 +83,7 @@ interface EtiquetasVista extends EstadoVacio {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
     UnavailableDirective,
   ],
   templateUrl: './etiquetas-list.component.html',
@@ -150,11 +154,22 @@ export class EtiquetasListComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  constructor(
-    private router: Router,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-  ) {}
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+
+  /** Alta y edición van en diálogo sobre la lista; el diálogo guarda y acá solo se avisa. */
+  private readonly dialogo = new DialogoEnLista<EtiquetaVM, EtiquetaVM>({
+    abrir: (etiqueta) => abrirFormDialog(this.dialog, dialogoDeEtiqueta(this.facade, etiqueta)),
+    buscar: async (id) => (await firstValueFrom(this.facade.etiquetas$)).find((fila) => fila.id === id),
+    alGuardar: (_guardada, etiqueta) => {
+      this.snackBar.open(etiqueta ? 'Etiqueta actualizada' : 'Etiqueta creada', 'OK', {
+        duration: 3000,
+        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+        panelClass: 'snackbar-success',
+      });
+    },
+    noEncontrada: 'No encontramos esa etiqueta. Puede que la hayan eliminado.',
+  });
 
   ngOnInit(): void {
     this.load();
@@ -163,10 +178,11 @@ export class EtiquetasListComponent implements OnInit {
   load(): void {
     this.loading = true;
     this.error = false;
+    this.dialogo.listaLista(false);
     this.facade.loadEtiquetas()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
+        next: () => { this.loading = false; this.cdr.markForCheck(); this.dialogo.listaLista(true); },
         // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
         // etiquetas, indistinguible de una carga fallida.
         error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
@@ -207,7 +223,7 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   onCreate(): void {
-    this.router.navigate(['/dashboard/etiquetas/nuevo']);
+    void this.dialogo.abrir(null);
   }
 
   accionEditar(etiqueta: EtiquetaVM): RowAction {
@@ -215,6 +231,7 @@ export class EtiquetasListComponent implements OnInit {
       label: 'Editar',
       icon: 'pencil-simple',
       permission: 'UPDATE_TAG',
+      ariaLabel: `Editar etiqueta ${etiqueta.slug}`,
       run: () => this.onEdit(etiqueta),
     };
   }
@@ -231,20 +248,20 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   onEdit(etiqueta: EtiquetaVM): void {
-    this.router.navigate(['/dashboard/etiquetas/editar', etiqueta.id]);
+    void this.dialogo.abrir(etiqueta);
   }
 
   onDelete(etiqueta: EtiquetaVM): void {
     // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
     const indice = indiceDeFilaActiva(this.host);
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar la etiqueta?',
         message: `Se eliminará la etiqueta ${etiqueta.slug} y dejará de estar disponible para clasificar trámites. Esta acción no se puede deshacer.`,
         highlight: etiqueta.slug,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend
         // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
         confirmAction: () => {
@@ -257,7 +274,6 @@ export class EtiquetasListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef);

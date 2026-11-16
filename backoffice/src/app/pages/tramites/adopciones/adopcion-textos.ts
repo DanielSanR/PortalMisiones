@@ -21,7 +21,7 @@ export function confirmDeshabilitar(adopcion: AdopcionVM, accion: () => Observab
     highlight: adopcion.plantillaTitulo ?? undefined,
     danger: true,
     confirmText: 'Sí, deshabilitar',
-    busyText: 'Deshabilitando...',
+    busyText: 'Deshabilitando…',
     confirmAction: accion,
   };
 }

@@ -11,6 +11,8 @@ import { PermisoVM } from '@features/permisos';
 export interface PermisoChipVM {
   id: string;
   label: string;
+  /** Código del backend (`READ_USER`): no se muestra, sirve para buscar. */
+  codigo: string;
   granted: boolean;
 }
 
@@ -47,6 +49,9 @@ export const PERMISO_RESOURCE_LABELS: Record<string, string> = {
   LIFE_EVENT: 'Eventos de vida',
   RECIPIENT: 'Destinatarios',
   STORAGE: 'Almacenamiento',
+  TAG: 'Etiquetas',
+  ADOPTION: 'Trámites del organismo',
+  ATTENTION_POINT: 'Puntos de atención',
   ANALYTICS: 'Analítica',
 };
 
@@ -76,7 +81,7 @@ export function buildPermisoGroups(catalog: PermisoVM[], grantedIds: Set<string>
     }
     const group = byResource.get(key)!;
     const granted = grantedIds.has(permiso.id);
-    group.items.push({ id: permiso.id, label: actionLabel(permiso.codigo), granted });
+    group.items.push({ id: permiso.id, label: actionLabel(permiso.codigo), codigo: permiso.codigo, granted });
     group.total += 1;
     if (granted) group.granted += 1;
   }

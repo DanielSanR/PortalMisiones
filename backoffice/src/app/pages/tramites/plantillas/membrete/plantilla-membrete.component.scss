@@ -1,0 +1,5 @@
+// El membrete es el `.detail-header` global (shared-styles/_components.scss) con su modificador
+// `.detail-header--ficha`; el host solo es un bloque para que el padre lo separe de lo que sigue.
+:host {
+  display: block;
+}

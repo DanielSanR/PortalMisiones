@@ -1,0 +1,63 @@
+// ==========================================================================
+// Diálogo de alta/edición de categoría. El marco es `.dialogo-formulario` y la fila del slug es
+// `.form-field__fila` (globales, shared-styles); acá solo la franja "dónde queda".
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+.categoria-dialog {
+  // Franja de ubicación: pegada a la cabecera y de borde a borde (compensa el padding del cuerpo).
+  &__ubicacion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-xs);
+    margin: calc(-1 * var(--theme-space-lg)) calc(-1 * var(--theme-space-lg)) var(--theme-space-lg);
+    padding: var(--theme-space-gap) var(--theme-space-lg);
+    border-bottom: 1px solid var(--theme-border-subtle);
+    background: var(--theme-surface-sunken);
+  }
+
+  &__ruta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-xs);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+
+    > i.ph {
+      font-size: var(--theme-icon-size-sm);
+    }
+
+    strong {
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-primary);
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__ruta &__separador {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-border-input);
+  }
+
+  &__ruta &__sin-nombre {
+    color: var(--theme-text-secondary);
+  }
+
+  &__slug {
+    margin: 0;
+    font-family: var(--theme-font-mono);
+    font-size: var(--theme-font-size-xs);
+    font-weight: var(--theme-font-weight-medium);
+    color: var(--theme-text-secondary);
+    overflow-wrap: anywhere;
+  }
+
+  // Ayuda de un control que no es mat-form-field (el árbol): mismos valores que el `mat-hint`
+  // global (`_material.scss`). La separación la pone el `gap` de `.form-field`.
+  &__ayuda {
+    @include form-help-text;
+  }
+}

@@ -3,10 +3,14 @@
   @if (field.type === 'checkbox') {
     <!-- Booleano — slide-toggle pill, patrón FORM -->
     <div class="slide-toggle-field">
-      <mat-slide-toggle [formControlName]="field.name" color="primary">
+      <mat-slide-toggle [formControlName]="field.name" color="primary"
+                        [attr.aria-describedby]="field.hint ? field.name + '-ayuda' : null">
         {{ field.label }}
       </mat-slide-toggle>
     </div>
+    @if (field.hint) {
+      <div class="form-toggle__ayuda" [id]="field.name + '-ayuda'"><p>{{ field.hint }}</p></div>
+    }
   } @else {
     <!-- Radio — opciones en línea (ver "Jurisdicción" en el diseño del form) -->
     <mat-radio-group class="radio-field"

@@ -1,8 +1,8 @@
 // ==========================================================================
-// Detalle / edición de Organismo — diseño "Pantallas · Backoffice Misiones".
+// Ficha de Organismo (ver / editar / nuevo) — diseño "Pantallas · Backoffice Misiones".
 // Membrete, grilla, cards, campos, pill y estados vacíos son las clases globales
-// (`.detail-*`, `.pill`, `.state-panel`, `.load-state`, `.loading-inline`); acá solo lo propio:
-// avatar, pestañas (subrayadas en el detalle, chips planas en la edición) y la fila de contexto.
+// (`.detail-*` —incluidos identidad, separador y título atenuado del membrete—, `.pill`, `.state-panel`,
+// `.load-state`, `.loading-inline`); acá solo lo propio: avatar, pestañas y el formulario dentro de la tarjeta de datos (la lista del alta es `.pasos-lista`).
 // ==========================================================================
 
 @use 'shared-styles/mixins' as *;
@@ -34,50 +34,6 @@
   letter-spacing: -0.2px;
 }
 
-.orgdet-identidad {
-  display: flex;
-  flex-direction: column;
-  gap: var(--theme-space-sm);
-  flex: 1 1 320px;
-  min-width: 0;
-}
-
-.orgdet-separador {
-  width: 1px;
-  height: var(--theme-space-gap);
-  background: var(--theme-border-primary);
-}
-
-// Fila de contexto de la edición: chip de modificación + pestañas planas -------
-.orgdet-barra {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--theme-space-gap);
-}
-
-// Diseño: chip de contexto de 32px, 13/600, borde y fondo blanco (no es una `.pill`: no lleva dot).
-.orgdet-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex: none;
-  height: calc(var(--theme-control-height-sm) + var(--theme-space-2xs));
-  padding: 0 var(--theme-space-gap);
-  border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-md);
-  background: var(--theme-surface-card);
-  font-size: var(--theme-font-body-size);
-  font-weight: var(--theme-font-weight-semibold);
-  color: var(--theme-text-primary);
-  white-space: nowrap;
-
-  i.ph {
-    font-size: var(--theme-icon-size-sm);
-    color: var(--theme-text-secondary);
-  }
-}
-
 // Pestañas (role=tablist) ----------------------------------------------------
 // Detalle: subrayadas, dentro del membrete.
 .orgdet-tabs {
@@ -104,8 +60,11 @@
     white-space: nowrap;
     cursor: pointer;
     transition: color var(--theme-transition-fast), border-color var(--theme-transition-fast);
-    // Inset: el contenedor recorta (overflow) un outline hacia afuera.
-    @include focus-ring-inset;
+    // Inset: el contenedor recorta (overflow) un outline hacia afuera. Solo con foco de teclado:
+    // el mixin no trae su propio `:focus-visible`, y suelto recuadraba TODAS las pestañas.
+    &:focus-visible {
+      @include focus-ring-inset;
+    }
 
     &:hover {
       color: var(--theme-text-primary);
@@ -132,46 +91,12 @@
     font-weight: var(--theme-font-weight-semibold);
     font-variant-numeric: tabular-nums;
   }
-
-  // Edición: chips planas de 32px (como los filtros de lista), fuera de la tarjeta.
-  &--chips {
-    gap: var(--theme-space-xs);
-    padding: 0;
-    border-top: 0;
-
-    .orgdet-tabs__tab {
-      height: calc(var(--theme-control-height-sm) + var(--theme-space-2xs));
-      padding: 0 var(--theme-space-gap);
-      border: 1px solid var(--theme-border-primary);
-      border-radius: var(--theme-radius-md);
-      background: var(--theme-surface-card);
-
-      &:hover {
-        border-color: var(--theme-border-strong);
-      }
-
-      &.is-active {
-        background: var(--theme-info-bg);
-        border-color: var(--theme-info-border);
-        color: var(--theme-primary-800);
-      }
-    }
-  }
 }
 
 // Cards ----------------------------------------------------------------------
 // Encabezado de "Datos institucionales": barra de acento a la izquierda.
 .orgdet-encabezado {
-  display: flex;
-  flex-direction: column;
-  gap: var(--theme-space-2xs);
-  padding-left: var(--theme-space-gap);
-  border-left: 3px solid var(--theme-accent-bar-color);
-}
-
-.orgdet-descripcion {
-  padding-top: var(--theme-space-md);
-  border-top: 1px solid var(--theme-border-subtle);
+  @include accent-heading;
 }
 
 .orgdet-nota {
@@ -189,4 +114,35 @@
   gap: var(--theme-space-lg);
   margin: var(--theme-space-xs) 0 0;
   text-align: left;
+}
+
+// Grilla de "Datos" mientras se mira otra pestaña con el formulario abierto: sigue en el DOM
+// (no se pierde lo escrito) pero no se ve.
+.orgdet-oculto {
+  display: none;
+}
+
+// Membrete en vivo -----------------------------------------------------------
+// Avatar sin sigla ni nombre todavía (alta recién abierta): ícono en lugar de iniciales.
+.orgdet-avatar i.ph {
+  font-size: var(--theme-icon-size-lg);
+}
+
+// Formulario dentro de la tarjeta "Datos institucionales" ------------------------
+// La tarjeta es `--flush`: el padding lo pone el cuerpo, con la medida que espera el pie del
+// formulario (`form-actions` sangra con margen negativo de `--theme-space-lg`).
+.orgdet-form {
+  // Mismo borde que un control con foco suave: señala cuál es la tarjeta en edición.
+  border-color: var(--theme-info-border);
+
+  &__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-card);
+    padding: var(--theme-space-lg) var(--theme-space-lg) 0;
+
+    @include responsive(mobile) {
+      padding: var(--theme-space-md) var(--theme-space-md) 0;
+    }
+  }
 }

@@ -215,12 +215,47 @@ Loading: el ícono pasa a `ph-spinner-gap spin` y el texto a gerundio ("Guardand
   </div>
   ```
   Opcional: `.form-field__optional`; inválido: `.form-field.is-invalid`; error inline con la directiva
-  `appFormErrorMessage` (ícono `ph-warning-circle` + texto es-AR) o `.form-error` / `.form-field__error`, en
-  `--theme-error-icon`.
-- Layout: `.form-card`, `.section-header` (con barra de acento, `@include accent-bar`), `.form-grid` (`--full`),
-  `.form-actions` (`__help`, `__buttons`), resumen de errores `<app-form-error-banner>`.
+  `appFormErrorMessage` (ícono `ph-warning-circle` + texto es-AR, un mensaje por vez) o `.form-field__error`, en
+  `--theme-error-icon`. Un formulario a mano describe sus campos como `FieldConfig` y pone el texto de sus
+  validadores propios en `validations.mensajes`, para que el campo y el banner resumen digan lo mismo.
+- Piezas de formulario (globales, `_components.scss`): `.form-field__fila` (campo + botón al lado),
+  `.form-field__mono` (slug, código), `.field-preview` (cómo queda un valor al guardarse), `.form-toggle`
+  (booleano con su ayuda; `--separado`, `__ayuda`, `__aviso`), `.form-aviso` (advertencia sobre el formulario).
+- Pie: `<app-form-actions>` (`.form-actions`, `__help`, `__buttons`; `[integrada]` en tarjetas de paneles). El botón
+  de guardar es plano (`mat-flat-button`) en páginas y diálogos; el texto en curso lleva `…` ("Guardando…").
+- Error de guardado y resumen de validación: `<app-form-error-banner>`.
 - Formularios dinámicos: `<app-dynamic-form>` / `<app-dynamic-form-field>`.
-- Diálogo con formulario: `@include form-dialog($width)`.
+- Diálogo con formulario: marco `.dialogo-formulario` (cabecera con título, subtítulo y X; cuerpo `mat-dialog-content`
+  con scroll; error fuera del cuerpo; pie fijo; ancho `--theme-dialog-width-lg`). Es el mismo para `<app-form-dialog>`
+  y para los diálogos con formulario propio. `.form-dialog` (`@include form-dialog`, `--theme-dialog-width-md`/`-sm`)
+  queda para confirmaciones y avisos, sin campos. Cierre único (`cierreConConfirmacion`, `@shared/utils`): la X,
+  Cancelar, Escape y el clic afuera piden confirmación si hay cambios sin guardar y cierran directo si no.
+- Jerarquías (organismo superior, categoría padre): `<app-tree-select>` o el tipo de campo `tree-select` del
+  formulario dinámico. Los nodos no elegibles se muestran con su motivo (`disabledReason`), no se ocultan.
+- Selección múltiple de catálogos: `<app-seleccion-multiple>` (chips + lista con buscador, un grupo abierto a la vez) dentro de una
+  tarjeta de dos paneles con el pie integrado (`<app-form-actions [integrada]="true">`, indicador en `formActionsInfo`); ver el form de Plantilla.
+
+#### Alta y edición: ¿diálogo o página?
+Una sola forma por entidad; nunca las dos para lo mismo.
+- **Diálogo sobre la lista** cuando la entidad tiene pocos campos, no tiene ficha propia y ayuda ver la lista de
+  fondo. El marco es `<app-form-dialog>` (`shared/components/form-dialog`) sobre `app-dynamic-form`: cada pantalla
+  describe campos, textos y guardado como `FormDialogData` en su `pages/<x>/<x>-dialogo.ts` y lo abre con
+  `abrirFormDialog` (`@shared/utils/abrir-form-dialog`, carga diferida). Si no hay nada que cargar antes de mostrar
+  el formulario, la config se arma con `formDialogEstatico`. Lo usan usuarios (alta/edición y cambio de email o
+  contraseña) y los catálogos de "nombre y poco más" (modalidades, destinatarios, eventos de vida, tipos de
+  organismo, permisos, etiquetas). Siguen con componente propio, porque llevan contenido que el motor no dibuja,
+  pero sobre el mismo marco `.dialogo-formulario` y con el mismo cierre con confirmación (edición sin cambios no
+  guarda): Categorías (`pages/categorias/dialog`, franja de ubicación y slug que
+  sigue al nombre), puntos de atención ("Ver en mapa") y "Adoptar trámite" (`app-vigencia-campos`).
+- **Página** cuando la entidad tiene ficha con más bloques alrededor o muchos campos. Ej.: Organismos (ficha única
+  en modos ver / editar / nuevo).
+- Las rutas `…/nuevo` y `…/editar/:id` de una entidad con diálogo se mantienen como puerta de entrada (enlaces
+  directos, paleta de comandos): cargan la lista con el diálogo abierto y al cerrarlo vuelven a `…/lista`.
+  Cableado: guards `redirigirAlDialogo` (en `…/nuevo` y `…/editar/:id`) y `validarDialogoDeLista` (en la lista, con
+  `runGuardsAndResolvers: 'paramsOrQueryParamsChange'`) de `@core/guards`, y `DialogoEnLista`
+  (`@shared/utils/dialogo-en-lista`) en el componente de la lista.
+- Ayuda y error bajo un campo: alineados al borde izquierdo del control y a 6px de él (global en `_material.scss`).
+  La ayuda de un control que no es `mat-form-field` incluye el mixin `form-help-text`.
 
 ### Lista: encabezado, toolbar y tabla
 - Encabezado: `<app-page-header>` (+ directiva `appPageActions` para las acciones de página).
@@ -295,6 +330,30 @@ legítimos por estado de formulario (ej. Guardar sin cambios).
 - Respetar `prefers-reduced-motion`; transiciones `--theme-transition-fast/-normal/-slow` (150/250/350ms), sin
   animación decorativa.
 - es-AR: fechas DD/MM/YYYY, UI en español con voseo, títulos con verbo en infinitivo cuando aplique.
+
+### Atajos de teclado (WCAG 2.1.4)
+
+Pocos y los mismos en todas las pantallas; se pueden apagar desde el menú de usuario ("Atajos de teclado", persistido
+en `localStorage`; apagados no dispara ninguno, ni `/` ni `?`).
+
+| Tecla | Acción | Dónde |
+|---|---|---|
+| `/` | Foco al buscador del menú lateral | `admin-layout` |
+| `N` (alias `+`) | "Nuevo": acción principal de la pantalla | botón con `appAtajo="n"` |
+| `F` | Foco al buscador de la lista | `<app-list-search [atajoFoco]="true">` |
+| `?` | Diálogo con los atajos vigentes en la pantalla | `admin-layout` |
+
+No disparan con foco en campos editables (`input`, `textarea`, `select`, `mat-select`, `[contenteditable]`,
+`role=combobox|textbox`), con Ctrl/Alt/Meta (Shift solo en `?`, `+`, `/`), en `repeat`/IME, ni con un diálogo o menú
+abierto. Un solo listener en `AtajosService` (`core/services/atajos.service.ts`).
+
+**Agregar un atajo**: poner la directiva `AtajoDirective` (`shared/directives/atajo.directive.ts`) sobre el botón o
+campo existente: `<button appAtajo="n" *appHasPermission="…">Nuevo usuario</button>`. Hace `click()` (botones) o
+`focus()` (campos); hereda permisos (si `*appHasPermission` no lo renderiza, no hay atajo) y no dispara con
+`disabled`/`aria-disabled`. Opcionales: `atajoAlias`, `atajoDescripcion` (por defecto `aria-label` o texto del host).
+Suma `aria-keyshortcuts` y la tecla en el tooltip ("Nuevo usuario (N)"); el host no puede tener ya `matTooltip` ni
+`appUnavailable`. Atajos fuera de un elemento (shell): `AtajosService.registrar({ teclas, descripcion, accion })`.
+Si dos elementos comparten tecla gana el último conectado y visible.
 
 ## 11. Qué NO hacer
 

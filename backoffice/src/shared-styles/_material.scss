@@ -302,10 +302,14 @@
       box-shadow: 0 0 0 3px var(--theme-focus-ring-danger-color);
     }
 
+    // El gris va en la caja del campo, no en el host: así no envuelve también la ayuda de abajo.
     &.mat-form-field-disabled {
       --mdc-outlined-text-field-outline-color: var(--theme-border-primary);
-      background-color: var(--theme-neutral-100);
-      border-radius: var(--theme-radius-md);
+
+      .mat-mdc-text-field-wrapper {
+        background-color: var(--theme-neutral-100);
+        border-radius: var(--theme-radius-md);
+      }
     }
   }
 
@@ -322,9 +326,30 @@
     }
   }
 
+  // Ayuda y error bajo el campo (diseño FORM): alineados con el borde izquierdo del control
+  // (Material les pone 16px de sangría) y a 6px de él, igual que el `gap` de `.form-field`.
+  .mat-mdc-form-field-hint-wrapper,
+  .mat-mdc-form-field-error-wrapper {
+    padding-inline: 0;
+  }
+
+  // La separación solo con `subscriptSizing="dynamic"` (el que usan los formularios): en el modo
+  // fijo el subíndice va en posición absoluta sobre un alto reservado y los 6px lo desbordarían.
+  // En la ayuda va como margen del `mat-hint` y no del wrapper: Material monta el wrapper de ayuda
+  // siempre, aunque el campo no tenga ninguna, y con padding cada campo sin ayuda (los selects de los
+  // toolbars de lista, por ejemplo) medía 6px de más. El de error solo existe mientras hay error.
+  .mat-mdc-form-field-subscript-dynamic-size {
+    .mat-mdc-form-field-error-wrapper {
+      padding-top: 6px;
+    }
+
+    .mat-mdc-form-field-hint {
+      margin-top: 6px;
+    }
+  }
+
   .mat-mdc-form-field-hint {
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-secondary);
+    @include form-help-text;
   }
 
   // Mensaje de error inline (patrón FORM): ícono `ph-warning-circle` + texto,
@@ -654,12 +679,15 @@
   @include focus-ring;
 
   // Tamaño 40×22 con thumb 16 (tokens estructurales oficiales del switch MDC)
-  --mdc-switch-track-height: 22px;
-  --mdc-switch-track-width: 40px;
+  --mdc-switch-track-height: var(--theme-switch-track-height);
+  --mdc-switch-track-width: var(--theme-switch-track-width);
   --mdc-switch-track-shape: var(--theme-radius-full);
-  --mdc-switch-handle-height: 16px;
-  --mdc-switch-handle-width: 16px;
+  --mdc-switch-handle-height: var(--theme-switch-handle-size);
+  --mdc-switch-handle-width: var(--theme-switch-handle-size);
   --mdc-switch-handle-shape: var(--theme-radius-full);
+  // Pulgar encendido (Material lo agranda respecto del apagado): mismo valor que el gemelo `.form-toggle__pista`.
+  --mdc-switch-selected-handle-height: var(--theme-switch-handle-size-selected);
+  --mdc-switch-selected-handle-width: var(--theme-switch-handle-size-selected);
   // 32 y no 40: el halo de hover va centrado en el thumb y con 40 pisaba el label (se veía "hovereado").
   --mdc-switch-state-layer-size: 32px;
   --mdc-switch-selected-icon-size: 0px;

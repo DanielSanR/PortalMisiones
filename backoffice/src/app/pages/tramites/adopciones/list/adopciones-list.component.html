@@ -1,5 +1,5 @@
 <ng-template appPageActions>
-  <button mat-raised-button color="primary" (click)="onAdoptar()" *appHasPermission="adoptarAccess">
+  <button appAtajo="n" mat-raised-button color="primary" (click)="onAdoptar()" *appHasPermission="adoptarAccess">
     <i class="ph ph-file-arrow-down" aria-hidden="true"></i> Adoptar trámite
   </button>
 </ng-template>
@@ -7,7 +7,7 @@
 @if (vista$ | async; as vista) {
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
-    <app-list-search
+    <app-list-search [atajoFoco]="true"
       [control]="searchCtrl"
       placeholder="Buscar por trámite u organismo…"
       ariaLabel="Buscar trámites del organismo por nombre del trámite o del organismo">
@@ -110,7 +110,7 @@
           [primary]="accionVer(row)"
           [actions]="accionesDe(row)"
           [busy]="deshabilitandoId === row.id"
-          busyLabel="Deshabilitando...">
+          busyLabel="Deshabilitando…">
       </app-row-actions>
     </ng-template>
 

@@ -1,5 +1,5 @@
-import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
-import { AsyncPipe, DatePipe, NgTemplateOutlet } from '@angular/common';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, LOCALE_ID, inject } from '@angular/core';
+import { AsyncPipe, DatePipe, NgTemplateOutlet, formatDate } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject } from 'rxjs';
@@ -8,20 +8,23 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form.component';
-import { getFormConfig, updateFormConfigOptions } from '../../../shared/components/dynamic-form/dynamic-form.config';
+import { getFormConfig, updateFormConfigOptions, updateFormConfigTree } from '../../../shared/components/dynamic-form/dynamic-form.config';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
-import { FormConfig } from '../../../core/models/field.interface';
+import { FormConfig, TreeOption } from '../../../core/models/field.interface';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO } from '../organismo-save-error';
 import { OrigenEdicionOrganismo, PARAM_ORIGEN_EDICION, origenEdicionDesde } from '../organismo-origen';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { OrganismoFormValue, OrganismoVM, OrganismosFacade } from '@features/organismos';
 
-/** Pestañas de la entidad (diseño: mismas en la ficha y en la edición). */
+/** `ver` y `editar` muestran un organismo existente; `nuevo` es el alta (todavía no hay entidad). */
+type ModoFicha = 'ver' | 'editar' | 'nuevo';
+
+/** Pestañas de la entidad (las mismas en la ficha y en la edición; el alta no tiene). */
 type TabDetalle = 'datos' | 'tramites' | 'responsables' | 'historial';
 
 interface Tab {
@@ -31,20 +34,47 @@ interface Tab {
   contador: number | null;
 }
 
-/** Un campo de la ficha. `pendiente` marca los que el backend aún no expone. */
+/** Un campo de la tarjeta de datos en modo lectura. */
 interface CampoFicha {
   label: string;
   valor: string | null;
-  pendiente?: boolean;
 }
 
 /**
- * Ficha de organismo. Es UNA pantalla en dos modos, como el diseño: comparte
- * membrete, chip de modificación y pestañas, y la pestaña "Datos" pasa de lectura
- * a formulario según la ruta (`detalle/:id` vs `editar/:id`).
+ * Lo que muestra el membrete. En lectura sale del organismo guardado; editando o dando de alta
+ * sale del formulario, así se actualiza mientras el usuario escribe.
+ */
+interface Membrete {
+  nombre: string;
+  /** Sigla o iniciales del nombre; vacío cuando todavía no hay nada escrito (se dibuja un ícono). */
+  iniciales: string;
+  activo: boolean;
+  tipo: string | null;
+  /** "Depende de X" u "Organismo raíz". */
+  depende: string;
+  localidad: string | null;
+}
+
+/** Valores del formulario que alimentan el membrete. */
+interface DatosMembrete {
+  nombre: string;
+  acronym: string;
+  typeId: string;
+  parentId: string | null;
+  baseLocationId: string | null;
+  activo: boolean;
+}
+
+const CONECTORES = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en', 'para']);
+
+/**
+ * Ficha de organismo. Es UNA pantalla en tres modos, como el diseño ("Ver / Editar / Nuevo
+ * organismo" de «Pantallas · Backoffice Misiones»): comparten membrete y grilla, y la tarjeta
+ * "Datos institucionales" pasa de lectura a formulario según la ruta
+ * (`detalle/:id`, `editar/:id`, `nuevo`).
  *
- * El alta (`nuevo`) sigue en `OrganismoFormComponent`: no hay entidad todavía, así
- * que no tiene membrete, ni fecha de modificación, ni pestañas que mostrar.
+ * El alta no tiene pestañas ni los bloques de la entidad (trámites, resumen, responsables,
+ * actividad): todavía no existe. En su lugar la columna lateral dice qué se puede hacer después.
  */
 @Component({
   selector: 'app-organismo-detail',
@@ -74,16 +104,14 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly locale = inject(LOCALE_ID);
 
   @ViewChild(DynamicFormComponent) private dynamicForm?: DynamicFormComponent;
 
-  /** `editar` lo fija la ruta; sin eso, la ficha se muestra en lectura. */
-  modo: 'ver' | 'editar' = 'ver';
+  /** Lo fija la ruta; sin dato, la ficha se muestra en lectura. */
+  modo: ModoFicha = 'ver';
 
   organismo: OrganismoVM | null = null;
-  tipoNombre: string | null = null;
-  parentNombre: string | null = null;
-  localidadNombre: string | null = null;
 
   loading = true;
   error = false;
@@ -92,8 +120,11 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
 
   config: FormConfig = getFormConfig('ORGANISMO');
   initialData: Record<string, unknown> | null = null;
+  /** Texto a la izquierda de los botones del formulario. */
+  ayudaDelForm = '';
 
   readonly tab$ = new BehaviorSubject<TabDetalle>('datos');
+  readonly membrete$ = new BehaviorSubject<Membrete>(this.membreteDesde(null));
 
   /**
    * Los contadores van en `null` porque el backend no expone ni los trámites por
@@ -106,44 +137,46 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     { clave: 'historial', label: 'Historial', contador: null },
   ];
 
-  /** Pestañas que se muestran: editando no hay "Trámites" (el diseño tiene Datos / Responsables / Historial). */
-  tabsVisibles: Tab[] = this.tabs;
-
   private id = '';
 
   /** Adónde vuelve la edición al guardar o cancelar (ver `organismo-origen.ts`). */
   private origen: OrigenEdicionOrganismo = 'ficha';
 
+  /** Nombres de los catálogos por id, para el membrete y la tarjeta de lectura. */
+  private tiposPorId = new Map<string, string>();
+  private organismosPorId = new Map<string, string>();
+  private localidadesPorId = new Map<string, string>();
+
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? '';
-    this.modo = this.route.snapshot.data['modo'] === 'editar' ? 'editar' : 'ver';
-    this.tabsVisibles = this.modo === 'editar' ? this.tabs.filter((t) => t.clave !== 'tramites') : this.tabs;
+    const modo = this.route.snapshot.data['modo'];
+    this.modo = modo === 'editar' || modo === 'nuevo' ? modo : 'ver';
     this.origen = origenEdicionDesde(this.route.snapshot.queryParamMap.get(PARAM_ORIGEN_EDICION));
     this.cargar();
   }
 
+  get editando(): boolean {
+    return this.modo !== 'ver';
+  }
+
   /**
-   * Una sola llamada para los dos modos: `getFormData` ya trae el organismo y los
-   * catálogos, así que sirve tanto para resolver los nombres de la ficha como para
-   * poblar los selects del formulario.
+   * Una sola llamada para los tres modos: `getFormData` trae los catálogos y, si hay id, el
+   * organismo. Sirve tanto para resolver los nombres de la ficha como para poblar el formulario.
    */
   cargar(): void {
     this.loading = true;
     this.error = false;
-    this.facade.getFormData(this.id)
+    this.facade.getFormData(this.id || undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ tipos, localidades, organismos, organismo }) => {
           this.organismo = organismo;
-          this.tipoNombre = tipos.find((t) => t.id === organismo?.typeId)?.nombre ?? null;
-          this.parentNombre = organismo?.parentId
-            ? organismos.find((o) => o.id === organismo.parentId)?.nombre ?? null
-            : null;
-          this.localidadNombre = organismo?.baseLocationId
-            ? localidades.find((l) => l.id === organismo.baseLocationId)?.nombre ?? null
-            : null;
+          this.tiposPorId = new Map(tipos.map((t) => [t.id, t.nombre]));
+          this.organismosPorId = new Map(organismos.map((o) => [o.id, o.nombre]));
+          this.localidadesPorId = new Map(localidades.map((l) => [l.id, l.nombre]));
+          this.membrete$.next(this.membreteDesde(organismo));
 
-          if (this.modo === 'editar' && organismo) {
+          if (this.editando) {
             this.prepararFormulario(tipos, localidades, organismos, organismo);
           }
 
@@ -158,32 +191,59 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     tipos: { id: string; nombre: string }[],
     localidades: { id: string; nombre: string }[],
     organismos: OrganismoVM[],
-    organismo: OrganismoVM,
+    organismo: OrganismoVM | null,
   ): void {
     this.config = updateFormConfigOptions(this.config, 'typeId',
       tipos.map((t) => ({ id: t.id, name: t.nombre })));
 
-    const noElegibles = this.idsNoElegiblesComoPadre(organismos);
-    this.config = updateFormConfigOptions(this.config, 'parentId', [
-      { id: '', name: 'Ninguno (raíz)' },
-      ...organismos
-        .filter((o) => !noElegibles.has(o.id)) // sin auto-referencia ni descendientes: evita ciclos
-        .map((o) => ({ id: o.id, name: o.nombre })),
-    ]);
+    this.config = updateFormConfigTree(this.config, 'parentId', {
+      nodes: this.nodosDelArbol(organismos),
+      self: {
+        id: this.id || null,
+        label: organismo?.nombre ?? 'Nuevo organismo',
+        tag: 'Este organismo',
+      },
+    });
 
     this.config = updateFormConfigOptions(this.config, 'baseLocationId', [
       { id: '', name: 'Sin localidad' },
       ...localidades.map((l) => ({ id: l.id, name: l.nombre })),
     ]);
 
-    this.initialData = {
-      nombre: organismo.nombre,
-      acronym: organismo.acronym,
-      typeId: organismo.typeId,
-      parentId: organismo.parentId ?? '',
-      baseLocationId: organismo.baseLocationId ?? '',
-      activo: organismo.activo,
-    };
+    if (organismo) {
+      this.initialData = {
+        nombre: organismo.nombre,
+        acronym: organismo.acronym,
+        typeId: organismo.typeId,
+        parentId: organismo.parentId ?? '',
+        baseLocationId: organismo.baseLocationId ?? '',
+        activo: organismo.activo,
+      };
+    }
+
+    this.ayudaDelForm = organismo?.updatedAt
+      ? `Última modificación: ${formatDate(organismo.updatedAt, 'dd/MM/yyyy HH:mm', this.locale)}`
+      : 'Los campos con * son obligatorios.';
+  }
+
+  /**
+   * Organismos del desplegable "Organismo superior". Los que no se pueden elegir se muestran con
+   * su motivo en vez de ocultarse: el propio organismo queda afuera (el árbol lo dibuja aparte,
+   * como "Este organismo"), su descendencia va como "Depende de este" y los inactivos como tales
+   * (el backend rechaza un padre inactivo con 409 `4071`).
+   */
+  private nodosDelArbol(organismos: OrganismoVM[]): TreeOption[] {
+    const dependientes = this.idsNoElegiblesComoPadre(organismos);
+    return organismos
+      .filter((o) => o.id !== this.id)
+      .map((o) => ({
+        id: o.id,
+        label: o.nombre,
+        meta: this.tiposPorId.get(o.typeId) ?? '',
+        parentId: o.parentId,
+        keywords: o.acronym,
+        disabledReason: dependientes.has(o.id) ? 'Depende de este' : !o.activo ? 'Inactivo' : undefined,
+      }));
   }
 
   /**
@@ -193,7 +253,7 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
    *
    * Recorre en oleadas en vez de bajar recursivamente porque los datos ya existentes
    * pueden contener ciclos creados antes de este control: al marcar cada id una sola vez,
-   * el bucle termina siempre.
+   * el bucle termina siempre. En alta (sin id) no hay nada que excluir.
    */
   private idsNoElegiblesComoPadre(organismos: OrganismoVM[]): Set<string> {
     const noElegibles = new Set<string>();
@@ -213,28 +273,44 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     return noElegibles;
   }
 
-  /** Campos de la ficha en modo lectura, en el orden del diseño. */
+  /** Campos de la tarjeta de datos en modo lectura: solo lo que el backend guarda. */
   get campos(): CampoFicha[] {
+    const o = this.organismo;
     return [
-      { label: 'Sigla', valor: this.organismo?.acronym || null },
-      { label: 'Tipo de organismo', valor: this.tipoNombre },
-      { label: 'Organismo superior', valor: this.parentNombre ?? 'Sin organismo superior' },
-      { label: 'Localidad base', valor: this.localidadNombre },
-      { label: 'Jurisdicción', valor: null, pendiente: true },
-      { label: 'CUIT', valor: null, pendiente: true },
-      { label: 'Domicilio', valor: null, pendiente: true },
-      { label: 'Teléfono', valor: null, pendiente: true },
-      { label: 'Correo institucional', valor: null, pendiente: true },
-      { label: 'Sitio web', valor: null, pendiente: true },
-      { label: 'Código SIGAF', valor: null, pendiente: true },
+      { label: 'Sigla', valor: o?.acronym || null },
+      { label: 'Tipo de organismo', valor: o ? this.tiposPorId.get(o.typeId) ?? null : null },
+      { label: 'Organismo superior', valor: (o?.parentId && this.organismosPorId.get(o.parentId)) || 'Sin organismo superior' },
+      { label: 'Localidad base', valor: (o?.baseLocationId && this.localidadesPorId.get(o.baseLocationId)) || null },
     ];
   }
 
+  /** El formulario cambió: el membrete acompaña lo que se está escribiendo. */
+  onFormValue(valor: Record<string, unknown>): void {
+    this.membrete$.next(this.membreteDesde({
+      nombre: String(valor['nombre'] ?? ''),
+      acronym: String(valor['acronym'] ?? ''),
+      typeId: String(valor['typeId'] ?? ''),
+      parentId: (valor['parentId'] as string) || null,
+      baseLocationId: (valor['baseLocationId'] as string) || null,
+      activo: valor['activo'] !== false,
+    }));
+  }
+
+  private membreteDesde(datos: DatosMembrete | null): Membrete {
+    const padre = datos?.parentId ? this.organismosPorId.get(datos.parentId) : undefined;
+    return {
+      nombre: datos?.nombre.trim() ?? '',
+      iniciales: inicialesDe(datos?.acronym ?? '', datos?.nombre ?? ''),
+      activo: datos?.activo ?? true,
+      tipo: (datos?.typeId && this.tiposPorId.get(datos.typeId)) || null,
+      depende: padre ? `Depende de ${padre}` : 'Organismo raíz',
+      localidad: (datos?.baseLocationId && this.localidadesPorId.get(datos.baseLocationId)) || null,
+    };
+  }
+
   /**
-   * La pestaña es navegación DENTRO de la entidad: no cambia el modo. Antes, elegir
-   * "Trámites" mientras se editaba mandaba a la ficha, y al volver a "Datos" el
-   * formulario ya no estaba: se perdía el modo edición —y lo escrito— sin avisar.
-   * El formulario se oculta, no se destruye (ver el template).
+   * La pestaña es navegación DENTRO de la entidad: no cambia el modo. Editando, el formulario
+   * se oculta en vez de destruirse (ver el template), así no se pierde lo escrito.
    */
   seleccionarTab(clave: TabDetalle): void {
     this.tab$.next(clave);
@@ -245,7 +321,7 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
    * Inicio/Fin saltan a la primera/última. El foco acompaña a la selección (tabindex móvil).
    */
   onTabsKeydown(event: KeyboardEvent): void {
-    const claves = this.tabsVisibles.map((t) => t.clave);
+    const claves = this.tabs.map((t) => t.clave);
     const actual = claves.indexOf(this.tab$.value);
     const ultimo = claves.length - 1;
     let destino: number;
@@ -259,20 +335,6 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     event.preventDefault();
     this.seleccionarTab(claves[destino]);
     (event.currentTarget as HTMLElement).querySelector<HTMLElement>(`#orgdet-tab-${claves[destino]}`)?.focus();
-  }
-
-  /** Iniciales del membrete: la sigla si existe, si no las del nombre. */
-  get iniciales(): string {
-    const sigla = (this.organismo?.acronym ?? '').replace(/[^\p{L}]/gu, '');
-    if (sigla.length >= 2) return sigla.slice(0, 3).toLocaleUpperCase('es-AR');
-
-    const conectores = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en', 'para']);
-    const palabras = (this.organismo?.nombre ?? '')
-      .split(/\s+/)
-      .filter((p) => /\p{L}/u.test(p) && !conectores.has(p.toLocaleLowerCase('es-AR')));
-    if (palabras.length === 0) return '—';
-    const letras = palabras.length === 1 ? palabras[0].slice(0, 2) : palabras.slice(0, 2).map((p) => p[0]).join('');
-    return letras.toLocaleUpperCase('es-AR');
   }
 
   volver(): void {
@@ -289,21 +351,21 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
     this.router.navigate(['/dashboard/organismos/detalle', this.id]);
   }
 
-  /** Cierra la edición (guardado o cancelación) volviendo a donde el usuario la abrió. */
-  salirDeLaEdicion(): void {
-    if (this.origen === 'lista') {
+  /**
+   * Cierra el formulario (guardado o cancelación). El alta vuelve a la lista; la edición, a donde
+   * el usuario la abrió.
+   */
+  salirDelFormulario(): void {
+    if (this.modo === 'nuevo' || this.origen === 'lista') {
       this.volver();
     } else {
       this.onVerFicha();
     }
   }
 
-  /** Lo dispara el botón del header; el form vive en el hijo. */
-  guardarDesdeElHeader(): void {
-    this.dynamicForm?.submit();
-  }
-
   onSubmit(data: Record<string, unknown>): void {
+    // Guarda síncrona: dos envíos seguidos (doble clic, Enter repetido) no crean dos organismos.
+    if (this.saving) return;
     this.saving = true;
     this.serverError = '';
     const form: OrganismoFormValue = {
@@ -315,17 +377,22 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
       activo: data['activo'] !== false,
     };
 
-    this.facade.update(this.id, form)
+    const esAlta = this.modo === 'nuevo';
+    const request$ = esAlta ? this.facade.create(form) : this.facade.update(this.id, form);
+
+    request$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.snackBar.open('Organismo actualizado', 'OK',
+          this.snackBar.open(esAlta ? 'Organismo creado correctamente' : 'Organismo actualizado', 'OK',
+            // Variante del design system (fondo #1A1A2E) — Kitchen Sink §07.
             { duration: 3000, panelClass: 'snackbar-success' });
-          this.salirDeLaEdicion();
+          this.salirDelFormulario();
         },
         error: (err: unknown) => {
           this.saving = false;
           this.serverError = aplicarErrorDeGuardado(err, this.dynamicForm?.form, CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO);
+          this.dynamicForm?.refrescarErrores();
           this.cdr.markForCheck();
         },
       });
@@ -337,26 +404,25 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
    * dispara la pregunta.
    */
   tieneCambiosSinGuardar(): boolean {
-    return this.modo === 'editar' && !this.saving && !!this.dynamicForm?.form?.dirty;
+    return this.editando && !this.saving && !!this.dynamicForm?.form?.dirty;
   }
 
   onDelete(): void {
     const organismo = this.organismo;
     if (!organismo) return;
 
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar el organismo?',
         message: `Se eliminará ${organismo.nombre} y dejará de estar disponible para asociar trámites y usuarios. Esta acción no se puede deshacer.`,
         highlight: organismo.nombre,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         confirmAction: () => this.facade.delete(organismo.id),
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((confirmado) => {
         if (!confirmado) return;
@@ -364,4 +430,17 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
         this.volver();
       });
   }
+}
+
+/** Iniciales del membrete: la sigla si existe, si no las del nombre; vacío si no hay ninguna. */
+function inicialesDe(acronym: string, nombre: string): string {
+  const sigla = acronym.replace(/[^\p{L}]/gu, '');
+  if (sigla.length >= 2) return sigla.slice(0, 3).toLocaleUpperCase('es-AR');
+
+  const palabras = nombre
+    .split(/\s+/)
+    .filter((p) => /\p{L}/u.test(p) && !CONECTORES.has(p.toLocaleLowerCase('es-AR')));
+  if (palabras.length === 0) return '';
+  const letras = palabras.length === 1 ? palabras[0].slice(0, 2) : palabras.slice(0, 2).map((p) => p[0]).join('');
+  return letras.toLocaleUpperCase('es-AR');
 }

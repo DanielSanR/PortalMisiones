@@ -24,207 +24,301 @@
   </div>
 } @else if (datos) {
 
-  @if (serverError) {
-    <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
-  }
-  <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+  <!-- `vista$` resume el form en vivo (membrete e indicador de datos recomendados). Siempre emite. -->
+  @if (vista$ | async; as v) {
 
-  <!-- De qué trámite del organismo es la ficha (contexto, no editable). -->
-  <div class="fichaform-contexto">
-    <i class="ph ph-building-office" aria-hidden="true"></i>
-    <div class="fichaform-contexto__texto">
-      <span class="fichaform-contexto__titulo">
-        {{ datos.adopcion?.plantillaTitulo ?? ficha?.plantillaTitulo ?? 'Trámite ' + noDisponible.toLowerCase() }}
-      </span>
-      <span class="fichaform-contexto__organismo">
-        {{ datos.adopcion?.organismoNombre ?? ficha?.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}
-      </span>
-    </div>
-    @if (ficha) {
-      <app-estado-badge [estado]="ficha.estado"></app-estado-badge>
+    <!-- Membrete en vivo: se arma con lo que se elige y escribe. Sin `aria-live`: anunciaría el slug en
+         cada tecla; el lector ya lee el campo que se está editando. -->
+    <header class="detail-header detail-header--flush detail-header--ficha ficha-membrete">
+      <div class="detail-header__body">
+        <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
+
+        <div class="detail-header__identity">
+          <div class="detail-header__row">
+            <h2 class="detail-header__title" [class.detail-header__title--muted]="!v.titulo">
+              {{ v.titulo || 'Trámite ' + noDisponible.toLowerCase() }}
+            </h2>
+            @if (ficha) {
+              <app-estado-badge [estado]="ficha.estado" [bordered]="true"></app-estado-badge>
+            }
+            @if (!v.activa) {
+              <span class="pill pill--inactive pill--bordered">
+                <span class="pill__dot" aria-hidden="true"></span>
+                <span class="pill__label">Desactivada</span>
+              </span>
+            }
+          </div>
+
+          <p class="detail-header__meta">
+            <code class="detail-header__code">{{ v.slug || 'sin-slug' }}</code>
+            <span class="detail-header__sep" aria-hidden="true"></span>
+            <span><i class="ph ph-map-pin" aria-hidden="true"></i>{{ v.localidad || 'Sin localidad' }}</span>
+            <span class="detail-header__sep" aria-hidden="true"></span>
+            <span><i class="ph ph-building-office" aria-hidden="true"></i>{{ v.organismo || 'Organismo ' + noDisponible.toLowerCase() }}</span>
+          </p>
+        </div>
+
+        <div class="detail-header__actions">
+          @if (datos.adopcion; as adopcion) {
+            <a class="detail-link" [routerLink]="[rutaAdopcion, adopcion.id]" *appHasPermission="'READ_ADOPTION'">
+              Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+            </a>
+          }
+          <span class="pill pill--revision pill--bordered">
+            <i class="ph pill__icon" [class.ph-plus]="!isEdit" [class.ph-pencil-simple]="isEdit" aria-hidden="true"></i>
+            <span class="pill__label">{{ isEdit ? 'Editando' : 'Nueva' }}</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    @if (serverError) {
+      <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
     }
-    @if (datos.adopcion) {
-      <a class="detail-link" [routerLink]="[rutaAdopcion, datos.adopcion.id]" *appHasPermission="'READ_ADOPTION'">
-        Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-      </a>
+    <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+
+    @if (editaPublicada) {
+      <div class="form-aviso">
+        <i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>
+        <p><strong>Esta ficha está publicada.</strong> Los cambios se verán en el portal al guardar.</p>
+      </div>
     }
-  </div>
+    @if (datos.adopcion && !datos.adopcion.habilitada) {
+      <div class="form-aviso">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        <p>El trámite del organismo está deshabilitado: esta ficha no se va a ver en el portal aunque se publique.</p>
+      </div>
+    }
+    @if (!isEdit && !datos.ocupadas.localidadesVerificables) {
+      <div class="form-aviso">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        <p>
+          Todavía no podemos verificar si la localidad ya tiene una ficha de este trámite. Antes de guardar, revisá la lista de
+          <a class="form-aviso__link" [routerLink]="rutaLista">Fichas por localidad</a> para no duplicarla.
+        </p>
+      </div>
+    }
 
-  @if (editaPublicada) {
-    <div class="fichaform-aviso">
-      <i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>
-      <p><strong>Esta ficha está publicada.</strong> Los cambios se verán en el portal al guardar.</p>
-    </div>
-  }
-  @if (datos.adopcion && !datos.adopcion.habilitada) {
-    <div class="fichaform-aviso">
-      <i class="ph ph-warning" aria-hidden="true"></i>
-      <p>El trámite del organismo está deshabilitado: esta ficha no se va a ver en el portal aunque se publique.</p>
-    </div>
-  }
-
-  @if (!isEdit && !datos.ocupadas.localidadesVerificables) {
-    <div class="fichaform-aviso">
-      <i class="ph ph-warning" aria-hidden="true"></i>
-      <p>
-        Todavía no podemos verificar si la localidad ya tiene una ficha de este trámite. Antes de guardar, revisá la lista de
-        <a class="fichaform-aviso__link" [routerLink]="rutaLista">Fichas por localidad</a> para no duplicarla.
-      </p>
-    </div>
-  }
-
-  <div class="form-card">
+    <!-- Una sola tarjeta: dos paneles (datos | puntos de atención, o qué sigue en el alta) y el pie de guardar
+         compartido. Los puntos se guardan aparte, con su propio flujo: no dependen de "Guardar cambios". -->
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
+      <div class="ficha-paneles">
+        <div class="ficha-paneles__grid">
 
-      <!-- ── Localidad y dirección pública ── -->
-      <h2 class="section-header">Localidad</h2>
-      <div class="form-grid form-grid--full">
+          <!-- ── Datos de la ficha ── -->
+          <section class="ficha-paneles__panel" aria-labelledby="fichaform-datos">
+            <header class="ficha-paneles__cabecera">
+              <div class="ficha-paneles__encabezado">
+                <h3 class="detail-card__title" id="fichaform-datos">Datos de la ficha</h3>
+                <p class="detail-card__subtitle">
+                  {{ isEdit ? 'Guardar no cambia el estado de publicación' : 'Lo propio del trámite en una localidad' }}
+                </p>
+              </div>
+            </header>
 
-        <div class="form-field" [class.is-invalid]="campoInvalido('localidadId')">
-          <label class="form-field__label" id="localidad-label" for="localidad">
-            Localidad @if (!isEdit) {<span class="form-field__required" aria-hidden="true">*</span>}
-          </label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="localidad" aria-labelledby="localidad-label" formControlName="localidadId" [required]="!isEdit"
-                        placeholder="Elegí una localidad">
-              @for (op of datos.localidades; track op.id) {
-                <mat-option [value]="op.id" [disabled]="!isEdit && ocupada(op.id)">
-                  {{ op.nombre }}
-                  <span class="fichaform-opcion__depto">
-                    · {{ op.departamentoNombre }}{{ !isEdit && ocupada(op.id) ? ' · ya tiene ficha' : '' }}
-                  </span>
-                </mat-option>
-              }
-            </mat-select>
-            <mat-hint>
-              {{ isEdit
-                ? 'No se puede cambiar: otra localidad es otra ficha.'
-                : datos.ocupadas.localidadesVerificables
-                  ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir.'
-                  : 'Todavía no podemos verificar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
-            </mat-hint>
-            @if (form.controls.localidadId.hasError('required')) {
-              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Elegí una localidad</span></mat-error>
-            }
-            @if (form.controls.localidadId.hasError('localidadOcupada')) {
-              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Esa localidad ya tiene una ficha de este trámite</span></mat-error>
-            }
-          </mat-form-field>
+            <div class="ficha-paneles__cuerpo">
+              <div class="ficha-paneles__campos ficha-paneles__campos--grilla">
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('localidadId')">
+                  <label class="form-field__label" id="localidad-label" for="localidad">
+                    Localidad @if (!isEdit) {<span class="form-field__required" aria-hidden="true">*</span>}
+                  </label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-select id="localidad" aria-labelledby="localidad-label" formControlName="localidadId" [required]="!isEdit"
+                                placeholder="Elegí una localidad">
+                      @for (op of datos.localidades; track op.id) {
+                        <mat-option [value]="op.id" [disabled]="!isEdit && ocupada(op.id)">
+                          {{ op.nombre }}
+                          <span class="fichaform-opcion__depto">
+                            · {{ op.departamentoNombre }}{{ !isEdit && ocupada(op.id) ? ' · ya tiene ficha' : '' }}
+                          </span>
+                        </mat-option>
+                      }
+                    </mat-select>
+                    <mat-hint>{{ isEdit
+                        ? 'No se puede cambiar: otra localidad es otra ficha.'
+                        : datos.ocupadas.localidadesVerificables
+                          ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir.'
+                          : 'Todavía no podemos verificar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
+                    </mat-hint>
+                    <mat-error appFormErrorMessage [control]="form.controls.localidadId" [field]="campos.localidadId"></mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('url')">
+                  <label class="form-field__label" id="url-label" for="url">URL del trámite <span class="form-field__optional">(opcional)</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <input matInput id="url" type="url" inputmode="url" aria-labelledby="url-label" formControlName="url"
+                           placeholder="https://…">
+                    <mat-hint>Sitio oficial donde se inicia o se consulta el trámite en esta localidad.</mat-hint>
+                    <mat-error appFormErrorMessage [control]="form.controls.url" [field]="campos.url"></mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field ficha-paneles__campo--completo" [class.is-invalid]="campoInvalido('slug')">
+                  <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
+                  <div class="form-field__fila">
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <input matInput id="slug" class="form-field__mono" aria-labelledby="slug-label" formControlName="slug" required
+                             [maxlength]="maxSlug" autocomplete="off" spellcheck="false" (input)="onSlugEditado()"
+                             placeholder="obtener-licencia-de-conducir-posadas">
+                      <mat-hint>{{ isEdit ? 'Cambiarlo cambia la dirección pública de la ficha.' : 'Se arma solo con el trámite y la localidad; podés editarlo.' }}
+                        No puede repetirse con otra ficha.
+                      </mat-hint>
+                      <mat-error appFormErrorMessage [control]="form.controls.slug" [field]="campos.slug"></mat-error>
+                    </mat-form-field>
+                    <button type="button" mat-stroked-button color="primary"
+                            [disabled]="!puedeSugerir" (click)="sugerirSlug()"
+                            matTooltip="Armar el slug con el trámite y la localidad">
+                      <i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Sugerir
+                    </button>
+                  </div>
+                  <div class="field-preview" aria-live="polite">
+                    @if (slugPrevisto$ | async; as previsto) {
+                      <p class="field-preview__texto">
+                        <i class="ph ph-arrow-bend-down-right field-preview__icono" aria-hidden="true"></i>
+                        <span>Se guardará como:</span>
+                        <code class="field-preview__valor">{{ previsto }}</code>
+                      </p>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-field ficha-paneles__campo--completo">
+                  <label class="form-field__label" id="requisitos-label" for="requisitos">Requisitos <span class="form-field__optional">(opcional)</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <textarea matInput id="requisitos" aria-labelledby="requisitos-label" formControlName="requisitos" rows="5"
+                              placeholder="Uno por línea: DNI vigente, certificado de domicilio…"></textarea>
+                    <mat-hint>Qué tiene que llevar o cumplir quien hace el trámite.</mat-hint>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field ficha-paneles__campo--completo">
+                  <label class="form-field__label" id="costos-label" for="costos">Costos <span class="form-field__optional">(opcional)</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <textarea matInput id="costos" aria-labelledby="costos-label" formControlName="costos" rows="3"
+                              placeholder="Ej: Licencia nueva: $25.000"></textarea>
+                    <mat-hint>Si es gratuito, decilo: evita consultas.</mat-hint>
+                  </mat-form-field>
+                </div>
+
+              </div>
+
+              <div class="form-toggle form-toggle--separado">
+                @if (desactivarSoloDesdeDetalle) {
+                  <!-- Publicada: no se desactiva desde acá. Botón `role="switch"` con `appUnavailable` (no `disabled`
+                       nativo): sigue en el orden de tabulación y el motivo sale solo en el texto de abajo
+                       (`appUnavailableMotivoVisible`: sin tooltip, así no se repite ni se anuncia dos veces).
+                       El control `activa` queda deshabilitado en el form, así el valor viaja intacto al guardar. -->
+                  <button type="button" role="switch" aria-checked="true" class="form-toggle__interruptor"
+                          [appUnavailable]="motivoActivaBloqueada" appUnavailableMotivoVisible
+                          aria-describedby="fichaform-activa-ayuda">
+                    <span class="form-toggle__pista" aria-hidden="true"></span>
+                    Ficha activa
+                  </button>
+                } @else {
+                  <mat-slide-toggle formControlName="activa" color="primary" aria-describedby="fichaform-activa-ayuda">
+                    Ficha activa
+                  </mat-slide-toggle>
+                }
+                <!-- Montado siempre: es el destino de `aria-describedby` del toggle. -->
+                <div class="form-toggle__ayuda" id="fichaform-activa-ayuda">
+                  @if (form.controls.activa.hasError('reactivaDuplicada')) {
+                    <p class="form-toggle__aviso form-toggle__aviso--error" role="alert">
+                      <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                      Esta localidad ya tiene otra ficha activa de este trámite: no se puede reactivar esta.
+                    </p>
+                  }
+                  @if (desactivarSoloDesdeDetalle) {
+                    <p class="form-toggle__aviso">
+                      <i class="ph ph-info" aria-hidden="true"></i>
+                      {{ motivoActivaBloqueada }}
+                    </p>
+                  } @else if (!v.activa) {
+                    <p class="form-toggle__aviso">
+                      <i class="ph ph-info" aria-hidden="true"></i>
+                      Desactivada, deja de ofrecerse en esta localidad y no se ve en el portal.
+                    </p>
+                  } @else {
+                    <p>Se ofrece en esta localidad.</p>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+
+          @if (ficha; as f) {
+            <!-- ── Puntos de atención (edición) ── -->
+            <!-- `--acotado`: el alto de la tarjeta lo pone el panel de datos; si hay muchos puntos se desplazan
+                 dentro de `__desplazable`, con el encabezado y el aviso siempre a la vista. -->
+            <section class="ficha-paneles__panel ficha-paneles__panel--lateral ficha-paneles__panel--acotado"
+                     aria-labelledby="fichaform-puntos" *appHasPermission="'READ_ATTENTION_POINT'">
+              <div class="ficha-paneles__ajuste">
+                <header class="ficha-paneles__cabecera">
+                  <div class="ficha-paneles__encabezado">
+                    <h3 class="detail-card__title" id="fichaform-puntos">Puntos de atención</h3>
+                    <p class="detail-card__subtitle">Dónde se hace el trámite en esta localidad.</p>
+                  </div>
+                </header>
+                <p class="ficha-paneles__nota">
+                  <i class="ph ph-info" aria-hidden="true"></i>
+                  <span>Los puntos se guardan al momento, aparte de los datos de la ficha.</span>
+                </p>
+                <div class="ficha-paneles__desplazable ficha-paneles__cuerpo">
+                  <app-puntos-atencion-panel [fichaId]="f.id"></app-puntos-atencion-panel>
+                </div>
+              </div>
+            </section>
+          } @else {
+            <!-- ── Qué sigue (alta): todavía no hay ficha a la que colgarle puntos ── -->
+            <section class="ficha-paneles__panel ficha-paneles__panel--lateral" aria-labelledby="fichaform-despues">
+              <header class="ficha-paneles__cabecera">
+                <div class="ficha-paneles__encabezado">
+                  <h3 class="detail-card__title" id="fichaform-despues">Después de crearla</h3>
+                  <p class="detail-card__subtitle">La ficha se crea en borrador.</p>
+                </div>
+              </header>
+
+              <ul class="pasos-lista">
+                <li class="pasos-lista__item">
+                  <i class="ph ph-map-pin" aria-hidden="true"></i>
+                  <div>
+                    <p class="pasos-lista__titulo">Sumarle puntos de atención</p>
+                    <p class="pasos-lista__texto">Dónde se hace el trámite en esta localidad: dirección, horarios y contacto.</p>
+                  </div>
+                </li>
+                <li class="pasos-lista__item">
+                  <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>
+                  <div>
+                    <p class="pasos-lista__titulo">Enviarla a revisión</p>
+                    <p class="pasos-lista__texto">Desde el detalle de la ficha, cuando esté completa. La revisa y publica {{ quienPublica }}.</p>
+                  </div>
+                </li>
+                <li class="pasos-lista__item">
+                  <i class="ph ph-globe-simple" aria-hidden="true"></i>
+                  <div>
+                    <p class="pasos-lista__titulo">Se ve en el portal al publicarla</p>
+                    <p class="pasos-lista__texto">Hasta entonces nadie la ve.</p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          }
         </div>
 
-        <div class="form-field" [class.is-invalid]="campoInvalido('slug')">
-          <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
-          <div class="fichaform-slug">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug" required
-                     [maxlength]="maxSlug" (input)="onSlugEditado()" placeholder="obtener-licencia-de-conducir-posadas">
-              <mat-hint>
-                {{ isEdit ? 'Cambiarlo cambia la dirección pública de la ficha.' : 'Se arma solo con el trámite y la localidad; podés editarlo.' }}
-                No puede repetirse con otra ficha.
-              </mat-hint>
-              @if (form.controls.slug.hasError('required')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El slug es obligatorio</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('maxlength')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo {{ maxSlug }} caracteres</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('slugVacio')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Tiene que tener letras o números</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('slugRepetido')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Ya lo usa otra ficha. Elegí otro.</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('server')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>{{ form.controls.slug.getError('server') }}</span></mat-error>
-              }
-            </mat-form-field>
-            <button type="button" mat-stroked-button color="primary" class="fichaform-slug__sugerir"
-                    [disabled]="!puedeSugerir" (click)="sugerirSlug()"
-                    matTooltip="Armar el slug con el trámite y la localidad">
-              <i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Sugerir
-            </button>
-          </div>
-          <div class="fichaform-preview" aria-live="polite">
-            @if (slugPrevisto$ | async; as previsto) {
-              <p class="fichaform-preview__texto">
-                <i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i>
-                Se guardará como: <code>{{ previsto }}</code>
-              </p>
-            }
-          </div>
-        </div>
-
-        <div class="form-field" [class.is-invalid]="campoInvalido('url')">
-          <label class="form-field__label" id="url-label" for="url">URL del trámite <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <input matInput id="url" type="url" inputmode="url" aria-labelledby="url-label" formControlName="url"
-                   placeholder="https://…">
-            <mat-hint>Sitio oficial donde se inicia o se consulta el trámite en esta localidad.</mat-hint>
-            @if (form.controls.url.hasError('url')) {
-              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Tiene que empezar con http:// o https://</span></mat-error>
-            }
-          </mat-form-field>
-        </div>
+        <!-- Pie de la tarjeta: abarca los dos paneles. El indicador es informativo, no bloquea el guardado. -->
+        <app-form-actions [integrada]="true"
+                          [helpText]="isEdit ? (sinCambios ? 'Sin cambios para guardar.' : 'Guardar no cambia el estado de publicación.') : 'La ficha se crea en borrador.'"
+                          [submitText]="isEdit ? 'Guardar cambios' : 'Crear ficha'" savingText="Guardando…"
+                          [saving]="saving" [sinCambios]="sinCambios" (cancelar)="cancelar()">
+          <span formActionsInfo class="pill ficha-paneles__indicador" aria-live="polite"
+                [class.pill--success]="v.recomendadosCompletos" [class.pill--warning]="!v.recomendadosCompletos">
+            <i class="ph pill__icon" [class.ph-check-circle]="v.recomendadosCompletos"
+               [class.ph-list-checks]="!v.recomendadosCompletos" aria-hidden="true"></i>
+            <span>{{ v.recomendado }}</span>
+          </span>
+        </app-form-actions>
       </div>
-
-      <!-- ── Contenido local ── -->
-      <h2 class="section-header">Requisitos y costos</h2>
-      <div class="form-grid form-grid--full">
-        <div class="form-field">
-          <label class="form-field__label" id="requisitos-label" for="requisitos">Requisitos <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <textarea matInput id="requisitos" aria-labelledby="requisitos-label" formControlName="requisitos" rows="5"
-                      placeholder="Uno por línea: DNI vigente, certificado de domicilio…"></textarea>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field">
-          <label class="form-field__label" id="costos-label" for="costos">Costos <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <textarea matInput id="costos" aria-labelledby="costos-label" formControlName="costos" rows="3"
-                      placeholder="Ej: Licencia nueva: $25.000"></textarea>
-          </mat-form-field>
-        </div>
-      </div>
-
-      <!-- ── Estado ── -->
-      <h2 class="section-header">Disponibilidad</h2>
-      <div class="fichaform-activa">
-        <mat-slide-toggle formControlName="activa" color="primary">Activa</mat-slide-toggle>
-        @if (form.controls.activa.hasError('reactivaDuplicada')) {
-          <p class="fichaform-activa__error" role="alert">
-            <i class="ph ph-warning-circle" aria-hidden="true"></i>
-            Esta localidad ya tiene otra ficha activa de este trámite: no se puede reactivar esta.
-          </p>
-        }
-        @if (desactivarSoloDesdeDetalle) {
-          <p class="fichaform-activa__aviso">
-            <i class="ph ph-info" aria-hidden="true"></i>
-            Está publicada: para desactivarla usá "Desactivar" en el detalle de la ficha, que además la quita del portal.
-          </p>
-        }
-        @if (!form.controls.activa.value) {
-          <p class="fichaform-activa__aviso">
-            <i class="ph ph-info" aria-hidden="true"></i>
-            Desactivada, deja de ofrecerse en esta localidad y no se ve en el portal.
-          </p>
-        }
-      </div>
-
-      <!-- ── Acciones ── -->
-      <app-form-actions apariencia="flat"
-                        [helpText]="isEdit ? 'Guardar no cambia el estado de publicación.' : 'La ficha se crea en borrador.'"
-                        [submitText]="isEdit ? 'Guardar cambios' : 'Crear ficha'" savingText="Guardando..."
-                        [saving]="saving" [sinCambios]="sinCambios" (cancelar)="cancelar()">
-      </app-form-actions>
-
     </form>
-  </div>
-
-  @if (ficha) {
-    <section class="fichaform-puntos" aria-labelledby="fichaform-puntos-titulo" *appHasPermission="'READ_ATTENTION_POINT'">
-      <h3 class="fichaform-puntos__titulo" id="fichaform-puntos-titulo">Puntos de atención</h3>
-      <app-puntos-atencion-panel [fichaId]="ficha.id"></app-puntos-atencion-panel>
-    </section>
   }
 }

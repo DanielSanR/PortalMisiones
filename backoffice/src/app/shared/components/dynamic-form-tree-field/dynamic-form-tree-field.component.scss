@@ -1,0 +1,17 @@
+@use 'shared-styles/mixins' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Misma línea de ayuda que el `mat-hint` de los demás campos: a 6px del control y sin sangría.
+.tree-field {
+  &__ayuda {
+    margin-top: 6px;
+  }
+
+  &__hint {
+    @include form-help-text;
+  }
+}

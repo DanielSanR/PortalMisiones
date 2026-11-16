@@ -15,6 +15,7 @@ import { FormErrorMessageDirective } from './FormErrorMessage.directive';
 import { DynamicFormSelectFieldComponent } from '../dynamic-form-select-field/dynamic-form-select-field.component';
 import { DynamicFormDateFieldComponent } from '../dynamic-form-date-field/dynamic-form-date-field.component';
 import { DynamicFormChoiceFieldComponent } from '../dynamic-form-choice-field/dynamic-form-choice-field.component';
+import { DynamicFormTreeFieldComponent } from '../dynamic-form-tree-field/dynamic-form-tree-field.component';
 
 @Component({
   selector: 'app-dynamic-form-field',
@@ -30,6 +31,7 @@ import { DynamicFormChoiceFieldComponent } from '../dynamic-form-choice-field/dy
     DynamicFormSelectFieldComponent,
     DynamicFormDateFieldComponent,
     DynamicFormChoiceFieldComponent,
+    DynamicFormTreeFieldComponent,
   ],
   templateUrl: './dynamic-form-field.component.html',
   styleUrls: ['./dynamic-form-field.component.scss'],
@@ -53,6 +55,11 @@ export class DynamicFormFieldComponent implements OnInit, OnChanges {
    * (`markAllAsTouched()` al enviar). Es un input solo para que los campos OnPush se revisen.
    */
   @Input() revision = 0;
+  /**
+   * Nivel del encabezado de los rótulos de sección. 2 en una página (cuelgan del `h1` del shell);
+   * 3 dentro de un diálogo, donde el título del diálogo ya es el `h2`.
+   */
+  @Input() nivelEncabezado = 2;
 
   ngOnInit() {
     if (!this.field || !this.group) {

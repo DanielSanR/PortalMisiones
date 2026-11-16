@@ -9,10 +9,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../../shared/components/table';
 import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../../shared/components/list-search';
+import { AtajoDirective } from '../../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
@@ -73,6 +74,7 @@ interface AdopcionesVista {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
     VigenciaBadgeComponent,
   ],
   templateUrl: './adopciones-list.component.html',
@@ -239,9 +241,11 @@ export class AdopcionesListComponent implements OnInit {
   }
 
   onAdoptar(): void {
+    // Con un diálogo ya abierto no se abre otro encima (doble clic): cada uno podría adoptar el trámite.
+    if (this.dialog.openDialogs.length) return;
     this.dialog.open<AdoptarDialogComponent, void, AdopcionVM>(AdoptarDialogComponent, {
       panelClass: 'custom-modal-panel',
-      autoFocus: 'first-tabbable',
+      autoFocus: 'dialog',
     })
       .afterClosed()
       .pipe(filter((creada): creada is AdopcionVM => !!creada), takeUntilDestroyed(this.destroyRef))
@@ -280,7 +284,7 @@ export class AdopcionesListComponent implements OnInit {
   }
 
   onDeshabilitar(adopcion: AdopcionVM): void {
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: confirmDeshabilitar(adopcion, () => {
         this.deshabilitandoId = adopcion.id;
         this.cdr.markForCheck();
@@ -290,7 +294,6 @@ export class AdopcionesListComponent implements OnInit {
       }),
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.snackBar.open('Trámite del organismo deshabilitado', 'OK', {
         duration: 3000,

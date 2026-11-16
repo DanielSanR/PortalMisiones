@@ -1,22 +1,26 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Input, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  BehaviorSubject, Observable, catchError, combineLatest, defer, distinctUntilChanged, filter, map, of, shareReplay, startWith,
-  switchMap,
+  BehaviorSubject, Observable, catchError, combineLatest, defer, distinctUntilChanged, filter, interval, map, of, shareReplay,
+  startWith, switchMap, take,
 } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
 import { PuntoDialogComponent, PuntoDialogData } from './punto-dialog/punto-dialog.component';
 import { formatearCoordenada, urlMapa } from './coordenadas';
 import { conMensajeDePunto } from './punto-save-error';
+
+/** Intentos (cada 50 ms) para esperar el re-render de la lista antes de devolver el foco. */
+const PINTADOS_MAX = 40;
 
 type EstadoPanel =
   | { tipo: 'cargando' }
@@ -49,6 +53,7 @@ export class PuntosAtencionPanelComponent {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   private readonly fichaId$ = new BehaviorSubject<string>('');
   private readonly recargar$ = new BehaviorSubject<void>(undefined);
@@ -139,23 +144,49 @@ export class PuntosAtencionPanelComponent {
       highlight: punto.nombre,
       danger: true,
       confirmText: 'Sí, desactivar',
-      busyText: 'Desactivando...',
+      busyText: 'Desactivando…',
       confirmAction: () => conMensajeDePunto(this.facade.desactivar(punto.id)),
     };
-    this.dialog.open(ConfirmDialogComponent, { data, panelClass: 'custom-modal-panel' })
-      .afterClosed()
+    abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.snackBar.open('Punto de atención desactivado', 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
   }
 
   private abrir(data: PuntoDialogData, exito: string): void {
+    // Con un diálogo ya abierto no se abre otro encima (doble clic): cada uno podría crear su punto.
+    if (this.dialog.openDialogs.length) return;
     this.dialog.open<PuntoDialogComponent, PuntoDialogData, PuntoAtencionVM>(PuntoDialogComponent, {
       data,
       panelClass: 'custom-modal-panel',
-      autoFocus: 'first-tabbable',
+      autoFocus: '#punto-nombre',
     })
       .afterClosed()
       .pipe(filter((guardado): guardado is PuntoAtencionVM => !!guardado), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open(exito, 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
+      .subscribe((guardado) => {
+        this.snackBar.open(exito, 'OK', { duration: 3000, panelClass: 'snackbar-success' });
+        this.devolverFoco(guardado.id);
+      });
+  }
+
+  /**
+   * Tras guardar, la lista se vuelve a leer y re-renderiza: el botón que abrió el diálogo ya no es el
+   * mismo nodo y Material devuelve el foco a `body`. Se espera a que la tarjeta del punto guardado
+   * exista y se enfoca su acción principal; si no hay (sin permiso de edición), el botón "Agregar punto".
+   */
+  private devolverFoco(puntoId: string): void {
+    const buscar = (): HTMLElement | null => {
+      const host: HTMLElement = this.host.nativeElement;
+      const tarjeta = Array.from(host.querySelectorAll<HTMLElement>('[data-punto-id]'))
+        .find((el) => el.dataset['puntoId'] === puntoId);
+      return tarjeta?.querySelector<HTMLElement>('.puntos-card__acciones .row-action')
+        ?? host.querySelector<HTMLElement>('.puntos-barra__agregar');
+    };
+    interval(50).pipe(
+      take(PINTADOS_MAX),
+      map(buscar),
+      filter((el): el is HTMLElement => !!el),
+      take(1),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((el) => el.focus());
   }
 }

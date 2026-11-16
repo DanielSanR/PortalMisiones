@@ -19,6 +19,9 @@ export const FORM_ERROR_MESSAGES: { [key: string]: (field: FieldConfig) => strin
   max: (field) => `El valor no puede superar ${field.validations?.max}`,
   pattern: (field) => field.validations?.patternErrorMessage || 'El formato ingresado no es válido',
   matDatepickerParse: () => 'Por favor ingresá una fecha válida',
+  // Validadores propios de formularios a mano (plantilla provincial).
+  slugVacio: () => 'Tiene que tener letras o números',
+  principalFuera: () => 'Tiene que ser una de las categorías elegidas',
 };
 
 /** Orden de prioridad: se muestra el primer error de esta lista presente en el control. */
@@ -41,6 +44,10 @@ export const FORM_ERROR_PRIORITY: string[] = [
   'max',
   'pattern',
   'matDatepickerParse',
+  // Regla propia del campo (`FieldValidations.validar`). Su valor ES el mensaje.
+  'personalizado',
+  'slugVacio',
+  'principalFuera',
 ];
 
 /** Resuelve el mensaje de error (es-AR) del primer error con mayor prioridad, o `null` si no hay. */
@@ -51,12 +58,18 @@ export function getControlErrorMessage(
 ): string | null {
   if (!control) return null;
   const errors = { ...(control.errors ?? {}), ...(extraErrors ?? {}) };
-  const errorKey = FORM_ERROR_PRIORITY.find((key) => key in errors);
-  if (errorKey === 'server' && typeof errors['server'] === 'string') return errors['server'];
+  // Después de los errores conocidos, los validadores propios de una pantalla: valen si el campo les
+  // declara un texto en `validations.mensajes` (p. ej. `slugRepetido`, `rango`).
+  const mensajes = field.validations?.mensajes;
+  const errorKey = FORM_ERROR_PRIORITY.find((key) => key in errors)
+    ?? Object.keys(errors).find((key) => !!mensajes?.[key]);
+  if ((errorKey === 'server' || errorKey === 'personalizado') && typeof errors[errorKey] === 'string') {
+    return errors[errorKey];
+  }
   if (!errorKey) {
     return Object.keys(errors).length ? 'Este campo tiene un error' : null;
   }
-  return FORM_ERROR_MESSAGES[errorKey]?.(field) ?? 'Este campo tiene un error';
+  return mensajes?.[errorKey] ?? FORM_ERROR_MESSAGES[errorKey]?.(field) ?? 'Este campo tiene un error';
 }
 
 /** Lo mínimo que el resumen necesita de un campo: su control y cómo se llama en pantalla. */

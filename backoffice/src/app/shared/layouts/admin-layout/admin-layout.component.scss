@@ -59,6 +59,13 @@
     &__shell {
         height: 100%;
         background-color: var(--theme-surface-canvas);
+
+        // Material deja las dos anclas de la trampa de foco con `tabindex="0"` siempre que el menú es
+        // `over` (mobile), aunque esté cerrado: eran dos paradas de Tab invisibles antes del contenido
+        // (axe `aria-hidden-focus`). Con el menú cerrado se sacan del orden de foco.
+        &:not(:has(> .mat-drawer-opened)) > ::ng-deep .cdk-focus-trap-anchor {
+            display: none;
+        }
     }
 
     // ======================================================================
@@ -129,6 +136,11 @@
         display: flex;
         flex-direction: column;
         background-color: var(--theme-surface-card);
+        // Reserva el alto del pie de guardar pegado abajo (`.form-actions--integrada`): al tabular, el campo
+        // enfocado no queda detrás de él (WCAG 2.4.11).
+        scroll-padding-bottom: var(--theme-sticky-footer-clearance);
+        // Lo mismo arriba con la cabecera pegada: al tabular hacia atrás, el campo enfocado no queda debajo.
+        scroll-padding-top: calc(var(--theme-header-height) + var(--theme-space-md));
     }
 
     // <main id="contenido">. Padding del diseño: 18 / 20 / 44.
@@ -538,9 +550,12 @@
     gap: var(--theme-space-gap);
     padding: 0 calc(var(--theme-space-md) + var(--theme-space-xs));
 
+    // Mobile: el título puede ocupar dos renglones (la acción de la página le deja poco ancho), así que el
+    // alto pasa a ser mínimo y la barra crece en vez de cortar el h1 con puntos suspensivos.
     @include responsive(mobile) {
-        height: var(--theme-header-height-mobile);
-        padding: 0 var(--theme-space-md);
+        height: auto;
+        min-height: var(--theme-header-height-mobile);
+        padding: var(--theme-space-xs) var(--theme-space-md);
     }
 }
 
@@ -577,6 +592,11 @@
     flex: none;
     font-size: var(--theme-icon-size-lg);
     color: var(--theme-text-secondary);
+
+    // Decorativo: en mobile cede su ancho al título.
+    @include responsive(mobile) {
+        display: none;
+    }
 }
 
 // h1 de la vista: 16/600, tracking -0.1px (tokens de título de página).
@@ -589,6 +609,13 @@
     line-height: var(--theme-line-height-tight);
     color: var(--theme-text-primary);
     @include truncate;
+
+    // Mobile: hasta dos renglones antes de truncar.
+    @include responsive(mobile) {
+        @include line-clamp(2);
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
 }
 
 // Tramos previos al título ("Organismos /" Editar). En mobile queda solo el h1.

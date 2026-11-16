@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { AtajoDirective } from '../../directives/atajo.directive';
 
 /**
  * Caja de búsqueda de los listados, según la fila A del toolbar del diseño
@@ -16,7 +17,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
   selector: 'app-list-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AtajoDirective],
   templateUrl: './list-search.component.html',
   styleUrls: ['./list-search.component.scss'],
 })
@@ -25,4 +26,6 @@ export class ListSearchComponent {
   @Input() placeholder = 'Buscar…';
   /** Qué campos busca de verdad; el placeholder no alcanza para un lector de pantalla. */
   @Input({ required: true }) ariaLabel!: string;
+  /** Enciende el atajo `F` (foco a este buscador). Apagado por defecto: en una pantalla con varios buscadores solo uno lo toma. */
+  @Input() atajoFoco = false;
 }

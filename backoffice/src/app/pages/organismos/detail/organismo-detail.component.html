@@ -1,40 +1,35 @@
-<!-- Ficha de organismo — diseño "Pantallas · Backoffice Misiones", pantallas DETALLE y FORM.
-     Una sola pantalla en dos modos: comparten membrete, chip de modificación y pestañas.
-     Los bloques sin fuente en el backend se marcan explícitamente en vez de inventar datos. -->
+<!-- Ficha de organismo — diseño "Pantallas · Backoffice Misiones": Ver / Editar / Nuevo organismo.
+     Una sola pantalla en tres modos: comparten membrete y grilla, y la tarjeta "Datos
+     institucionales" pasa de lectura a formulario. Los bloques sin fuente en el backend se
+     marcan explícitamente en vez de inventar datos. -->
 
 <!-- Incondicional: `PageActionsDirective` publica el template en su `ngOnInit`, así que
      envolverlo en un `@if` lo registra tarde y el shell ya no lo toma. El contenido sí
-     espera a que el organismo esté cargado. -->
+     espera a que el organismo esté cargado. Editando no hay acciones acá: Guardar y Cancelar
+     van al pie del formulario, después de los campos. -->
 <ng-template appPageActions>
-  @if (organismo) {
+  @if (organismo && modo === 'ver') {
     <!-- El portal ciudadano todavía no expone la ficha pública del organismo. -->
     <button type="button" mat-stroked-button color="primary"
             appUnavailable="Se habilita cuando el portal publique la ficha del organismo">
       <i class="ph ph-arrow-square-out" aria-hidden="true"></i> Ver en el portal
     </button>
-    @if (modo === 'editar') {
-      <button type="button" mat-flat-button color="primary" [disabled]="saving"
-              (click)="guardarDesdeElHeader()">
-        <i class="ph ph-floppy-disk" aria-hidden="true"></i> Guardar cambios
-      </button>
-    } @else {
-      <button type="button" mat-flat-button color="primary" (click)="onEditar()"
-              *appHasPermission="'UPDATE_ORGANISM'">
-        <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-      </button>
-    }
+    <button type="button" mat-flat-button color="primary" (click)="onEditar()"
+            *appHasPermission="'UPDATE_ORGANISM'">
+      <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+    </button>
   }
 </ng-template>
 
 @if (loading) {
   <div class="loading-inline" role="status">
     <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-    <span>Cargando organismo...</span>
+    <span>{{ modo === 'nuevo' ? 'Cargando formulario…' : 'Cargando organismo…' }}</span>
   </div>
 } @else if (error) {
   <div class="load-state" role="alert">
     <span class="load-state__icono" aria-hidden="true"><i class="ph ph-cloud-slash"></i></span>
-    <h2 class="load-state__titulo">No pudimos cargar el organismo</h2>
+    <h2 class="load-state__titulo">{{ modo === 'nuevo' ? 'No pudimos cargar el formulario' : 'No pudimos cargar el organismo' }}</h2>
     <p class="load-state__texto">Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.</p>
     <div class="load-state__acciones">
       <button type="button" mat-flat-button color="primary" (click)="cargar()">
@@ -42,170 +37,210 @@
       </button>
     </div>
   </div>
-} @else if (organismo) {
+} @else if (organismo || modo === 'nuevo') {
 
 <div class="orgdet">
 
-  @if (modo === 'ver') {
-    <!-- Membrete completo: solo en lectura. Editando, el diseño usa la barra compacta. -->
+  <!-- Membrete: el mismo en los tres modos. Editando o dando de alta refleja el formulario. -->
+  @if (membrete$ | async; as m) {
     <header class="detail-header detail-header--flush">
       <div class="detail-header__body">
-        <span class="orgdet-avatar" aria-hidden="true">{{ iniciales }}</span>
+        <span class="orgdet-avatar" aria-hidden="true">
+          @if (m.iniciales) {
+            {{ m.iniciales }}
+          } @else {
+            <i class="ph ph-buildings"></i>
+          }
+        </span>
 
-        <div class="orgdet-identidad">
+        <!-- `aria-live` solo con el formulario abierto: en lectura el contenido no cambia. -->
+        <div class="detail-header__identity" [attr.aria-live]="editando ? 'polite' : null">
           <div class="detail-header__row">
-            <h2 class="detail-header__title">{{ organismo.nombre }}</h2>
+            <h2 class="detail-header__title" [class.detail-header__title--muted]="!m.nombre">
+              {{ m.nombre || 'Organismo sin nombre' }}
+            </h2>
             <span class="pill pill--bordered"
-                  [class.pill--active]="organismo.activo"
-                  [class.pill--inactive]="!organismo.activo">
+                  [class.pill--active]="m.activo"
+                  [class.pill--inactive]="!m.activo">
               <span class="pill__dot" aria-hidden="true"></span>
-              <span class="pill__label">{{ organismo.activo ? 'Activo' : 'Inactivo' }}</span>
+              <span class="pill__label">{{ m.activo ? 'Activo' : 'Inactivo' }}</span>
             </span>
           </div>
 
           <p class="detail-header__meta">
-            @if (tipoNombre) {
-              <span><i class="ph ph-buildings" aria-hidden="true"></i>{{ tipoNombre }}</span>
+            @if (m.tipo) {
+              <span><i class="ph ph-buildings" aria-hidden="true"></i>{{ m.tipo }}</span>
+              <span class="detail-header__sep" aria-hidden="true"></span>
             }
-            @if (tipoNombre && localidadNombre) {
-              <span class="orgdet-separador" aria-hidden="true"></span>
-            }
-            @if (localidadNombre) {
-              <span><i class="ph ph-map-pin" aria-hidden="true"></i>{{ localidadNombre }}</span>
+            <span><i class="ph ph-tree-structure" aria-hidden="true"></i>{{ m.depende }}</span>
+            @if (m.localidad) {
+              <span class="detail-header__sep" aria-hidden="true"></span>
+              <span><i class="ph ph-map-pin" aria-hidden="true"></i>{{ m.localidad }}</span>
             }
           </p>
         </div>
 
         <div class="detail-header__actions">
-          <button type="button" class="list-iconbtn" appUnavailable="Se habilita cuando el portal publique la ficha del organismo"
-                  aria-label="Ver en el portal ciudadano">
-            <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
-          </button>
-          <ng-container *appHasPermission="'DELETE_ORGANISM'">
-            <button type="button" class="list-iconbtn" [matMenuTriggerFor]="masAcciones"
-                    aria-label="Más acciones del organismo" matTooltip="Más acciones">
-              <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
+          @if (modo === 'ver') {
+            <button type="button" class="list-iconbtn" appUnavailable="Se habilita cuando el portal publique la ficha del organismo"
+                    aria-label="Ver en el portal ciudadano">
+              <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
             </button>
-            <mat-menu #masAcciones="matMenu" xPosition="before">
-              <button mat-menu-item type="button" class="delete-action" (click)="onDelete()">
-                <i class="ph ph-trash" aria-hidden="true"></i>
-                <span>Eliminar organismo</span>
+            <ng-container *appHasPermission="'DELETE_ORGANISM'">
+              <button type="button" class="list-iconbtn" [matMenuTriggerFor]="masAcciones"
+                      aria-label="Más acciones del organismo" matTooltip="Más acciones">
+                <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
               </button>
-            </mat-menu>
-          </ng-container>
+              <mat-menu #masAcciones="matMenu" xPosition="before">
+                <button mat-menu-item type="button" class="delete-action" (click)="onDelete()">
+                  <i class="ph ph-trash" aria-hidden="true"></i>
+                  <span>Eliminar organismo</span>
+                </button>
+              </mat-menu>
+            </ng-container>
+          } @else {
+            <span class="pill pill--revision pill--bordered">
+              <i class="ph pill__icon" [class.ph-plus]="modo === 'nuevo'" [class.ph-pencil-simple]="modo === 'editar'" aria-hidden="true"></i>
+              <span class="pill__label">{{ modo === 'nuevo' ? 'Nuevo' : 'Editando' }}</span>
+            </span>
+          }
         </div>
       </div>
 
-      <ng-container *ngTemplateOutlet="pestanas"></ng-container>
-    </header>
-  } @else {
-    <!-- Fila de contexto de la edición: chip de última modificación + pestañas planas. -->
-    <div class="orgdet-barra">
-      @if (organismo.updatedAt) {
-        <span class="orgdet-chip">
-          <i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>
-          Modificado {{ organismo.updatedAt | date:'dd/MM/yyyy' }}
-        </span>
+      <!-- Pestañas (patrón APG): una sola en tabulación, flechas/Inicio/Fin para moverse.
+           El alta no tiene: todavía no hay trámites, responsables ni historial que mostrar. -->
+      @if (modo !== 'nuevo') {
+        @if (tab$ | async; as actual) {
+          <div class="orgdet-tabs" role="tablist" aria-label="Secciones del organismo" (keydown)="onTabsKeydown($event)">
+            @for (tab of tabs; track tab.clave) {
+              <button type="button" role="tab" class="orgdet-tabs__tab"
+                      [id]="'orgdet-tab-' + tab.clave"
+                      [class.is-active]="actual === tab.clave"
+                      [attr.aria-selected]="actual === tab.clave"
+                      [attr.tabindex]="actual === tab.clave ? 0 : -1"
+                      aria-controls="orgdet-panel"
+                      (click)="seleccionarTab(tab.clave)">
+                {{ tab.label }}
+                @if (tab.contador !== null) {
+                  <span class="orgdet-tabs__contador">{{ tab.contador }}</span>
+                }
+              </button>
+            }
+          </div>
+        }
       }
-      <ng-container *ngTemplateOutlet="pestanas"></ng-container>
-    </div>
+    </header>
   }
 
-  <!-- Pestañas (patrón APG): una sola en tabulación, flechas/Inicio/Fin para moverse. -->
-  <ng-template #pestanas>
-    @if (tab$ | async; as actual) {
-      <div class="orgdet-tabs" [class.orgdet-tabs--chips]="modo === 'editar'"
-           role="tablist" aria-label="Secciones del organismo" (keydown)="onTabsKeydown($event)">
-        @for (tab of tabsVisibles; track tab.clave) {
-          <button type="button" role="tab" class="orgdet-tabs__tab"
-                  [id]="'orgdet-tab-' + tab.clave"
-                  [class.is-active]="actual === tab.clave"
-                  [attr.aria-selected]="actual === tab.clave"
-                  [attr.tabindex]="actual === tab.clave ? 0 : -1"
-                  aria-controls="orgdet-panel"
-                  (click)="seleccionarTab(tab.clave)">
-            {{ tab.label }}
-            @if (tab.contador !== null) {
-              <span class="orgdet-tabs__contador">{{ tab.contador }}</span>
-            }
-          </button>
-        }
-      </div>
-    }
-  </ng-template>
-
   @if (tab$ | async; as actual) {
-    <div id="orgdet-panel" role="tabpanel" class="orgdet-panel" [attr.aria-labelledby]="'orgdet-tab-' + actual">
+    <div id="orgdet-panel" class="orgdet-panel"
+         [attr.role]="modo === 'nuevo' ? null : 'tabpanel'"
+         [attr.aria-labelledby]="modo === 'nuevo' ? null : 'orgdet-tab-' + actual">
 
-      @if (modo === 'editar') {
-        <!-- Edición: la pestaña Datos es el formulario. Se OCULTA al cambiar de pestaña en vez
-             de destruirse, para no perder lo que el usuario venía escribiendo. -->
-        <div class="form-card" [hidden]="actual !== 'datos'">
-          <app-dynamic-form [fields]="config.fields!"
-                            [requireChanges]="modo === 'editar'"
-                            submitButtonText="Guardar cambios"
-                            cancelButtonText="Cancelar"
-                            [initialData]="initialData"
-                            [saving]="saving"
-                            [serverError]="serverError"
-                            (formSubmit)="onSubmit($event)"
-                            (formCancel)="salirDeLaEdicion()">
-          </app-dynamic-form>
+      <!-- "Datos": la tarjeta de datos y los trámites en la columna principal; resumen, responsables
+           y actividad en la lateral. Editando, la grilla se OCULTA al cambiar de pestaña en vez de
+           destruirse, para no perder lo que el usuario venía escribiendo en el formulario. -->
+      @if (editando || actual === 'datos') {
+        <!-- Clase y no solo `hidden`: `.detail-grid` declara `display: grid`, que le gana al atributo. -->
+        <div class="detail-grid detail-grid--main" [class.orgdet-oculto]="actual !== 'datos'" [hidden]="actual !== 'datos'">
+          <div class="detail-col">
+            @if (editando) {
+              <section class="detail-card detail-card--flush orgdet-form" aria-labelledby="orgdet-datos">
+                <div class="orgdet-form__cuerpo">
+                  <header class="orgdet-encabezado">
+                    <h3 class="detail-card__title" id="orgdet-datos">Datos institucionales</h3>
+                    <p class="detail-card__subtitle">
+                      {{ modo === 'nuevo' ? 'Completá los datos para crear el organismo' : 'Los cambios se aplican al guardar' }}
+                    </p>
+                  </header>
+
+                  <app-dynamic-form [fields]="config.fields!"
+                                    [requireChanges]="modo === 'editar'"
+                                    [submitButtonText]="modo === 'nuevo' ? 'Crear organismo' : 'Guardar cambios'"
+                                    cancelButtonText="Cancelar"
+                                    [helpText]="ayudaDelForm"
+                                    [initialData]="initialData"
+                                    [saving]="saving"
+                                    [serverError]="serverError"
+                                    (valueChanges)="onFormValue($event)"
+                                    (formSubmit)="onSubmit($event)"
+                                    (formCancel)="salirDelFormulario()">
+                  </app-dynamic-form>
+                </div>
+              </section>
+            } @else {
+              <section class="detail-card" aria-labelledby="orgdet-datos">
+                <header class="orgdet-encabezado">
+                  <h3 class="detail-card__title" id="orgdet-datos">Datos institucionales</h3>
+                  <p class="detail-card__subtitle">Identificación del organismo y lugar en la estructura</p>
+                </header>
+
+                <dl class="detail-fields detail-fields--grid">
+                  @for (campo of campos; track campo.label) {
+                    <div class="detail-field">
+                      <dt class="detail-field__label">{{ campo.label }}</dt>
+                      <dd class="detail-field__value" [class.detail-field__value--muted]="!campo.valor">{{ campo.valor || '—' }}</dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+            }
+
+            @if (modo !== 'nuevo' && actual === 'datos') {
+              <ng-container *ngTemplateOutlet="cardTramites"></ng-container>
+            }
+          </div>
+
+          @if (modo === 'nuevo') {
+            <aside class="detail-col" aria-label="Qué sigue después de crear el organismo">
+              <section class="detail-card detail-card--flush" aria-labelledby="orgdet-despues">
+                <div class="detail-card__bar">
+                  <h3 class="detail-card__title" id="orgdet-despues">Después de crearlo</h3>
+                </div>
+                <ul class="pasos-lista">
+                  <li class="pasos-lista__item">
+                    <i class="ph ph-file-text" aria-hidden="true"></i>
+                    <div>
+                      <p class="pasos-lista__titulo">Sumarle trámites</p>
+                      <p class="pasos-lista__texto">El organismo adopta trámites de las plantillas provinciales.</p>
+                    </div>
+                  </li>
+                  <li class="pasos-lista__item">
+                    <i class="ph ph-users" aria-hidden="true"></i>
+                    <div>
+                      <p class="pasos-lista__titulo">Asignarle usuarios</p>
+                      <p class="pasos-lista__texto">Desde Usuarios, al crear o editar una cuenta.</p>
+                    </div>
+                  </li>
+                  <li class="pasos-lista__item">
+                    <i class="ph ph-tree-structure" aria-hidden="true"></i>
+                    <div>
+                      <p class="pasos-lista__titulo">Colgarle otros organismos</p>
+                      <p class="pasos-lista__texto">Va a aparecer como opción de organismo superior.</p>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+            </aside>
+          } @else if (actual === 'datos') {
+            <aside class="detail-col" aria-label="Resumen, responsables y actividad">
+              <section class="detail-card" aria-labelledby="orgdet-resumen">
+                <h3 class="detail-card__title" id="orgdet-resumen">Resumen</h3>
+                <p class="orgdet-nota">
+                  Las métricas del organismo (trámites publicados, en revisión, categorías vinculadas y
+                  consultas) todavía no están disponibles.
+                </p>
+              </section>
+
+              <ng-container *ngTemplateOutlet="cardResponsables"></ng-container>
+              <ng-container *ngTemplateOutlet="cardActividad"></ng-container>
+            </aside>
+          }
         </div>
       }
 
-      <!-- Diseño: en "Datos" la ficha y los trámites van en la columna principal, y el resumen, los
-           responsables y la actividad en la lateral, a la vez. Las demás pestañas muestran su bloque
-           solo. Editando, "Datos" es el formulario de arriba. -->
-      @if (modo === 'ver' && actual === 'datos') {
-        <div class="detail-grid detail-grid--main">
-          <div class="detail-col">
-            <section class="detail-card" aria-labelledby="orgdet-datos">
-              <header class="orgdet-encabezado">
-                <h3 class="detail-card__title" id="orgdet-datos">Datos institucionales</h3>
-                <p class="detail-card__subtitle">Información publicada en la ficha del organismo</p>
-              </header>
-
-              <dl class="detail-fields detail-fields--grid">
-                @for (campo of campos; track campo.label) {
-                  <div class="detail-field">
-                    <dt class="detail-field__label">{{ campo.label }}</dt>
-                    @if (campo.pendiente) {
-                      <dd class="detail-field__value detail-field__value--muted">
-                        <i class="ph ph-clock" aria-hidden="true"></i> Aún no disponible
-                      </dd>
-                    } @else {
-                      <dd class="detail-field__value">{{ campo.valor || '—' }}</dd>
-                    }
-                  </div>
-                }
-              </dl>
-
-              <div class="detail-field orgdet-descripcion">
-                <span class="detail-field__label">Descripción</span>
-                <p class="detail-field__value detail-field__value--muted">
-                  <i class="ph ph-clock" aria-hidden="true"></i> Este dato todavía no está disponible.
-                </p>
-              </div>
-            </section>
-
-            <ng-container *ngTemplateOutlet="cardTramites"></ng-container>
-          </div>
-
-          <aside class="detail-col" aria-label="Resumen, responsables y actividad">
-            <section class="detail-card" aria-labelledby="orgdet-resumen">
-              <h3 class="detail-card__title" id="orgdet-resumen">Resumen</h3>
-              <p class="orgdet-nota">
-                Las métricas del organismo (trámites publicados, en revisión, categorías vinculadas y
-                consultas) todavía no están disponibles.
-              </p>
-            </section>
-
-            <ng-container *ngTemplateOutlet="cardResponsables"></ng-container>
-            <ng-container *ngTemplateOutlet="cardActividad"></ng-container>
-          </aside>
-        </div>
-      } @else if (actual !== 'datos') {
+      <!-- Las demás pestañas muestran su bloque solo. -->
+      @if (actual !== 'datos') {
         <div class="detail-col">
           @switch (actual) {
             @case ('tramites') { <ng-container *ngTemplateOutlet="cardTramites"></ng-container> }
@@ -256,11 +291,11 @@
         <dl class="orgdet-fechas">
           <div class="detail-field">
             <dt class="detail-field__label">Alta</dt>
-            <dd class="detail-field__value">{{ (organismo.createdAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
+            <dd class="detail-field__value">{{ (organismo?.createdAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
           </div>
           <div class="detail-field">
             <dt class="detail-field__label">Última edición</dt>
-            <dd class="detail-field__value">{{ (organismo.updatedAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
+            <dd class="detail-field__value">{{ (organismo?.updatedAt | date:'dd/MM/yyyy HH:mm') || '—' }}</dd>
           </div>
         </dl>
       </div>

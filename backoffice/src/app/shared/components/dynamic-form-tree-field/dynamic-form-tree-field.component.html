@@ -1,0 +1,22 @@
+<!-- Grupo propio: @Host del `formControlName` no ve el `formGroup` del componente padre. -->
+<ng-container [formGroup]="group">
+  @if (field.tree; as tree) {
+    <app-tree-select [formControlName]="field.name"
+                     [config]="tree"
+                     [inputId]="field.name"
+                     [labelledBy]="field.name + '-label'"
+                     [describedBy]="field.name + '-ayuda'"
+                     [invalid]="!!error">
+    </app-tree-select>
+  }
+  <!-- Montado siempre: es el destino de `aria-describedby` del control. -->
+  <div class="tree-field__ayuda" [id]="field.name + '-ayuda'">
+    @if (error; as mensaje) {
+      <span class="form-field__error" role="alert">
+        <i class="ph ph-warning-circle" aria-hidden="true"></i>{{ mensaje }}
+      </span>
+    } @else if (field.hint) {
+      <span class="tree-field__hint">{{ field.hint }}</span>
+    }
+  </div>
+</ng-container>

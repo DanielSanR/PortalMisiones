@@ -6,6 +6,13 @@
 
 .dynamic-form {
   width: 100%;
+
+  // Variante de diálogo: más aire entre columnas que entre filas (los rótulos de sección van en
+  // `dynamic-form-field.component.scss`).
+  &--compacto .form-fields {
+    row-gap: var(--theme-space-md);
+    column-gap: var(--theme-space-lg);
+  }
 }
 
 // Diseño "Editar organismo": grilla de 4 columnas iguales; `wide + third + third` = 2fr / 1fr / 1fr,

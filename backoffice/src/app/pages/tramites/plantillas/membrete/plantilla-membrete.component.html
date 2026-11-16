@@ -1,0 +1,37 @@
+<!-- Sin `aria-live`: en el form anunciaría título y slug en cada tecla; en el detalle no cambia. -->
+<header class="detail-header detail-header--flush detail-header--ficha">
+  <div class="detail-header__body">
+    <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-files"></i></span>
+
+    <div class="detail-header__identity">
+      <div class="detail-header__row">
+        <h2 class="detail-header__title" [class.detail-header__title--muted]="!titulo">
+          {{ titulo || 'Plantilla sin título' }}
+        </h2>
+        <span class="pill pill--bordered" [class.pill--active]="activa" [class.pill--inactive]="!activa">
+          <span class="pill__dot" aria-hidden="true"></span>
+          <span class="pill__label">{{ activa ? 'Activa' : 'Desactivada' }}</span>
+        </span>
+      </div>
+
+      <p class="detail-header__meta">
+        <code class="detail-header__code">{{ slug || 'sin-slug' }}</code>
+        <span class="detail-header__sep" aria-hidden="true"></span>
+        <span><i class="ph ph-devices" aria-hidden="true"></i>{{ modalidad || 'Sin modalidad' }}</span>
+        <span class="detail-header__sep" aria-hidden="true"></span>
+        <span><i class="ph ph-folders" aria-hidden="true"></i>{{ principal || 'Sin categoría principal' }}</span>
+      </p>
+
+      @if (avisoDesactivada && !activa) {
+        <p class="detail-header__notice">
+          <i class="ph ph-info" aria-hidden="true"></i>
+          Está desactivada: no aparece en el listado y no se puede adoptar.
+        </p>
+      }
+    </div>
+
+    <div class="detail-header__actions">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</header>

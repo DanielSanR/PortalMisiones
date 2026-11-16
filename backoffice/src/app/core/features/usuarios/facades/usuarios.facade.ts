@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, forkJoin, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, distinctUntilChanged, forkJoin, map, of, tap } from 'rxjs';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { UserRole } from '@core/enums/user-role.enum';
 import { UsuariosRepository } from '../repositories/usuarios.repository';
-import { UsuarioFormData, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
+import { SesionUsuariosVM, UsuarioFormData, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 import { OrganismosRepository } from '@features/organismos';
 import { RolesRepository } from '@features/roles';
 
@@ -15,11 +17,31 @@ export class UsuariosFacade {
   private readonly _usuarios$ = new BehaviorSubject<UsuarioVM[]>([]);
   readonly usuarios$ = this._usuarios$.asObservable();
 
+  /**
+   * Quién opera la pantalla, derivado de la sesión, para que el componente no inyecte `AuthTokenService`
+   * (infraestructura de sesión, no `facade → facade`). Emite al suscribirse y cuando cambia alguno de sus
+   * datos (otro usuario, otro rol).
+   */
+  readonly sesion$: Observable<SesionUsuariosVM>;
+
   constructor(
     private usuarios: UsuariosRepository,
     private organismos: OrganismosRepository,
-    private roles: RolesRepository
-  ) {}
+    private roles: RolesRepository,
+    auth: AuthTokenService,
+  ) {
+    this.sesion$ = auth.getCurrentUser$().pipe(
+      map((usuario): SesionUsuariosVM => ({
+        usuarioId: usuario?.id ?? null,
+        email: usuario?.email ?? null,
+        esSuperAdmin: usuario?.role === UserRole.SUPERADMIN,
+        organismoId: usuario?.organismoId ?? null,
+      })),
+      distinctUntilChanged((a, b) =>
+        a.usuarioId === b.usuarioId && a.email === b.email
+        && a.esSuperAdmin === b.esSuperAdmin && a.organismoId === b.organismoId),
+    );
+  }
 
   /**
    * ¿Qué se puede ofrecer en la fila? Lo decide la fuente de datos, sin que la pantalla sepa si es mock

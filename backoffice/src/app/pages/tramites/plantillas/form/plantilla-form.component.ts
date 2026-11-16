@@ -12,10 +12,14 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormActionsComponent } from '../../../../shared/components/form-actions/form-actions.component';
+import { SeleccionMultipleComponent } from '../../../../shared/components/seleccion-multiple/seleccion-multiple.component';
 import { FormErrorBannerComponent } from '../../../../shared/components/form-error-banner/form-error-banner.component';
-import { resumenDeErrores } from '../../../../shared/components/dynamic-form-field/form-error-messages.util';
+import { FormErrorMessageDirective } from '../../../../shared/components/dynamic-form-field/FormErrorMessage.directive';
+import { getControlErrorMessage, resumenDeErrores } from '../../../../shared/components/dynamic-form-field/form-error-messages.util';
 import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
+import { FieldConfig } from '@core/models/field.interface';
+import { esPantallaDestruida, unaVez } from '@core/utils/one-shot.utils';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { canonicalizarSlug } from '@core/utils/slug.utils';
 import {
@@ -25,6 +29,8 @@ import {
   CONFLICTOS_PLANTILLA, FALLBACK_PLANTILLA, TEXTOS_PLANTILLA_INEXISTENTE, esPlantillaInexistente,
 } from '../plantilla-save-error';
 import { RUTA_DETALLE_PLANTILLA, RUTA_LISTA_PLANTILLAS } from '../plantillas.rutas';
+import { PlantillaMembreteComponent } from '../membrete/plantilla-membrete.component';
+import { datosRecomendados, textoRecomendados } from '../plantilla-recomendados';
 
 /** Largo máximo de `title_base` / `slug_base` (VARCHAR(255) en el backend). */
 const MAX_TEXTO_CORTO = 255;
@@ -58,7 +64,36 @@ function principalEnCategorias(control: AbstractControl): ValidationErrors | nul
   return elegidas.includes(principal) ? null : { principalFuera: true };
 }
 
+/** Lo que el membrete, el total de Clasificación y el pie derivan del form en vivo. */
+interface VistaForm {
+  titulo: string;
+  slug: string;
+  activa: boolean;
+  modalidad: string;
+  principal: string;
+  /** "N opciones elegidas" entre los cuatro catálogos de Clasificación. */
+  totalElegidas: string;
+  /** Sin categorías ni principal: la categoría principal no tiene de dónde elegir. */
+  principalSinCategorias: boolean;
+  recomendadosCompletos: boolean;
+  recomendado: string;
+}
+
+/** Clave de cada grupo de Clasificación: solo uno puede estar abierto. */
+type GrupoClasificacion = 'categorias' | 'etiquetas' | 'destinatarios' | 'eventos';
+
 type CampoConResumen = 'titulo' | 'slug' | 'categoriaPrincipalId';
+
+/**
+ * Los campos que validan, descritos como los de `app-dynamic-form`: así el mensaje de cada error sale
+ * de `form-error-messages.util` (un solo lugar para el `<mat-error>` del campo y el banner resumen).
+ */
+const CAMPOS: Record<CampoConResumen, FieldConfig> = {
+  titulo: { name: 'titulo', label: 'Título', type: 'text', validations: { maxLength: MAX_TEXTO_CORTO } },
+  slug: { name: 'slug', label: 'Slug', type: 'text', validations: { maxLength: MAX_TEXTO_CORTO } },
+  categoriaPrincipalId: { name: 'categoriaPrincipalId', label: 'Categoría principal', type: 'select' },
+};
+
 type CampoDelForm = keyof PlantillaFormComponent['form']['controls'];
 
 /**
@@ -83,7 +118,10 @@ type CampoDelForm = keyof PlantillaFormComponent['form']['controls'];
     MatTooltipModule,
     FormActionsComponent,
     FormErrorBannerComponent,
+    FormErrorMessageDirective,
     LoadingComponent,
+    PlantillaMembreteComponent,
+    SeleccionMultipleComponent,
   ],
   templateUrl: './plantilla-form.component.html',
   styleUrl: './plantilla-form.component.scss',
@@ -97,6 +135,7 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly maxTextoCorto = MAX_TEXTO_CORTO;
+  readonly campos = CAMPOS;
 
   readonly form = new FormGroup({
     titulo: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(MAX_TEXTO_CORTO)] }),
@@ -121,6 +160,8 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
   /** Motivo del último fallo de guardado, para mostrarlo dentro del formulario. */
   serverError = '';
   plantilla: PlantillaVM | null = null;
+  /** Grupo de Clasificación con la lista abierta (uno a la vez). */
+  grupoAbierto: GrupoClasificacion | null = null;
   /** Catálogos para los selects, con los ids elegidos que no están en el catálogo agregados como "No disponible". */
   catalogos: PlantillaCatalogos | null = null;
 
@@ -142,6 +183,14 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
     defer(() => this.form.controls.categoriaIds.valueChanges.pipe(startWith(this.form.controls.categoriaIds.value))),
     defer(() => this.form.controls.categoriaPrincipalId.valueChanges.pipe(startWith(this.form.controls.categoriaPrincipalId.value))),
   ]).pipe(map(([opciones, elegidas, principal]) => opciones.filter((o) => elegidas.includes(o.id) || o.id === principal)));
+
+  /**
+   * El form en vivo, resumido para la pantalla: membrete, total elegido y datos recomendados
+   * (resumen, modalidad y categoría principal; informativos, no bloquean el guardado).
+   */
+  readonly vista$: Observable<VistaForm> = defer(() =>
+    this.form.valueChanges.pipe(startWith(null), map(() => this.armarVista())),
+  );
 
   /** Cómo se va a guardar el slug, si difiere de lo tipeado. */
   readonly slugPrevisto$: Observable<string | null> = defer(() =>
@@ -168,13 +217,27 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         const principal = this.form.controls.categoriaPrincipalId;
+        this.sincronizarPrincipal();
         principal.updateValueAndValidity({ emitEvent: false });
         // Recién se ve el error si el usuario ya había elegido principal: quitarle la categoría
         // que era principal tiene que avisarse, no limpiarse en silencio.
         if (principal.value) principal.markAsTouched();
+        // `touched` no emite nada: sin esto, el mensaje del campo dependería de que otro evento refresque la vista.
+        this.cdr.markForCheck();
       });
 
+    this.form.controls.categoriaPrincipalId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.sincronizarPrincipal());
+    this.sincronizarPrincipal();
+
     this.cargar();
+  }
+
+  /** Abre un grupo de Clasificación (cerrando el que estuviera abierto) o cierra el suyo. */
+  alternarGrupo(grupo: GrupoClasificacion, abrir: boolean): void {
+    this.grupoAbierto = abrir ? grupo : this.grupoAbierto === grupo ? null : this.grupoAbierto;
+    this.cdr.markForCheck();
   }
 
   /** Catálogos + plantilla en una sola suscripción: un estado de carga y uno de error. */
@@ -223,7 +286,7 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
     return this.isEdit && this.form.pristine;
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.saving) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -251,24 +314,49 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
     };
 
     const request$ = this.isEdit ? this.facade.update(this.editId!, form) : this.facade.create(form);
-    request$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (guardada) => {
-          const accion = this.isEdit ? 'actualizada' : 'creada';
-          this.snackBar.open(
-            guardada.activa ? `Plantilla ${accion}` : `Plantilla ${accion}. Está desactivada: no aparece en el listado`,
-            'OK',
-            { duration: 4000, panelClass: 'snackbar-success' },
-          );
-          this.router.navigate([RUTA_DETALLE_PLANTILLA, guardada.id]);
-        },
-        error: (err: unknown) => {
-          this.saving = false;
-          this.serverError = aplicarErrorDeGuardado(err, this.form, CONFLICTOS_PLANTILLA, FALLBACK_PLANTILLA);
-          this.cdr.markForCheck();
-        },
+    // Guardado one-shot (`unaVez`), igual que en los demás formularios: el único rechazo que se ignora
+    // es que la pantalla ya no exista; cualquier otro apaga `saving` y se muestra en el formulario.
+    let guardada: PlantillaVM;
+    try {
+      guardada = await unaVez(request$, this.destroyRef);
+    } catch (err: unknown) {
+      if (esPantallaDestruida(err)) return; // se destruyó con el guardado en vuelo: no hay a quién avisar
+      this.saving = false;
+      this.serverError = aplicarErrorDeGuardado(err, this.form, CONFLICTOS_PLANTILLA, FALLBACK_PLANTILLA);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const accion = this.isEdit ? 'actualizada' : 'creada';
+    this.snackBar.open(
+      guardada.activa ? `Plantilla ${accion}` : `Plantilla ${accion}. Está desactivada: no aparece en el listado`,
+      'OK',
+      { duration: 4000, panelClass: 'snackbar-success' },
+    );
+    await this.salirTrasGuardar([RUTA_DETALLE_PLANTILLA, guardada.id], 'La plantilla');
+  }
+
+  /**
+   * Navega tras guardar. Si la navegación no ocurre, una edición vuelve a quedar disponible; un alta NO
+   * (ya se creó: habilitar "Crear" de nuevo la duplicaría) y se le dice al usuario dónde encontrarla.
+   */
+  private async salirTrasGuardar(destino: unknown[], que: string): Promise<void> {
+    let navego: boolean | undefined;
+    try {
+      navego = await this.router.navigate(destino);
+    } catch {
+      navego = false;
+    }
+    if (navego !== false) return;
+    if (this.isEdit) {
+      this.saving = false;
+      this.form.markAsPristine();
+    } else {
+      this.snackBar.open(`${que} ya se creó, pero no pudimos abrir la pantalla siguiente. Buscala en la lista.`, 'OK', {
+        duration: 8000, panelClass: 'snackbar-warning',
       });
+    }
+    this.cdr.markForCheck();
   }
 
   cancelar(): void {
@@ -291,21 +379,41 @@ export class PlantillaFormComponent implements OnInit, PuedeTenerCambiosSinGuard
   /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
   get errorSummary(): string[] {
     if (!this.submitted) return [];
-    const campos: { name: CampoConResumen; label: string }[] = [
-      { name: 'titulo', label: 'Título' },
-      { name: 'slug', label: 'Slug' },
-      { name: 'categoriaPrincipalId', label: 'Categoría principal' },
-    ];
-    return resumenDeErrores(this.form, campos, (control) => this.motivo(control));
+    return resumenDeErrores(this.form, Object.values(CAMPOS), (control, campo) => getControlErrorMessage(control, campo));
   }
 
-  private motivo(control: AbstractControl): string {
-    if (control.hasError('required')) return 'obligatorio';
-    if (control.hasError('maxlength')) return `máximo ${control.errors?.['maxlength']?.requiredLength} caracteres`;
-    if (control.hasError('slugVacio')) return 'tiene que tener letras o números';
-    if (control.hasError('principalFuera')) return 'tiene que ser una de las categorías elegidas';
-    if (control.hasError('server')) return String(control.errors?.['server']);
-    return 'inválido';
+  /**
+   * La categoría principal se deshabilita mientras no haya de dónde elegir. Si todavía guarda una
+   * (le quitaron todas las categorías) queda habilitada: deshabilitado, el control no valida y
+   * `getRawValue()` igual la enviaría, con lo que `principalFuera` quedaría escondido.
+   */
+  private sincronizarPrincipal(): void {
+    const principal = this.form.controls.categoriaPrincipalId;
+    const sinOrigen = !this.form.controls.categoriaIds.value.length && !principal.value;
+    if (sinOrigen && principal.enabled) principal.disable({ emitEvent: false });
+    if (!sinOrigen && principal.disabled) principal.enable({ emitEvent: false });
+  }
+
+  private armarVista(): VistaForm {
+    const v = this.form.getRawValue();
+    const nombre = (opciones: PlantillaOpcion[] | undefined, id: string) => opciones?.find((o) => o.id === id)?.nombre ?? '';
+    const total = v.categoriaIds.length + v.etiquetaIds.length + v.destinatarioIds.length + v.eventoDeVidaIds.length;
+    const recomendados = datosRecomendados({
+      resumen: v.resumen,
+      tieneModalidad: !!v.modalidadId,
+      tieneCategoriaPrincipal: !!v.categoriaPrincipalId,
+    });
+    return {
+      titulo: v.titulo.trim(),
+      slug: v.slug,
+      activa: v.activa,
+      modalidad: nombre(this.catalogos?.modalidades, v.modalidadId),
+      principal: nombre(this.catalogos?.categorias, v.categoriaPrincipalId),
+      totalElegidas: total === 1 ? '1 opción elegida' : `${total} opciones elegidas`,
+      principalSinCategorias: !v.categoriaIds.length && !v.categoriaPrincipalId,
+      recomendadosCompletos: recomendados.every((d) => d.completo),
+      recomendado: textoRecomendados(recomendados),
+    };
   }
 
   /**

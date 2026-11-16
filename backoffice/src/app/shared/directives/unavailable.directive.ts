@@ -1,4 +1,4 @@
-import { Directive, HostBinding, HostListener, Input } from '@angular/core';
+import { Directive, HostBinding, HostListener, Input, booleanAttribute } from '@angular/core';
 import { MatTooltip } from '@angular/material/tooltip';
 
 /** Motivo por defecto cuando la pantalla no da uno más específico. */
@@ -19,6 +19,10 @@ export const MOTIVO_NO_DISPONIBLE = 'Disponible próximamente';
  * hover y el long-press no se descubre, así que el tap es la única forma de enterarse.
  *
  * Se ve deshabilitado con la clase global `.is-unavailable` (`_components.scss`).
+ *
+ * Si el motivo ya está escrito en pantalla y el host lo referencia con su propio `aria-describedby`, se
+ * pasa `appUnavailableMotivoVisible`: no hay tooltip (no repite ni tapa el texto) y el lector no lo oye dos
+ * veces (tooltip + descripción). El resto del comportamiento no cambia.
  */
 @Directive({
   selector: '[appUnavailable]',
@@ -26,6 +30,9 @@ export const MOTIVO_NO_DISPONIBLE = 'Disponible próximamente';
   hostDirectives: [{ directive: MatTooltip }],
 })
 export class UnavailableDirective {
+  private motivo = MOTIVO_NO_DISPONIBLE;
+  private motivoEnPantalla = false;
+
   constructor(private readonly tooltip: MatTooltip) {
     this.tooltip.message = MOTIVO_NO_DISPONIBLE;
   }
@@ -33,7 +40,22 @@ export class UnavailableDirective {
   /** Motivo que se muestra en el tooltip; vacío = {@link MOTIVO_NO_DISPONIBLE}. */
   @Input()
   set appUnavailable(motivo: string | null | undefined) {
-    this.tooltip.message = motivo?.trim() || MOTIVO_NO_DISPONIBLE;
+    this.motivo = motivo?.trim() || MOTIVO_NO_DISPONIBLE;
+    this.sincronizarMensaje();
+  }
+
+  /**
+   * El motivo ya está visible en la página y el host lo referencia con su `aria-describedby`: sin tooltip.
+   * Un mensaje vacío en `MatTooltip` ni se muestra ni se suma a la descripción accesible del host.
+   */
+  @Input({ transform: booleanAttribute })
+  set appUnavailableMotivoVisible(valor: boolean) {
+    this.motivoEnPantalla = valor;
+    this.sincronizarMensaje();
+  }
+
+  private sincronizarMensaje(): void {
+    this.tooltip.message = this.motivoEnPantalla ? '' : this.motivo;
   }
 
   @HostBinding('attr.aria-disabled') readonly ariaDisabled = 'true';

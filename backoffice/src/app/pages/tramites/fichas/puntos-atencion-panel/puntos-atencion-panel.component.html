@@ -2,7 +2,7 @@
   @if (estado.tipo === 'cargando') {
     <p class="puntos-mensaje" role="status">
       <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-      Cargando los puntos de atención...
+      Cargando los puntos de atención…
     </p>
   } @else if (estado.tipo === 'error') {
     <div class="puntos-mensaje puntos-mensaje--error" role="alert">
@@ -28,14 +28,20 @@
 
       @if (visibles$ | async; as puntos) {
         @if (!puntos.length) {
-          <p class="puntos-mensaje">
-            <i class="ph ph-map-pin" aria-hidden="true"></i>
-            {{ estado.puntos.length ? 'No hay puntos de atención activos.' : 'Todavía no hay puntos de atención: agregá dónde se hace el trámite en esta localidad.' }}
-          </p>
+          <!-- Estado vacío centrado en el alto que sobra del panel (la ficha lo estira): ícono, título y una línea. -->
+          <div class="state-panel puntos-vacio">
+            <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-map-pin"></i></span>
+            @if (estado.puntos.length) {
+              <p class="state-panel__title">No hay puntos de atención activos</p>
+            } @else {
+              <p class="state-panel__title">Todavía no hay puntos de atención</p>
+              <p class="state-panel__text">Agregá dónde se hace el trámite en esta localidad.</p>
+            }
+          </div>
         } @else {
           <ul class="puntos-lista">
             @for (punto of puntos; track punto.id) {
-              <li class="puntos-card" [class.is-inactivo]="!punto.activo">
+              <li class="puntos-card" [class.is-inactivo]="!punto.activo" [attr.data-punto-id]="punto.id">
                 <div class="puntos-card__encabezado">
                   <h4 class="puntos-card__nombre">{{ punto.nombre }}</h4>
                   @if (!punto.activo) {

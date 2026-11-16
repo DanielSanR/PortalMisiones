@@ -19,7 +19,7 @@ mat-form-field {
 
   @include accent-bar();
 
-  // Mismo fix que `.section-header` global (`shared-styles/_components.scss`): no reducir el
+  // No reducir el
   // padding-top del primer header (rompería la altura de caja que usa `accent-bar` para
   // centrar la barra); compensar el espacio con `margin-top` negativo en su lugar.
   &:first-child {
@@ -43,6 +43,55 @@ mat-form-field {
     font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
     margin: 2px 0 0;
+  }
+}
+
+// Variante `compacto` del formulario (diálogos): el título de sección pasa a ser un rótulo chico en
+// mayúsculas con un filete al lado, sin barra de acento ni borde superior. `:host-context` porque la
+// clase la pone el `<form>` del padre.
+:host-context(.dynamic-form--compacto) {
+  .section-header-field {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-gap);
+    padding: 0;
+    border-top: 0;
+
+    &::before {
+      display: none;
+    }
+
+    // El filete ocupa lo que sobra entre el título y la descripción opcional.
+    &::after {
+      content: '';
+      flex: 1;
+      order: 1;
+      height: 1px;
+      background-color: var(--theme-border-primary);
+    }
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:not(:first-child) {
+      margin-top: var(--theme-space-sm);
+      border-top: 0;
+    }
+
+    .section-header-title {
+      font-size: var(--theme-font-size-2xs);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--theme-text-tertiary);
+    }
+
+    .section-header-description {
+      order: 2;
+      margin: 0;
+      font-size: var(--theme-font-size-2xs);
+      color: var(--theme-text-tertiary);
+    }
   }
 }
 
@@ -112,36 +161,13 @@ i.ph.dynamic-form-field__icon {
   }
 }
 
-// ==========================================================================
-// Vista previa derivada (`field.preview`) — p. ej. el slug canonicalizado
-// ==========================================================================
-// El bloque es solo la región viva (sin caja propia): vacía no ocupa lugar y el form no
-// "salta" hasta que hay algo que mostrar. El espaciado vive en `-content`.
+// La vista previa derivada (`field.preview`) y el input en mono (`field.mono`) usan las clases globales
+// `.field-preview` y `.form-field__mono` (shared-styles/_components.scss). El aire sobre la vista previa:
 .field-preview {
-  &-content {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--theme-space-xs);
-    margin: var(--theme-space-xs) 0 0;
-    font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-secondary);
-  }
+  margin-top: var(--theme-space-xs);
 
-  &-icon {
-    font-size: var(--theme-font-size-sm);
-    line-height: 1;
-    color: var(--theme-text-tertiary);
-  }
-
-  &-value {
-    font-family: var(--theme-font-mono);
-    font-weight: var(--theme-font-weight-medium);
-    color: var(--theme-primary-dark);
-    background: var(--theme-primary-50);
-    padding: 1px var(--theme-space-xs);
-    border-radius: var(--theme-radius-sm);
-    word-break: break-all;
+  &:empty {
+    margin-top: 0;
   }
 }
 

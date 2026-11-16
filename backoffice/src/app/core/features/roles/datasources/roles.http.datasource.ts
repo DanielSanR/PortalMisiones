@@ -32,7 +32,7 @@ export class RolesHttpDataSource extends RolesDataSource {
 
   getById(id: string): Observable<RolVM> {
     return this.http
-      .get<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
+      .get<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map((res) => toRolVM(res.data)));
   }
 

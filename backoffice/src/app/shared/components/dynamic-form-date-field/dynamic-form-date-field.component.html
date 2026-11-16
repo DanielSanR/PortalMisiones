@@ -8,7 +8,9 @@
            [formControlName]="field.name"
            [placeholder]="field.placeholder || 'DD/MM/AAAA'"
            [required]="field.validations?.required || false">
-    <mat-datepicker-toggle matIconSuffix [for]="picker" aria-label="Elegir fecha"></mat-datepicker-toggle>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" aria-label="Elegir fecha">
+      <i matDatepickerToggleIcon class="ph ph-calendar-blank" aria-hidden="true"></i>
+    </mat-datepicker-toggle>
     <mat-datepicker #picker></mat-datepicker>
     @if (field.hint) {
       <mat-hint align="start">{{ field.hint }}</mat-hint>

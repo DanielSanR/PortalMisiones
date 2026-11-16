@@ -1,17 +1,17 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
+import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, firstValueFrom, map, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../shared/components/list-search';
+import { AtajoDirective } from '../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
@@ -19,6 +19,9 @@ import { PageActionsDirective } from '../../../shared/directives/page-actions.di
 import { buscarEn, todasOnlyTabs } from '@core/utils/list-filter.utils';
 import { ModalidadesFacade, ModalidadVM } from '@features/modalidades';
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
+import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
+import { dialogoDeModalidad } from '../modalidad-dialogo';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "la búsqueda no matchea". */
 interface EstadoVacio {
@@ -55,6 +58,7 @@ interface ModalidadesVista extends EstadoVacio {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
     UnavailableDirective,
   ],
   templateUrl: './modalidades-list.component.html',
@@ -124,11 +128,22 @@ export class ModalidadesListComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  constructor(
-    private router: Router,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-  ) {}
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+
+  /** Alta y edición van en diálogo sobre la lista; el diálogo guarda y acá solo se avisa. */
+  private readonly dialogo = new DialogoEnLista<ModalidadVM, ModalidadVM>({
+    abrir: (modalidad) => abrirFormDialog(this.dialog, dialogoDeModalidad(this.facade, modalidad)),
+    buscar: async (id) => (await firstValueFrom(this.modalidades$)).find((fila) => fila.id === id),
+    alGuardar: (_guardada, modalidad) => {
+      this.snackBar.open(modalidad ? 'Modalidad actualizada' : 'Modalidad creada', 'OK', {
+        duration: 3000,
+        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+        panelClass: 'snackbar-success',
+      });
+    },
+    noEncontrada: 'No encontramos esa modalidad. Puede que la hayan eliminado.',
+  });
 
   ngOnInit(): void {
     this.load();
@@ -137,10 +152,11 @@ export class ModalidadesListComponent implements OnInit {
   load(): void {
     this.loading = true;
     this.error = false;
+    this.dialogo.listaLista(false);
     this.facade.loadModalidades()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
+        next: () => { this.loading = false; this.cdr.markForCheck(); this.dialogo.listaLista(true); },
         // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
         // modalidades, indistinguible de una carga fallida.
         error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
@@ -179,7 +195,7 @@ export class ModalidadesListComponent implements OnInit {
   }
 
   onCreate(): void {
-    this.router.navigate(['/dashboard/modalidades/nuevo']);
+    void this.dialogo.abrir(null);
   }
 
   accionEditar(modalidad: ModalidadVM): RowAction {
@@ -187,6 +203,7 @@ export class ModalidadesListComponent implements OnInit {
       label: 'Editar',
       icon: 'pencil-simple',
       permission: 'UPDATE_MODALITY',
+      ariaLabel: `Editar modalidad ${modalidad.nombre}`,
       run: () => this.onEdit(modalidad),
     };
   }
@@ -203,13 +220,13 @@ export class ModalidadesListComponent implements OnInit {
   }
 
   onEdit(modalidad: ModalidadVM): void {
-    this.router.navigate(['/dashboard/modalidades/editar', modalidad.id]);
+    void this.dialogo.abrir(modalidad);
   }
 
   onDelete(modalidad: ModalidadVM): void {
     // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
     const indice = indiceDeFilaActiva(this.host);
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar la modalidad?',
         // Cuenta la consecuencia, no la restricción: si el backend rechaza borrar una
@@ -218,7 +235,7 @@ export class ModalidadesListComponent implements OnInit {
         highlight: modalidad.nombre,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend
         // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
         confirmAction: () => {
@@ -231,7 +248,6 @@ export class ModalidadesListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef);

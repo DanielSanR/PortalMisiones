@@ -10,13 +10,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { inicioDelDia } from '@core/utils/fecha.utils';
 import { AdopcionFormValue, AdopcionVM, AdopcionesFacade } from '@features/adopciones';
+import { FormErrorBannerComponent } from '@shared/components/form-error-banner/form-error-banner.component';
 import { RUTA_DETALLE_PLANTILLA } from '../../plantillas/plantillas.rutas';
 import { RUTA_LISTA_ADOPCIONES } from '../adopciones.rutas';
 import {
@@ -45,7 +46,7 @@ type EstadoDetalle =
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe, DatePipe, RouterLink, ReactiveFormsModule, MatButtonModule, MatSlideToggleModule, MatSnackBarModule,
-    HasPermissionDirective, PageActionsDirective, VigenciaBadgeComponent, VigenciaCamposComponent, FichasDeAdopcionComponent,
+    FormErrorBannerComponent, HasPermissionDirective, PageActionsDirective, VigenciaBadgeComponent, VigenciaCamposComponent, FichasDeAdopcionComponent,
   ],
   templateUrl: './adopcion-detail.component.html',
   styleUrl: './adopcion-detail.component.scss',
@@ -158,11 +159,10 @@ export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
   }
 
   deshabilitar(adopcion: AdopcionVM): void {
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: confirmDeshabilitar(adopcion, () => this.facade.deshabilitar(adopcion.id)),
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.snackBar.open('Trámite del organismo deshabilitado', 'OK', { duration: 3000, panelClass: 'snackbar-success' });

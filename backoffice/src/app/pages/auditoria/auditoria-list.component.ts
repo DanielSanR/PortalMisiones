@@ -9,7 +9,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent } from '@shared/components/table';
-import { FilterTabsComponent } from '@shared/components/filter-tabs';
 import { ListSearchComponent } from '@shared/components/list-search';
 import { AccionLabelPipe } from './accion-label.pipe';
 import { PageActionsDirective } from '@shared/directives/page-actions.directive';
@@ -32,7 +31,6 @@ import { AuditoriaDetailDialogComponent } from './auditoria-detail-dialog.compon
     ListSearchComponent,
     SharedTableComponent,
     TableCellDirective,
-    FilterTabsComponent,
     AccionLabelPipe,
     PageActionsDirective,
   ],

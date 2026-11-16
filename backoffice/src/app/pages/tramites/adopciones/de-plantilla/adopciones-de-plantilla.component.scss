@@ -14,24 +14,16 @@
 }
 
 .adopplant-item {
+  // Vive en la columna lateral (angosta): organismo + estado arriba, vigencia debajo.
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--theme-space-md);
+  gap: var(--theme-space-xs) var(--theme-space-md);
   padding: var(--theme-space-sm) 0;
-  border-bottom: 1px solid var(--theme-border-primary);
+  border-bottom: 1px solid var(--theme-border-subtle);
 
   &:last-child {
     border-bottom: 0;
-  }
-
-  @include responsive(mobile) {
-    grid-template-columns: minmax(0, 1fr) auto;
-
-    &__vigencia {
-      grid-column: 1 / -1;
-      grid-row: 2;
-    }
   }
 
   &__organismo {
@@ -54,6 +46,8 @@
   }
 
   &__vigencia {
+    grid-column: 1 / -1;
+    grid-row: 2;
     display: inline-flex;
     align-items: center;
     gap: var(--theme-space-xs);

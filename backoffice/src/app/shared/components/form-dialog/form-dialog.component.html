@@ -1,0 +1,79 @@
+<div class="dialogo-formulario" [attr.aria-busy]="guardando">
+  <div class="dialogo-formulario__header">
+    <!-- mat-dialog-title: es el nombre accesible del diálogo (aria-labelledby del contenedor). -->
+    <div class="dialogo-formulario__encabezado">
+      <h2 mat-dialog-title class="dialogo-formulario__titulo">{{ data.titulo }}</h2>
+      @if (data.subtitulo) {
+        <p class="dialogo-formulario__subtitulo">{{ data.subtitulo }}</p>
+      }
+    </div>
+    <button type="button" mat-icon-button class="dialogo-formulario__cerrar" aria-label="Cerrar" [disabled]="guardando"
+            (click)="intentarCerrar()">
+      <i class="ph ph-x" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div mat-dialog-content class="dialogo-formulario__cuerpo">
+    <app-loading [loading]="loading" message="Cargando…"></app-loading>
+
+    @if (!loading && errorCarga; as error) {
+      <!-- Sin lo que el formulario necesita no se puede completar: se muestra el motivo y una salida. -->
+      <div class="state-panel" role="alert">
+        <span class="state-panel__icon state-panel__icon--error" aria-hidden="true">
+          <i class="ph" [class.ph-cloud-slash]="error.reintentable" [class.ph-prohibit]="!error.reintentable"></i>
+        </span>
+        <p class="state-panel__title">{{ error.titulo }}</p>
+        <p class="state-panel__text">{{ error.texto }}</p>
+        @if (error.ayuda) {
+          <p class="state-panel__text">{{ error.ayuda }}</p>
+        }
+        @if (error.reintentable) {
+          <button type="button" mat-flat-button color="primary" class="state-panel__cta" (click)="reintentar()">
+            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>
+            <span>Reintentar</span>
+          </button>
+        } @else {
+          <button type="button" mat-stroked-button color="primary" class="state-panel__cta" (click)="intentarCerrar()">Cerrar</button>
+        }
+      </div>
+    }
+
+    @if (!loading && !errorCarga) {
+      <!-- El formulario nace con todo ya cargado. `(valueChanges)` deja que la configuración recalcule los
+           campos. Sin botones propios: el pie del diálogo envía este `<form>` por su id. -->
+      <app-dynamic-form [compacto]="true" [hideButtons]="true" [formId]="formId" [requireChanges]="!!data.requiereCambios"
+          [fields]="fields" [initialData]="initialData" [saving]="guardando"
+          (valueChanges)="onValueChanges($event)"
+          (formSubmit)="onSubmit($event)">
+      </app-dynamic-form>
+    }
+  </div>
+
+  @if (!loading && !errorCarga) {
+    @if (serverError) {
+      <!-- Fuera del cuerpo con scroll: el motivo del rechazo queda a la vista junto a "Guardar". -->
+      <div class="dialogo-formulario__error">
+        <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
+      </div>
+    }
+
+    <mat-dialog-actions align="end" class="dialogo-formulario__pie">
+      <button type="button" mat-stroked-button color="primary" [disabled]="guardando" (click)="intentarCerrar()">Cancelar</button>
+      @if (sinCambios) {
+        <!-- Edición sin cambios: no es un `disabled` mudo. Sigue enfocable y el motivo aparece al pasar
+             el mouse, al enfocarlo y al tocarlo (`appUnavailable`). -->
+        <button type="button" mat-flat-button color="primary" appUnavailable="No hay cambios para guardar">
+          <span>{{ data.textoGuardar }}</span>
+        </button>
+      } @else {
+        <button type="submit" [attr.form]="formId" mat-flat-button color="primary" [disabled]="guardando"
+                [attr.aria-busy]="guardando || null">
+          @if (guardando) {
+            <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+          }
+          <span>{{ guardando ? (data.textoGuardando ?? 'Guardando…') : data.textoGuardar }}</span>
+        </button>
+      }
+    </mat-dialog-actions>
+  }
+</div>

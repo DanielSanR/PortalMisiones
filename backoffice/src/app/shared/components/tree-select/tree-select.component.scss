@@ -1,0 +1,254 @@
+// ==========================================================================
+// Desplegable con árbol (diseño "Pantallas · Backoffice Misiones", Editar organismo).
+// Cerrado mide lo mismo que un input del sistema; el panel va en un overlay del CDK.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Sangría por nivel del árbol (medida del diseño, sin token).
+$tree-indent: 22px;
+
+.tree-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--theme-space-sm);
+  width: 100%;
+  height: var(--theme-input-height);
+  padding: 0 var(--theme-space-gap);
+  border: var(--theme-form-input-border);
+  border-radius: var(--theme-radius-md);
+  background: var(--theme-bg-input);
+  font-family: inherit;
+  font-size: var(--theme-font-body-size);
+  color: var(--theme-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--theme-transition-fast), box-shadow var(--theme-transition-fast);
+  @include focus-ring;
+
+  &.is-open {
+    border-color: var(--theme-border-focus);
+    box-shadow: var(--theme-focus-ring-soft);
+  }
+
+  &.is-invalid {
+    border-color: var(--theme-error);
+  }
+
+  &.is-empty &__value {
+    color: var(--theme-text-secondary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: var(--theme-text-secondary);
+    background: var(--theme-surface-sunken);
+  }
+
+  &__value {
+    min-width: 0;
+    @include truncate;
+  }
+
+  &__caret {
+    flex: none;
+    font-size: var(--theme-icon-size-md);
+    color: var(--theme-text-secondary);
+  }
+}
+
+.tree-select-panel {
+  display: flex;
+  flex-direction: column;
+  // Más ancho que el campo cuando este es angosto: los nombres de organismos son largos.
+  min-width: min(440px, calc(100vw - var(--theme-space-2xl)));
+  max-width: calc(100vw - var(--theme-space-lg));
+  border: 1px solid var(--theme-border-strong);
+  border-radius: var(--theme-radius-panel);
+  background: var(--theme-surface-card);
+  box-shadow: var(--theme-elevation-2);
+
+  &__search {
+    position: relative;
+    display: flex;
+    padding: var(--theme-space-sm);
+    border-bottom: 1px solid var(--theme-border-subtle);
+
+    i.ph {
+      position: absolute;
+      left: calc(var(--theme-space-sm) + var(--theme-space-gap));
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: var(--theme-icon-size-md);
+      color: var(--theme-text-secondary);
+      pointer-events: none;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    height: var(--theme-input-height);
+    padding: 0 var(--theme-space-gap) 0 calc(var(--theme-space-gap) + var(--theme-space-lg));
+    border: var(--theme-form-input-border);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-bg-input);
+    font-family: inherit;
+    font-size: var(--theme-font-body-size);
+    color: var(--theme-text-primary);
+    @include focus-ring;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-2xs);
+    max-height: 320px;
+    padding: var(--theme-space-sm);
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__vacio {
+    margin: 0;
+    padding: var(--theme-space-gap);
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+  }
+}
+
+.tree-select-option {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-sm);
+  min-height: 44px; // área táctil mínima (WCAG 2.5.8)
+  margin-left: calc(var(--tree-depth, 0) * #{$tree-indent});
+  padding: var(--theme-space-xs) var(--theme-space-sm);
+  border: 0;
+  border-radius: var(--theme-radius-md);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  color: var(--theme-text-primary);
+  cursor: pointer;
+
+  // Inset: la lista recorta (overflow) un outline hacia afuera.
+  &:focus-visible {
+    @include focus-ring-inset;
+  }
+
+  &:hover {
+    background: var(--theme-bg-table-hover);
+  }
+
+  &.is-selected {
+    background: var(--theme-info-bg);
+  }
+
+  &.is-disabled {
+    cursor: not-allowed;
+    color: var(--theme-text-secondary);
+
+    &:hover {
+      background: transparent;
+    }
+  }
+
+  &__codo {
+    flex: none;
+    font-size: var(--theme-icon-size-sm);
+    color: var(--theme-border-input);
+  }
+
+  // Marca de selección: aro vacío / aro relleno (la selección no depende solo del color de fondo).
+  &__marca {
+    flex: none;
+    width: var(--theme-icon-size-md);
+    height: var(--theme-icon-size-md);
+    border: 2px solid var(--theme-border-input);
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-surface-card);
+  }
+
+  &.is-selected &__marca {
+    border: 5px solid var(--theme-primary);
+  }
+
+  &.is-disabled &__marca {
+    border-style: dashed;
+  }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: var(--theme-font-body-size);
+    font-weight: var(--theme-font-weight-medium);
+    overflow-wrap: anywhere;
+  }
+
+  &.is-selected &__label {
+    font-weight: var(--theme-font-weight-semibold);
+  }
+
+  &__meta {
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-secondary);
+  }
+
+  &__motivo {
+    flex: none;
+  }
+}
+
+.tree-select-self {
+  display: flex;
+  align-items: center;
+  gap: var(--theme-space-sm);
+  margin: var(--theme-space-2xs) 0 var(--theme-space-2xs) calc(var(--tree-depth, 0) * #{$tree-indent});
+  min-width: 0;
+
+  &__codo {
+    flex: none;
+    margin-left: var(--theme-space-sm);
+    font-size: var(--theme-icon-size-sm);
+    color: var(--theme-primary);
+  }
+
+  &__caja {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    flex: 1;
+    min-width: 0;
+    min-height: var(--theme-input-height);
+    padding: var(--theme-space-xs) var(--theme-space-gap);
+    border: 1px solid var(--theme-primary);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-card);
+
+    > i.ph {
+      flex: none;
+      font-size: var(--theme-icon-size-md);
+      color: var(--theme-primary);
+    }
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--theme-font-body-size);
+    font-weight: var(--theme-font-weight-semibold);
+    overflow-wrap: anywhere;
+  }
+}

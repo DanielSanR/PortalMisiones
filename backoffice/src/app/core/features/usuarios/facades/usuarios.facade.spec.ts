@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, of } from 'rxjs';
 import { UsuarioService } from '@core/services/usuario.service';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { AuthUser } from '@core/models/auth.model';
 import { UserRole } from '@core/enums/user-role.enum';
 import { OrganismosRepository } from '@features/organismos';
 import { RolesRepository } from '@features/roles';
@@ -102,5 +104,40 @@ describe('UsuariosFacade · fuente mock', () => {
     expect(facade.accionesDeCuentaDisponibles).toBeTrue();
     expect(facade.edicionDisponible).toBeTrue();
     expect(facade.borradoDefinitivoDisponible).toBeTrue();
+  });
+});
+
+describe('UsuariosFacade · sesion$', () => {
+  function facadeConSesion(usuario: Partial<AuthUser> | null): UsuariosFacade {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: USUARIOS_DS, useValue: {} },
+        { provide: OrganismosRepository, useValue: {} },
+        { provide: RolesRepository, useValue: {} },
+        { provide: AuthTokenService, useValue: { getCurrentUser$: () => of(usuario as AuthUser | null) } },
+      ],
+    });
+    return TestBed.inject(UsuariosFacade);
+  }
+
+  it('un superadmin se reconoce por su rol y no depende de un organismo', async () => {
+    const facade = facadeConSesion({ id: 'u-1', email: 'sa@misiones.gob.ar', role: UserRole.SUPERADMIN, organismoId: null });
+    expect(await firstValueFrom(facade.sesion$)).toEqual({
+      usuarioId: 'u-1', email: 'sa@misiones.gob.ar', esSuperAdmin: true, organismoId: null,
+    });
+  });
+
+  it('un usuario de organismo no es superadmin y trae su organismo', async () => {
+    const facade = facadeConSesion({ id: 'u-2', email: 'ana@misiones.gob.ar', role: UserRole.ADMIN_ORGANIZATION, organismoId: 'org-1' });
+    expect(await firstValueFrom(facade.sesion$)).toEqual({
+      usuarioId: 'u-2', email: 'ana@misiones.gob.ar', esSuperAdmin: false, organismoId: 'org-1',
+    });
+  });
+
+  it('sin sesión no hay usuario ni privilegios', async () => {
+    const facade = facadeConSesion(null);
+    expect(await firstValueFrom(facade.sesion$)).toEqual({
+      usuarioId: null, email: null, esSuperAdmin: false, organismoId: null,
+    });
   });
 });

@@ -1,14 +1,37 @@
 // ==========================================================================
-// Detalle de Plantilla provincial — lo propio de la pantalla: el slug del
-// membrete y los chips de catálogo. Membrete, grilla, cards y campos son las
-// clases globales `.detail-*` (shared-styles/_components.scss).
+// Detalle de Plantilla provincial — diseño "Pantallas · Backoffice Misiones". Membrete
+// (`app-plantilla-membrete`), grilla (`.detail-grid--ficha`), cards, campos y pill son globales
+// (`.detail-*`, `.pill`); acá solo lo propio: encabezado con barra de acento, chips de catálogo y la
+// lista de datos recomendados.
 // ==========================================================================
 
-.plantdet-slug {
-  font-family: var(--theme-font-mono);
-  font-size: var(--theme-font-small-size);
-  color: var(--theme-text-tertiary);
-  word-break: break-all;
+@use 'shared-styles/mixins' as *;
+
+.plantdet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-gap);
+}
+
+// "Desactivar": texto en `--theme-warn-dark` (#B71C1C del diseño); borde y hover siguen al global.
+.plantdet-desactivar.mat-mdc-outlined-button.mat-warn {
+  --mdc-outlined-button-label-text-color: var(--theme-warn-dark);
+}
+
+.plantdet-encabezado {
+  @include accent-heading;
+}
+
+// Bloque que sigue a otro dentro de una card: divisor fino y aire (16px; el diseño usa 14, sin token).
+.plantdet-separado {
+  padding-top: var(--theme-space-md);
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
+// Contador "N de 3" a la derecha de la franja de título.
+.plantdet-contador {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .plantdet-chips {
@@ -22,23 +45,85 @@
   &__chip {
     display: inline-flex;
     align-items: center;
-    gap: var(--theme-space-xs);
-    padding: var(--theme-space-2xs) var(--theme-space-sm);
+    // Alto mínimo, no fijo: un nombre de catálogo largo salta de línea dentro del chip en vez de salirse.
+    max-width: 100%;
+    min-width: 0;
+    min-height: var(--theme-space-lg);
+    padding: 0 var(--theme-space-sm);
+    overflow-wrap: anywhere;
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-full);
     background: var(--theme-surface-sunken);
-    font-size: var(--theme-font-small-size);
+    font-size: var(--theme-font-size-xs);
     color: var(--theme-text-secondary);
-
-    i.ph {
-      font-size: var(--theme-font-small-size);
-      color: var(--theme-text-tertiary);
-    }
 
     // Id que ya no está en el catálogo: se marca en vez de esconderlo.
     &--faltante {
       border-style: dashed;
       color: var(--theme-text-tertiary);
     }
+  }
+}
+
+// Datos recomendados: ícono + dato + "Listo" / "Falta". Informativo, no bloquea nada.
+.plantdet-checks {
+  margin: 0;
+  padding: var(--theme-space-xs) 0;
+  list-style: none;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-gap);
+    padding: var(--theme-space-sm) var(--theme-space-card);
+    font-size: var(--theme-font-size-sm);
+
+    i.ph {
+      flex: none;
+      font-size: var(--theme-icon-size-md);
+      color: var(--theme-text-tertiary);
+    }
+
+    // Ícono, no texto: alcanza con 3:1, así que va el verde del diseño (`--theme-success`).
+    &.is-listo i.ph {
+      color: var(--theme-success);
+    }
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__estado {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-warning-text);
+
+    .is-listo & {
+      color: var(--theme-success-text);
+    }
+  }
+}
+
+// La lista de adopciones no trae padding lateral: lo pone la card `--flush`.
+.plantdet-adopciones {
+  padding: var(--theme-space-xs) var(--theme-space-card);
+}
+
+// Grupo de catálogo sin nada asignado.
+.plantdet-vacio {
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+// Pie de la card de adopciones: enlace a la lista de trámites del organismo.
+.plantdet-pie {
+  margin: 0;
+  padding: var(--theme-space-md) var(--theme-space-card);
+  border-top: 1px solid var(--theme-border-subtle);
+
+  &__link {
+    font-size: var(--theme-font-small-size);
+    font-weight: var(--theme-font-weight-semibold);
   }
 }

@@ -7,10 +7,11 @@
 </ng-template>
 
 @if ((pagina$ | async) ?? paginaVacia; as pagina) {
-<!-- Toolbar de lista (well): fila A = búsqueda/select reales + contador · fila B = filter-tabs (única, informativa). -->
+<!-- Toolbar de lista (well): una sola fila = búsqueda + select de acción + contador. Sin fila de chips: no hay otro
+     filtro, y una fila vacía igual sumaba su separación al alto del toolbar. -->
 <div class="list-toolbar list-toolbar--stacked">
   <form [formGroup]="filterForm" class="list-toolbar__row">
-    <app-list-search
+    <app-list-search [atajoFoco]="true"
       [control]="filterForm.controls.search"
       placeholder="Buscar por trámite o usuario…"
       ariaLabel="Buscar registros de auditoría por trámite o por usuario">
@@ -27,10 +28,6 @@
 
     <span class="list-toolbar-count list-toolbar-count--end">{{ pagina.total }} registros</span>
   </form>
-
-  <div class="list-toolbar__row">
-    <app-filter-tabs [tabs]="[{ value: 'todas', label: 'Todas', count: pagina.total }]" active="todas"></app-filter-tabs>
-  </div>
 </div>
 
 <app-shared-table

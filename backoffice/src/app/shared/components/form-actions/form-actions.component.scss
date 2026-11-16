@@ -14,3 +14,8 @@
     width: 100%;
   }
 }
+
+// Sin contenido proyectado no ocupa lugar (ni suma el `gap` de la barra).
+.form-actions__info:empty {
+  display: none;
+}

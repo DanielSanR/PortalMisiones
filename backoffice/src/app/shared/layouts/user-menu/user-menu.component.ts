@@ -23,5 +23,14 @@ export class UserMenuComponent {
   @Input() role = '';
   /** Sidebar colapsada: solo se ve el avatar (nombre y rol quedan para lectores de pantalla). */
   @Input() compact = false;
+  /** Preferencia "Atajos de teclado" (WCAG 2.1.4: se pueden apagar). */
+  @Input() atajosHabilitados = true;
+  @Output() readonly atajosChange = new EventEmitter<boolean>();
   @Output() readonly logout = new EventEmitter<void>();
+
+  /** `stopPropagation`: el panel del menú se cierra con cualquier click que le llegue; acá conviene que quede abierto. */
+  alternarAtajos(event: Event): void {
+    event.stopPropagation();
+    this.atajosChange.emit(!this.atajosHabilitados);
+  }
 }

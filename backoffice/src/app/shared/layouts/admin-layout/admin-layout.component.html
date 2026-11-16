@@ -5,6 +5,8 @@
         <mat-sidenav #sidenav
             [mode]="isMobile ? 'over' : 'side'"
             [opened]="!isMobile"
+            [disableClose]="!isMobile"
+            (keydown.escape)="alEscapeEnMenu()"
             class="admin-layout__sidenav"
             [class.admin-layout__sidenav--mini]="isCollapsed && !isMobile"
             [style.width]="isMobile ? null : (isCollapsed ? 'var(--theme-sidebar-collapsed-width)' : 'var(--theme-sidebar-width)')"
@@ -133,6 +135,8 @@
                     [initials]="userInitials"
                     [role]="userRoleSpanish"
                     [compact]="isCollapsed && !isMobile"
+                    [atajosHabilitados]="(atajos.habilitados$ | async) ?? true"
+                    (atajosChange)="atajos.setHabilitados($event)"
                     (logout)="logout()" />
             </div>
         </mat-sidenav>

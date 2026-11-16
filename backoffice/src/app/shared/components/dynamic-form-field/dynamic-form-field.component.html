@@ -1,7 +1,9 @@
 <ng-container [formGroup]="group" *ngIf="field">
   <!-- Section Header (no form control) — barra de acento + título -->
   <div *ngIf="field.type === 'section-header'" class="section-header-field">
-    <h2 class="section-header-title">{{ field.label }}</h2>
+    <!-- Nivel real del encabezado: `h2` en una página, `h3` dentro de un diálogo (cuyo título ya es el `h2`). -->
+    <h3 *ngIf="nivelEncabezado === 3; else encabezadoPagina" class="section-header-title">{{ field.label }}</h3>
+    <ng-template #encabezadoPagina><h2 class="section-header-title">{{ field.label }}</h2></ng-template>
     <p *ngIf="field.placeholder" class="section-header-description">{{ field.placeholder }}</p>
   </div>
 
@@ -29,6 +31,9 @@
                [id]="field.name"
                [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
+               [class.form-field__mono]="field.mono"
+               [attr.autocomplete]="field.mono ? 'off' : null"
+               [attr.spellcheck]="field.mono ? 'false' : null"
                [placeholder]="field.placeholder || ''"
                [attr.maxlength]="field.validations?.maxLength"
                [required]="field.validations?.required || false">
@@ -158,6 +163,14 @@
         }
       </ng-container>
 
+      <ng-container *ngSwitchCase="'tree-select'">
+        @defer (on immediate) {
+          <app-dynamic-form-tree-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-tree-field>
+        } @placeholder {
+          <div class="field-placeholder" aria-hidden="true"></div>
+        }
+      </ng-container>
+
       <!-- Unsupported -->
       <div *ngSwitchDefault class="unsupported-field">
         <p>Tipo de campo no soportado: {{ field.type }}</p>
@@ -169,10 +182,10 @@
          siempre que el campo la declare —si se creara junto con el texto, los lectores de
          pantalla no anunciarían el primer cambio—; solo su contenido aparece y desaparece. -->
     <div *ngIf="field.preview" class="field-preview" aria-live="polite">
-      <p *ngIf="preview$ | async as valorPrevisto" class="field-preview-content">
-        <i class="ph ph-arrow-bend-down-right field-preview-icon" aria-hidden="true"></i>
+      <p *ngIf="preview$ | async as valorPrevisto" class="field-preview__texto">
+        <i class="ph ph-arrow-bend-down-right field-preview__icono" aria-hidden="true"></i>
         <span>{{ field.preview.label }}</span>
-        <code class="field-preview-value">{{ valorPrevisto }}</code>
+        <code class="field-preview__valor">{{ valorPrevisto }}</code>
       </p>
     </div>
   </ng-container>

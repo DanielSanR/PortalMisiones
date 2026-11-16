@@ -9,10 +9,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../../shared/components/table';
 import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../../shared/components/list-search';
+import { AtajoDirective } from '../../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
@@ -65,6 +66,7 @@ interface PlantillasVista {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
   ],
   templateUrl: './plantillas-list.component.html',
   styleUrl: './plantillas-list.component.scss',
@@ -236,7 +238,7 @@ export class PlantillasListComponent implements OnInit {
   }
 
   onDesactivar(plantilla: PlantillaVM): void {
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Desactivar la plantilla?',
         message: `La plantilla ${plantilla.titulo} deja de listarse acá y no se va a poder adoptar. `
@@ -244,7 +246,7 @@ export class PlantillasListComponent implements OnInit {
         highlight: plantilla.titulo,
         danger: true,
         confirmText: 'Sí, desactivar',
-        busyText: 'Desactivando...',
+        busyText: 'Desactivando…',
         confirmAction: () => {
           this.desactivandoId = plantilla.id;
           this.cdr.markForCheck();
@@ -255,7 +257,6 @@ export class PlantillasListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.snackBar.open('Plantilla desactivada', 'OK', {
         duration: 3000,

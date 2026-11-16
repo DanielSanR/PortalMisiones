@@ -1,65 +1,241 @@
-<app-loading [loading]="loading" message="Cargando..."></app-loading>
+@if (loading) {
+  <div class="loading-inline" role="status" aria-live="polite">
+    <app-loading [loading]="true" [message]="isEdit ? 'Cargando el rol…' : 'Cargando el formulario…'"></app-loading>
+  </div>
+}
 
 @if (!loading && loadError) {
   <!-- Sin los datos leídos no se dibuja el formulario: guardar pisaría el rol con una pantalla vacía. -->
-  <app-form-error-banner [errors]="[loadError]" titulo="No se pudo cargar el formulario"></app-form-error-banner>
-
-  <div class="form-card rolform-fallo">
-    <p class="rolform-fallo__texto">
-      No pudimos traer los datos del rol. Reintentá o volvé a la lista; no se modificó nada.
-    </p>
-    <div class="form-actions">
-      <div class="form-actions__buttons">
-        <button mat-stroked-button color="primary" type="button" (click)="goBack()">Volver a la lista</button>
-        <button mat-raised-button color="primary" type="button" (click)="cargar()">
-          <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>
-          <span>Reintentar</span>
-        </button>
-      </div>
+  <div class="load-state rolform-fallo" role="alert">
+    <span class="load-state__icono" aria-hidden="true"><i class="ph ph-cloud-slash"></i></span>
+    <h2 class="load-state__titulo">No pudimos cargar el formulario</h2>
+    <p class="load-state__texto">{{ loadError }}</p>
+    <p class="load-state__texto">Reintentá o volvé a la lista; no se modificó nada.</p>
+    <div class="load-state__acciones">
+      <button type="button" mat-flat-button color="primary" (click)="cargar()">
+        <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+      </button>
+      <button type="button" mat-stroked-button color="primary" (click)="goBack()">
+        <i class="ph ph-list-dashes" aria-hidden="true"></i> Ir al listado
+      </button>
     </div>
   </div>
 }
 
 @if (!loading && !loadError) {
-  <div class="form-card">
-    <!-- En edición "Guardar" arranca deshabilitado (`requireChanges`): los toggles de permisos
-         escriben en el control `permissionsIds` del mismo formulario, así que también cuentan. -->
-    <app-dynamic-form [requireChanges]="isEdit" [fields]="config.fields!"
-        [submitButtonText]="isEdit ? 'Guardar cambios' : 'Crear rol'"
-        cancelButtonText="Cancelar" [initialData]="initialData" [saving]="saving" [serverError]="serverError"
-        (formSubmit)="onSubmit($event)"
-        (formCancel)="goBack()">
 
-      <!-- ── Permisos ── widget propio, atado al campo `custom` `permissionsIds`. El título de la
-           sección lo pone el formulario (`section-header`). -->
-      <div class="permiso-picker" role="group" aria-label="Permisos asignados al rol">
-        @for (group of permisoGroups; track group.key) {
-          <div class="perm-group">
-            <div class="perm-group__header">
-              <span class="perm-group__label">{{ group.label }}</span>
-              <span class="perm-group__count">{{ group.granted }} / {{ group.total }}</span>
-            </div>
-            <div class="perm-group__chips">
-              @for (item of group.items; track item.id) {
-                <button type="button"
-                        class="perm-chip perm-chip--toggle"
-                        [class.perm-chip--granted]="item.granted"
-                        [attr.aria-pressed]="item.granted"
-                        (click)="togglePermiso(item.id)">
-                  <i class="ph" [class.ph-check]="item.granted" [class.ph-x]="!item.granted" aria-hidden="true"></i>
-                  {{ item.label }}
-                </button>
-              }
-            </div>
+  <!-- `vista$` resume el form y la búsqueda en vivo (membrete, panel de permisos, pie). Siempre emite. -->
+  @if (vista$ | async; as v) {
+
+    <!-- Membrete en vivo: se arma con lo que se escribe. Sin `aria-live`: anunciaría descripción y código
+         en cada tecla; el lector ya lee el campo que se está editando. -->
+    <header class="detail-header detail-header--flush detail-header--ficha ficha-membrete">
+      <div class="detail-header__body">
+        <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-shield-star"></i></span>
+
+        <div class="detail-header__identity">
+          <div class="detail-header__row">
+            <h2 class="detail-header__title" [class.detail-header__title--muted]="!v.titulo">
+              {{ v.titulo || 'Rol sin descripción' }}
+            </h2>
+            <span class="pill pill--bordered" [class.pill--active]="v.activo" [class.pill--inactive]="!v.activo">
+              <span class="pill__dot" aria-hidden="true"></span>
+              <span class="pill__label">{{ v.activo ? 'Activo' : 'Inactivo' }}</span>
+            </span>
           </div>
-        }
-        <!-- Solo el total es región viva (`role="status"` = polite + atómica): cada toggle se anuncia
-             una vez, con el total nuevo. Los contadores por grupo quedan fuera para no duplicar. -->
-        <p class="permiso-picker__hint">
-          Hacé clic en un permiso para otorgarlo o quitarlo ·
-          <span role="status">{{ seleccion.length }} seleccionados</span>
-        </p>
+
+          <p class="detail-header__meta">
+            <code class="detail-header__code">{{ v.codigo || 'SIN_CODIGO' }}</code>
+            <span class="detail-header__sep" aria-hidden="true"></span>
+            <span><i class="ph ph-globe-simple" aria-hidden="true"></i>{{ v.alcance }}</span>
+            <span class="detail-header__sep" aria-hidden="true"></span>
+            <span><i class="ph ph-key" aria-hidden="true"></i>{{ v.otorgados === 1 ? '1 permiso' : v.otorgados + ' permisos' }}</span>
+          </p>
+        </div>
+
+        <div class="detail-header__actions">
+          <span class="pill pill--revision pill--bordered">
+            <i class="ph pill__icon" [class.ph-plus]="!isEdit" [class.ph-pencil-simple]="isEdit" aria-hidden="true"></i>
+            <span class="pill__label">{{ isEdit ? 'Editando' : 'Nuevo' }}</span>
+          </span>
+        </div>
       </div>
-    </app-dynamic-form>
-  </div>
+    </header>
+
+    @if (serverError) {
+      <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
+    }
+    <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+
+    <!-- Una sola tarjeta: dos paneles (datos | permisos) y el pie de guardar compartido. -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
+      <div class="ficha-paneles">
+        <div class="ficha-paneles__grid ficha-paneles__grid--iguales">
+
+          <!-- ── Datos del rol ── -->
+          <section class="ficha-paneles__panel" aria-labelledby="rolform-datos">
+            <header class="ficha-paneles__cabecera">
+              <div class="ficha-paneles__encabezado">
+                <h3 class="detail-card__title" id="rolform-datos">Datos del rol</h3>
+                <p class="detail-card__subtitle">
+                  {{ isEdit ? 'Los cambios se aplican al guardar' : 'Completá los datos para crear el rol' }}
+                </p>
+              </div>
+            </header>
+
+            <div class="ficha-paneles__cuerpo">
+              <div class="ficha-paneles__campos">
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('codigo')">
+                  <label class="form-field__label" id="rol-codigo-label" for="rol-codigo">Código <span class="form-field__required" aria-hidden="true">*</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <input matInput id="rol-codigo" class="form-field__mono" aria-labelledby="rol-codigo-label"
+                           formControlName="codigo" required autocomplete="off" spellcheck="false"
+                           [maxlength]="maxCodigo" placeholder="Ej: EDITOR_TRAMITES" (input)="normalizarCodigo($event)" (compositionend)="normalizarCodigo($event)">
+                    <mat-hint>Sin espacios, en mayúsculas</mat-hint>
+                    <mat-hint align="end">{{ v.codigoLongitud }} / {{ maxCodigo }}</mat-hint>
+                    <mat-error appFormErrorMessage [control]="form.controls.codigo" [field]="campos.codigo"></mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('descripcion')">
+                  <label class="form-field__label" id="rol-descripcion-label" for="rol-descripcion">Descripción <span class="form-field__required" aria-hidden="true">*</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <input matInput id="rol-descripcion" aria-labelledby="rol-descripcion-label"
+                           formControlName="descripcion" required [maxlength]="maxDescripcion"
+                           placeholder="Ej: Editor de trámites">
+                    <mat-hint>Es el nombre con el que se ve el rol en Usuarios.</mat-hint>
+                    <mat-error appFormErrorMessage [control]="form.controls.descripcion" [field]="campos.descripcion"></mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('scopeTipo')">
+                  <label class="form-field__label" id="rol-scope-label" for="rol-scope">Alcance <span class="form-field__required" aria-hidden="true">*</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-select id="rol-scope" aria-labelledby="rol-scope-label" formControlName="scopeTipo" required>
+                      <mat-option value="global">Global</mat-option>
+                      <mat-option value="organismo">Organismo</mat-option>
+                    </mat-select>
+                    <mat-hint>{{ v.alcanceAyuda }}</mat-hint>
+                    <mat-error appFormErrorMessage [control]="form.controls.scopeTipo" [field]="campos.scopeTipo"></mat-error>
+                  </mat-form-field>
+                </div>
+
+              </div>
+
+              <div class="rolform-opciones">
+                <div class="form-toggle rolform-opcion">
+                  <mat-slide-toggle formControlName="asignablePorOrgAdmin" color="primary" aria-describedby="rol-org-ayuda">
+                    Asignable por Administrador de Organismo
+                  </mat-slide-toggle>
+                  <div class="form-toggle__ayuda" id="rol-org-ayuda">
+                    <p>Un administrador de organismo puede darle este rol a sus usuarios.</p>
+                  </div>
+                </div>
+                <div class="form-toggle rolform-opcion">
+                  <mat-slide-toggle formControlName="asignablePorBackoffice" color="primary" aria-describedby="rol-backoffice-ayuda">
+                    Asignable por Administrador de Backoffice
+                  </mat-slide-toggle>
+                  <div class="form-toggle__ayuda" id="rol-backoffice-ayuda">
+                    <p>Un administrador de backoffice puede darle este rol a un usuario.</p>
+                  </div>
+                </div>
+                <!-- El alta siempre crea el rol activo (el backend ignora `active` en el POST): en vez de un
+                     control que no hace nada, la misma fila lo explica. Así el panel mide igual en alta y
+                     en edición, y el de permisos muestra la misma cantidad de grupos. -->
+                @if (isEdit) {
+                  <div class="form-toggle rolform-opcion">
+                    <mat-slide-toggle formControlName="active" color="primary" aria-describedby="rol-activo-ayuda">
+                      Rol activo
+                    </mat-slide-toggle>
+                    <div class="form-toggle__ayuda" id="rol-activo-ayuda">
+                      <p>Un rol inactivo queda guardado pero fuera de uso.</p>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="form-toggle rolform-opcion">
+                    <p class="rolform-opcion__titulo">
+                      <i class="ph ph-info" aria-hidden="true"></i> El rol se crea activo
+                    </p>
+                    <div class="form-toggle__ayuda"><p>Después podés desactivarlo desde Editar.</p></div>
+                  </div>
+                }
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Permisos ── -->
+          <!-- `--acotado`: el alto de la tarjeta lo pone el panel de datos; los permisos que no entran se
+               desplazan dentro de `__desplazable`, con el encabezado y el buscador siempre a la vista. -->
+          <section class="ficha-paneles__panel ficha-paneles__panel--lateral ficha-paneles__panel--acotado" aria-labelledby="rolform-permisos">
+           <div class="ficha-paneles__ajuste">
+            <header class="ficha-paneles__cabecera">
+              <div class="ficha-paneles__encabezado">
+                <h3 class="detail-card__title" id="rolform-permisos">Permisos</h3>
+                <p class="detail-card__subtitle">Qué puede hacer quien tenga este rol.</p>
+              </div>
+              <!-- Única región viva del panel: cada cambio se anuncia una vez, con el total nuevo. -->
+              <span class="ficha-paneles__total" role="status">{{ v.otorgados }} de {{ v.total }} asignados</span>
+            </header>
+
+            <!-- Enter en el buscador filtra: no tiene que enviar el formulario. -->
+            <div class="rolform-buscador" (keydown.enter)="$event.preventDefault()">
+              <app-list-search [control]="busqueda" ariaLabel="Buscar permisos"
+                               [placeholder]="'Buscar entre ' + v.total + ' permisos…'"></app-list-search>
+            </div>
+
+            <div class="ficha-paneles__desplazable">
+            @for (grupo of v.grupos; track grupo.key) {
+              <div class="perm-group ficha-paneles__grupo rolform-grupo" role="group" [attr.aria-labelledby]="'rol-grupo-' + grupo.key">
+                <div class="rolform-grupo__cabecera">
+                  <span class="perm-group__label" [id]="'rol-grupo-' + grupo.key">{{ grupo.label }}</span>
+                  <span class="perm-group__count">{{ grupo.granted }} / {{ grupo.total }}</span>
+                  <button type="button" class="rolform-grupo__todos" (click)="alternarGrupo(grupo)"
+                          [attr.aria-label]="grupo.ariaTodos">
+                    {{ grupo.etiquetaTodos }}
+                  </button>
+                </div>
+                <div class="perm-group__chips">
+                  @for (item of grupo.items; track item.id) {
+                    <button type="button"
+                            class="perm-chip perm-chip--toggle"
+                            [class.perm-chip--granted]="item.granted"
+                            [attr.aria-pressed]="item.granted"
+                            (click)="alternarPermiso(item.id)">
+                      <i class="ph" [class.ph-check]="item.granted" [class.ph-x]="!item.granted" aria-hidden="true"></i>
+                      {{ item.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Siempre en el DOM: una región viva insertada junto con su texto no se anuncia. Cambia solo el texto. -->
+            <p class="rolform-vacio" role="status">{{ v.sinCoincidencias ? 'Ningún permiso coincide con la búsqueda.' : '' }}</p>
+            </div>
+           </div>
+          </section>
+        </div>
+
+        <!-- Pie de la tarjeta: abarca los dos paneles. El indicador es informativo, no bloquea el guardado.
+             Sin `aria-live`: el total del panel de permisos ya anuncia cada cambio. -->
+        <app-form-actions [integrada]="true"
+                          [helpText]="isEdit ? '' : 'Los campos con * son obligatorios.'"
+                          [submitText]="isEdit ? 'Guardar cambios' : 'Crear rol'" savingText="Guardando…"
+                          [saving]="saving" [sinCambios]="sinCambios" (cancelar)="goBack()">
+          <span formActionsInfo class="pill ficha-paneles__indicador"
+                [class.pill--info]="v.otorgados > 0" [class.pill--warning]="v.otorgados === 0">
+            <i class="ph pill__icon" [class.ph-key]="v.otorgados > 0" [class.ph-warning]="v.otorgados === 0" aria-hidden="true"></i>
+            <span>
+              @if (v.otorgados === 0) {
+                Sin permisos: el rol no va a poder hacer nada
+              } @else {
+                {{ v.otorgados === 1 ? '1 permiso asignado' : v.otorgados + ' permisos asignados' }}
+              }
+            </span>
+          </span>
+        </app-form-actions>
+      </div>
+    </form>
+  }
 }

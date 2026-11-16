@@ -1,5 +1,10 @@
-<div class="form-actions">
-  <span class="form-actions__help">{{ helpText }}</span>
+<div class="form-actions" [class.form-actions--integrada]="integrada">
+  <div class="form-actions__info">
+    <ng-content select="[formActionsInfo]"></ng-content>
+  </div>
+  @if (helpText) {
+    <span class="form-actions__help">{{ helpText }}</span>
+  }
   <div class="form-actions__buttons">
     <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="cancelar.emit()">
       {{ cancelText }}
@@ -7,26 +12,15 @@
     <span class="form-actions__submit"
           [matTooltip]="bloqueadoSinCambios ? 'No hay cambios para guardar' : ''"
           [attr.tabindex]="bloqueadoSinCambios ? 0 : null">
-      @if (apariencia === 'flat') {
-        <button mat-flat-button color="primary" type="submit"
-                [attr.aria-busy]="saving || null" [disabled]="saving || sinCambios">
-          <ng-container [ngTemplateOutlet]="contenido"></ng-container>
-        </button>
-      } @else {
-        <button mat-raised-button color="primary" type="submit"
-                [attr.aria-busy]="saving || null" [disabled]="saving || sinCambios">
-          <ng-container [ngTemplateOutlet]="contenido"></ng-container>
-        </button>
-      }
+      <button mat-flat-button color="primary" type="submit"
+              [attr.aria-busy]="saving || null" [disabled]="saving || sinCambios">
+        @if (saving) {
+          <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+        } @else {
+          <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+        }
+        <span>{{ saving ? savingText : submitText }}</span>
+      </button>
     </span>
   </div>
 </div>
-
-<ng-template #contenido>
-  @if (saving) {
-    <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-  } @else {
-    <i class="ph ph-floppy-disk" aria-hidden="true"></i>
-  }
-  <span>{{ saving ? savingText : submitText }}</span>
-</ng-template>

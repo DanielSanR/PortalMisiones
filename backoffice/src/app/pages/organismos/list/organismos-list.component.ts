@@ -7,11 +7,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
 import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../shared/components/list-search';
+import { AtajoDirective } from '../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
@@ -58,6 +59,7 @@ interface OrganismosVista extends EstadoVacio {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
     UnavailableDirective,
   ],
   templateUrl: './organismos-list.component.html',
@@ -227,6 +229,7 @@ export class OrganismosListComponent implements OnInit {
       label: 'Editar',
       icon: 'pencil-simple',
       permission: 'UPDATE_ORGANISM',
+      ariaLabel: `Editar organismo ${organismo.nombre}`,
       run: () => this.onEdit(organismo),
     };
   }
@@ -268,7 +271,7 @@ export class OrganismosListComponent implements OnInit {
   onDelete(organismo: OrganismoVM): void {
     // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
     const indice = indiceDeFilaActiva(this.host);
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar el organismo?',
         // El diseño pide contar la consecuencia, no la restricción: qué pasa si sigo.
@@ -278,7 +281,7 @@ export class OrganismosListComponent implements OnInit {
         highlight: organismo.nombre,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend responde,
         // en vez de cerrar optimistamente y dejar al usuario sin señal. La fila queda
         // bloqueada en paralelo para que la lista de atrás no invite a re-clickear.
@@ -292,7 +295,6 @@ export class OrganismosListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef);

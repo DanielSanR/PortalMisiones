@@ -27,7 +27,7 @@ backoffice/src/app/
 ├── pages/                   # Feature pages (lazy-loaded via PagesModule)
 │   ├── dashboard/
 │   ├── tramites/            # plantillas/ (provinciales), adopciones/ (del organismo), fichas/ (por localidad + puntos de atención)
-│   ├── organismos/          # ABM: list, create/edit
+│   ├── organismos/          # list + detail (ficha única en 3 modos: ver / editar / nuevo)
 │   └── usuarios/            # list
 ├── shared/
 │   ├── components/          # Standalone reusable components

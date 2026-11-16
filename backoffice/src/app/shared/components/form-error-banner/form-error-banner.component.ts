@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 
 /**
  * Banner resumen de errores de validación (patrón FORM).
- * Se muestra arriba del `.form-card` cuando el usuario intenta guardar
+ * Se muestra arriba del formulario cuando el usuario intenta guardar
  * un formulario inválido. Presentacional puro: recibe los mensajes ya
  * resueltos (label + motivo) y no conoce el FormGroup.
  */

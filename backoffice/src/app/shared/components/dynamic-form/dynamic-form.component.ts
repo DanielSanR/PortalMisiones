@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FieldConfig } from '../../../core/models/field.interface';
 import { CommonModule } from '@angular/common';
 import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-field.component';
@@ -10,6 +10,12 @@ import { getControlErrorMessage, resumenDeErrores } from '../dynamic-form-field/
 
 /** Tipos de campo sin label overline externo (y que por eso no entran al resumen de validación). */
 const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox', 'custom'];
+
+/**
+ * Tipos de texto libre: "obligatorio" y el mínimo se miden sobre el valor recortado, que es lo que
+ * valida el backend (`@NotBlank`, `@Size(min)`): solo espacios no cuenta como completado.
+ */
+const TIPOS_DE_TEXTO_LIBRE = ['text', 'textarea'];
 
 /** Tipos de campo puramente visuales: no tienen control en el `FormGroup`. */
 const NO_CONTROL_TYPES = ['tip', 'section-header'];
@@ -53,6 +59,16 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    */
   @Input() serverError = '';
   @Input() helpText = 'Los cambios se publican al guardar.';
+  /**
+   * Variante para diálogos: grilla más ceñida y rótulos de sección chicos con un filete al lado, sin la
+   * barra de acento de la página (ver `dynamic-form--compacto` en los estilos del motor).
+   */
+  @Input() compacto = false;
+  /**
+   * `id` del `<form>`, para que un botón de envío que vive FUERA del formulario (el pie de un diálogo,
+   * con `hideButtons`) lo dispare con `form="…"` y Enter siga enviando.
+   */
+  @Input() formId = '';
 
   @Output() formSubmit = new EventEmitter<any>();
   @Output() formCancel = new EventEmitter<void>();
@@ -193,16 +209,20 @@ export class DynamicFormComponent implements OnInit, OnChanges {
   }
 
   private getValidators(field: FieldConfig) {
-    const validators = [];
+    const validators: ValidatorFn[] = [];
+    const textoLibre = TIPOS_DE_TEXTO_LIBRE.includes(field.type);
 
     if (field.validations) {
-      if (field.validations.required) validators.push(Validators.required);
+      if (field.validations.required) validators.push(textoLibre ? requeridoConContenido : Validators.required);
       if (field.validations.maxLength) validators.push(Validators.maxLength(field.validations.maxLength));
-      if (field.validations.minLength) validators.push(Validators.minLength(field.validations.minLength));
+      if (field.validations.minLength) {
+        validators.push(textoLibre ? minimoRecortado(field.validations.minLength) : Validators.minLength(field.validations.minLength));
+      }
       if (field.validations.min != null) validators.push(Validators.min(field.validations.min));
       if (field.validations.max != null) validators.push(Validators.max(field.validations.max));
       if (field.validations.pattern) validators.push(Validators.pattern(field.validations.pattern));
       if (field.validations.email) validators.push(Validators.email);
+      if (field.validations.validar) validators.push(reglaPropia(field.validations.validar));
     }
 
     return validators;
@@ -248,6 +268,15 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     return 'dynamic-form-field-full';
   }
 
+  /**
+   * Quien hospeda el formulario marcó un error en un control desde afuera (`setErrors` + `markAsTouched`
+   * tras un rechazo del backend): eso no cambia ningún input, así que los campos OnPush no se revisarían.
+   */
+  refrescarErrores(): void {
+    this.revision++;
+    this.cdr.markForCheck();
+  }
+
   submit() {
     if (this.form.valid) {
       this.submitted = false;
@@ -261,6 +290,27 @@ export class DynamicFormComponent implements OnInit, OnChanges {
       this.resumen?.focus();
     }
   }
+}
+
+/** `required` que no se conforma con espacios. */
+function requeridoConContenido(control: AbstractControl): ValidationErrors | null {
+  return String(control.value ?? '').trim() ? null : { required: true };
+}
+
+/** `minlength` sobre el valor recortado ("a  " no son tres caracteres). Vacío: lo informa `required`. */
+function minimoRecortado(min: number): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const largo = String(control.value ?? '').trim().length;
+    return largo > 0 && largo < min ? { minlength: { requiredLength: min, actualLength: largo } } : null;
+  };
+}
+
+/** `FieldValidations.validar` como validador: el error `personalizado` lleva el mensaje. */
+function reglaPropia(validar: (valor: string) => string | null): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const mensaje = validar(String(control.value ?? ''));
+    return mensaje ? { personalizado: mensaje } : null;
+  };
 }
 
 /** Igualdad superficial de dos valores crudos del form (los arrays de un multi-select, por elemento). */

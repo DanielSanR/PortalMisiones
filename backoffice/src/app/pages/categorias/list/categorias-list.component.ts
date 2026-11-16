@@ -1,6 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
-import { Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize,
@@ -11,15 +10,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
 import { ListSearchComponent } from '../../../shared/components/list-search';
+import { AtajoDirective } from '../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { CategoriasFacade, CategoriaNode, CategoriaVM } from '@features/categorias';
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { CategoriaDialogComponent, CategoriaDialogData } from '../dialog/categoria-dialog.component';
+import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 
 /** Fila del árbol (div con role=row): el selector por defecto de `foco-lista` es el de mat-table. */
 const FILA_ARBOL = '.cat-table__row';
@@ -139,6 +141,7 @@ interface CategoriasVista extends EstadoVacio {
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
+    AtajoDirective,
   ],
   templateUrl: './categorias-list.component.html',
   styleUrls: ['./categorias-list.component.scss'],
@@ -210,11 +213,36 @@ export class CategoriasListComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  constructor(
-    private router: Router,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-  ) {}
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+
+  /**
+   * Alta y edición van en diálogo sobre el árbol (la categoría no tiene ficha propia). El diálogo
+   * guarda por su cuenta y devuelve la categoría; acá solo se avisa y se deja a la vista.
+   */
+  private readonly dialogo = new DialogoEnLista<CategoriaVM, CategoriaVM>({
+    abrir: async (categoria, parentId) => {
+      const categorias = await firstValueFrom(this.facade.categorias$);
+      return this.dialog.open<CategoriaDialogComponent, CategoriaDialogData, CategoriaVM>(CategoriaDialogComponent, {
+        data: { categorias, categoria, parentId },
+        panelClass: 'custom-modal-panel',
+        autoFocus: '#categoria-nombre',
+      });
+    },
+    buscar: async (id) => (await firstValueFrom(this.facade.categorias$)).find((c) => c.id === id),
+    alGuardar: (guardada, categoria) => {
+      // Si quedó dentro de otra, se abre esa rama: recién creada o movida, tiene que verse.
+      if (guardada.parentId) {
+        this.expandidos$.next(new Set(this.expandidos$.value).add(guardada.parentId));
+      }
+      this.snackBar.open(categoria ? 'Categoría actualizada' : 'Categoría creada', 'OK', {
+        duration: 3000,
+        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
+        panelClass: 'snackbar-success',
+      });
+    },
+    noEncontrada: 'No encontramos esa categoría. Puede que la hayan eliminado.',
+  });
 
   ngOnInit(): void {
     this.load();
@@ -235,10 +263,15 @@ export class CategoriasListComponent implements OnInit {
   load(): void {
     this.loading = true;
     this.error = false;
+    this.dialogo.listaLista(false);
     this.facade.loadCategorias()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
+        next: () => {
+          this.loading = false;
+          this.cdr.markForCheck();
+          this.dialogo.listaLista(true);
+        },
         // Sin esto el árbol quedaba mostrando "Todavía no hay categorías": una API caída
         // era indistinguible de una taxonomía sin cargar, y el usuario asumía que perdió los datos.
         error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
@@ -283,19 +316,20 @@ export class CategoriasListComponent implements OnInit {
     this.onCreate();
   }
 
+  /** Alta en diálogo. Con `parentId` (el "+" de una fila) abre con esa categoría como padre. */
   onCreate(parentId?: string): void {
-    this.router.navigate(['/dashboard/categorias/nuevo'], parentId ? { queryParams: { parentId } } : {});
+    void this.dialogo.abrir(null, parentId ?? null);
   }
 
   onEdit(categoria: CategoriaVM): void {
-    this.router.navigate(['/dashboard/categorias/editar', categoria.id]);
+    void this.dialogo.abrir(categoria);
   }
 
   onDelete(node: CategoriaNode): void {
     // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
     const indice = indiceDeFilaActiva(this.host, FILA_ARBOL);
     const hijas = node.children.length;
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar la categoría?',
         // El copy cambia según la rama porque la consecuencia es distinta: el backend
@@ -307,7 +341,7 @@ export class CategoriasListComponent implements OnInit {
         highlight: node.nombre,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend responde,
         // en vez de cerrar optimistamente y dejar al usuario sin señal de qué pasó.
         confirmAction: () => {
@@ -320,7 +354,6 @@ export class CategoriasListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef, FILA_ARBOL);

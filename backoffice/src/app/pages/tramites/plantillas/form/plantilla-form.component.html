@@ -23,204 +23,237 @@
   </div>
 } @else if (catalogos) {
 
-  @if (serverError) {
-    <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
-  }
-  <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+  <!-- `vista$` resume el form en vivo (membrete, total elegido, datos recomendados). Siempre emite. -->
+  @if (vista$ | async; as v) {
 
-  @if (catalogos.noDisponibles.length) {
-    <div class="plantform-aviso">
-      <i class="ph ph-warning" aria-hidden="true"></i>
-      <p>
-        No pudimos cargar: {{ catalogos.noDisponibles.join(', ') }}. Lo que la plantilla ya tenía elegido
-        se conserva al guardar, pero no vas a poder sumar opciones de esos catálogos hasta recargar.
-      </p>
-    </div>
-  }
+    <!-- Membrete en vivo: se arma con lo que se escribe. Sin `aria-live`: anunciaría título y slug en cada
+         tecla; el lector ya lee el campo que se está editando. -->
+    <app-plantilla-membrete class="ficha-membrete" [titulo]="v.titulo" [slug]="v.slug" [activa]="v.activa"
+                            [modalidad]="v.modalidad" [principal]="v.principal">
+      <span class="pill pill--revision pill--bordered">
+        <i class="ph pill__icon" [class.ph-plus]="!isEdit" [class.ph-pencil-simple]="isEdit" aria-hidden="true"></i>
+        <span class="pill__label">{{ isEdit ? 'Editando' : 'Nueva' }}</span>
+      </span>
+    </app-plantilla-membrete>
 
-  <div class="form-card">
+    @if (serverError) {
+      <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
+    }
+    <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
+
+    @if (catalogos.noDisponibles.length) {
+      <div class="form-aviso">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        <p>
+          No pudimos cargar: {{ catalogos.noDisponibles.join(', ') }}. Lo que la plantilla ya tenía elegido
+          se conserva al guardar, pero no vas a poder sumar opciones de esos catálogos hasta recargar.
+        </p>
+      </div>
+    }
+
+    <!-- Una sola tarjeta: dos paneles (datos | clasificación) y el pie de guardar compartido. -->
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
+      <div class="ficha-paneles">
+        <div class="ficha-paneles__grid">
 
-      <!-- ── Identificación ── -->
-      <h2 class="section-header">Identificación</h2>
-      <div class="form-grid form-grid--full">
+          <!-- ── Datos de la plantilla ── -->
+          <section class="ficha-paneles__panel" aria-labelledby="plantform-datos">
+            <header class="ficha-paneles__cabecera">
+              <div class="ficha-paneles__encabezado">
+                <h3 class="detail-card__title" id="plantform-datos">Datos de la plantilla</h3>
+                <p class="detail-card__subtitle">
+                  {{ isEdit ? 'Guardar reemplaza la plantilla completa' : 'Completá los datos para crear la plantilla' }}
+                </p>
+              </div>
+            </header>
 
-        <div class="form-field" [class.is-invalid]="campoInvalido('titulo')">
-          <label class="form-field__label" id="titulo-label" for="titulo">Título <span class="form-field__required" aria-hidden="true">*</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <input matInput id="titulo" aria-labelledby="titulo-label" formControlName="titulo" required
-                   [maxlength]="maxTextoCorto" placeholder="Ej: Obtener la licencia de conducir">
-            <mat-hint>Empezá con un verbo en infinitivo: Obtener, Inscribirse…</mat-hint>
-            @if (form.controls.titulo.hasError('required')) {
-              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El título es obligatorio</span></mat-error>
+            <div class="ficha-paneles__cuerpo">
+              <div class="ficha-paneles__campos">
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('titulo')">
+                  <label class="form-field__label" id="titulo-label" for="titulo">Título <span class="form-field__required" aria-hidden="true">*</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <input matInput id="titulo" aria-labelledby="titulo-label" formControlName="titulo" required
+                           [maxlength]="maxTextoCorto" placeholder="Ej: Obtener la licencia de conducir">
+                    <mat-hint>Empezá con un verbo en infinitivo: Obtener, Inscribirse…</mat-hint>
+                    <mat-error appFormErrorMessage [control]="form.controls.titulo" [field]="campos.titulo"></mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field" [class.is-invalid]="campoInvalido('slug')">
+                  <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
+                  <div class="form-field__fila">
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <input matInput id="slug" class="form-field__mono" aria-labelledby="slug-label" formControlName="slug" required
+                             [maxlength]="maxTextoCorto" autocomplete="off" spellcheck="false" (input)="onSlugEditado()" placeholder="obtener-licencia-de-conducir">
+                      <mat-hint>{{ isEdit ? 'Cambiarlo cambia la dirección pública del trámite.' : 'Se arma solo desde el título; podés editarlo.' }}
+                        Es único entre todas las plantillas.
+                      </mat-hint>
+                      <mat-error appFormErrorMessage [control]="form.controls.slug" [field]="campos.slug"></mat-error>
+                    </mat-form-field>
+                    <button type="button" mat-stroked-button color="primary"
+                            [disabled]="!form.controls.titulo.value.trim()" (click)="regenerarSlug()"
+                            matTooltip="Volver a armar el slug desde el título">
+                      <i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Desde el título
+                    </button>
+                  </div>
+                  <div class="field-preview" aria-live="polite">
+                    @if (slugPrevisto$ | async; as previsto) {
+                      <p class="field-preview__texto">
+                        <i class="ph ph-arrow-bend-down-right field-preview__icono" aria-hidden="true"></i>
+                        <span>Se guardará como:</span>
+                        <code class="field-preview__valor">{{ previsto }}</code>
+                      </p>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-field__label" id="resumen-label" for="resumen">Resumen <span class="form-field__optional">(opcional)</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <textarea matInput id="resumen" aria-labelledby="resumen-label" formControlName="resumen" rows="2"
+                              placeholder="Una o dos oraciones: qué es y para quién."></textarea>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-field__label" id="descripcion-label" for="descripcion">Descripción larga <span class="form-field__optional">(opcional)</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <textarea matInput id="descripcion" aria-labelledby="descripcion-label" formControlName="descripcionLarga" rows="5"></textarea>
+                    <mat-hint>Requisitos, costos y URL no van acá: son de cada ficha por localidad.</mat-hint>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-field__label" id="modalidad-label" for="modalidad">Modalidad <span class="form-field__optional">(opcional)</span></label>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-select id="modalidad" aria-labelledby="modalidad-label" formControlName="modalidadId">
+                      <mat-option value="">Sin modalidad</mat-option>
+                      @for (op of catalogos.modalidades; track op.id) {
+                        <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+              </div>
+
+              <div class="form-toggle form-toggle--separado">
+                <mat-slide-toggle formControlName="activa" color="primary" aria-describedby="plantform-activa-ayuda">Activa</mat-slide-toggle>
+                <!-- Montado siempre: es el destino de `aria-describedby` del toggle. -->
+                <div class="form-toggle__ayuda" id="plantform-activa-ayuda">
+                  @if (!form.controls.activa.value) {
+                    <p class="form-toggle__aviso">
+                      <i class="ph ph-info" aria-hidden="true"></i>
+                      Desactivada, deja de aparecer en el listado de plantillas y no se puede adoptar.
+                    </p>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Clasificación ── -->
+          <section class="ficha-paneles__panel ficha-paneles__panel--lateral" aria-labelledby="plantform-clasificacion">
+            <header class="ficha-paneles__cabecera">
+              <div class="ficha-paneles__encabezado">
+                <h3 class="detail-card__title" id="plantform-clasificacion">Clasificación</h3>
+                <p class="detail-card__subtitle">Opcional. Cómo se encuentra el trámite en el portal.</p>
+              </div>
+              <span class="ficha-paneles__total" aria-live="polite">{{ v.totalElegidas }}</span>
+            </header>
+
+            <app-seleccion-multiple class="ficha-paneles__grupo plantform-grupo" etiqueta="Categorías" nombre="categorías"
+                                    textoVacio="Ninguna categoría elegida." formControlName="categoriaIds"
+                                    [opciones]="catalogos.categorias"
+                                    [abierto]="grupoAbierto === 'categorias'"
+                                    (abiertoChange)="alternarGrupo('categorias', $event)">
+              <!-- Depende de las categorías elegidas: va pegada a ese grupo. -->
+              <div class="form-field plantform-principal" [class.is-invalid]="campoInvalido('categoriaPrincipalId')">
+                <label class="form-field__label" id="principal-label" for="principal">Categoría principal <span class="form-field__optional">(opcional)</span></label>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-select id="principal" aria-labelledby="principal-label" formControlName="categoriaPrincipalId">
+                    <mat-option value="">Sin categoría principal</mat-option>
+                    @for (op of opcionesPrincipal$ | async; track op.id) {
+                      <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
+                    }
+                  </mat-select>
+                  @if (v.principalSinCategorias) {
+                    <mat-hint>Elegí primero al menos una categoría.</mat-hint>
+                  } @else {
+                    <mat-hint>Se elige entre las categorías de la plantilla.</mat-hint>
+                  }
+                  <mat-error appFormErrorMessage [control]="form.controls.categoriaPrincipalId"
+                             [field]="campos.categoriaPrincipalId"></mat-error>
+                </mat-form-field>
+              </div>
+            </app-seleccion-multiple>
+
+            <app-seleccion-multiple class="ficha-paneles__grupo plantform-grupo" etiqueta="Etiquetas" nombre="etiquetas"
+                                    textoVacio="Ninguna etiqueta elegida." formControlName="etiquetaIds"
+                                    [opciones]="catalogos.etiquetas"
+                                    [abierto]="grupoAbierto === 'etiquetas'"
+                                    (abiertoChange)="alternarGrupo('etiquetas', $event)">
+            </app-seleccion-multiple>
+
+            <app-seleccion-multiple class="ficha-paneles__grupo plantform-grupo" etiqueta="Destinatarios" nombre="destinatarios"
+                                    textoVacio="Ningún destinatario elegido." formControlName="destinatarioIds"
+                                    [opciones]="catalogos.destinatarios"
+                                    [abierto]="grupoAbierto === 'destinatarios'"
+                                    (abiertoChange)="alternarGrupo('destinatarios', $event)">
+            </app-seleccion-multiple>
+
+            <app-seleccion-multiple class="ficha-paneles__grupo plantform-grupo" etiqueta="Eventos de vida" nombre="eventos de vida"
+                                    textoVacio="Ningún evento de vida elegido." formControlName="eventoDeVidaIds"
+                                    [opciones]="catalogos.eventosDeVida"
+                                    [abierto]="grupoAbierto === 'eventos'"
+                                    (abiertoChange)="alternarGrupo('eventos', $event)">
+            </app-seleccion-multiple>
+
+            @if (!isEdit) {
+              <div class="plantform-despues" role="region" aria-labelledby="plantform-despues">
+                <h3 class="detail-card__title plantform-despues__titulo" id="plantform-despues">Después de crearla</h3>
+                <ul class="pasos-lista">
+                  <li class="pasos-lista__item">
+                    <i class="ph ph-building-office" aria-hidden="true"></i>
+                    <div>
+                      <p class="pasos-lista__titulo">Los organismos la adoptan</p>
+                      <p class="pasos-lista__texto">Desde Trámites del organismo, con su vigencia.</p>
+                    </div>
+                  </li>
+                  <li class="pasos-lista__item">
+                    <i class="ph ph-map-pin-area" aria-hidden="true"></i>
+                    <div>
+                      <p class="pasos-lista__titulo">Cada adopción suma fichas por localidad</p>
+                      <p class="pasos-lista__texto">Ahí van los requisitos, los costos y los puntos de atención.</p>
+                    </div>
+                  </li>
+                  <li class="pasos-lista__item">
+                    <i class="ph ph-globe-simple" aria-hidden="true"></i>
+                    <div>
+                      <p class="pasos-lista__titulo">Se ve en el portal al publicar una ficha</p>
+                      <p class="pasos-lista__texto">La plantilla sola no publica nada.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
             }
-            @if (form.controls.titulo.hasError('maxlength')) {
-              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo {{ maxTextoCorto }} caracteres</span></mat-error>
-            }
-          </mat-form-field>
+          </section>
         </div>
 
-        <div class="form-field" [class.is-invalid]="campoInvalido('slug')">
-          <label class="form-field__label" id="slug-label" for="slug">Slug <span class="form-field__required" aria-hidden="true">*</span></label>
-          <div class="plantform-slug">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <input matInput id="slug" aria-labelledby="slug-label" formControlName="slug" required
-                     [maxlength]="maxTextoCorto" (input)="onSlugEditado()" placeholder="obtener-licencia-de-conducir">
-              <mat-hint>
-                {{ isEdit ? 'Cambiarlo cambia la dirección pública del trámite.' : 'Se arma solo desde el título; podés editarlo.' }}
-                Es único entre todas las plantillas.
-              </mat-hint>
-              @if (form.controls.slug.hasError('required')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>El slug es obligatorio</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('maxlength')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Máximo {{ maxTextoCorto }} caracteres</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('slugVacio')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Tiene que tener letras o números</span></mat-error>
-              }
-              @if (form.controls.slug.hasError('server')) {
-                <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>{{ form.controls.slug.getError('server') }}</span></mat-error>
-              }
-            </mat-form-field>
-            <button type="button" mat-stroked-button color="primary" class="plantform-slug__regenerar"
-                    [disabled]="!form.controls.titulo.value.trim()" (click)="regenerarSlug()"
-                    matTooltip="Volver a armar el slug desde el título">
-              <i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Desde el título
-            </button>
-          </div>
-          <div class="plantform-preview" aria-live="polite">
-            @if (slugPrevisto$ | async; as previsto) {
-              <p class="plantform-preview__texto">
-                <i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i>
-                Se guardará como: <code>{{ previsto }}</code>
-              </p>
-            }
-          </div>
-        </div>
-
+        <!-- Pie de la tarjeta: abarca los dos paneles. El indicador es informativo, no bloquea el guardado. -->
+        <app-form-actions [integrada]="true"
+                          [helpText]="isEdit ? 'Guardar reemplaza la plantilla completa.' : 'Los campos con * son obligatorios.'"
+                          [submitText]="isEdit ? 'Guardar cambios' : 'Crear plantilla'" savingText="Guardando…"
+                          [saving]="saving" [sinCambios]="sinCambios" (cancelar)="cancelar()">
+          <span formActionsInfo class="pill ficha-paneles__indicador" aria-live="polite"
+                [class.pill--success]="v.recomendadosCompletos" [class.pill--warning]="!v.recomendadosCompletos">
+            <i class="ph pill__icon" [class.ph-check-circle]="v.recomendadosCompletos"
+               [class.ph-list-checks]="!v.recomendadosCompletos" aria-hidden="true"></i>
+            <span>{{ v.recomendado }}</span>
+          </span>
+        </app-form-actions>
       </div>
-
-      <!-- ── Descripción ── -->
-      <h2 class="section-header">Descripción</h2>
-      <div class="form-grid form-grid--full">
-        <div class="form-field">
-          <label class="form-field__label" id="resumen-label" for="resumen">Resumen <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <textarea matInput id="resumen" aria-labelledby="resumen-label" formControlName="resumen" rows="2"
-                      placeholder="Una o dos oraciones: qué es y para quién."></textarea>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field">
-          <label class="form-field__label" id="descripcion-label" for="descripcion">Descripción larga <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <textarea matInput id="descripcion" aria-labelledby="descripcion-label" formControlName="descripcionLarga" rows="5"></textarea>
-            <mat-hint>Requisitos, costos y URL no van acá: son de cada ficha por localidad.</mat-hint>
-          </mat-form-field>
-        </div>
-      </div>
-
-      <!-- ── Clasificación ── -->
-      <h2 class="section-header">Clasificación</h2>
-      <div class="form-grid">
-
-        <div class="form-field">
-          <label class="form-field__label" id="modalidad-label" for="modalidad">Modalidad <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="modalidad" aria-labelledby="modalidad-label" formControlName="modalidadId">
-              <mat-option value="">Sin modalidad</mat-option>
-              @for (op of catalogos.modalidades; track op.id) {
-                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field">
-          <label class="form-field__label" id="categorias-label" for="categorias">Categorías <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="categorias" aria-labelledby="categorias-label" formControlName="categoriaIds" multiple
-                        placeholder="Elegí una o más">
-              @for (op of catalogos.categorias; track op.id) {
-                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field" [class.is-invalid]="campoInvalido('categoriaPrincipalId')">
-          <label class="form-field__label" id="principal-label" for="principal">Categoría principal <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="principal" aria-labelledby="principal-label" formControlName="categoriaPrincipalId">
-              <mat-option value="">Sin categoría principal</mat-option>
-              @for (op of opcionesPrincipal$ | async; track op.id) {
-                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
-              }
-            </mat-select>
-            <mat-hint>Se elige entre las categorías de la plantilla.</mat-hint>
-            @if (form.controls.categoriaPrincipalId.hasError('principalFuera')) {
-              <mat-error><i class="ph ph-warning-circle" aria-hidden="true"></i><span>Tiene que ser una de las categorías elegidas</span></mat-error>
-            }
-          </mat-form-field>
-        </div>
-
-        <div class="form-field">
-          <label class="form-field__label" id="etiquetas-label" for="etiquetas">Etiquetas <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="etiquetas" aria-labelledby="etiquetas-label" formControlName="etiquetaIds" multiple
-                        placeholder="Elegí una o más">
-              @for (op of catalogos.etiquetas; track op.id) {
-                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field">
-          <label class="form-field__label" id="destinatarios-label" for="destinatarios">Destinatarios <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="destinatarios" aria-labelledby="destinatarios-label" formControlName="destinatarioIds" multiple
-                        placeholder="Elegí uno o más">
-              @for (op of catalogos.destinatarios; track op.id) {
-                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field">
-          <label class="form-field__label" id="eventos-label" for="eventos">Eventos de vida <span class="form-field__optional">(opcional)</span></label>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select id="eventos" aria-labelledby="eventos-label" formControlName="eventoDeVidaIds" multiple
-                        placeholder="Elegí uno o más">
-              @for (op of catalogos.eventosDeVida; track op.id) {
-                <mat-option [value]="op.id">{{ op.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-      </div>
-
-      <!-- ── Estado ── -->
-      <h2 class="section-header">Estado</h2>
-      <div class="plantform-activa">
-        <mat-slide-toggle formControlName="activa" color="primary">Activa</mat-slide-toggle>
-        @if (!form.controls.activa.value) {
-          <p class="plantform-activa__aviso">
-            <i class="ph ph-info" aria-hidden="true"></i>
-            Desactivada, deja de aparecer en el listado de plantillas y no se puede adoptar.
-          </p>
-        }
-      </div>
-
-      <!-- ── Acciones ── -->
-      <app-form-actions apariencia="flat" helpText="Guardar reemplaza la plantilla completa."
-                        [submitText]="isEdit ? 'Guardar cambios' : 'Crear plantilla'" savingText="Guardando..."
-                        [saving]="saving" [sinCambios]="sinCambios" (cancelar)="cancelar()">
-      </app-form-actions>
-
     </form>
-  </div>
+  }
 }

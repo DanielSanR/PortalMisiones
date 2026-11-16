@@ -13,16 +13,22 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormActionsComponent } from '../../../../shared/components/form-actions/form-actions.component';
 import { FormErrorBannerComponent } from '../../../../shared/components/form-error-banner/form-error-banner.component';
-import { resumenDeErrores } from '../../../../shared/components/dynamic-form-field/form-error-messages.util';
+import { FormErrorMessageDirective } from '../../../../shared/components/dynamic-form-field/FormErrorMessage.directive';
+import { getControlErrorMessage, resumenDeErrores } from '../../../../shared/components/dynamic-form-field/form-error-messages.util';
 import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
+import { UnavailableDirective } from '../../../../shared/directives/unavailable.directive';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
+import { FieldConfig } from '@core/models/field.interface';
+import { esPantallaDestruida, unaVez } from '@core/utils/one-shot.utils';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { canonicalizarSlug } from '@core/utils/slug.utils';
 import { FichaFormData, FichaLocalFormValue, FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
 import { RUTA_DETALLE_ADOPCION, RUTA_LISTA_ADOPCIONES } from '../../adopciones/adopciones.rutas';
+import { textoRecomendados } from '../../plantillas/plantilla-recomendados';
 import { CONFLICTOS_FICHA, FALLBACK_FICHA, NO_DISPONIBLE, TEXTOS_FICHA_INEXISTENTE, esFichaInexistente } from '../ficha-save-error';
+import { QUIEN_PUBLICA } from '../ficha-textos';
 import { RUTA_DETALLE_FICHA, RUTA_LISTA_FICHAS } from '../fichas.rutas';
 import { PuntosAtencionPanelComponent } from '../puntos-atencion-panel/puntos-atencion-panel.component';
 
@@ -58,7 +64,52 @@ function urlValida(control: AbstractControl): ValidationErrors | null {
 type CampoConResumen = 'localidadId' | 'slug' | 'url' | 'activa';
 
 /**
- * Alta y edición de una ficha por localidad. Formulario reactivo propio.
+ * Los campos que validan, descritos como los de `app-dynamic-form`: así el mensaje de cada error sale
+ * de `form-error-messages.util` (un solo lugar para el `<mat-error>` del campo y el banner resumen).
+ * `mensajes` trae el texto de los validadores propios de esta pantalla.
+ */
+const CAMPOS: Record<CampoConResumen, FieldConfig> = {
+  localidadId: {
+    name: 'localidadId', label: 'Localidad', type: 'select',
+    validations: {
+      mensajes: { required: 'Elegí una localidad', localidadOcupada: 'Esa localidad ya tiene una ficha de este trámite' },
+    },
+  },
+  slug: {
+    name: 'slug', label: 'Slug', type: 'text',
+    validations: {
+      maxLength: MAX_SLUG,
+      mensajes: { required: 'El slug es obligatorio', slugRepetido: 'Ya lo usa otra ficha. Elegí otro.' },
+    },
+  },
+  url: {
+    name: 'url', label: 'URL', type: 'url',
+    validations: { mensajes: { url: 'Tiene que empezar con http:// o https://' } },
+  },
+  activa: {
+    name: 'activa', label: 'Activa', type: 'checkbox',
+    validations: { mensajes: { reactivaDuplicada: 'La localidad ya tiene otra ficha activa de este trámite' } },
+  },
+};
+
+/** Lo que el membrete y el pie muestran del formulario en vivo. */
+interface VistaFicha {
+  /** Título de la plantilla; vacío si no se pudo leer. */
+  titulo: string;
+  organismo: string;
+  /** Nombre de la localidad elegida; vacío si todavía no hay. */
+  localidad: string;
+  /** Slug como se va a guardar (canónico). */
+  slug: string;
+  activa: boolean;
+  recomendadosCompletos: boolean;
+  recomendado: string;
+}
+
+/**
+ * Alta y edición de una ficha por localidad. Formulario reactivo propio, con el layout de ficha del
+ * design system (como Plantilla): membrete en vivo y una tarjeta de dos paneles (datos | puntos de atención,
+ * o "qué sigue" en el alta) con el pie de guardar compartido. Los puntos se guardan aparte, con su propio flujo.
  *
  * - Localidad solo en alta (cambiarla sería otra ficha). Las que ya tienen ficha activa en esta
  *   adopción no se pueden elegir (G-9: el backend no tiene UNIQUE). Si la fuente no dice a qué adopción
@@ -67,8 +118,8 @@ type CampoConResumen = 'localidadId' | 'slug' | 'url' | 'activa';
  * - Slug sugerido `slugBase-localidad` y editable (P-5), validado contra los demás slugs activos.
  * - Sin estado: guardar NUNCA cambia el estado de publicación (R-1); eso es del workflow, en el detalle.
  * - Editar una ficha PUBLICADA cambia el portal al guardar (P-6): se avisa.
- * - Una ficha PUBLICADA (y activa) no se desactiva desde acá: el toggle "Activa" queda bloqueado y remite
- *   a "Desactivar" del detalle. Ese camino (DELETE) además la despublica; el PUT del form copia el estado
+ * - Una ficha PUBLICADA (y activa) no se desactiva desde acá: el interruptor "Ficha activa" queda bloqueado
+ *   (`appUnavailable`, con el motivo) y remite a "Desactivar" del detalle. Ese camino (DELETE) además la despublica; el PUT del form copia el estado
  *   (R-1) y la dejaría inactiva pero PUBLICADO. Así "Guardar no cambia el estado" sigue siendo cierto.
  * - Con el response mínimo del backend (G-1) la ficha no se puede editar: el PUT total borraría
  *   requisitos, costos y URL. Se muestra un panel en vez del form.
@@ -92,9 +143,11 @@ type CampoConResumen = 'localidadId' | 'slug' | 'url' | 'activa';
     MatTooltipModule,
     FormActionsComponent,
     FormErrorBannerComponent,
+    FormErrorMessageDirective,
     LoadingComponent,
     EstadoBadgeComponent,
     HasPermissionDirective,
+    UnavailableDirective,
     PuntosAtencionPanelComponent,
   ],
   templateUrl: './ficha-form.component.html',
@@ -112,6 +165,11 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
   readonly noDisponible = NO_DISPONIBLE;
   readonly rutaAdopcion = RUTA_DETALLE_ADOPCION;
   readonly rutaLista = RUTA_LISTA_FICHAS;
+  readonly quienPublica = QUIEN_PUBLICA;
+  readonly campos = CAMPOS;
+  /** Por qué el interruptor "Ficha activa" no se puede apagar acá (tooltip y texto de ayuda). */
+  readonly motivoActivaBloqueada =
+    'Está publicada: para desactivarla usá "Desactivar" en el detalle de la ficha, que además la quita del portal.';
 
   readonly form = new FormGroup({
     localidadId: new FormControl('', {
@@ -152,6 +210,14 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
       const canonico = canonicalizarSlug(valor);
       return canonico && canonico !== valor ? canonico : null;
     }),
+  );
+
+  /**
+   * Resumen del form en vivo. Se suscribe recién cuando `datos` ya llegó (el template lo dibuja después
+   * de la carga), y `startWith` le da el valor con el que abrió.
+   */
+  readonly vista$: Observable<VistaFicha> = defer(() => this.form.valueChanges.pipe(startWith(null))).pipe(
+    map(() => this.aVista()),
   );
 
   get ficha(): FichaLocalVM | null {
@@ -268,7 +334,7 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
     return this.isEdit && this.form.pristine;
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.saving || !this.datos) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -295,25 +361,34 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
     };
 
     const request$ = this.isEdit ? this.facade.update(this.editId!, form) : this.facade.create(form);
-    request$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (guardada) => {
-          this.snackBar.open(this.textoGuardada(guardada), 'OK', { duration: 4000, panelClass: 'snackbar-success' });
-          // Si la navegación no ocurre (p. ej. un guard la frena), el form no queda bloqueado.
-          this.router.navigate([RUTA_DETALLE_FICHA, guardada.id]).then((ok) => {
-            if (ok) return;
-            this.saving = false;
-            this.form.markAsPristine();
-            this.cdr.markForCheck();
-          });
-        },
-        error: (err: unknown) => {
-          this.saving = false;
-          this.serverError = aplicarErrorDeGuardado(err, this.form, CONFLICTOS_FICHA, FALLBACK_FICHA);
-          this.cdr.markForCheck();
-        },
-      });
+    // Guardado one-shot (`unaVez`), igual que en Plantilla: el único rechazo que se ignora es que la pantalla
+    // ya no exista; cualquier otro apaga `saving` y se muestra en el formulario.
+    let guardada: FichaLocalVM;
+    try {
+      guardada = await unaVez(request$, this.destroyRef);
+    } catch (err: unknown) {
+      if (esPantallaDestruida(err)) return; // se destruyó con el guardado en vuelo: no hay a quién avisar
+      this.saving = false;
+      this.serverError = aplicarErrorDeGuardado(err, this.form, CONFLICTOS_FICHA, FALLBACK_FICHA);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.snackBar.open(this.textoGuardada(guardada), 'OK', { duration: 4000, panelClass: 'snackbar-success' });
+    // Si la navegación no ocurre (un guard la frena, o falla al resolver), el form no queda bloqueado.
+    const navego = await this.router.navigate([RUTA_DETALLE_FICHA, guardada.id]).catch(() => false);
+    if (navego) return;
+    this.saving = false;
+    this.form.markAsPristine();
+    // Un alta que no navegó deja de ser alta: la ficha ya existe, así que la pantalla pasa a editarla.
+    // Sin esto, otro clic en "Crear ficha" la crearía por segunda vez.
+    if (!this.isEdit) {
+      this.editId = guardada.id;
+      this.isEdit = true;
+      this.slugManual = true;
+      this.cargar();
+    }
+    this.cdr.markForCheck();
   }
 
   cancelar(): void {
@@ -340,13 +415,7 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
   /** Mensajes "Campo (motivo)" para el banner resumen — solo tras un intento de envío inválido. */
   get errorSummary(): string[] {
     if (!this.submitted) return [];
-    const campos: { name: CampoConResumen; label: string }[] = [
-      { name: 'localidadId', label: 'Localidad' },
-      { name: 'slug', label: 'Slug' },
-      { name: 'url', label: 'URL' },
-      { name: 'activa', label: 'Activa' },
-    ];
-    return resumenDeErrores(this.form, campos, (control) => this.motivo(control));
+    return resumenDeErrores(this.form, Object.values(CAMPOS), (control, campo) => getControlErrorMessage(control, campo));
   }
 
   /**
@@ -357,16 +426,25 @@ export class FichaFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
     return !this.saving && this.form.dirty;
   }
 
-  private motivo(control: AbstractControl): string {
-    if (control.hasError('required')) return 'obligatorio';
-    if (control.hasError('maxlength')) return `máximo ${control.errors?.['maxlength']?.requiredLength} caracteres`;
-    if (control.hasError('slugVacio')) return 'tiene que tener letras o números';
-    if (control.hasError('slugRepetido')) return 'ya lo usa otra ficha';
-    if (control.hasError('localidadOcupada')) return 'ya tiene una ficha de este trámite';
-    if (control.hasError('reactivaDuplicada')) return 'la localidad ya tiene otra ficha activa de este trámite';
-    if (control.hasError('url')) return 'tiene que empezar con http:// o https://';
-    if (control.hasError('server')) return String(control.errors?.['server']);
-    return 'inválido';
+  private aVista(): VistaFicha {
+    // `getRawValue`: en edición la localidad (y a veces "activa") están deshabilitadas.
+    const valor = this.form.getRawValue();
+    const localidad = this.datos?.localidades.find((l) => l.id === valor.localidadId);
+    // Informativo, no bloquea el guardado: lo que el ciudadano necesita encontrar en la ficha.
+    const recomendados = [
+      { etiqueta: 'Requisitos', completo: !!valor.requisitos.trim() },
+      { etiqueta: 'Costos', completo: !!valor.costos.trim() },
+      { etiqueta: 'URL', completo: !!valor.url.trim() },
+    ];
+    return {
+      titulo: this.datos?.adopcion?.plantillaTitulo ?? this.ficha?.plantillaTitulo ?? '',
+      organismo: this.datos?.adopcion?.organismoNombre ?? this.ficha?.organismoNombre ?? '',
+      localidad: localidad?.nombre ?? this.ficha?.localidadNombre ?? '',
+      slug: canonicalizarSlug(valor.slug),
+      activa: valor.activa,
+      recomendadosCompletos: recomendados.every((dato) => dato.completo),
+      recomendado: textoRecomendados(recomendados),
+    };
   }
 
   private textoGuardada(guardada: FichaLocalVM): string {

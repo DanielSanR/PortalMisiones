@@ -3,7 +3,7 @@
     <i class="ph" [class.ph-arrows-out]="!(todoExpandido$ | async)" [class.ph-arrows-in]="(todoExpandido$ | async)" aria-hidden="true"></i>
     {{ (todoExpandido$ | async) ? 'Colapsar todo' : 'Expandir todo' }}
   </button>
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
+  <button appAtajo="n" mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="'CREATE_CATEGORY'">
     <i class="ph ph-plus" aria-hidden="true"></i> Nueva categoría
   </button>
 </ng-template>
@@ -15,7 +15,7 @@
        el buscador (es funcionalidad real) dentro del mismo toolbar de las demás listas. -->
   <div class="list-toolbar list-toolbar--stacked">
     <div class="list-toolbar__row">
-      <app-list-search
+      <app-list-search [atajoFoco]="true"
         [control]="searchCtrl"
         placeholder="Buscar por nombre o slug…"
         ariaLabel="Buscar categorías por nombre o slug">

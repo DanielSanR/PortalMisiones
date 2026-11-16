@@ -176,8 +176,20 @@ $breakpoint-2xl: 1440px;
 }
 
 // ---------------------------------------------------------------------------
+// Encabezado de panel/tarjeta con barra de acento a la izquierda (título + subtítulo apilados).
+// ---------------------------------------------------------------------------
+@mixin accent-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-2xs);
+  min-width: 0;
+  padding-left: var(--theme-space-gap);
+  border-left: 3px solid var(--theme-accent-bar-color);
+}
+
+// ---------------------------------------------------------------------------
 // Accent Bar — barra de 3px que señala estado activo/seleccionado
-// (nav activo, section-header). El contenedor debe ser `position: relative`
+// (nav activo, títulos de sección). El contenedor debe ser `position: relative`
 // (el mixin lo aplica) y tener espacio a la izquierda para la barra.
 // ---------------------------------------------------------------------------
 @mixin accent-bar($color: var(--theme-accent-bar-color-on-light)) {
@@ -203,25 +215,6 @@ $breakpoint-2xl: 1440px;
 
   .mat-mdc-table {
     width: 100%;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Form card — panel FORM (patrón "Editar organismo"): borde frío, radio 10,
-// sin sombra ni padding propio (las secciones/el footer sticky lo manejan).
-// ---------------------------------------------------------------------------
-@mixin form-card($max-width: var(--theme-form-max-width)) {
-  background-color: var(--theme-surface-card);
-  border: 1px solid var(--theme-border-primary);
-  border-radius: var(--theme-radius-panel);
-  overflow: hidden;
-  max-width: $max-width;
-  width: 100%;
-  place-self: center;
-  padding: var(--theme-space-lg) var(--theme-space-lg) 0;
-
-  @include responsive(mobile) {
-    padding: var(--theme-space-md) var(--theme-space-md) 0;
   }
 }
 
@@ -253,8 +246,20 @@ $breakpoint-2xl: 1440px;
 }
 
 // ---------------------------------------------------------------------------
-// Form actions bar — footer sticky al pie del `.form-card` (bleed horizontal
-// vía margin negativo para compensar el padding del card).
+// Texto de ayuda bajo un control. Es el estilo del `mat-hint` global
+// (`_material.scss`); lo incluyen las ayudas de controles que no son
+// mat-form-field (árbol, toggle) para verse igual. Va a 6px del control y sin
+// sangría: la separación la pone el `gap` de `.form-field` o quien lo incluye.
+// ---------------------------------------------------------------------------
+@mixin form-help-text {
+  font-size: var(--theme-font-size-xs);
+  line-height: 1.4;
+  color: var(--theme-text-secondary);
+}
+
+// ---------------------------------------------------------------------------
+// Form actions bar — footer sticky al pie de la tarjeta del formulario (bleed horizontal
+// vía margin negativo para compensar el padding de la tarjeta).
 // ---------------------------------------------------------------------------
 @mixin form-actions {
   position: sticky;
@@ -325,6 +330,8 @@ $breakpoint-2xl: 1440px;
 //     <div class="list-toolbar__row">…buscador + selects + contador…</div>
 //     <div class="list-toolbar__row"><app-filter-tabs .../></div>
 //   </div>
+// `--stacked` es un grid de una columna: cada `__row` suma su separación aunque no dibuje nada
+// (`app-filter-tabs` no dibuja con menos de 2 tabs). Una fila que puede quedar vacía va en un `@if`.
 // ---------------------------------------------------------------------------
 @mixin list-toolbar {
   display: flex;
@@ -338,9 +345,12 @@ $breakpoint-2xl: 1440px;
   border: 1px solid var(--theme-border-primary);
   border-radius: var(--theme-radius-panel);
 
+  // Grid y no flex en columna: como ítem de un flex en columna, una fila con `flex-wrap` y un hijo de
+  // base fija (los selects de filtro, `flex: 0 1 220px`) se mide con una segunda línea vacía y pasa de
+  // 34 a 78px, con los controles centrados en ese alto. En grid la fila se mide con su ancho real.
   &--stacked {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -558,7 +568,7 @@ $breakpoint-2xl: 1440px;
 /// subtítulo, campos, error de guardado inline y acciones a la derecha.
 /// Uso: `.x-dialog { @include form-dialog; }` con hijos `__header`, `__icono`, `__encabezado`,
 /// `__titulo` (con `mat-dialog-title`), `__subtitulo`, `__campos`, `__error` y `mat-dialog-actions`.
-@mixin form-dialog($width: 560px) {
+@mixin form-dialog($width: var(--theme-dialog-width-md)) {
   display: flex;
   flex-direction: column;
   width: $width;
@@ -639,7 +649,7 @@ $breakpoint-2xl: 1440px;
 
   // Variante angosta para diálogos de confirmación / aviso (sin campos).
   &--sm {
-    width: 420px;
+    width: var(--theme-dialog-width-sm);
   }
 
   &__campos {
@@ -739,5 +749,20 @@ $breakpoint-2xl: 1440px;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
     background-image: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Corte por ANCHO DEL CONTENEDOR (container query), no del viewport.
+// `responsive()` mira la ventana; con el menú lateral abierto el contenido mide ~260px menos y un media
+// query no lo ve. El ancestro tiene que declarar `container-type: inline-size` y `container-name`.
+//   @include container-below(roles-page) { grid-template-columns: minmax(0, 1fr); }
+// ---------------------------------------------------------------------------
+// Ancho mínimo para repartir un master-detail en dos columnas (el detalle queda en ~320px o más).
+$container-split-min: 780px;
+
+@mixin container-below($name, $min: $container-split-min) {
+  @container #{$name} (max-width: #{$min - 1px}) {
+    @content;
   }
 }

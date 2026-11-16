@@ -1,89 +1,24 @@
 // ==========================================================================
-// Form de Plantilla provincial — usa .form-card / .form-grid / .form-field
-// globales; acá solo lo propio: aviso de catálogos, slug con
-// botón "Desde el título" y su vista previa, y el toggle de estado.
+// Form de Plantilla provincial (alta y edición) — una sola tarjeta con dos paneles (datos |
+// clasificación) y el pie de guardar compartido. Membrete, pill, `.form-field` (con `__fila` y `__mono`),
+// `.form-aviso`, `.field-preview`, `.form-toggle`, `.pasos-lista` y la tarjeta de dos paneles
+// (`.ficha-paneles`) son clases globales; la selección múltiple es `app-seleccion-multiple`.
+// Acá solo lo propio: los grupos de Clasificación.
 // ==========================================================================
 
-@use 'shared-styles/mixins' as *;
-
-.plantform-aviso {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--theme-space-sm);
-  margin-bottom: var(--theme-space-lg);
-  padding: var(--theme-space-sm) var(--theme-space-md);
-  border: 1px solid var(--theme-warning-border);
-  border-radius: var(--theme-radius-md);
-  background: var(--theme-warning-bg);
-  color: var(--theme-warning-text);
-  font-size: var(--theme-font-size-sm);
-
-  i.ph {
-    flex: none;
-    margin-top: 2px;
-    font-size: var(--theme-icon-size-md);
-  }
-
-  p {
-    margin: 0;
-  }
+// Un grupo de Clasificación (`.ficha-paneles__grupo` pone el aire y el divisor): el componente trae su propio `gap`.
+.plantform-grupo {
+  display: block;
 }
 
-// Slug + botón "Desde el título" en la misma fila; en mobile se apilan.
-.plantform-slug {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--theme-space-sm);
-
-  mat-form-field {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  &__regenerar {
-    flex: none;
-    margin-top: var(--theme-space-sm);
-  }
-
-  @include responsive(mobile) {
-    flex-direction: column;
-    align-items: stretch;
-
-    &__regenerar {
-      margin-top: 0;
-    }
-  }
+.plantform-principal {
+  padding-top: var(--theme-space-xs);
 }
 
-// Región viva siempre montada: el texto aparece solo si el slug cambia al canonicalizarse.
-.plantform-preview {
-  &__texto {
-    display: flex;
-    align-items: center;
-    gap: var(--theme-space-sm);
-    margin: 0;
-    font-size: var(--theme-font-small-size);
-    color: var(--theme-text-secondary);
-
-    code {
-      font-family: var(--theme-font-mono);
-      color: var(--theme-text-primary);
-    }
-  }
-}
-
-.plantform-activa {
-  display: flex;
-  flex-direction: column;
-  gap: var(--theme-space-sm);
-  margin-bottom: var(--theme-space-lg);
-
-  &__aviso {
-    display: flex;
-    align-items: center;
-    gap: var(--theme-space-sm);
-    margin: 0;
-    font-size: var(--theme-font-size-sm);
-    color: var(--theme-text-secondary);
+// Alta: "Después de crearla". Los ítems de `.pasos-lista` traen su propio padding lateral; el título,
+// el mismo, para que todo quede alineado con los grupos de arriba.
+.plantform-despues {
+  &__titulo {
+    padding: var(--theme-space-gap) var(--theme-space-card) 0;
   }
 }

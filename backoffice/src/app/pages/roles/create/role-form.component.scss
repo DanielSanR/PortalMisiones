@@ -1,27 +1,98 @@
-// Layout específico de este form. Las clases comunes (.form-card, .form-actions, .perm-group,
-// .perm-chip) viven en shared-styles/_components.scss (DRY); los campos los dibuja `app-dynamic-form`.
+// ==========================================================================
+// Form de Rol (alta y edición) — una sola tarjeta con dos paneles (datos | permisos) y el pie de guardar
+// compartido. La tarjeta (`.ficha-paneles`), el membrete (`.detail-header--ficha`), la pill, `.form-field`,
+// `.form-toggle` y los chips de permiso (`.perm-group`, `.perm-chip`) son clases globales. Acá solo lo
+// propio: la lista de toggles y los grupos del panel de permisos con su buscador.
+// ==========================================================================
 
-// Carga fallida — reemplaza al formulario con el motivo y una salida (reintentar / volver).
-.rolform-fallo {
-  &__texto {
-    margin: 0 0 var(--theme-space-lg);
-    color: var(--theme-text-secondary);
-    font-size: var(--theme-font-size-sm);
+@use 'shared-styles/mixins' as *;
+
+// Toggles de configuración (`.form-toggle`, con su explicación debajo), separados por una línea fina.
+.rolform-opciones {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--theme-space-xs);
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
+.rolform-opcion {
+  padding: var(--theme-space-gap) 0;
+  border-bottom: 1px solid var(--theme-border-subtle);
+
+  &:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  // Fila informativa (sin toggle): mismo alto de línea que la etiqueta de un toggle.
+  &__titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    min-height: var(--theme-space-lg);
+    font-size: var(--theme-font-body-size);
+    color: var(--theme-text-primary);
+
+    i.ph {
+      font-size: var(--theme-icon-size-md);
+      color: var(--theme-text-tertiary);
+    }
   }
 }
 
-// Multi-select de permisos — grupos de badges por recurso (mismo look que el detalle de Roles,
-// pero interactivo: cada `.perm-chip--toggle` es un `<button>` que otorga/quita el permiso).
-// Va proyectado en el formulario, debajo de la sección "Permisos asignados".
-.permiso-picker {
+// Buscador de permisos, entre el encabezado del panel y los grupos.
+.rolform-buscador {
+  padding: var(--theme-space-gap) var(--theme-space-card);
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+// Un grupo de permisos: etiqueta + contador + "Marcar todos" arriba, chips abajo. La etiqueta, el
+// contador y los chips son de `.perm-group` (global).
+// El aire y el divisor son de `.ficha-paneles__grupo` (global).
+.rolform-grupo {
   display: flex;
   flex-direction: column;
-  gap: var(--theme-space-md);
-  margin-bottom: var(--theme-space-lg);
+  gap: var(--theme-space-sm);
 
-  &__hint {
-    margin: 0;
+  &__cabecera {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    min-width: 0;
+  }
+
+  // Acción de texto del grupo, al final de la fila. Alto mínimo 24px = `--theme-space-lg` (WCAG 2.2 AA,
+  // tamaño del objetivo).
+  &__todos {
+    flex: none;
+    min-height: var(--theme-space-lg);
+    margin-left: auto;
+    padding: 0 var(--theme-space-xs);
+    border: 0;
+    border-radius: var(--theme-radius-sm);
+    background: transparent;
+    color: var(--theme-primary);
+    font-family: inherit;
     font-size: var(--theme-font-size-xs);
-    color: var(--theme-text-tertiary);
+    font-weight: var(--theme-font-weight-semibold);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    @include focus-ring;
+  }
+}
+
+// Región de estado siempre montada (así el lector anuncia el texto cuando aparece): sin texto no ocupa lugar.
+.rolform-vacio {
+  margin: 0;
+  font-size: var(--theme-font-size-sm);
+  color: var(--theme-text-secondary);
+
+  &:not(:empty) {
+    padding: var(--theme-space-card);
   }
 }

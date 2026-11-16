@@ -1,0 +1,86 @@
+<button #trigger cdkOverlayOrigin #origen="cdkOverlayOrigin"
+        type="button" class="tree-select"
+        [class.is-open]="open" [class.is-invalid]="invalid" [class.is-empty]="!hasValue"
+        [id]="inputId"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="open"
+        [attr.aria-controls]="open ? inputId + '-lista' : null"
+        [attr.aria-labelledby]="labelledBy ? labelledBy + ' ' + inputId + '-valor' : null"
+        [attr.aria-describedby]="describedBy || null"
+        [attr.aria-invalid]="invalid || null"
+        [disabled]="disabled"
+        (click)="toggle()">
+  <span class="tree-select__value" [id]="inputId + '-valor'">{{ valueLabel }}</span>
+  <i class="ph tree-select__caret" [class.ph-caret-down]="!open" [class.ph-caret-up]="open" aria-hidden="true"></i>
+</button>
+
+<ng-template cdkConnectedOverlay
+             [cdkConnectedOverlayOrigin]="origen"
+             [cdkConnectedOverlayOpen]="open"
+             [cdkConnectedOverlayPositions]="positions"
+             [cdkConnectedOverlayMinWidth]="panelMinWidth"
+             [cdkConnectedOverlayHasBackdrop]="true"
+             cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+             (attach)="onAttach()"
+             (backdropClick)="close()"
+             (detach)="close()">
+  <div class="tree-select-panel" (keydown)="onPanelKeydown($event)">
+    <div class="tree-select-panel__search">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input #busqueda type="search" class="tree-select-panel__input" autocomplete="off"
+             [attr.aria-label]="config.searchLabel" [placeholder]="config.searchLabel"
+             [value]="query" (input)="onSearch($event)">
+    </div>
+
+    <div #lista class="tree-select-panel__list" role="listbox" [id]="inputId + '-lista'"
+         [attr.aria-labelledby]="labelledBy || null">
+      @for (row of rows; track row.kind + row.id) {
+        @if (row.kind === 'self') {
+          <!-- La entidad que se edita: se ve dónde queda, pero no es una opción. -->
+          <div class="tree-select-self" role="option" aria-selected="false" aria-disabled="true"
+               [style.--tree-depth]="row.depth">
+            @if (row.depth > 0) {
+              <i class="ph ph-arrow-elbow-down-right tree-select-self__codo" aria-hidden="true"></i>
+            }
+            <span class="tree-select-self__caja">
+              <i [class]="'ph ph-' + (config.self?.icon || 'buildings')" aria-hidden="true"></i>
+              <span class="tree-select-self__label">{{ row.label }}</span>
+              <span class="pill pill--revision pill--bordered">{{ row.meta }}</span>
+            </span>
+          </div>
+        } @else {
+          <!-- tabindex -1: dentro de la lista se navega con flechas; Tab cierra el panel. -->
+          <button type="button" class="tree-select-option" role="option" data-opcion tabindex="-1"
+                  [class.is-selected]="row.selected" [class.is-disabled]="!!row.disabledReason"
+                  [attr.aria-selected]="row.selected"
+                  [attr.aria-disabled]="row.disabledReason ? 'true' : null"
+                  [style.--tree-depth]="row.depth"
+                  (click)="pick(row)">
+            @if (row.depth > 0) {
+              <i class="ph ph-arrow-elbow-down-right tree-select-option__codo" aria-hidden="true"></i>
+            }
+            <span class="tree-select-option__marca" aria-hidden="true"></span>
+            <span class="tree-select-option__texto">
+              <span class="tree-select-option__label">{{ row.label }}</span>
+              @if (row.meta) {
+                <span class="tree-select-option__meta">{{ row.meta }}</span>
+              }
+            </span>
+            @if (row.disabledReason) {
+              <span class="pill pill--neutral tree-select-option__motivo">
+                <i class="ph ph-lock-simple pill__icon" aria-hidden="true"></i>
+                <span class="pill__label">{{ row.disabledReason }}</span>
+              </span>
+            }
+          </button>
+        }
+      }
+
+      @if (sinResultados) {
+        <p class="tree-select-panel__vacio" role="status">Ningún resultado coincide con la búsqueda.</p>
+      } @else if (!config.loaded && config.nodes.length === 0) {
+        <p class="tree-select-panel__vacio" role="status">Cargando opciones…</p>
+      }
+    </div>
+  </div>
+</ng-template>

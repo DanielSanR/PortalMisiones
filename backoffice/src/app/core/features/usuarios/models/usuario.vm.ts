@@ -28,6 +28,17 @@ export interface UsuarioFormValue {
   organismoId: string | null;
 }
 
+/**
+ * Quién está operando la lista de usuarios, ya reducido a lo que la pantalla necesita: de eso depende qué
+ * roles y organismo se ofrecen en el alta, y qué fila es "mi cuenta".
+ */
+export interface SesionUsuariosVM {
+  usuarioId: string | null;
+  email: string | null;
+  esSuperAdmin: boolean;
+  organismoId: string | null;
+}
+
 /** Datos que necesita el formulario, resueltos en una sola llamada (orquestación del facade). */
 export interface UsuarioFormData {
   organismos: OrganismoOption[];

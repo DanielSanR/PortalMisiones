@@ -12,7 +12,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../../shared/components/table';
 import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../../shared/components/list-search';
@@ -314,8 +315,7 @@ export class FichasListComponent implements OnInit {
   }
 
   private confirmar(data: ConfirmDialogData, exito: string): void {
-    this.dialog.open(ConfirmDialogComponent, { data, panelClass: 'custom-modal-panel' })
-      .afterClosed()
+    abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.snackBar.open(exito, 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
   }

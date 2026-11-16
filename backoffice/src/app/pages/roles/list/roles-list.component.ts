@@ -14,8 +14,9 @@ import { SharedTableComponent, TableCellDirective, TableColumn, TableSortEvent }
 import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
 import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
 import { ListSearchComponent } from '../../../shared/components/list-search';
+import { AtajoDirective } from '../../../shared/directives/atajo.directive';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
 import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
 import { buscarEn } from '@core/utils/list-filter.utils';
@@ -76,6 +77,7 @@ interface RolDetalle {
     ListSearchComponent,
     ActiveFiltersComponent,
     PageActionsDirective,
+    AtajoDirective,
     UnavailableDirective,
   ],
   templateUrl: './roles-list.component.html',
@@ -290,7 +292,7 @@ export class RolesListComponent implements OnInit {
   onDelete(rol: RolVM): void {
     // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
     const indice = indiceDeFilaActiva(this.host);
-    this.dialog.open(ConfirmDialogComponent, {
+    abrirConfirmacion(this.dialog, {
       data: {
         title: '¿Eliminar el rol?',
         // Cuenta la consecuencia, no la restricción: que no se pueda borrar un rol con usuarios
@@ -299,7 +301,7 @@ export class RolesListComponent implements OnInit {
         highlight: rol.codigo,
         danger: true,
         confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando...',
+        busyText: 'Eliminando…',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend responde, en
         // vez de cerrar optimistamente y dejar al usuario sin señal de qué pasó.
         confirmAction: () => {
@@ -312,7 +314,6 @@ export class RolesListComponent implements OnInit {
       },
       panelClass: 'custom-modal-panel',
     })
-      .afterClosed()
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef);

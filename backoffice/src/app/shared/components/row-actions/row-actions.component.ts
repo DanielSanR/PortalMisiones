@@ -72,7 +72,7 @@ export class RowActionsComponent {
 
   /** Hay una operación en curso sobre esta fila: bloquea todo y muestra el spinner. */
   @Input() busy = false;
-  @Input() busyLabel = 'Procesando...';
+  @Input() busyLabel = 'Procesando…';
   @Input() menuLabel = 'Más acciones';
 
   private readonly usuario$ = this.auth.getCurrentUser$();

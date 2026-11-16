@@ -392,3 +392,40 @@ describe('DynamicFormComponent — hint por tipo de campo', () => {
     expect(hintDe('sinAyuda')).toBe('');
   });
 });
+
+/** Jerarquía de títulos: en página el rótulo de sección es `h2`; en un diálogo (`compacto`) es un `h3` real. */
+describe('DynamicFormComponent — nivel del encabezado de sección', () => {
+  const fields: FieldConfig[] = [
+    { name: 'datos', label: 'Datos personales', type: 'section-header' },
+    { name: 'correo', label: 'Email', type: 'email' },
+  ];
+
+  async function pintar(compacto: boolean): Promise<HTMLElement> {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, NoopAnimationsModule],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(DynamicFormComponent);
+    fixture.componentRef.setInput('fields', fields);
+    fixture.componentRef.setInput('compacto', compacto);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  it('en un formulario de página el rótulo es un h2', async () => {
+    const el = await pintar(false);
+
+    expect(el.querySelector('h2.section-header-title')?.textContent).toContain('Datos personales');
+    expect(el.querySelector('h3.section-header-title')).toBeNull();
+  });
+
+  it('en un formulario compacto (diálogo) el rótulo es un h3 real, sin aria-level', async () => {
+    const el = await pintar(true);
+
+    const titulo = el.querySelector('h3.section-header-title');
+    expect(titulo?.textContent).toContain('Datos personales');
+    expect(titulo?.hasAttribute('aria-level')).toBeFalse();
+    expect(el.querySelector('h2.section-header-title')).toBeNull();
+  });
+});

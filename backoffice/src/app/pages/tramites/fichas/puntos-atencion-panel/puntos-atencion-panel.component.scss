@@ -6,10 +6,23 @@
 
 @use 'shared-styles/mixins' as *;
 
+// El host llena el alto que le deja el panel de la ficha: así el estado vacío puede centrarse en él.
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
 .puntos {
   display: flex;
   flex-direction: column;
+  flex: 1 0 auto;
   gap: var(--theme-space-md);
+}
+
+// Sin puntos: ocupa el resto del alto y se centra (la barra con "Agregar punto" queda arriba).
+.puntos-vacio {
+  flex: 1 0 auto;
 }
 
 .puntos-barra {
@@ -25,7 +38,8 @@
 
 .puntos-lista {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  // `min(…, 100%)`: en un panel más angosto que la card (ficha a 1024) la columna se achica en vez de desbordar.
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: var(--theme-space-md);
   margin: 0;
   padding: 0;

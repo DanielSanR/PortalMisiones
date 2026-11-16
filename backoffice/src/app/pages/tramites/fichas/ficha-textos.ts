@@ -32,7 +32,7 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
     exito: 'Ficha enviada a revisión',
     confirmTitulo: '¿Enviar la ficha a revisión?',
     confirmBoton: 'Sí, enviar',
-    ocupado: 'Enviando...',
+    ocupado: 'Enviando…',
     mensaje: (nombre) => `${nombre} queda en revisión hasta que ${QUIEN_PUBLICA} la publique. Mientras tanto no se ve en el portal.`,
   },
   publicar: {
@@ -42,7 +42,7 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
     exito: 'Ficha publicada',
     confirmTitulo: '¿Publicar la ficha?',
     confirmBoton: 'Sí, publicar',
-    ocupado: 'Publicando...',
+    ocupado: 'Publicando…',
     mensaje: (nombre) => `${nombre} se va a ver en el portal en el momento, tal como está ahora.`,
   },
   despublicar: {
@@ -52,7 +52,7 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
     exito: 'Ficha despublicada',
     confirmTitulo: '¿Despublicar la ficha?',
     confirmBoton: 'Sí, despublicar',
-    ocupado: 'Despublicando...',
+    ocupado: 'Despublicando…',
     mensaje: (nombre) => `${nombre} deja de verse en el portal. Después la podés republicar sin pasar por revisión.`,
   },
   republicar: {
@@ -62,7 +62,7 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
     exito: 'Ficha republicada',
     confirmTitulo: '¿Republicar la ficha?',
     confirmBoton: 'Sí, republicar',
-    ocupado: 'Republicando...',
+    ocupado: 'Republicando…',
     mensaje: (nombre) => `${nombre} vuelve a verse en el portal tal como está ahora, sin pasar por revisión.`,
   },
   'enviar-y-publicar': {
@@ -72,7 +72,7 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
     exito: 'Ficha publicada',
     confirmTitulo: '¿Enviar y publicar la ficha?',
     confirmBoton: 'Sí, publicar',
-    ocupado: 'Publicando...',
+    ocupado: 'Publicando…',
     mensaje: (nombre) => `${nombre} pasa por revisión y se publica en el mismo paso: se va a ver en el portal en el momento.`,
   },
 };
@@ -117,7 +117,7 @@ export function confirmDesactivar(ficha: FichaLocalVM, ejecutar: () => Observabl
     highlight: nombre,
     danger: true,
     confirmText: 'Sí, desactivar',
-    busyText: 'Desactivando...',
+    busyText: 'Desactivando…',
     confirmAction: () => conMensajeDeAccion(ejecutar()),
   };
 }

@@ -9,7 +9,8 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
@@ -147,10 +148,7 @@ export class FichaDetailComponent {
   }
 
   private confirmar(data: ConfirmDialogData, alConfirmar: () => void, alCancelar?: () => void): void {
-    // Un doble clic no abre dos confirmaciones.
-    if (this.dialog.openDialogs.length) return;
-    this.dialog.open(ConfirmDialogComponent, { data, panelClass: 'custom-modal-panel' })
-      .afterClosed()
+    abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
       .pipe(take(1), takeUntilDestroyed(this.destroyRef))
       .subscribe((ok) => (ok ? alConfirmar() : alCancelar?.()));
   }

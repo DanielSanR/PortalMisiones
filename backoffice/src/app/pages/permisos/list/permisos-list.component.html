@@ -1,6 +1,6 @@
 <ng-template appPageActions>
   <!-- `/api/permission` autoriza por ROL: crear es solo SUPERADMIN (PPDT-5.1), la misma regla que la ruta. -->
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="escribirPermisos">
+  <button appAtajo="n" mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="escribirPermisos">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo permiso
   </button>
 </ng-template>
@@ -12,7 +12,7 @@
      no hay ningún otro campo en `PermisoVM` para filtrar. -->
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
-    <app-list-search
+    <app-list-search [atajoFoco]="true"
       [control]="searchCtrl"
       placeholder="Buscar por código o descripción…"
       ariaLabel="Buscar permisos por código, descripción, recurso o acción">

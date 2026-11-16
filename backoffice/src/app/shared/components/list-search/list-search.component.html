@@ -4,5 +4,7 @@
            class="list-search__input"
            [formControl]="control"
            [placeholder]="placeholder"
-           [attr.aria-label]="ariaLabel" />
+           [attr.aria-label]="ariaLabel"
+           [appAtajo]="atajoFoco ? 'f' : null"
+           atajoDescripcion="Buscar en la lista" />
 </div>

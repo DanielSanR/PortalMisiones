@@ -1,6 +1,6 @@
 <ng-template appPageActions>
   <!-- Roles se autoriza por ROL: crear es solo SUPERADMIN (PPDT-5.1), la misma regla que la ruta. -->
-  <button mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="escribirRoles">
+  <button appAtajo="n" mat-raised-button color="primary" (click)="onCreate()" *appHasPermission="escribirRoles">
     <i class="ph ph-plus" aria-hidden="true"></i> Nuevo rol
   </button>
 </ng-template>
@@ -10,7 +10,7 @@
      fila A = buscador + contador + acciones · fila B = chips de filtro. -->
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
-    <app-list-search
+    <app-list-search [atajoFoco]="true"
       [control]="searchCtrl"
       placeholder="Buscar por código o descripción…"
       ariaLabel="Buscar roles por código, descripción o alcance">
@@ -52,7 +52,7 @@
        `emptyActionPermission` va vacío a propósito: con filtros el CTA es "Limpiar filtros" (no
        exige nada) y sin filtros es "Nuevo rol", que se autoriza por ROL y ya lo verificó la ruta.
        Pedir `CREATE_ROLE` acá escondería el CTA a un ADMIN_BACKOFFICE que sí puede crear roles. -->
-  <div>
+  <div class="roles-layout__master">
     <app-shared-table
         [data]="vista.rows"
         [columns]="columns"
@@ -151,7 +151,8 @@
           </div>
         </div>
 
-        <div class="rol-detail__groups">
+        <div class="rol-detail__groups" role="group" tabindex="0"
+             [attr.aria-label]="'Permisos de ' + (detalle.rol.descripcion || detalle.rol.codigo)">
           @for (group of detalle.groups; track group.key) {
             <div class="perm-group">
               <div class="perm-group__header">

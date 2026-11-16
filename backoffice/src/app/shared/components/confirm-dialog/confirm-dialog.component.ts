@@ -33,7 +33,7 @@ export interface ConfirmDialogData {
    * así que los consumidores existentes no cambian.
    */
   confirmAction?: () => Observable<unknown>;
-  /** Texto del botón mientras `confirmAction` corre (ej. "Eliminando..."). */
+  /** Texto del botón mientras `confirmAction` corre (ej. "Eliminando…"). */
   busyText?: string;
 }
 
@@ -108,16 +108,18 @@ export class ConfirmDialogComponent {
     this.ejecucion = this.data.confirmAction()
       .pipe(finalize(() => {
         aviso.unsubscribe();
-        this.ejecutando = false;
         this.lenta = false;
-        this.dialogRef.disableClose = false;
         this.cdr.markForCheck();
       }))
       .subscribe({
+        // `ejecutando` no se apaga con el éxito: el diálogo se está cerrando y un segundo clic o Enter
+        // durante la animación no tiene que repetir la acción.
         next: () => this.dialogRef.close(true),
         // El error se cuenta acá mismo y el diálogo sigue abierto: el usuario puede reintentar o
         // cancelar. (Las mutaciones HTTP van con `sinDialogoGlobal()` para no duplicarlo.)
         error: (err: unknown) => {
+          this.ejecutando = false;
+          this.dialogRef.disableClose = false;
           this.errorMensaje = extractErrorMessage((err as { error?: unknown })?.error)
             || 'No se pudo completar la acción. Intentá de nuevo.';
           this.cdr.markForCheck();

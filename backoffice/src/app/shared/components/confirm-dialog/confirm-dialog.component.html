@@ -32,7 +32,7 @@
             [attr.aria-busy]="ejecutando"
             (click)="confirmar()">
             <mat-spinner *ngIf="ejecutando" diameter="18"></mat-spinner>
-            <span>{{ ejecutando ? (data.busyText || 'Procesando...') : (data.confirmText || 'Confirmar') }}</span>
+            <span>{{ ejecutando ? (data.busyText || 'Procesando…') : (data.confirmText || 'Confirmar') }}</span>
         </button>
     </mat-dialog-actions>
 </div>
