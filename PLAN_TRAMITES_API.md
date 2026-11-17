@@ -3,6 +3,11 @@
 Fecha: 2026-10-13 · Backend leído desde `origin/dev` @ `23fd8f9` · Front: working tree de `feat/abm-secciones`.
 Estado: **propuesta para revisar**. No hay código escrito.
 
+> **Actualización 2026-11-16:** contrato (§1), riesgos (§6), preguntas (§7) y estado (§9) revisados contra
+> `origin/dev` @ `58d383a` (migraciones hasta `V2.30`). Resueltos en `dev`: R-3 (`V2.28` + `V2.30`), R-1, G-14 y G-15.
+> **Staging todavía no tiene nada de eso** (quedó en el merge del 2026-10-17): activar features en real online depende
+> de OPS-1. El resto del plan (§2 a §5 y §8) es el original del 2026-10-13. Estado de cada pedido en `PEDIDOS_BACKEND.md`.
+
 ---
 
 ## 0. Resumen
@@ -18,14 +23,15 @@ Estado: **propuesta para revisar**. No hay código escrito.
 3. **Las fichas por localidad están bloqueadas por el contrato (G-1).** El response devuelve solo `id, slug, publicationStatus, active, currentVersionNumber`. Como el `PUT` reemplaza todo, editar una ficha borraría requisitos, costos y URL.
 4. **D-3 (quién aprueba la publicación):** en el código depende solo del permiso `PUBLISH_VARIANT`. Si el front decide todo por permiso y nunca por rol, D-3 se puede cambiar desde el seed. Solo hay que dejar configurables los textos.
 
-> ⚠️ **R-3 confirmado en el código (bloquea Etiquetas reales hoy):**
-> - `V0.0` sembró los roles como `ROLE_SUPERADMIN`, … y `V0.4__normalize_role_codes.sql` les quitó el prefijo. Los códigos actuales son `SUPERADMIN`, `ADMIN_BACKOFFICE`, …
-> - `V2.16` y `V2.17` filtran por las dos formas, pero `V2.20` (`*_ADOPTION`), `V2.23` (`*_ATTENTION_POINT`) y `V2.24` (`*_TAG`) filtran solo por `'ROLE_…'`.
-> - Lo más probable es que **ningún rol haya recibido esos permisos**. Consecuencias:
->   - Etiquetas (BO-16, ya conectada a `/api/tag` y gateada por `READ_TAG`) **desaparece del menú incluso para SUPERADMIN**.
->   - Adopciones y Puntos de atención responden 403.
-> - Verificar en la base: `SELECT r.code, p.code FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id WHERE p.code LIKE '%\_TAG' ESCAPE '\';`
-> - Fix del backend: una migración nueva que asigne por `UPPER(code) IN ('SUPERADMIN','ROLE_SUPERADMIN', …)`, igual que `V2.16` y `V2.17`.
+> ✅ **R-3 resuelto en `dev` (2026-11-16), pendiente de deploy a staging (OPS-1):**
+> - El problema: `V0.4__normalize_role_codes.sql` les quitó el prefijo `ROLE_` a los códigos de rol, y `V2.20`
+>   (`*_ADOPTION`), `V2.23` (`*_ATTENTION_POINT`) y `V2.24` (`*_TAG`) filtraban solo por `'ROLE_…'`: ningún rol recibía
+>   esos permisos.
+> - El fix: `V2.28` los otorga a `SUPERADMIN`, `ADMIN_BACKOFFICE`, `ADMIN_ORGANIZATION` y `AGENT` por el código sin
+>   prefijo, y `V2.30` le quita a AGENT `CREATE_ADOPTION` y `DELETE_ADOPTION`.
+> - **En staging sigue sin aplicarse:** ahí Etiquetas (gateada por `READ_TAG`), Adopciones y Puntos de atención
+>   responden 403 incluso para SUPERADMIN, y por eso van en mock (`environment.staging.ts`, `environment.prod.ts`).
+> - Verificar en cada base: `SELECT r.code, p.code FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id WHERE p.code LIKE '%\_TAG' ESCAPE '\';`
 
 ---
 
@@ -37,7 +43,9 @@ Estado: **propuesta para revisar**. No hay código escrito.
   - Validación → 400, código `4012`. En `details` viene `"campo: mensaje; ..."`.
   - Sin permiso → 403. Sin token → 401, código `4025`.
   - Usuario sin asignación vigente o rol de organismo sin organismo → 403, código `4029`.
-  - **`IllegalArgumentException` o error de base de datos → 500, código `5000`.** Esto le pasa a casi todos los errores de las fichas.
+  - **Excepción no manejada o error de base de datos → 500, código `5000`.** En `58d383a` las fichas ya responden
+    404 `4073` ("no existe" o fuera de alcance) y 409 `4077` (transición inválida); siguen en 500 un campo NOT NULL
+    faltante, una violación de las constraints únicas (G-9), un id que no es UUID y un body ilegible (G-18).
 - **Listados:** ningún endpoint de estos cuatro controllers pagina, ordena ni filtra. Devuelven `List<T>` completa dentro del alcance; todo eso se hace en el cliente.
 - **Alcance (`OrganismScope`, `545fffa`):**
   - Rol de la asignación vigente con `scope_type=global` (SA, AB, MANAGER) → global.
@@ -72,7 +80,8 @@ Estado: **propuesta para revisar**. No hay código escrito.
 - **Reglas:**
   - Con alcance de organismo, `organismId` y `ownerOrganismId` tienen que ser el propio. Si no, responde 404 `4073` (no 403).
   - `effectiveTo` tiene que ser posterior a `effectiveFrom` → si no, `4012`.
-  - No puede haber dos adopciones habilitadas de la misma plantilla en el mismo organismo con vigencias solapadas → **409 `4080`**. El código no tiene mensaje en `messages.properties`, así que llega `"response.code.4080"` y el front tiene que traducirlo.
+  - No puede haber dos adopciones habilitadas de la misma plantilla en el mismo organismo con vigencias solapadas → **409 `4080`**. Desde `58d383a` el código trae mensaje ("No se puede activar una adopción de plantilla porque se superpone en vigencia con otra adopción del mismo organismo."); el front igual lo traduce.
+  - La consulta de solapamiento ya no da 500 al crear o editar una adopción habilitada (G-15, casts en `findOverlappingEnabled`; resuelto en `dev`, sin verificar todavía con el e2e).
 - **Pendiente en el backend:** deshabilitar o vencer una adopción **no despublica sus fichas**, y la búsqueda pública no filtra por vigencia.
 
 ### 1.4 `/api/organism-procedure-location` — ficha por localidad (OTL)
@@ -81,15 +90,15 @@ Estado: **propuesta para revisar**. No hay código escrito.
 | GET | `/` | `READ_VARIANT` | global: todas; organismo: las suyas |
 | GET | `/{id}` | `READ_VARIANT` | |
 | POST | `/` | `CREATE_VARIANT` | siempre en `BORRADOR` (ignora el estado enviado); versión 1 |
-| PUT | `/{id}` | `UPDATE_VARIANT` | reemplazo total, **incluido `publicationStatus`** (R-1); versión N+1 |
+| PUT | `/{id}` | `UPDATE_VARIANT` | reemplazo total **salvo el estado**: desde `58d383a` ya no aplica `publicationStatus` (R-1 resuelto; el campo sigue en el DTO y se ignora); versión N+1 |
 | POST | `/{id}/submit-review` | `UPDATE_VARIANT` | → `EN_REVISION` |
 | POST | `/{id}/publish` | `PUBLISH_VARIANT` | → `PUBLICADO` |
 | POST | `/{id}/unpublish` | `PUBLISH_VARIANT` | → `DESPUBLICADO` |
 | DELETE | `/{id}` | **`UPDATE_VARIANT`** | pone `active=false`; si estaba publicada → `DESPUBLICADO` |
 
-- **Request** (sin validaciones en el DTO): `organismProcedureId, locationId, slug, url, requirements, costs, publicationStatus, active`. Si falta algún campo NOT NULL, responde **500**.
+- **Request** (sin validaciones en el DTO): `organismProcedureId, locationId, slug, url, requirements, costs, publicationStatus, active`. Si falta algún campo NOT NULL (p. ej. `active`), responde **500**. `publicationStatus` se ignora en el `POST` y en el `PUT`.
 - **Response:** `id, slug, publicationStatus, active, currentVersionNumber`. **Nada más** (G-1).
-- **Transiciones permitidas.** Las inválidas responden **500 `5000`**:
+- **Transiciones permitidas.** Las inválidas responden **409 `4077`** ("La transición de publicación solicitada no es válida desde el estado actual."; antes de `58d383a`, 500 `5000`):
 
 | Estado | `submit-review` | `publish` | `unpublish` | Sin endpoint |
 |---|---|---|---|---|
@@ -98,8 +107,9 @@ Estado: **propuesta para revisar**. No hay código escrito.
 | `PUBLICADO` | ✗ | ✗ | → `DESPUBLICADO` | — |
 | `DESPUBLICADO` | ✗ | → `PUBLICADO` (sin revisión) | ✗ | → `BORRADOR` |
 
-- **Versionado:** `otl_versions` sin endpoint de lectura. Sin control de concurrencia: la última escritura gana.
-- **Sin unicidad:** no hay UNIQUE de `(adopción, localidad)` ni de slug. Puede haber fichas duplicadas, y dos fichas publicadas con el mismo slug rompen el detalle público.
+- **Versionado:** `otl_versions` sin endpoint de lectura.
+- **Concurrencia:** la ficha tiene `@Version` (`lock_version`, `V2.27`) y hay un handler → **409 `4091`** ("El recurso fue modificado por otro usuario."). Pero `lockVersion` no viaja en el request ni en el response, así que entre dos ediciones sucesivas **la última escritura sigue ganando**; solo se detectan dos transacciones simultáneas (y probablemente como 500: G-8).
+- **Unicidad (`V2.27`):** `UNIQUE (organism_procedure_id, location_id)` y `UNIQUE (slug, organism_procedure_id)`. No hay validación previa: una violación sale como 500 (G-9). El slug **no** es único global, y dos fichas publicadas con el mismo slug (de adopciones distintas) rompen el detalle público, que resuelve solo por slug.
 
 ### 1.5 `/api/attention-point` — puntos de atención
 | Método | Ruta | Permiso | Notas |
@@ -115,13 +125,14 @@ Estado: **propuesta para revisar**. No hay código escrito.
   - `4012`: latitud fuera de [-90, 90] o longitud fuera de [-180, 180].
   - `4073`: la ficha o el punto no existe o está fuera del alcance.
 
-### 1.6 Permisos por rol según el seed (si R-3 se corrige)
+### 1.6 Permisos por rol según el seed (`dev` @ `58d383a`, con `V2.28` y `V2.30`; staging todavía no)
 | Permiso | SA | AB | AO | AGENT | MANAGER |
 |---|---|---|---|---|---|
 | `READ_PROCEDURE` | ✓ | ✓ | **✗** | ✗ | ✓ |
 | `CREATE/UPDATE_PROCEDURE` | ✓ | ✓ | ✗ | ✗ | ✗ |
 | `DELETE_PROCEDURE` | ✓ | **✗** | ✗ | ✗ | ✗ |
-| `*_ADOPTION` | ✓ | ✓ | ✓ | **✗** | ✗ |
+| `READ_ADOPTION` / `UPDATE_ADOPTION` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `CREATE_ADOPTION` / `DELETE_ADOPTION` | ✓ | ✓ | ✓ | **✗** (`V2.30`) | ✗ |
 | `READ_VARIANT` | ✓ | **✗** | ✓ | ✓ | ✓ |
 | `CREATE_VARIANT` | ✓ | ✗ | ✓ | **✗** | ✗ |
 | `UPDATE_VARIANT` | ✓ | ✗ | ✓ | ✓ | ✗ |
@@ -135,13 +146,17 @@ Estado: **propuesta para revisar**. No hay código escrito.
 - **AB:**
   - Gestiona plantillas, sin desactivarlas, y adopta para cualquier organismo.
   - No ve fichas ni las publica, y no ve la lista de organismos.
+  - Tiene `*_ATTENTION_POINT`, pero sin `READ_VARIANT` no llega a la ficha de la que cuelgan los puntos (G-5).
 - **AO:**
   - Adopta y gestiona fichas, las publica y gestiona puntos de atención, todo dentro de su organismo.
   - **No puede listar plantillas** (G-3).
 - **AGENT:**
   - Edita fichas existentes, las envía a revisión y gestiona puntos de atención.
   - No crea fichas.
-  - No sabe de qué trámite es cada ficha (G-1/G-3).
+  - Ve y edita las adopciones de su organismo (`READ_ADOPTION`, `UPDATE_ADOPTION`); no las crea ni las deshabilita
+    con el `DELETE`. Ojo: con el `PUT` puede mandar `enabled: false`, y con el `DELETE` de la ficha (`UPDATE_VARIANT`)
+    puede despublicar sin `PUBLISH_VARIANT` (G-24).
+  - No sabe de qué trámite es cada ficha: ve la adopción, pero no la plantilla (sin `READ_PROCEDURE`, G-1/G-3).
 - **MANAGER:** solo lectura.
 
 ### 1.7 Endpoints públicos útiles
@@ -218,6 +233,8 @@ core/features/
 - `FeatureKey` nuevas y overrides.
 - `API_CODES`:
   - Agregar `ADOPTION_OVERLAP: 4080`.
+  - Desde `58d383a` (BO-23): `PUBLICATION_TRANSITION_INVALID: 4077` (409, workflow de fichas) y
+    `CONCURRENT_MODIFICATION: 4091` (409, edición concurrente).
   - Generalizar `4072`/`4073` como `ENTITY_CONFLICT`/`ENTITY_NOT_FOUND`: ya no son solo de taxonomía.
 - Permisos `*_ADOPTION` y `*_ATTENTION_POINT`.
 - Traducción de errores (`4080`, `4072` de plantilla, `5000` en fichas) con `aplicarErrorDeGuardado`.
@@ -307,10 +324,10 @@ Cada fase cierra con `ng build`, `lint`, `check:circular`, tests de mappers y pr
 ---
 
 ## 6. Riesgos
-- **R-1:** el `PUT` de la ficha acepta `publicationStatus`, así que un AGENT puede publicar sin pasar por el workflow. El front lo mitiga mandando el estado actual. **Hay que reportarlo como bug del backend.**
-- **R-2:** casi todos los errores de las fichas llegan como 500 `5000`. Los textos del front tienen que ser prudentes.
-- **R-3:** probable que no se hayan asignado `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT` (ver §0).
-- **R-4:** sin UNIQUE de `(adopción, localidad)` ni de slug.
+- **R-1:** ~~el `PUT` de la ficha acepta `publicationStatus`~~ ✅ resuelto en `dev` (`58d383a`): el `PUT` ya no aplica el estado. El front sigue mandando el estado actual (inofensivo). Sin desplegar en staging.
+- **R-2:** ~~casi todos los errores de las fichas llegan como 500 `5000`~~ mitigado en `dev`: "no existe" → 404 `4073`, transición inválida → 409 `4077`. Quedan en 500 los casos de §1.1.
+- **R-3:** ✅ resuelto en `dev` (`V2.28` + `V2.30`, ver §0). Sin desplegar en staging (OPS-1).
+- **R-4:** ~~sin UNIQUE de `(adopción, localidad)` ni de slug~~ hay constraints desde `V2.27`, pero sin validación previa (500) y el slug no es único global (G-9).
 - **R-5:** no hay cascada de vigencia hacia las fichas publicadas.
 - **R-6:** listados completos en el cliente. Con mucho volumen va a hacer falta paginación.
 - **R-7:** hay mucho trabajo sin commitear en `feat/abm-secciones`. Conviene commitearlo antes de la fase 1.
@@ -324,15 +341,16 @@ Cada fase cierra con `ng build`, `lint`, `check:circular`, tests de mappers y pr
 - **G-2:** el organismo del usuario. Agregarlo a `/api/auth/me`, o que el backend tome el del alcance e ignore el del request. Bloquea que AO adopte. También resuelve BO-20 (etiquetas locales).
 - **G-3:** AO no tiene `READ_PROCEDURE`, y AGENT no tiene `READ_ADOPTION`/`READ_PROCEDURE`. ¿Se agregan en el seed?
 - **G-4:**
-  - Las transiciones inválidas tendrían que responder 4xx con código propio, no 500.
+  - ~~Las transiciones inválidas tendrían que responder 4xx con código propio, no 500.~~ ✅ 409 `4077` en `dev`.
   - Faltan endpoints para `EN_REVISION → BORRADOR` (rechazar, con motivo) y para `DESPUBLICADO → BORRADOR`.
-  - El PUT no debería aceptar `publicationStatus`.
+  - ~~El PUT no debería aceptar `publicationStatus`.~~ ✅ en `dev` (R-1).
 - **G-5 (D-3):** ¿está resuelta o abierta? ¿Qué es una "ficha provincial"? AB no tiene `PUBLISH_VARIANT` ni `READ_VARIANT`.
-- **G-6:** el `4080` no tiene mensaje, y el `4072` de plantilla responde 400 y no 409.
+- **G-6:** ~~el `4080` no tiene mensaje~~ (✅ en `dev`), y el `4072` de plantilla responde 400 y no 409.
 - **G-7:** paginación y filtros de listados (D-6).
-- **G-8:** endpoint de versiones (`otl_versions`, FR-BACKOFFICE-07).
-- **G-9:** unicidad de `(adopción, localidad)` y slug de ficha; cascada de vigencia.
-- **R-3:** migración correctiva de los grants de `V2.20`, `V2.23` y `V2.24`.
+- **G-8:** endpoint de versiones (`otl_versions`, FR-BACKOFFICE-07) y `lockVersion` en el contrato (hoy el `4091` no se puede disparar entre dos ediciones sucesivas).
+- **G-9:** ~~unicidad de `(adopción, localidad)` y slug de ficha~~ (constraints en `V2.27`); falta la validación previa (409 en vez de 500), el slug único global y la cascada de vigencia.
+- **R-3:** ~~migración correctiva de los grants de `V2.20`, `V2.23` y `V2.24`~~ ✅ `V2.28` + `V2.30` en `dev`.
+- **G-24 (nuevo, 2026-11-16):** AGENT puede deshabilitar adopciones por `PUT` y despublicar fichas por `DELETE`; ¿es intencional?
 
 **A producto o al usuario:**
 - **P-1:** nombres en la UI ("Plantilla provincial", "Trámite del organismo", "Ficha por localidad").
@@ -379,11 +397,18 @@ permiso y no por rol, y no ofrecer acciones que el backend va a rechazar. Las qu
 |---|---|---|---|---|
 | **0 · Preparación** | `c194f43` | — | `FeatureKey`, permisos, `API_CODES`, pedidos G-1 a G-12 y R-3 en `PEDIDOS_BACKEND.md` | Respuestas del backend |
 | **1 · Plantillas** | `c194f43` | **real** | Feature `plantillas` (`/api/procedure-template`): lista, form, detalle, nav, rutas y comando "Crear plantilla" | G-10 (slug canónico, `4073` preciso), G-6, P-4 (`?includeInactive`) |
-| **2 · Adopciones** | `4d8f34c` | **mock** (HTTP escrito) | Feature `adopciones` (`/api/organism-procedure`): lista, detalle con vigencia, diálogo "Adoptar" (es-AR); "Adoptar" solo con `READ_ORGANISM` (P-2) | **R-3** para pasar a real; G-2 (AO adopta), G-3, G-11 |
+| **2 · Adopciones** | `4d8f34c` | **mock** (HTTP escrito) | Feature `adopciones` (`/api/organism-procedure`): lista, detalle con vigencia, diálogo "Adoptar" (es-AR); "Adoptar" solo con `READ_ORGANISM` (P-2) | **OPS-1** para pasar a real en staging (R-3 y G-15 ya están en `dev`); G-2 (AO adopta), G-3, G-11 |
 | **3 · Fichas + workflow** | `bbb3b52` | **mock** (HTTP escrito) | Feature `fichas-locales` (`/api/organism-procedure-location`): lista con tab "En revisión", form, detalle, badge de cuatro estados, workflow por `PUBLISH_VARIANT`; PUT con el estado actual (R-1) | **G-1** para pasar a real; G-4 (rechazar / volver a borrador), G-5 (D-3), G-9, G-12 |
-| **4 · Puntos de atención** | `bbb3b52` | **mock** (HTTP escrito) | Feature `puntos-atencion` (`/api/attention-point`): panel en el detalle de la ficha, diálogo con lat/long y "Ver en mapa" (P-8) | Se activa junto con fichas (G-1); R-3 para los grants |
+| **4 · Puntos de atención** | `bbb3b52` | **mock** (HTTP escrito) | Feature `puntos-atencion` (`/api/attention-point`): panel en el detalle de la ficha, diálogo con lat/long y "Ver en mapa" (P-8) | Se activa junto con fichas (G-1); grants de R-3 ya en `dev`, falta OPS-1 |
 | **5 · Limpieza** | sin commitear | — | Retirados `core/features/tramites`, pantallas `pages/tramites/{list,create,detail}`, `tramite.service`/`tramite.model`/`dashboard.model`, servicios legacy huérfanos (`categoria`, `destinatario`, `evento-de-vida`, `organismo`, `localidad`, `feedback`), rutas del `mockApiInterceptor` salvo `/api/usuarios`, config `TRAMITE` + campo `icon-picker`, ítem de nav y comando viejos, `FeatureKey 'tramites'`. Rutas viejas → redirect a `tramites/plantillas`. Etiquetas mock con semilla propia. Docs actualizados (`BACKEND_API_SPEC` §5.5, `migracion_arquitectura` §12, `CLAUDE.md`, backlog, QA §14). Bundle inicial 897 → **837 kB** (sin warnings; providers importados directo en `app.config.ts`, ver comentario) | — |
 
-**Para activar en real** solo hay que borrar el override del feature en `environment.ts` y `environment.prod.ts`:
-`adopciones` cuando se corrija R-3; `fichas-locales` y `puntos-atencion` juntos cuando cierre G-1 (no mezclar ids reales
-con ids mock).
+**Estado de las fuentes al 2026-11-16** (`backoffice/src/environments/*.ts`): la cadena plantilla → adopción → ficha →
+punto se referencia por ids y va toda con la misma fuente. En `ng serve` (`environment.ts`), staging y prod va en
+**mock**, plantillas incluidas; solo `npm run start:local` (`environment.local.ts`, backend `dev` en Docker) la usa en
+real.
+
+**Para activar en real** hay que borrar el override del feature en `environment.ts`, `environment.staging.ts` y
+`environment.prod.ts`: `plantillas` y `adopciones` cuando se despliegue a staging (OPS-1), ya que R-3 y G-15 están
+resueltos en `dev`; `fichas-locales` y `puntos-atencion` juntos cuando cierre G-1 (no mezclar ids reales con ids mock:
+mientras las fichas sigan en mock, activar solo plantillas y adopciones implica que las fichas mock referencien
+adopciones que no existen en el backend).

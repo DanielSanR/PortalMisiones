@@ -65,10 +65,11 @@ export class RolesFacade {
     );
   }
 
+  /** Baja lógica (`RoleService.deleteRole` desactiva): el rol sigue en la lista, como inactivo. */
   delete(id: string): Observable<void> {
     return this.roles.delete(id).pipe(
       tap(() => {
-        this._roles$.next(this._roles$.value.filter((r) => r.id !== id));
+        this._roles$.next(this._roles$.value.map((r) => (r.id === id ? { ...r, activo: false } : r)));
         this.reloadAllowed();
       })
     );

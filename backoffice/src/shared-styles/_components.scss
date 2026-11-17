@@ -911,6 +911,11 @@ mat-select,
             --pill-bg: var(--theme-border-subtle);
             --pill-border: var(--theme-border-strong);
         }
+
+        // "Desactivar" del membrete: texto en `--theme-warn-dark` (#B71C1C del diseño); borde y hover siguen al global.
+        .detail-header__actions .mat-mdc-outlined-button.mat-warn {
+            --mdc-outlined-button-label-text-color: var(--theme-warn-dark);
+        }
     }
 
     &__body {
@@ -1299,6 +1304,12 @@ mat-select,
 .ficha-paneles {
   @include theme-card;
   border-color: var(--theme-info-border);
+
+  // Modo "ver" de la misma tarjeta (detalle de una ficha): sin pie de guardar y con el borde neutro, porque
+  // el celeste señala "en edición". Los paneles, cabeceras y campos son los del formulario.
+  &--lectura {
+    border-color: var(--theme-border-primary);
+  }
 
   &__grid {
     display: grid;

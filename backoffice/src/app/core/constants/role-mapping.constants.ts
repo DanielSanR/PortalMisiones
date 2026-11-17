@@ -45,7 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Tipos de Organismo', icon: 'tree-structure', route: '/dashboard/tipos-organismo/lista', rule: { permissions: ['READ_ORGANISM_TYPE'] } },
       // Taxonomía: sin permiso READ (GET públicos) → visible si tiene alguna escritura del catálogo.
       { label: 'Categorías', icon: 'folders', route: '/dashboard/categorias/lista', rule: { permissions: ['CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY'] } },
-      // Etiquetas: sin controller en backend (mock); se aproxima con el permiso genérico de taxonomía.
+      // Etiquetas: `/api/tag` con permisos propios (`*_TAG`, asignados desde `V2.28`); real también en staging.
       { label: 'Etiquetas', icon: 'bookmarks-simple', route: '/dashboard/etiquetas/lista', rule: { permissions: ['READ_TAG'] } },
       { label: 'Modalidades', icon: 'devices', route: '/dashboard/modalidades/lista', rule: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] } },
       { label: 'Eventos de Vida', icon: 'path', route: '/dashboard/eventos-de-vida/lista', rule: { permissions: ['CREATE_LIFE_EVENT', 'UPDATE_LIFE_EVENT', 'DELETE_LIFE_EVENT'] } },

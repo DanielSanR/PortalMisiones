@@ -56,8 +56,9 @@ interface Lectura<T> {
  *
  * Los nombres degradan a `null` en vez de tumbar la pantalla. Excepción documentada de sesión
  * (`.claude/rules/arquitectura-capas.md`): `AuthTokenService` se consulta SOLO para no pedir un
- * catálogo que el usuario no puede leer — AGENT no tiene `READ_ADOPTION` ni `READ_PROCEDURE` (G-3) y
- * solo SA tiene `READ_ORGANISM`; pedirlos abriría 403. Las localidades son públicas.
+ * catálogo que el usuario no puede leer — AGENT ya tiene `READ_ADOPTION` (R-3: `V2.28`/`V2.30`) pero no
+ * `READ_PROCEDURE` (G-3), y solo SA tiene `READ_ORGANISM`; pedirlos abriría 403. Las localidades son
+ * públicas. Se decide siempre por permiso, nunca por rol.
  *
  * Con el response real de hoy (G-1) la ficha no trae adopción ni localidad: todos los nombres quedan
  * en `null` y el form no deja editar (`contenidoCompleto = false`).
@@ -89,6 +90,14 @@ export class FichasLocalesFacade {
    * cada cambio de sesión (otro usuario, refresh de token con otros permisos), para que la UI se redibuje.
    */
   readonly accionesWorkflow$: Observable<ResolverAccionesWorkflow>;
+
+  /**
+   * ¿Los datos son simulados (no se guardan en el servidor)? Lo decide la fuente; la UI muestra un aviso
+   * persistente. Mientras G-1 siga abierto, vale para fichas y puntos de atención.
+   */
+  get fuenteSimulada(): boolean {
+    return this.fichas.fuenteSimulada;
+  }
 
   private contextoCache$: Observable<Contexto> | null = null;
   /** Permisos con los que se armó la caché: si la sesión cambia (otro rol, refresh), se rearma. */
@@ -165,7 +174,7 @@ export class FichasLocalesFacade {
 
   /**
    * Todo lo que necesita el form: la ficha (en edición), su adopción (título y `slugBase` para el
-   * slug sugerido, P-5), las localidades y lo ya ocupado para validar duplicados (G-9).
+   * slug sugerido, P-5), las localidades y lo ya ocupado para validar duplicados antes de guardar.
    * En alta, que la adopción no exista es un error (no hay a qué colgar la ficha); en edición, no
    * poder leerla solo deja los nombres sin resolver.
    */
@@ -180,8 +189,13 @@ export class FichasLocalesFacade {
           todas: this.fichas.list(),
         }).pipe(
           map(({ adopcion, localidades, todas }): FichaFormData => {
-            const otrasActivas = todas.filter((f) => f.activa && f.id !== ficha?.id);
+            // También las desactivadas: los UNIQUE del backend (`V2.27`) no distinguen `active`.
+            const otras = todas.filter((f) => f.id !== ficha?.id);
             const localidadesVerificables = puedeAgruparPorAdopcion(todas);
+            const deLaAdopcion = idAdopcion && localidadesVerificables
+              ? otras.filter((f) => f.adopcionId === idAdopcion && f.localidadId)
+              : [];
+            const conFichaActiva = new Set(deLaAdopcion.filter((f) => f.activa).map((f) => f.localidadId as string));
             return {
               ficha,
               adopcion,
@@ -189,16 +203,47 @@ export class FichasLocalesFacade {
                 .map((l) => ({ id: l.id, nombre: l.nombre, departamentoNombre: l.departamentoNombre }))
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es-AR', { sensitivity: 'base' })),
               ocupadas: {
-                localidadIds: idAdopcion && localidadesVerificables
-                  ? otrasActivas.filter((f) => f.adopcionId === idAdopcion && f.localidadId).map((f) => f.localidadId as string)
-                  : [],
+                localidadIds: [...new Set(deLaAdopcion.map((f) => f.localidadId as string))],
+                localidadIdsDesactivadas: [...new Set(deLaAdopcion
+                  .map((f) => f.localidadId as string)
+                  .filter((id) => !conFichaActiva.has(id)))],
                 localidadesVerificables,
-                slugs: otrasActivas.map((f) => canonicalizarSlug(f.slug)),
+                slugs: otras.map((f) => canonicalizarSlug(f.slug)),
               },
             };
           }),
         );
       }),
+    );
+  }
+
+  /**
+   * Trámites del organismo (adopciones) habilitados a los que se les puede colgar una ficha, con el
+   * nombre del trámite y del organismo: es lo que el alta sin `?adopcion=` deja elegir. Sin
+   * `READ_ADOPTION` devuelve `[]` (el alta tampoco se ofrece sin ese permiso: `CREAR_FICHA_ACCESS`).
+   * Relee los catálogos (no usa la caché): lo que se acaba de adoptar tiene que aparecer. Ordenadas por
+   * trámite y organismo; las que no tienen nombre (sin `READ_PROCEDURE`) quedan al final.
+   */
+  getAdopcionesParaFicha(): Observable<FichaAdopcionResumen[]> {
+    if (!this.auth.can(LEER_ADOPCIONES)) return of([]);
+    return this.contexto(true).pipe(
+      map((contexto) => [...contexto.adopciones.values()]
+        .filter((a) => a.habilitada)
+        .map((a): FichaAdopcionResumen => {
+          const plantilla = contexto.plantillas.get(a.plantillaId);
+          return {
+            id: a.id,
+            plantillaTitulo: plantilla?.titulo ?? null,
+            plantillaSlug: plantilla?.slug ?? null,
+            organismoNombre: contexto.organismos.get(a.organismoId) ?? null,
+            habilitada: a.habilitada,
+          };
+        })
+        .sort((a, b) => {
+          if (!a.plantillaTitulo !== !b.plantillaTitulo) return a.plantillaTitulo ? -1 : 1;
+          return (a.plantillaTitulo ?? '').localeCompare(b.plantillaTitulo ?? '', 'es-AR', { sensitivity: 'base' })
+            || (a.organismoNombre ?? '').localeCompare(b.organismoNombre ?? '', 'es-AR', { sensitivity: 'base' });
+        })),
     );
   }
 
@@ -212,8 +257,9 @@ export class FichasLocalesFacade {
 
   /**
    * Edición (PUT total). Antes de guardar se relee la ficha para mandar su estado ACTUAL en
-   * `publicationStatus` (mitiga R-1, y evita que una edición con datos viejos revierta una
-   * publicación o despublicación hecha mientras tanto). El estado nunca lo elige el usuario.
+   * `publicationStatus`: `dev` ya no lo aplica (R-1 resuelto), pero staging corre un backend anterior
+   * donde una edición con datos viejos revertiría una publicación o despublicación hecha mientras
+   * tanto. No quitar la relectura hasta OPS-1. El estado nunca lo elige el usuario.
    *
    * Desactivar una ficha PUBLICADA va por el mismo camino que "Desactivar" (`DELETE`, que además la
    * despublica): un PUT con `active=false` la dejaría inactiva pero `PUBLICADO`. El form ya no lo
@@ -290,7 +336,8 @@ export class FichasLocalesFacade {
 
   /**
    * La adopción de la ficha, con título y slug de su plantilla y nombre del organismo. Sin
-   * `READ_ADOPTION` (AGENT) devuelve `null`. `estricto` (alta): un error se propaga.
+   * `READ_ADOPTION` devuelve `null` (desde `V2.28` lo tienen SA, AB, AO y AGENT). `estricto` (alta): un
+   * error se propaga.
    */
   private resumenAdopcion(id: string, estricto: boolean): Observable<FichaAdopcionResumen | null> {
     if (!this.auth.can(LEER_ADOPCIONES)) return of(null);

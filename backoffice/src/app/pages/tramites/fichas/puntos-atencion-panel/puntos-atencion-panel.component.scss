@@ -13,6 +13,21 @@
   flex: 1 0 auto;
 }
 
+// Cuerpo del panel (con `cabecera`, además es `.ficha-paneles__cuerpo`: el padding lo pone el global).
+.puntos-cuerpo {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+// Título del panel con cabecera: recibe el foco programático (tabindex -1) y no queda tapado por la barra
+// superior del shell al hacer scroll hasta él.
+.puntos-titulo {
+  scroll-margin-top: calc(var(--theme-header-height) + var(--theme-space-md));
+
+  @include focus-ring;
+}
+
 .puntos {
   display: flex;
   flex-direction: column;

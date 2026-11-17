@@ -12,7 +12,8 @@ const DELAY = 200;
 
 /**
  * Implementación mock en memoria, fiel a las reglas del `Tag` real: slug canonicalizado,
- * `local` derivado del organismo y unicidad `(slug, organismo)` (un solo global por slug).
+ * `local` derivado del organismo, unicidad `(slug, organismo)` (un solo global por slug) y organismo
+ * inmutable: una etiqueta no cambia de alcance al editarla (`TagService.updateTag`).
  */
 @Injectable()
 export class EtiquetasMockDataSource extends EtiquetasDataSource {
@@ -46,20 +47,23 @@ export class EtiquetasMockDataSource extends EtiquetasDataSource {
     const actual = this.data.find((x) => x.id === id);
     if (!actual) return errorDeNegocio(API_CODES.TAXONOMY_NOT_FOUND, 'La etiqueta no existe');
 
+    // Cambiar de organismo no se permite. El backend responde el mismo 400 `4072` que para un slug repetido.
+    if (form.organismoId !== actual.organismoId) {
+      return errorDeNegocio(API_CODES.TAXONOMY_CONFLICT, `El objeto Etiqueta con el identificador ${form.slug} existe.`);
+    }
+
     const slug = canonicalizarSlug(form.slug);
     if (this.chocaUnicidad(slug, form.organismoId, id)) return this.slugEnUso();
 
-    const actualizada: EtiquetaVM = {
-      ...actual,
-      slug,
-      organismoId: form.organismoId,
-      local: form.organismoId != null,
-    };
+    const actualizada: EtiquetaVM = { ...actual, slug };
     this.data = this.data.map((x) => (x.id === id ? actualizada : x));
     return of({ ...actualizada }).pipe(delay(DELAY));
   }
 
   delete(id: string): Observable<void> {
+    if (!this.data.some((x) => x.id === id)) {
+      return errorDeNegocio(API_CODES.TAXONOMY_NOT_FOUND, `El objeto Etiqueta con el identificador ${id} no existe.`);
+    }
     this.data = this.data.filter((x) => x.id !== id);
     return of(void 0).pipe(delay(DELAY));
   }

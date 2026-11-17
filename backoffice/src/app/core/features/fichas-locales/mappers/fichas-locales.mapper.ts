@@ -39,8 +39,8 @@ export function toFichaLocal(dto: OrganismProcedureLocationExtendedResponseDTO):
 
 /**
  * Form → request. `estadoActual` es el estado que la ficha TIENE (en alta, `BORRADOR`, que el backend
- * igual ignora): el PUT es reemplazo total incluido `publicationStatus` (R-1), así que reenviar el
- * actual es lo que evita que una edición cambie el estado. El slug se canonicaliza (el backend no lo
+ * igual ignora). En `dev` el PUT ya no aplica `publicationStatus` (R-1 resuelto), pero en el backend de
+ * staging sí: hasta OPS-1, reenviar el actual es lo que evita que una edición cambie el estado. El slug se canonicaliza (el backend no lo
  * hace, igual que con `slugBase`, G-10). Textos opcionales vacíos → `null`.
  */
 export function toOrganismProcedureLocationRequest(

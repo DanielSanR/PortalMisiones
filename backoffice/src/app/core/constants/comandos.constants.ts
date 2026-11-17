@@ -49,7 +49,7 @@ export const COMANDOS: Comando[] = [
   },
   {
     // Bandeja de publicación: el listado abre la tab "En revisión" con `?tab=revision`. Las fichas no
-    // tienen comando de alta: cuelgan de un trámite del organismo ("Agregar localidad" en su detalle).
+    // tienen comando de alta: cuelgan de un trámite del organismo ("Nueva ficha" en la lista de fichas y "Agregar ficha por localidad" en su detalle).
     label: 'Revisar fichas por localidad',
     icon: 'map-pin-area',
     keywords: ['revision', 'publicar', 'ficha', 'localidad', 'bandeja', 'pendientes'],

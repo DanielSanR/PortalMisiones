@@ -13,13 +13,14 @@ import { PuntoAtencionFormValue, PuntoAtencionVM } from '../models/punto-atencio
  * Implementación HTTP real (`/api/attention-point`, permisos `*_ATTENTION_POINT`). Completa, pero el
  * override `'puntos-atencion'` sigue en `'mock'`: los puntos cuelgan de fichas, y las fichas siguen en
  * mock hasta G-1. Se activan juntos para no mezclar ids reales con ids mock (PLAN_TRAMITES_API.md §8).
- * Además, R-3: `V2.23` probablemente no asignó `*_ATTENTION_POINT` a ningún rol (403).
+ * Los permisos ya están asignados en `dev` (R-3 resuelto por `V2.28`); en staging faltan hasta OPS-1 (403).
  *
  * Nada abre el diálogo global de error: el panel muestra su propio error con "Reintentar" y el diálogo
  * de alta/edición traduce `4012`/`4073`. Segmentos interpolados con `encodeURIComponent`.
  */
 @Injectable()
 export class PuntosAtencionHttpDataSource extends PuntosAtencionDataSource {
+  readonly fuenteSimulada = false;
   private readonly apiUrl = `${environment.apiBaseUrl}/api/attention-point`;
 
   constructor(private http: HttpClient) {

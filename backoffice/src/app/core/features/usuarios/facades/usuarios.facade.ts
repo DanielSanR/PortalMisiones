@@ -3,7 +3,9 @@ import { BehaviorSubject, Observable, distinctUntilChanged, forkJoin, map, of, t
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { UserRole } from '@core/enums/user-role.enum';
 import { UsuariosRepository } from '../repositories/usuarios.repository';
-import { SesionUsuariosVM, UsuarioFormData, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
+import {
+  AsignacionRolFormValue, SesionUsuariosVM, UsuarioFormData, UsuarioFormValue, UsuarioVM,
+} from '../models/usuario.vm';
 import { OrganismosRepository } from '@features/organismos';
 import { RolesRepository } from '@features/roles';
 
@@ -85,6 +87,19 @@ export class UsuariosFacade {
 
   update(id: string, form: UsuarioFormValue): Observable<UsuarioVM> {
     return this.usuarios.update(id, form);
+  }
+
+  /**
+   * Asigna un rol a un usuario existente. Todavía sin pantalla: el backend no permite cerrar la asignación
+   * vigente, así que con un rol en curso responde `4081`. En la fila solo se refleja el rol que la fuente
+   * informa como vigente; el resto de la fila se conserva (la respuesta real no trae nombre ni organismo).
+   */
+  asignarRol(id: string, form: AsignacionRolFormValue): Observable<UsuarioVM> {
+    return this.usuarios.asignarRol(id, form).pipe(
+      tap((actualizado) =>
+        this._usuarios$.next(this._usuarios$.value.map((u) => (u.id === id ? { ...u, rol: actualizado.rol ?? u.rol } : u)))
+      )
+    );
   }
 
   /**

@@ -17,6 +17,7 @@ import { cierreConConfirmacion } from '@shared/utils/cierre-con-confirmacion';
 import { PuntoAtencionFormValue, PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
 import { MAX_DECIMALES, coordenadaValida, formatearCoordenada, parsearCoordenada, urlMapa } from '../coordenadas';
 import { CONFLICTOS_PUNTO, FALLBACK_PUNTO } from '../punto-save-error';
+import { TEXTO_PUNTOS_SIMULADOS } from '../../ficha-textos';
 
 /** Qué abre el diálogo: alta (sin `punto`) o edición. */
 export interface PuntoDialogData {
@@ -92,6 +93,8 @@ export class PuntoDialogComponent {
   readonly data = inject<PuntoDialogData>(MAT_DIALOG_DATA);
 
   readonly esEdicion = !!this.data.punto;
+  readonly fuenteSimulada = this.facade.fuenteSimulada;
+  readonly textoPuntosSimulados = TEXTO_PUNTOS_SIMULADOS;
   readonly maxNombre = MAX_NOMBRE;
   readonly maxDecimales = MAX_DECIMALES;
   readonly campos = CAMPOS;

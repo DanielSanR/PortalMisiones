@@ -4,3 +4,5 @@ export const RUTA_LISTA_FICHAS = '/dashboard/tramites/fichas';
 export const RUTA_NUEVA_FICHA = '/dashboard/tramites/fichas/nueva';
 export const RUTA_EDITAR_FICHA = '/dashboard/tramites/fichas/editar';
 export const RUTA_DETALLE_FICHA = '/dashboard/tramites/fichas/detalle';
+/** Fragmento del detalle de una ficha que lleva al panel de puntos de atención (`…/detalle/:id#puntos-atencion`). */
+export const FRAGMENTO_PUNTOS = 'puntos-atencion';

@@ -47,7 +47,7 @@
                               [modalidad]="estado.plantilla.modalidad ? (estado.plantilla.modalidad.nombre ?? noDisponible) : ''"
                               [principal]="estado.plantilla.categoriaPrincipal ? (estado.plantilla.categoriaPrincipal.nombre ?? noDisponible) : ''">
         @if (estado.plantilla.activa) {
-          <button type="button" mat-stroked-button color="warn" class="plantdet-desactivar" (click)="desactivar(estado.plantilla)"
+          <button type="button" mat-stroked-button color="warn" (click)="desactivar(estado.plantilla)"
                   *appHasPermission="'DELETE_PROCEDURE'">
             <i class="ph ph-prohibit" aria-hidden="true"></i> Desactivar
           </button>

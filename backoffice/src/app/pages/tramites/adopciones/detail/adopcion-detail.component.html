@@ -42,21 +42,29 @@
     </div>
   } @else {
     <div class="detail-col">
-      <header class="detail-header">
-        <div class="detail-header__row">
-          <h2 class="detail-header__title">{{ estado.adopcion.plantillaTitulo ?? 'Trámite sin nombre disponible' }}</h2>
-          <app-vigencia-badge [estado]="estado.adopcion.estadoVigencia" [habilitada]="estado.adopcion.habilitada" [bordered]="true"></app-vigencia-badge>
+      <header class="detail-header detail-header--flush detail-header--ficha">
+        <div class="detail-header__body">
+          <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-building-office"></i></span>
+
+          <div class="detail-header__identity">
+            <div class="detail-header__row">
+              <h2 class="detail-header__title" [class.detail-header__title--muted]="!estado.adopcion.plantillaTitulo">
+                {{ estado.adopcion.plantillaTitulo ?? 'Trámite sin nombre disponible' }}
+              </h2>
+              <app-vigencia-badge [estado]="estado.adopcion.estadoVigencia" [habilitada]="estado.adopcion.habilitada" [bordered]="true"></app-vigencia-badge>
+            </div>
+            <p class="detail-header__meta">
+              <span><i class="ph ph-building-office" aria-hidden="true"></i>
+              {{ estado.adopcion.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}</span>
+            </p>
+            @if (!estado.adopcion.habilitada) {
+              <p class="detail-header__notice">
+                <i class="ph ph-info" aria-hidden="true"></i>
+                Está deshabilitado: no aparece en el listado de Trámites del organismo.
+              </p>
+            }
+          </div>
         </div>
-        <p class="detail-header__meta">
-          <span><i class="ph ph-building-office" aria-hidden="true"></i>
-          {{ estado.adopcion.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}</span>
-        </p>
-        @if (!estado.adopcion.habilitada) {
-          <p class="detail-header__notice">
-            <i class="ph ph-info" aria-hidden="true"></i>
-            Está deshabilitado: no aparece en el listado de Trámites del organismo.
-          </p>
-        }
       </header>
 
       <div class="detail-grid detail-grid--aside">

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
 import { API_CODES } from '@core/constants/api-codes.constants';
 import { errorDeNegocio } from '@core/mocks/mock-errors';
+import { semillaAtadaAAdopciones } from '@core/config/data-source.config';
 import { PuntosAtencionDataSource } from './puntos-atencion.datasource';
 import { AttentionPointRequestDTO, AttentionPointResponseDTO } from '../models/punto-atencion.dto';
 import { toAttentionPointRequest, toPuntoAtencionVM } from '../mappers/puntos-atencion.mapper';
@@ -55,7 +56,9 @@ function semilla(): AttentionPointResponseDTO[] {
  */
 @Injectable()
 export class PuntosAtencionMockDataSource extends PuntosAtencionDataSource {
-  private data: AttentionPointResponseDTO[] = semilla();
+  readonly fuenteSimulada = true;
+  /** Sus fichas semilla (`fl-*`) cuelgan de adopciones mock: con adopciones reales arranca vacío. */
+  private data: AttentionPointResponseDTO[] = semillaAtadaAAdopciones(semilla);
 
   list(): Observable<PuntoAtencionVM[]> {
     return of(this.data.map(toPuntoAtencionVM)).pipe(delay(DELAY));

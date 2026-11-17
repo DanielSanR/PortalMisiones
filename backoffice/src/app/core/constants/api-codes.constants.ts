@@ -20,6 +20,8 @@ export const API_CODES = {
   USER_ALREADY_REGISTERED: 4002,
   EMAIL_SEND_FAILED: 4003,
   TOKEN_EXPIRED_OR_INVALID: 4004,
+  // "Verifique el elemento enviado…": en la asignación de rol, `effectiveTo` no posterior a `effectiveFrom` (400).
+  INVALID_ELEMENT: 4011,
   VALIDATION: 4012,
   WRONG_PASSWORD: 4016,
   PASSWORD_MISMATCH_OR_ROLE: 4018,
@@ -35,6 +37,8 @@ export const API_CODES = {
   ACCOUNT_DELETED: 4030,
   WEAK_PASSWORD: 4034,
   USER_NOT_FOUND: 4050,
+  // Organismo inexistente al crear un usuario o asignarle un rol (404, `UserService.resolveOrganism`).
+  ORGANISM_NOT_FOUND: 4058,
   ROLE_NOT_FOUND: 4059,
   PERMISSION_NOT_FOUND: 4060,
   ROLE_ALREADY_EXISTS: 4061,
@@ -57,7 +61,8 @@ export const API_CODES = {
   // Transición de publicación de la ficha no permitida desde el estado actual (409, backend `dev` 5186ab1).
   PUBLICATION_TRANSITION_INVALID: 4077,
   // Adopción solapada: misma plantilla, mismo organismo, vigencias que se pisan (409). El backend de `dev`
-  // ya trae el mensaje; staging todavía manda la clave cruda `"response.code.4080"` y el front lo traduce.
+  // (`58d383a`) ya trae el mensaje; hasta OPS-1 staging manda la clave cruda `"response.code.4080"` y el
+  // front lo traduce.
   ADOPTION_OVERLAP: 4080,
   // Asignación de rol que se superpone en vigencia con otra del mismo usuario (409).
   ROLE_ASSIGNMENT_OVERLAP: 4081,

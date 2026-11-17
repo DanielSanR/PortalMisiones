@@ -1,3 +1,9 @@
+@if (fuenteSimulada) {
+  <div class="form-aviso" role="note">
+    <i class="ph ph-warning" aria-hidden="true"></i>
+    <p>{{ textoFuenteSimulada }}</p>
+  </div>
+}
 @if (estado$ | async; as estado) {
   @if (estado.tipo === 'cargando') {
     <p class="fichasadop-mensaje" role="status">
@@ -18,9 +24,9 @@
         <span class="fichasadop-barra__texto">
           {{ estado.tipo === 'ok' && estado.fichas.length ? 'En qué localidades se ofrece, con sus requisitos, costos y puntos de atención.' : '' }}
         </span>
-        <a mat-stroked-button color="primary" [routerLink]="rutaNueva" [queryParams]="{ adopcion: adopcionId }"
+        <a mat-flat-button color="primary" [routerLink]="rutaNueva" [queryParams]="{ adopcion: adopcionId }"
            *appHasPermission="crearFicha">
-          <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar localidad
+          <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar ficha por localidad
         </a>
       </div>
 

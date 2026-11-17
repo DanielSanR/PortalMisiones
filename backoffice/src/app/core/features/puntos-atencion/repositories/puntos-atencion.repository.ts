@@ -8,6 +8,10 @@ import { PuntoAtencionFormValue, PuntoAtencionVM } from '../models/punto-atencio
 export class PuntosAtencionRepository {
   constructor(@Inject(PUNTOS_ATENCION_DS) private ds: PuntosAtencionDataSource) {}
 
+  get fuenteSimulada(): boolean {
+    return this.ds.fuenteSimulada;
+  }
+
   list(): Observable<PuntoAtencionVM[]> {
     return this.ds.list();
   }

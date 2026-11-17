@@ -8,6 +8,8 @@ import { PuntoAtencionFormValue, PuntoAtencionVM } from '../models/punto-atencio
  * inactivos) y el facade filtra.
  */
 export abstract class PuntosAtencionDataSource {
+  /** `true` si los datos son simulados (mock en memoria) y no se guardan en el servidor. */
+  abstract readonly fuenteSimulada: boolean;
   abstract list(): Observable<PuntoAtencionVM[]>;
   abstract getById(id: string): Observable<PuntoAtencionVM>;
   abstract create(form: PuntoAtencionFormValue): Observable<PuntoAtencionVM>;

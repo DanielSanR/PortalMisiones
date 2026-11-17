@@ -1,4 +1,31 @@
 @if (estado$ | async; as estado) {
+  @if (cabecera) {
+    <!-- Cabecera propia (detalle de la ficha): título que recibe el foco al llegar con `#puntos-atencion`,
+         total y "Agregar punto de atención" a la vista. En el form la cabecera la pone la pantalla. -->
+    <header class="ficha-paneles__cabecera">
+      <div class="ficha-paneles__encabezado">
+        <h3 #titulo class="detail-card__title puntos-titulo" tabindex="-1" [id]="tituloId">Puntos de atención</h3>
+        <p class="detail-card__subtitle">Dónde se hace el trámite en esta localidad.</p>
+      </div>
+      @if (estado.tipo === 'ok') {
+        <span class="ficha-paneles__total">{{ activos(estado.puntos) }} {{ activos(estado.puntos) === 1 ? 'activo' : 'activos' }}</span>
+      }
+      @if (estado.tipo === 'ok') {
+        <button type="button" mat-stroked-button color="primary" class="puntos-agregar" (click)="agregar()"
+                *appHasPermission="'CREATE_ATTENTION_POINT'">
+          <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar punto de atención
+        </button>
+      }
+    </header>
+  }
+
+  <div class="puntos-cuerpo" [class.ficha-paneles__cuerpo]="cabecera">
+  @if (fuenteSimulada) {
+    <div class="form-aviso" role="note">
+      <i class="ph ph-warning" aria-hidden="true"></i>
+      <p>{{ textoPuntosSimulados }}</p>
+    </div>
+  }
   @if (estado.tipo === 'cargando') {
     <p class="puntos-mensaje" role="status">
       <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
@@ -14,17 +41,21 @@
     </div>
   } @else {
     <div class="puntos">
+      @if (!cabecera || estado.inactivos) {
       <div class="puntos-barra">
         @if (estado.inactivos) {
           <mat-slide-toggle color="primary" [formControl]="inactivosCtrl">
             Mostrar inactivos ({{ estado.inactivos }})
           </mat-slide-toggle>
         }
-        <button type="button" mat-stroked-button color="primary" class="puntos-barra__agregar" (click)="agregar()"
-                *appHasPermission="'CREATE_ATTENTION_POINT'">
-          <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar punto
-        </button>
+        @if (!cabecera) {
+          <button type="button" mat-stroked-button color="primary" class="puntos-barra__agregar" (click)="agregar()"
+                  *appHasPermission="'CREATE_ATTENTION_POINT'">
+            <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Agregar punto de atención
+          </button>
+        }
       </div>
+      }
 
       @if (visibles$ | async; as puntos) {
         @if (!puntos.length) {
@@ -96,4 +127,5 @@
       }
     </div>
   }
+  </div>
 }

@@ -36,7 +36,7 @@
         <div class="detail-header__identity">
           <div class="detail-header__row">
             <h2 class="detail-header__title" [class.detail-header__title--muted]="!v.titulo">
-              {{ v.titulo || 'Trámite ' + noDisponible.toLowerCase() }}
+              {{ v.titulo || (v.sinAdopcion ? 'Elegí el trámite del organismo' : 'Trámite ' + noDisponible.toLowerCase()) }}
             </h2>
             @if (ficha) {
               <app-estado-badge [estado]="ficha.estado" [bordered]="true"></app-estado-badge>
@@ -77,6 +77,12 @@
     }
     <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
 
+    @if (fuenteSimulada) {
+      <div class="form-aviso" role="note">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        <p>{{ textoFuenteSimulada }}</p>
+      </div>
+    }
     @if (editaPublicada) {
       <div class="form-aviso">
         <i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>
@@ -119,18 +125,74 @@
             <div class="ficha-paneles__cuerpo">
               <div class="ficha-paneles__campos ficha-paneles__campos--grilla">
 
+                @if (eligeAdopcion) {
+                  <!-- Alta desde la lista (sin `?adopcion=`): la ficha cuelga de un trámite del organismo, así que es lo
+                       primero que se elige. Recién con el trámite leído se habilitan la localidad y el resto. -->
+                  <div class="form-field ficha-paneles__campo--completo" [class.is-invalid]="campoInvalido('adopcion')">
+                    <label class="form-field__label" id="adopcion-label" for="adopcion">
+                      Trámite del organismo <span class="form-field__required" aria-hidden="true">*</span>
+                    </label>
+                    @if (adopciones.length) {
+                      <app-tree-select formControlName="adopcion" [config]="arbolAdopciones" inputId="adopcion"
+                                       labelledBy="adopcion-label" describedBy="adopcion-ayuda"
+                                       [invalid]="campoInvalido('adopcion')"></app-tree-select>
+                      <span class="fichaform-ayuda" id="adopcion-ayuda" aria-live="polite">
+                        @if (cargandoAdopcion) {
+                          <i class="ph ph-spinner-gap spin" aria-hidden="true"></i> Leyendo las localidades del trámite…
+                        } @else {
+                          Lo que ofrece un organismo. Solo se listan los habilitados.
+                        }
+                      </span>
+                      @if (campoInvalido('adopcion')) {
+                        <span class="form-field__error" role="alert">
+                          <i class="ph ph-warning-circle" aria-hidden="true"></i> {{ campos.adopcion.validations?.mensajes?.['required'] }}
+                        </span>
+                      }
+                      @if (submitted && cargandoAdopcion) {
+                        <span class="form-field__error" role="alert">
+                          <i class="ph ph-warning-circle" aria-hidden="true"></i> Todavía se está leyendo el trámite elegido: esperá un momento y guardá de nuevo.
+                        </span>
+                      }
+                      @if (errorAdopcion) {
+                        <div class="form-aviso" role="alert">
+                          <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+                          <span>No pudimos leer ese trámite. Revisá tu conexión e intentá de nuevo.</span>
+                          <button type="button" mat-button color="primary" (click)="reintentarAdopcion()">
+                            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+                          </button>
+                        </div>
+                      }
+                      @if (adopcionInexistente) {
+                        <!-- El trámite ya no existe o fue deshabilitado: reintentar no sirve, se elige otro. -->
+                        <div class="form-aviso" role="alert">
+                          <i class="ph ph-warning" aria-hidden="true"></i>
+                          <span>Ese trámite del organismo ya no está disponible (puede que lo hayan deshabilitado o quitado). Elegí otro de la lista.</span>
+                        </div>
+                      }
+                    } @else {
+                      <div class="form-aviso" role="status" id="adopcion-ayuda">
+                        <i class="ph ph-warning" aria-hidden="true"></i>
+                        <span>
+                          No hay trámites del organismo habilitados para ofrecer en una localidad. Primero adoptá una plantilla en
+                          <a class="form-aviso__link" [routerLink]="rutaAdopciones">Trámites del organismo</a>.
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
                 <div class="form-field" [class.is-invalid]="campoInvalido('localidadId')">
                   <label class="form-field__label" id="localidad-label" for="localidad">
                     Localidad @if (!isEdit) {<span class="form-field__required" aria-hidden="true">*</span>}
                   </label>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
                     <mat-select id="localidad" aria-labelledby="localidad-label" formControlName="localidadId" [required]="!isEdit"
-                                placeholder="Elegí una localidad">
+                                [placeholder]="eligeAdopcion && !form.controls.adopcion.value ? 'Primero elegí el trámite del organismo' : 'Elegí una localidad'">
                       @for (op of datos.localidades; track op.id) {
                         <mat-option [value]="op.id" [disabled]="!isEdit && ocupada(op.id)">
                           {{ op.nombre }}
                           <span class="fichaform-opcion__depto">
-                            · {{ op.departamentoNombre }}{{ !isEdit && ocupada(op.id) ? ' · ya tiene ficha' : '' }}
+                            · {{ op.departamentoNombre }}{{ !isEdit && ocupada(op.id) ? (ocupadaPorDesactivada(op.id) ? ' · ya tiene una ficha desactivada' : ' · ya tiene ficha') : '' }}
                           </span>
                         </mat-option>
                       }
@@ -138,7 +200,7 @@
                     <mat-hint>{{ isEdit
                         ? 'No se puede cambiar: otra localidad es otra ficha.'
                         : datos.ocupadas.localidadesVerificables
-                          ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir.'
+                          ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir. Si la ficha está desactivada, reactivala editándola.'
                           : 'Todavía no podemos verificar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
                     </mat-hint>
                     <mat-error appFormErrorMessage [control]="form.controls.localidadId" [field]="campos.localidadId"></mat-error>
@@ -262,7 +324,10 @@
                 </header>
                 <p class="ficha-paneles__nota">
                   <i class="ph ph-info" aria-hidden="true"></i>
-                  <span>Los puntos se guardan al momento, aparte de los datos de la ficha.</span>
+                  <span>
+                    Los puntos se guardan al momento, aparte de los datos de la ficha. También se gestionan desde el
+                    <a class="detail-link fichaform-nota__enlace" [routerLink]="[rutaDetalle, f.id]" [fragment]="fragmentoPuntos">detalle de la ficha</a>.
+                  </span>
                 </p>
                 <div class="ficha-paneles__desplazable ficha-paneles__cuerpo">
                   <app-puntos-atencion-panel [fichaId]="f.id"></app-puntos-atencion-panel>

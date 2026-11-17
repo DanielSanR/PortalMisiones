@@ -75,7 +75,7 @@ mappers + models/view = hojas · barrel index.ts = superficie pública · <featu
 ## Workflow de Trámites (modelo real — ver `PLAN_TRAMITES_API.md`)
 Plantilla provincial (`/api/procedure-template`) → adopción por organismo = "Trámite del organismo" (`/api/organism-procedure`, con vigencia) → ficha por localidad (`/api/organism-procedure-location`) → puntos de atención (`/api/attention-point`). Features: `plantillas`, `adopciones`, `fichas-locales`, `puntos-atencion`.
 - Estados de la ficha: `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`. Quién publica lo decide el permiso `PUBLISH_VARIANT` (no el rol); enviar a revisión con `UPDATE_VARIANT`.
-- Plantillas en real; adopciones en mock hasta R-3; fichas y puntos en mock hasta G-1 (`PEDIDOS_BACKEND.md`).
+- Fuente por entorno (`environments/*.ts`): la cadena va toda con la misma fuente (se referencia por ids). Toda en real con `npm run start:local` (backend `dev` local) y toda en mock en `ng serve`. En staging y prod (OPS-1 cumplido el 2026-11-16) plantillas, adopciones y etiquetas van en real; fichas y puntos siguen en mock hasta G-1 (`PEDIDOS_BACKEND.md`), arrancan vacíos y la UI avisa que son datos de ejemplo.
 
 ## Commands
 - `cd backoffice && npx ng serve` — Dev server (port 4200)

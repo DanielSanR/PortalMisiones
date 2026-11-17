@@ -4,10 +4,23 @@
 // pill, `.form-field` (con `__fila` y `__mono`), `.form-aviso`, `.field-preview`, `.form-toggle`
 // (con `__interruptor` bloqueado), `.pasos-lista` y la tarjeta de dos paneles (`.ficha-paneles`, con
 // `__campos--grilla`, `__nota` y `--acotado`) son clases globales.
-// Acá solo lo propio: el departamento en las opciones de localidad.
+// Acá solo lo propio: el departamento en las opciones de localidad, la ayuda del trámite del organismo y el
+// enlace de la nota de puntos.
 // ==========================================================================
+
+@use 'shared-styles/mixins' as *;
 
 .fichaform-opcion__depto {
   color: var(--theme-text-tertiary);
   font-size: var(--theme-font-small-size);
+}
+
+// Ayuda bajo el buscador del trámite del organismo (no es un `mat-form-field`: no trae `mat-hint`).
+.fichaform-ayuda {
+  @include form-help-text;
+}
+
+// La nota de puntos usa el tamaño de cuerpo de la nota; el enlace no lo achica.
+.fichaform-nota__enlace {
+  font-size: inherit;
 }

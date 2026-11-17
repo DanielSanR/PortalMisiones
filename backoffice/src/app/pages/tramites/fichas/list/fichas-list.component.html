@@ -1,5 +1,18 @@
-<!-- "Fichas por localidad". Sin botón "Nueva": las fichas se agregan desde el detalle del trámite
-     del organismo ("Agregar localidad"), porque cuelgan de una adopción. -->
+<!-- "Fichas por localidad". "Nueva ficha" va al header del shell, como el "Nuevo…" de las demás listas (atajo N). Con
+     `CREAR_FICHA_ACCESS`: la ficha cuelga de un trámite del organismo, que se elige en el propio formulario. -->
+<ng-template appPageActions>
+  <button appAtajo="n" mat-raised-button color="primary" (click)="onNueva()" *appHasPermission="crearFicha">
+    <i class="ph ph-map-pin-plus" aria-hidden="true"></i> Nueva ficha
+  </button>
+</ng-template>
+
+@if (fuenteSimulada) {
+  <div class="form-aviso" role="note">
+    <i class="ph ph-warning" aria-hidden="true"></i>
+    <p>{{ textoFuenteSimulada }}</p>
+  </div>
+}
+
 @if (vista$ | async; as vista) {
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
@@ -70,9 +83,10 @@
     (pageChange)="onPageChange($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
-    [emptyActionLabel]="vista.hayFiltros ? 'Limpiar filtros' : ''"
-    emptyActionIcon="x"
-    (emptyAction)="limpiarFiltros()"
+    [emptyActionPermission]="vista.emptyAccion === 'nueva' ? crearFicha : ''"
+    [emptyActionLabel]="vista.emptyActionLabel"
+    [emptyActionIcon]="vista.emptyActionIcon"
+    (emptyAction)="onEmptyAction(vista.emptyAccion)"
     emptyIcon="map-pin-area">
 
     <ng-template appTableCell="tramite" let-row>

@@ -29,6 +29,21 @@ export interface UsuarioFormValue {
 }
 
 /**
+ * Asignación de rol a un usuario existente. Un usuario tiene un único rol vigente: el período pedido no
+ * puede superponerse con ninguna de sus asignaciones. Fechas de día completo, `YYYY-MM-DD`.
+ */
+export interface AsignacionRolFormValue {
+  /** UUID del rol (catálogo `/api/role/allowed`). */
+  rolId: string;
+  /** Con valor solo si el rol es de scope `organismo`; para un rol `global` es `null`. */
+  organismoId: string | null;
+  /** Inicio de la vigencia; `null` = desde hoy. */
+  vigenteDesde: string | null;
+  /** Fin de la vigencia (posterior al inicio); `null` = sin fin. */
+  vigenteHasta: string | null;
+}
+
+/**
  * Quién está operando la lista de usuarios, ya reducido a lo que la pantalla necesita: de eso depende qué
  * roles y organismo se ofrecen en el alta, y qué fila es "mi cuenta".
  */

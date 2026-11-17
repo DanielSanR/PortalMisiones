@@ -78,18 +78,24 @@ export interface FichaFormData {
   adopcion: FichaAdopcionResumen | null;
   localidades: FichaLocalidadOpcion[];
   /**
-   * Para validar duplicados en el cliente (mitiga G-9: el backend no tiene UNIQUE). Solo cuentan las
-   * fichas ACTIVAS del alcance visible, sin la que se edita.
+   * Para validar duplicados en el cliente antes de guardar. Cuentan TODAS las fichas del alcance visible
+   * (activas y desactivadas), sin la que se edita: los UNIQUE del backend (`V2.27`: adopción + localidad,
+   * slug + adopción) incluyen las desactivadas, y su violación llega como un 500 `5000` sin detalle.
    */
   ocupadas: {
-    /** Localidades que ya tienen una ficha activa de esta adopción. */
+    /** Localidades que ya tienen una ficha (activa o desactivada) de esta adopción. */
     localidadIds: string[];
+    /**
+     * Subconjunto de `localidadIds` cuya ficha está desactivada: no se crea otra, se reactiva esa
+     * (editándola y marcándola como activa).
+     */
+    localidadIdsDesactivadas: string[];
     /**
      * `false` si la fuente no informa a qué adopción pertenece cada ficha (G-1): `localidadIds` queda
      * vacío pero NO significa que estén libres; el form no puede validar el duplicado de localidad.
      */
     localidadesVerificables: boolean;
-    /** Slugs (canónicos) de las demás fichas activas. */
+    /** Slugs (canónicos) de las demás fichas, activas o desactivadas. */
     slugs: string[];
   };
 }

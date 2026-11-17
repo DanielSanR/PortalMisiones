@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Input, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,6 +18,7 @@ import { PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion
 import { PuntoDialogComponent, PuntoDialogData } from './punto-dialog/punto-dialog.component';
 import { formatearCoordenada, urlMapa } from './coordenadas';
 import { conMensajeDePunto } from './punto-save-error';
+import { TEXTO_PUNTOS_SIMULADOS, textoExito } from '../ficha-textos';
 
 /** Intentos (cada 50 ms) para esperar el re-render de la lista antes de devolver el foco. */
 const PINTADOS_MAX = 40;
@@ -36,6 +37,9 @@ type EstadoPanel =
  * - "Ver en mapa": OpenStreetMap con las coordenadas (P-8, sin dependencias).
  * - Gating por `*_ATTENTION_POINT` (el padre lo muestra solo con `READ_ATTENTION_POINT`).
  * - Tras cada ABM el facade invalida su caché y avisa por `cambios$`: el panel vuelve a leer.
+ * - `cabecera`: dibuja su propio encabezado (título, total y "Agregar punto de atención"), para el detalle de la
+ *   ficha, donde es un panel de primer nivel. `enfocarTitulo` lleva el foco (y el scroll) al título al mostrarse:
+ *   lo usa la lista de fichas con `#puntos-atencion`. En el form la cabecera es de la pantalla.
  */
 @Component({
   selector: 'app-puntos-atencion-panel',
@@ -60,6 +64,30 @@ export class PuntosAtencionPanelComponent {
 
   @Input({ required: true }) set fichaId(valor: string) {
     this.fichaId$.next(valor ?? '');
+  }
+
+  /** Dibuja el encabezado del panel (título, total, "Agregar punto de atención"). */
+  @Input() cabecera = false;
+  /** `id` del título (el `aria-labelledby` de la sección que lo contiene). */
+  @Input() tituloId = 'puntos-atencion-titulo';
+  /**
+   * Pide mover el foco al título cuando se dibuja (requiere `cabecera`). El panel no recuerda si ya lo hizo: lo
+   * decide el padre, que apaga este flag al recibir `tituloEnfocado` (así un panel recreado no vuelve a robar el foco).
+   */
+  @Input() enfocarTitulo = false;
+  /** El título ya recibió el foco por `enfocarTitulo`. */
+  @Output() readonly tituloEnfocado = new EventEmitter<void>();
+
+  /** La fuente es simulada: aviso persistente en el panel. */
+  readonly fuenteSimulada = this.facade.fuenteSimulada;
+  readonly textoPuntosSimulados = TEXTO_PUNTOS_SIMULADOS;
+
+  /** El título aparece recién cuando llega el primer estado: ahí se le da el foco. */
+  @ViewChild('titulo') set titulo(ref: ElementRef<HTMLElement> | undefined) {
+    if (!ref || !this.enfocarTitulo) return;
+    ref.nativeElement.focus();
+    // Diferido: se emite durante la detección de cambios y el padre cambia el binding de `enfocarTitulo`.
+    queueMicrotask(() => this.tituloEnfocado.emit());
   }
 
   readonly inactivosCtrl = new FormControl(false, { nonNullable: true });
@@ -94,6 +122,10 @@ export class PuntosAtencionPanelComponent {
 
   reintentar(): void {
     this.recargar$.next();
+  }
+
+  activos(puntos: PuntoAtencionVM[]): number {
+    return puntos.filter((p) => p.activo).length;
   }
 
   mapa(punto: PuntoAtencionVM): string | null {
@@ -149,7 +181,7 @@ export class PuntosAtencionPanelComponent {
     };
     abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Punto de atención desactivado', 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
+      .subscribe(() => this.snackBar.open(textoExito('Punto de atención desactivado', this.fuenteSimulada), 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
   }
 
   private abrir(data: PuntoDialogData, exito: string): void {
@@ -163,7 +195,7 @@ export class PuntosAtencionPanelComponent {
       .afterClosed()
       .pipe(filter((guardado): guardado is PuntoAtencionVM => !!guardado), takeUntilDestroyed(this.destroyRef))
       .subscribe((guardado) => {
-        this.snackBar.open(exito, 'OK', { duration: 3000, panelClass: 'snackbar-success' });
+        this.snackBar.open(textoExito(exito, this.fuenteSimulada), 'OK', { duration: 3000, panelClass: 'snackbar-success' });
         this.devolverFoco(guardado.id);
       });
   }
@@ -179,7 +211,7 @@ export class PuntosAtencionPanelComponent {
       const tarjeta = Array.from(host.querySelectorAll<HTMLElement>('[data-punto-id]'))
         .find((el) => el.dataset['puntoId'] === puntoId);
       return tarjeta?.querySelector<HTMLElement>('.puntos-card__acciones .row-action')
-        ?? host.querySelector<HTMLElement>('.puntos-barra__agregar');
+        ?? host.querySelector<HTMLElement>('.puntos-barra__agregar, .puntos-agregar');
     };
     interval(50).pipe(
       take(PINTADOS_MAX),

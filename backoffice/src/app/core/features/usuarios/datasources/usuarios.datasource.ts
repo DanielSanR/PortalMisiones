@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
+import { AsignacionRolFormValue, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 
 /**
  * Fuente de datos de usuarios. Interface source-agnostic: cada implementación (HTTP o mock)
@@ -21,6 +21,13 @@ export abstract class UsuariosDataSource {
   abstract getById(id: string): Observable<UsuarioVM>;
   abstract create(form: UsuarioFormValue): Observable<UsuarioVM>;
   abstract update(id: string, form: UsuarioFormValue): Observable<UsuarioVM>;
+  /**
+   * REAL: POST /api/user/{id}/role-assignments (`CREATE_USER`). Agrega una asignación de rol; no cierra la
+   * vigente (el backend todavía no lo permite). Errores de negocio: `4019` usuario inexistente, `4002`
+   * usuario inactivo, `4018` rol inexistente, `4058` organismo inexistente, `4029` rol y organismo que no
+   * se corresponden (o sin permiso), `4011` fin no posterior al inicio, `4081` período superpuesto.
+   */
+  abstract asignarRol(id: string, form: AsignacionRolFormValue): Observable<UsuarioVM>;
   /** Activa/desactiva la cuenta (REAL: PUT /api/user/{id}/status-account). */
   abstract setAccountStatus(id: string, active: boolean): Observable<void>;
   /** REAL: PUT /api/user/{id}/change-password (`UPDATE_USER`). Requiere `soportaAccionesDeCuenta`. */

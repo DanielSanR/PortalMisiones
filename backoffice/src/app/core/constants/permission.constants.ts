@@ -42,12 +42,14 @@ export const PERMISSIONS = {
   UPDATE_VARIANT: 'UPDATE_VARIANT',
   DELETE_VARIANT: 'DELETE_VARIANT',
   PUBLISH_VARIANT: 'PUBLISH_VARIANT',
-  // Adopción de una plantilla por un organismo (`/api/organism-procedure`, V2.20): SA, AB y AO en el seed.
+  // Adopción de una plantilla por un organismo (`/api/organism-procedure`, V2.20). Asignados desde `V2.28`
+  // (R-3): SA, AB y AO, los cuatro; AGENT solo READ y UPDATE (`V2.30`).
   CREATE_ADOPTION: 'CREATE_ADOPTION',
   READ_ADOPTION: 'READ_ADOPTION',
   UPDATE_ADOPTION: 'UPDATE_ADOPTION',
   DELETE_ADOPTION: 'DELETE_ADOPTION',
-  // Punto de atención de una ficha por localidad (`/api/attention-point`, V2.23): SA, AB, AO y AGENT.
+  // Punto de atención de una ficha por localidad (`/api/attention-point`, V2.23): SA, AB, AO y AGENT
+  // (asignados recién desde `V2.28`, R-3).
   CREATE_ATTENTION_POINT: 'CREATE_ATTENTION_POINT',
   READ_ATTENTION_POINT: 'READ_ATTENTION_POINT',
   UPDATE_ATTENTION_POINT: 'UPDATE_ATTENTION_POINT',
@@ -57,7 +59,7 @@ export const PERMISSIONS = {
   READ_TAXONOMY: 'READ_TAXONOMY',
   UPDATE_TAXONOMY: 'UPDATE_TAXONOMY',
   DELETE_TAXONOMY: 'DELETE_TAXONOMY',
-  // Etiquetas (PPDT-5.8, V2.24): SA, AB, AO y AGENT en el seed.
+  // Etiquetas (PPDT-5.8, V2.24): SA, AB, AO y AGENT (asignados recién desde `V2.28`, R-3).
   CREATE_TAG: 'CREATE_TAG',
   READ_TAG: 'READ_TAG',
   UPDATE_TAG: 'UPDATE_TAG',

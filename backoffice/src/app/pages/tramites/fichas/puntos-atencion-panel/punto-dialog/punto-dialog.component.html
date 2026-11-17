@@ -11,6 +11,12 @@
   </div>
 
   <div mat-dialog-content class="dialogo-formulario__cuerpo">
+    @if (fuenteSimulada) {
+      <div class="form-aviso" role="note">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        <p>{{ textoPuntosSimulados }}</p>
+      </div>
+    }
     <div class="dialogo-formulario__campos">
       <div class="form-field" [class.is-invalid]="invalido('nombre')">
         <label class="form-field__label" id="punto-nombre-label" for="punto-nombre">Nombre <span class="form-field__required" aria-hidden="true">*</span></label>

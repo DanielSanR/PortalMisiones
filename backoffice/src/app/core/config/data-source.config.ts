@@ -50,6 +50,15 @@ export function isMock(feature: FeatureKey): boolean {
 }
 
 /**
+ * Semilla de un mock cuyas filas referencian adopciones (`op-*`) y localidades (`loc-*`) del mock.
+ * Si el feature `adopciones` corre contra el backend real esos ids no existen (el front pediría
+ * `/api/organism-procedure/op-N` y fallaría): el mock arranca VACÍO. En modo todo-mock se conserva.
+ */
+export function semillaAtadaAAdopciones<T>(semilla: () => T[]): T[] {
+  return isMock('adopciones') ? semilla() : [];
+}
+
+/**
  * Provee la implementación de DataSource (Http o Mock) bajo el token del feature,
  * según la config resuelta. El Repository inyecta el token, nunca una clase concreta.
  *

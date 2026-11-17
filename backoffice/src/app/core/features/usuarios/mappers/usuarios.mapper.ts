@@ -1,7 +1,7 @@
 import { BACKEND_TO_ENUM } from '@core/enums/user-role.enum';
-import { CreateUserRequest, UserResponseDTO } from '../models/usuario.dto';
+import { AssignRoleRequest, CreateUserRequest, UserResponseDTO } from '../models/usuario.dto';
 import { Usuario } from '@core/models/usuario.model';
-import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
+import { AsignacionRolFormValue, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 
 /**
  * Mapea el DTO real del backend (`UserResponseDTO`) al ViewModel de la UI.
@@ -50,5 +50,18 @@ export function toCreateUserRequest(form: UsuarioFormValue, roleId: string): Cre
     role: roleId,
     organizationId: form.organismoId || undefined,
     profileDto: { firstName: form.nombre, lastName: form.apellido },
+  };
+}
+
+/**
+ * Construye el request real de asignación de rol. Lo que el form deja vacío se omite: el backend pone
+ * hoy como inicio y deja la asignación sin fin. El organismo solo viaja si hay (rol de scope `organismo`).
+ */
+export function toAssignRoleRequest(form: AsignacionRolFormValue): AssignRoleRequest {
+  return {
+    roleId: form.rolId,
+    organismId: form.organismoId || undefined,
+    effectiveFrom: form.vigenteDesde || undefined,
+    effectiveTo: form.vigenteHasta || undefined,
   };
 }

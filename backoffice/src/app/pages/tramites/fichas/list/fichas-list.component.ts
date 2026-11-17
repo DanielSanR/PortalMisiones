@@ -20,14 +20,20 @@ import { ListSearchComponent } from '../../../../shared/components/list-search';
 import { ActiveFiltersComponent, FiltroActivo } from '../../../../shared/components/active-filters';
 import { FilterTabOption, FilterTabsComponent } from '../../../../shared/components/filter-tabs';
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
+import { AtajoDirective } from '../../../../shared/directives/atajo.directive';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
+import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
+import { CREAR_FICHA_ACCESS } from '@core/constants/policy-overrides.constants';
 import { ESTADOS_PUBLICACION, ETIQUETA_ESTADO_PUBLICACION } from '@core/models/estado-publicacion.model';
 import { buscarEn } from '@core/utils/list-filter.utils';
 import {
   AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade, ResolverAccionesWorkflow,
 } from '@features/fichas-locales';
-import { ACCIONES_UI, confirmAccion, confirmDesactivar, nombreDeFicha } from '../ficha-textos';
+import {
+  ACCIONES_UI, TEXTO_FUENTE_SIMULADA, confirmAccion, confirmDesactivar, nombreDeFicha, textoExito,
+} from '../ficha-textos';
 import { NO_DISPONIBLE } from '../ficha-save-error';
-import { RUTA_DETALLE_FICHA, RUTA_EDITAR_FICHA } from '../fichas.rutas';
+import { FRAGMENTO_PUNTOS, RUTA_DETALLE_FICHA, RUTA_EDITAR_FICHA, RUTA_NUEVA_FICHA } from '../fichas.rutas';
 
 type Tab = 'todas' | 'revision';
 
@@ -47,6 +53,10 @@ interface FichasVista {
   filtrosActivos: FiltroActivo[];
   emptyTitle: string;
   emptyMessage: string;
+  /** Qué ofrece el botón del estado vacío: limpiar los filtros, crear la primera ficha, o nada (bandeja vacía). */
+  emptyAccion: 'limpiar' | 'nueva' | null;
+  emptyActionLabel: string;
+  emptyActionIcon: string;
   /** Acciones de workflow con la sesión vigente (del facade): las lee el menú de cada fila. */
   accionesWorkflow: ResolverAccionesWorkflow;
 }
@@ -60,7 +70,9 @@ interface FichasVista {
  *   activas pendientes. El nav no soporta badges: el contador vive acá.
  * - Las desactivadas (el backend las lista) se ocultan salvo con "Mostrar desactivadas".
  * - Las acciones de workflow de cada fila salen de `accionesWorkflow$` del facade (permiso, nunca rol: D-3).
- * - Las fichas no se crean desde acá: cuelgan de un trámite del organismo ("Agregar localidad").
+ * - "Nueva ficha" (`CREAR_FICHA_ACCESS`, atajo N) en el header y en el estado vacío: abre el alta, que deja elegir
+ *   el trámite del organismo del que cuelga. También se agrega desde el detalle de un trámite del organismo.
+ * - La acción de fila "Puntos de atención" (`READ_ATTENTION_POINT`) abre el detalle con el foco en ese panel.
  */
 @Component({
   selector: 'app-fichas-list',
@@ -82,6 +94,9 @@ interface FichasVista {
     ActiveFiltersComponent,
     FilterTabsComponent,
     EstadoBadgeComponent,
+    PageActionsDirective,
+    HasPermissionDirective,
+    AtajoDirective,
   ],
   templateUrl: './fichas-list.component.html',
   styleUrl: './fichas-list.component.scss',
@@ -96,7 +111,11 @@ export class FichasListComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly fichas$ = this.facade.fichas$;
+  /** La fuente es simulada: aviso persistente, nada de lo que se haga llega al servidor. */
+  readonly fuenteSimulada = this.facade.fuenteSimulada;
+  readonly textoFuenteSimulada = TEXTO_FUENTE_SIMULADA;
   readonly rutaDetalle = RUTA_DETALLE_FICHA;
+  readonly crearFicha = CREAR_FICHA_ACCESS;
   readonly noDisponible = NO_DISPONIBLE;
   readonly estados = ESTADOS_PUBLICACION.map((valor) => ({ valor, etiqueta: ETIQUETA_ESTADO_PUBLICACION[valor] }));
 
@@ -264,8 +283,18 @@ export class FichasListComponent implements OnInit {
     };
   }
 
+  /** Alta de una ficha: el formulario deja elegir el trámite del organismo del que cuelga. */
+  onNueva(): void {
+    this.router.navigate([RUTA_NUEVA_FICHA]);
+  }
+
+  onEmptyAction(accion: FichasVista['emptyAccion']): void {
+    if (accion === 'limpiar') this.limpiarFiltros();
+    if (accion === 'nueva') this.onNueva();
+  }
+
   /**
-   * Menú de la fila: editar, las acciones de workflow que correspondan al estado y desactivar. El
+   * Menú de la fila: puntos de atención, editar, las acciones de workflow que correspondan al estado y desactivar. El
    * permiso lo vuelve a filtrar `app-row-actions` (y se recalcula en cada detección de cambios).
    */
   accionesDe(ficha: FichaLocalVM, accionesWorkflow: ResolverAccionesWorkflow): RowAction[] {
@@ -278,6 +307,14 @@ export class FichasListComponent implements OnInit {
     }));
 
     const acciones: RowAction[] = [
+      {
+        // Los puntos de atención viven en el detalle de la ficha: el fragmento deja el foco en su panel.
+        label: 'Puntos de atención',
+        icon: 'map-pin',
+        permission: 'READ_ATTENTION_POINT',
+        ariaLabel: `Puntos de atención de la ficha ${nombreDeFicha(ficha)}`,
+        run: () => this.router.navigate([RUTA_DETALLE_FICHA, ficha.id], { fragment: FRAGMENTO_PUNTOS }),
+      },
       {
         label: 'Editar',
         icon: 'pencil-simple',
@@ -317,7 +354,7 @@ export class FichasListComponent implements OnInit {
   private confirmar(data: ConfirmDialogData, exito: string): void {
     abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open(exito, 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
+      .subscribe(() => this.snackBar.open(textoExito(exito, this.fuenteSimulada), 'OK', { duration: 3000, panelClass: 'snackbar-success' }));
   }
 
   /** Bloquea la fila mientras la acción corre. */
@@ -327,17 +364,27 @@ export class FichasListComponent implements OnInit {
     return accion$.pipe(finalize(() => { this.ocupadaId = null; this.cdr.markForCheck(); }));
   }
 
-  private textosVacio(hayFichas: boolean, hayFiltros: boolean, tab: Tab): { emptyTitle: string; emptyMessage: string } {
+  private textosVacio(
+    hayFichas: boolean, hayFiltros: boolean, tab: Tab,
+  ): Pick<FichasVista, 'emptyTitle' | 'emptyMessage' | 'emptyAccion' | 'emptyActionLabel' | 'emptyActionIcon'> {
     // Con filtros activos, "Sin resultados" aunque no haya fichas: el CTA es "Limpiar filtros".
     if (hayFiltros) {
-      return { emptyTitle: 'Sin resultados', emptyMessage: 'Ninguna ficha coincide con la búsqueda o los filtros aplicados.' };
+      return {
+        emptyTitle: 'Sin resultados', emptyMessage: 'Ninguna ficha coincide con la búsqueda o los filtros aplicados.',
+        emptyAccion: 'limpiar', emptyActionLabel: 'Limpiar filtros', emptyActionIcon: 'x',
+      };
     }
     if (hayFichas && tab === 'revision') {
-      return { emptyTitle: 'No hay fichas en revisión', emptyMessage: 'Cuando alguien envíe una ficha a revisión, va a aparecer acá para publicarla.' };
+      return {
+        emptyTitle: 'No hay fichas en revisión',
+        emptyMessage: 'Cuando alguien envíe una ficha a revisión, va a aparecer acá para publicarla.',
+        emptyAccion: null, emptyActionLabel: '', emptyActionIcon: 'x',
+      };
     }
     return {
       emptyTitle: 'Todavía no hay fichas por localidad',
-      emptyMessage: 'Una ficha dice cómo se hace un trámite del organismo en una localidad. Se agregan desde el detalle del trámite del organismo.',
+      emptyMessage: 'Una ficha dice cómo se hace un trámite del organismo en una localidad, con sus requisitos, costos y puntos de atención.',
+      emptyAccion: 'nueva', emptyActionLabel: 'Nueva ficha', emptyActionIcon: 'map-pin-plus',
     };
   }
 

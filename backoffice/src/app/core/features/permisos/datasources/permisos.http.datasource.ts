@@ -9,7 +9,10 @@ import { toPermisoVM, toPermissionRequest } from '../mappers/permisos.mapper';
 import { PermisoFormValue, PermisoVM } from '../models/permiso.vm';
 import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
-/** Implementación HTTP real (`/api/permission`, BACKEND_API_SPEC.md §4.5). Todo requiere SUPERADMIN. */
+/**
+ * Implementación HTTP real (`/api/permission`, BACKEND_API_SPEC.md §4.5). Los `GET` admiten SUPERADMIN y
+ * ADMIN_BACKOFFICE; crear, editar y eliminar, solo SUPERADMIN.
+ */
 @Injectable()
 export class PermisosHttpDataSource extends PermisosDataSource {
   private readonly apiUrl = `${environment.apiBaseUrl}/api/permission`;

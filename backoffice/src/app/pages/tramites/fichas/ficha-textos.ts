@@ -77,6 +77,23 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
   },
 };
 
+/**
+ * Aviso persistente cuando la fuente de fichas y puntos de atención es simulada (mock en memoria):
+ * nada de lo que se cargue llega al servidor (G-1, `PEDIDOS_BACKEND.md`).
+ */
+export const TEXTO_FUENTE_SIMULADA =
+  'Datos de ejemplo: las fichas y los puntos de atención todavía no se guardan en el servidor. '
+  + 'Lo que cargues acá se pierde al recargar la página.';
+
+/** Versión corta para el panel y el diálogo de puntos de atención. */
+export const TEXTO_PUNTOS_SIMULADOS =
+  'Datos de ejemplo: los puntos de atención todavía no se guardan en el servidor y se pierden al recargar la página.';
+
+/** Texto de un snackbar de éxito; con fuente simulada aclara que no se guardó en el servidor. */
+export function textoExito(texto: string, simulada: boolean): string {
+  return simulada ? `${texto} (datos de ejemplo, no se guardó en el servidor)` : texto;
+}
+
 /** Nombre legible de una ficha: "Trámite · Localidad" (o el slug si no hay nombres, sin G-1). */
 export function nombreDeFicha(ficha: FichaLocalVM): string {
   const partes = [ficha.plantillaTitulo, ficha.localidadNombre].filter((p): p is string => !!p);

@@ -1,4 +1,5 @@
 import { firstValueFrom } from 'rxjs';
+import { environment } from '@env/environment';
 import { FichasLocalesMockDataSource } from './fichas-locales.mock.datasource';
 import { FichaLocalFormValue } from '../models/ficha-local.vm';
 
@@ -79,5 +80,57 @@ describe('FichasLocalesMockDataSource', () => {
     expect(await codigoDeError(firstValueFrom(ds.getById('no-existe')))).toBe(4073);
     expect(await codigoDeError(firstValueFrom(ds.transicion('no-existe', 'publish')))).toBe(4073);
     expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, localidadId: '' })))).toBe(5000);
+  });
+
+  describe('unicidad (V2.27): responde el 5000 genérico, como el backend', () => {
+    it('otra ficha de la misma adopción y localidad, aunque esté desactivada', async () => {
+      // fl-1: op-1 + Posadas, activa. fl-6: op-2 + Garupá, desactivada.
+      expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, localidadId: 'loc-posadas' })))).toBe(5000);
+      expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, adopcionId: 'op-2' })))).toBe(5000);
+    });
+
+    it('el mismo slug dentro de la adopción; en otra adopción se puede repetir', async () => {
+      const slug = 'obtener-licencia-de-conducir-posadas'; // el de fl-1 (op-1)
+      expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, slug })))).toBe(5000);
+      const enOtraAdopcion = await firstValueFrom(ds.create({ ...FORM, adopcionId: 'op-3', slug }));
+      expect(enOtraAdopcion.slug).toBe(slug);
+    });
+
+    it('editar una ficha no choca consigo misma, pero sí con las demás', async () => {
+      const fl3: FichaLocalFormValue = {
+        ...FORM, localidadId: 'loc-eldorado', slug: 'obtener-licencia-de-conducir-eldorado',
+      };
+      const editada = await firstValueFrom(ds.update('fl-3', { ...fl3, costos: '$1' }, 'BORRADOR'));
+      expect(editada.costos).toBe('$1');
+      expect(await codigoDeError(firstValueFrom(ds.update('fl-3', { ...fl3, localidadId: 'loc-obera' }, 'BORRADOR')))).toBe(5000);
+    });
+  });
+});
+
+describe('FichasLocalesMockDataSource · semillas según la fuente de adopciones', () => {
+  const overrides = environment.featureOverrides as Record<string, 'mock' | 'local' | 'prod' | undefined>;
+  let original: 'mock' | 'local' | 'prod' | undefined;
+
+  beforeEach(() => { original = overrides['adopciones']; });
+  afterEach(() => { overrides['adopciones'] = original; });
+
+  it('es una fuente simulada', () => {
+    expect(new FichasLocalesMockDataSource().fuenteSimulada).toBeTrue();
+  });
+
+  it('con adopciones en mock (todo-mock) conserva las 8 semillas', async () => {
+    overrides['adopciones'] = 'mock';
+    const lista = await firstValueFrom(new FichasLocalesMockDataSource().list());
+    expect(lista.map((f) => f.id)).toEqual(['fl-1', 'fl-2', 'fl-3', 'fl-4', 'fl-5', 'fl-6', 'fl-7', 'fl-8']);
+  });
+
+  it('con adopciones reales arranca vacío, y sigue permitiendo crear y leer lo creado', async () => {
+    overrides['adopciones'] = 'prod';
+    const ds = new FichasLocalesMockDataSource();
+    expect(await firstValueFrom(ds.list())).toEqual([]);
+    expect(await codigoDeError(firstValueFrom(ds.getById('fl-1')))).toBe(4073);
+
+    const creada = await firstValueFrom(ds.create(FORM));
+    expect((await firstValueFrom(ds.list())).map((f) => f.id)).toEqual([creada.id]);
   });
 });

@@ -26,14 +26,17 @@ class MockExcluidoDelBuild {
 /** Una sola clase para todos: el stub pesa lo mismo con 1 o con 11 features excluidos. */
 const excluido = MockExcluidoDelBuild as unknown as Type<never>;
 
+export const AdopcionesMockDataSource = excluido;
 export const CategoriasMockDataSource = excluido;
 export const CuentaMockDataSource = excluido;
 export const DestinatariosMockDataSource = excluido;
+export const EtiquetasMockDataSource = excluido;
 export const EventosDeVidaMockDataSource = excluido;
 export const LocalidadesMockDataSource = excluido;
 export const ModalidadesMockDataSource = excluido;
 export const OrganismosMockDataSource = excluido;
 export const PermisosMockDataSource = excluido;
+export const PlantillasMockDataSource = excluido;
 export const RolesMockDataSource = excluido;
 export const TiposOrganismoMockDataSource = excluido;
 export const UsuariosMockDataSource = excluido;

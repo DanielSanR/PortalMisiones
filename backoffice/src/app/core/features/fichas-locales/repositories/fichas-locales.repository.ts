@@ -13,6 +13,11 @@ import { TransicionBackend } from '../models/workflow';
 export class FichasLocalesRepository {
   constructor(@Inject(FICHAS_LOCALES_DS) private ds: FichasLocalesDataSource) {}
 
+  /** Capacidad de la fuente: ver `FichasLocalesDataSource.fuenteSimulada`. */
+  get fuenteSimulada(): boolean {
+    return this.ds.fuenteSimulada;
+  }
+
   list(): Observable<FichaLocal[]> {
     return this.ds.list();
   }

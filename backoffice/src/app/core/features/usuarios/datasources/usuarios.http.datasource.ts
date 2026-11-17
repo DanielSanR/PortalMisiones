@@ -5,21 +5,23 @@ import { environment } from '@env/environment';
 import { ResponseDTO } from '@core/models/api-response.model';
 import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 import { UsuariosDataSource } from './usuarios.datasource';
-import { toCreateUserRequest, toUsuarioVM } from '../mappers/usuarios.mapper';
+import { toAssignRoleRequest, toCreateUserRequest, toUsuarioVM } from '../mappers/usuarios.mapper';
 import {
   ChangeEmailRequest, ChangePasswordRequest, StatusAccountRequest, UserResponseDTO,
 } from '../models/usuario.dto';
-import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
+import { AsignacionRolFormValue, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 
 /**
- * DataSource real de usuarios (`/api/user`, backend `dev` @ `b6f505b`):
+ * DataSource real de usuarios (`/api/user`, backend `dev` @ `58d383a`):
  *  - `list` → `GET /api/user` (`READ_USER`; AO recibe solo los de su organismo, PPDT-5.2).
  *  - `getById` → `GET /api/user/{id}`. `create` → `POST /api/user`.
+ *  - `asignarRol` → `POST /api/user/{id}/role-assignments` (todavía sin pantalla).
  *  - Estado de la cuenta (explícito, nunca un toggle), email y contraseña → endpoints reales por usuario.
  *  - `update` → NO DISPONIBLE: el backend no tiene edición de perfil/rol (`PUT /api/user/{id}` es la baja
  *    lógica). `soportaEdicion = false`, la lista no ofrece "Editar".
  *  - `deleteDefinitive` → NO DISPONIBLE hasta G-13 (hoy siempre 500 por la FK de `user_role_assignments`).
- * ⚠️ G-13: el response trae `role: null` y sin nombre/organismo; el mapper los deja vacíos.
+ * ⚠️ G-13: los `GET` (lista y por id) siguen trayendo `role: null` y nunca nombre ni organismo; el mapper
+ *    los deja vacíos. Los `POST` (alta y asignación de rol) sí devuelven `role`.
  */
 @Injectable()
 export class UsuariosHttpDataSource extends UsuariosDataSource {
@@ -46,7 +48,7 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
   }
 
   /**
-   * REAL: POST /api/user (`CreateUserRequest`, backend `dev` @ `b6f505b`). `form.rol` = UUID del rol.
+   * REAL: POST /api/user (`CreateUserRequest`, backend `dev` @ `58d383a`). `form.rol` = UUID del rol.
    * `form.organismoId` viaja como `organizationId`: el backend lo exige si el rol es de scope
    * `organismo` (si falta → 403 `4029`) y, si quien crea es ADMIN_ORGANIZATION, lo pisa con el suyo.
    * Para un rol `global` el form manda `null` y el campo se omite: el backend NO lo rechaza y dejaría
@@ -62,6 +64,14 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
 
   update(_id: string, _form: UsuarioFormValue): Observable<UsuarioVM> {
     return noDisponible('editar el usuario', 'el backend no tiene edición de perfil ni de rol');
+  }
+
+  /** Responde 201 con el usuario y su rol vigente (`role` poblado). */
+  asignarRol(id: string, form: AsignacionRolFormValue): Observable<UsuarioVM> {
+    return this.http
+      // El form muestra el error inline; se salta el diálogo de error global.
+      .post<ResponseDTO<UserResponseDTO>>(`${this.urlDe(id)}/role-assignments`, toAssignRoleRequest(form), sinDialogoGlobal())
+      .pipe(map((res) => toUsuarioVM(res.data)));
   }
 
   setAccountStatus(id: string, active: boolean): Observable<void> {

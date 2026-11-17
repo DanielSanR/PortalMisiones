@@ -24,7 +24,7 @@ export class EtiquetasHttpDataSource extends EtiquetasDataSource {
   list(): Observable<EtiquetaVM[]> {
     return this.http
       .get<ResponseDTO<TagResponseDTO[]>>(this.apiUrl)
-      .pipe(map((res) => res.data.map(toEtiquetaVM)));
+      .pipe(map((res) => (res.data ?? []).map(toEtiquetaVM)));
   }
 
   getById(id: string): Observable<EtiquetaVM> {

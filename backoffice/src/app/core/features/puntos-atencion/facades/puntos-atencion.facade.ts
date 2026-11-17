@@ -31,6 +31,11 @@ export class PuntosAtencionFacade {
       .subscribe(() => this.invalidar());
   }
 
+  /** ¿Los datos son simulados (no se guardan en el servidor)? Lo decide la fuente. */
+  get fuenteSimulada(): boolean {
+    return this.puntos.fuenteSimulada;
+  }
+
   /** Puntos (activos e inactivos) de una ficha, ordenados: activos primero, después por nombre. */
   getDeFicha(fichaId: string): Observable<PuntoAtencionVM[]> {
     return this.todos().pipe(

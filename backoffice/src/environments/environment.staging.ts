@@ -4,9 +4,10 @@
  * - `apiBaseUrl: ''` → las llamadas salen same-origin (`/api/...`) y las reenvía `proxy.staging.cjs` a
  *   https://tramitesmisiones.api.dev.stagemnes.net.ar. Staging no acepta CORS desde localhost y responde
  *   403 a cualquier request con header `Origin`: el proxy lo quita.
- * - Staging corre una versión anterior del backend (≈ `d800be0`, julio): NO tiene `/api/tag` ni la API de
- *   trámites (`/api/procedure-template`, `/api/organism-procedure`, …) ni PPDT-5.1. Esos features van a
- *   mock acá. Revisar este archivo cada vez que se actualice staging (`GET /api-docs` lista los paths).
+ * - Staging corre el backend `dev` @ 58d383a (deploy del 16/11/2026): etiquetas, plantillas y adopciones van
+ *   en real. Fichas por localidad y puntos de atención siguen en mock: el response de la ficha no trae su
+ *   contenido (G-1) y editar contra el real lo borraría. Revisar este archivo en cada deploy de staging
+ *   (`GET /api-docs` lista los paths).
  */
 export const environment = {
   production: false,
@@ -20,12 +21,10 @@ export const environment = {
   dataSource: 'local' as 'mock' | 'local' | 'prod',
   featureOverrides: {
     // Usuarios: real (GET/POST /api/user y acciones de cuenta, BO-22). No se ofrecen la edición (sin endpoint)
-    // ni el borrado definitivo (G-13); el rol llega vacío hasta G-13.
+    // ni el borrado definitivo (G-13); `GET /api/user` lista por alcance, pero sin rol, organismo ni nombre (G-13).
     usuarios: 'local',
-    // No desplegados en staging (mock hasta OPS-1, deploy de dev a staging; igual que en prod):
-    etiquetas: 'mock',
-    plantillas: 'mock',
-    adopciones: 'mock',
+    // etiquetas, plantillas y adopciones: reales (heredan el default).
+    // Bloqueados por G-1 (response mínimo de la ficha), igual que en prod:
     'fichas-locales': 'mock',
     'puntos-atencion': 'mock',
     // Sin backend en ningún entorno:

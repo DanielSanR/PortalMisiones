@@ -8,7 +8,15 @@
 >
 > **Fuente:** generado leyendo el código del backend (controllers, DTOs, entities, `SecurityConfig`,
 > `GlobalExceptionHandler`, migraciones SQL). **Sincronizado con el commit `d800be0` (dev, 2026-07-29).**
-> Última actualización: 2026-07-29.
+> Última actualización: 2026-07-29. **Relevamientos posteriores:** `2e41090` (§7.0), `0ea13a0` (§7.0.1), `23fd8f9`
+> (§7.0.2) y **`58d383a` (dev, 2026-11-16, migraciones hasta `V2.30`; §7.0.3)**.
+>
+> **🆕 Revisión `58d383a` (2026-11-16) — qué se tocó en este documento:** rutas públicas reales de `SecurityConfig`,
+> incluida `GET /api/tag/public` (§1.3); códigos `4011`, `4058`, `4077`, `4080`, `4081` y `4091` (§1.6); `GET /api/user`
+> y `POST /api/user/{id}/role-assignments` (§3.2); regla "un usuario = un único rol vigente" (§4.1); matriz rol ×
+> permiso con `V2.28`/`V2.30` (§4.2); estado de R-3, R-1 y G-15 (§5.5, §7.0.3). ⚠️ **Staging todavía no tiene estos
+> cambios** (quedó en el merge del 2026-10-17): lo que acá figura como "en `dev`" no está online hasta OPS-1
+> (`PEDIDOS_BACKEND.md`).
 >
 > **🔥 Novedades de esta revisión (`0ecd14e` → `d800be0`) — CAMBIO ESTRUCTURAL DE AUTORIZACIÓN:**
 > 1. **💥 Migración de RBAC por ROL a RBAC por PERMISO.** La mayoría de los `@PreAuthorize` pasaron de
@@ -130,19 +138,28 @@ de cada permiso activo de ese rol, tal cual** (sin prefijo). De ahí que `hasRol
 ### 1.3 Endpoints públicos vs autenticados (matchers exactos de `SecurityConfig`)
 `OPTIONS *` → `permitAll` (preflight CORS).
 
-**PÚBLICOS (`permitAll`)** — sin cambios en `d800be0`:
+**PÚBLICOS (`permitAll`)** — lista real de `security/configuration/SecurityConfig.java` @ `58d383a` (`PUBLIC_URLS`,
+`:41-60`, más los matchers por método de `:77-80`):
 ```
 /api-docs.yml  /api-docs/**  /actuator/health
 /configuration/ui  /configuration/**  /swagger-resources/**  /swagger-ui/**  /webjars/**
 /api/auth/**  /api/auth/register
-/api/email/activate-account/{token}  /api/email/**
+/api/email/**
 /api/recaptcha/**
-/projects/**  /drafts/**
 /api/location/**        /api/department/**
-/api/category/**        /api/modality/**     /api/life-event/**
-/api/recipient/**       (NUEVO en 0ecd14e)
-/api/organization-type/**  /api/document/**
+/api/category/**        /api/life-event/**   /api/modality/**
+/api/recipient/**
+
+GET  /api/procedure/search        (búsqueda pública)
+GET  /api/procedure/*             (ficha pública por slug)
+POST /api/procedure/*/feedback    (feedback ciudadano)
+GET  /api/tag/public              (🆕 etiquetas globales, sin auth)
 ```
+> 🧹 **A `58d383a` ya no figuran las rutas muertas** de versiones anteriores de esta lista:
+> `/api/email/activate-account/{token}` (queda cubierta por `/api/email/**`), `/projects/**`, `/drafts/**`,
+> `/api/organization-type/**` y `/api/document/**`. Ningún controller de `dev` mapea esas rutas.
+> **`/api/tag/**` sigue requiriendo auth** salvo `GET /api/tag/public`, que devuelve solo las etiquetas globales (sin
+> organismo): `TagController.getPublic` → `TagService.getPublicGlobalTags`. Sirve al portal; no resuelve G-17.
 > **Cambios de visibilidad vs versión anterior:**
 > - ❌ `/api/municipality/**` — eliminado (Municipality ya no existe; ahora Location).
 > - ❌ `/api/storage/**` — **ya NO es público**: ahora requiere autenticación (cae en `anyRequest().authenticated()`).
@@ -159,7 +176,8 @@ ADMIN_URLS                    -> hasAnyRole(SUPERADMIN, ADMIN_BACKOFFICE)
 USER_URLS                     -> hasRole(USER)
 anyRequest()                  -> authenticated()
 ```
-- `ADMIN_URLS` = `/admin/**`, `/roles/**`, `/api/role/**`, `/api/roles/**`
+- `ADMIN_URLS` = `/admin/**` (en `58d383a`; antes incluía `/roles/**`, `/api/role/**` y `/api/roles/**`. `/api/role/**`
+  y `/api/permission/**` se autorizan ahora solo por sus `@PreAuthorize`)
   > ❌ **Se quitaron `/api/user/**` y `/api/users/**`** del matcher, y **se eliminó el matcher
   > `POST /api/user -> hasAnyRole(...)`**. Todo `/api/user/**` cae ahora en `anyRequest().authenticated()`
   > y **la autorización real la deciden los `@PreAuthorize` por permiso** de `UserController` (§3.2).
@@ -178,7 +196,7 @@ anyRequest()                  -> authenticated()
 ### 1.4 CORS
 - Origins: `cors.allowed-origins` = `front.url.backoffice, front.url.portal` (default `http://localhost:4200`).
 - Métodos: `GET, POST, PUT, DELETE, OPTIONS, PATCH` · `allowCredentials: true` · `allowedHeaders: *` ·
-  `exposedHeaders: Authorization` · aplica a `/**`.
+  `exposedHeaders: Authorization, X-Search-Session-Id` · aplica a `/**`.
 
 ### 1.5 Envelopes de respuesta
 **`ResponseDTO<T>`** — envelope de ÉXITO usado por la mayoría de endpoints:
@@ -205,7 +223,8 @@ anyRequest()                  -> authenticated()
 | `MethodArgumentNotValidException` (validación `@Valid`) | `400` | `4012` | `details` = `"campo: msg; campo2: msg2"` |
 | `GlobalAppException` (negocio) | variable `e.getStatus()` | `e.getCode()` | status y code los fija el servicio |
 | `GlobalMessageException` (negocio) | variable | `e.getCode()` | |
-| `Exception` (genérica / 500) | `500` | `5000` | "Ocurrió un error inesperado." |
+| `OptimisticLockException` (`jakarta.persistence`; 🆕 `58d383a`) | `409` | `4091` | "El recurso fue modificado por otro usuario." Hoy solo aplica a la ficha por localidad (`@Version`). Ver G-8: la excepción que lanza Spring Data es otra y probablemente caiga en el 500 |
+| `Exception` (genérica / 500) | `500` | `5000` | "Ocurrió un error inesperado." Incluye id no UUID, método no soportado y body ilegible (G-18) |
 
 **B) Errores de la capa de seguridad (filtros, NO pasan por el advice) — cuerpo = `ErrorDTO`**:
 ```json
@@ -235,15 +254,17 @@ anyRequest()                  -> authenticated()
 4002 = El usuario ya está registrado. Por favor, intente con otro email/cuit.
 4003 = (fallo al enviar email)
 4004 = (token expirado/ inválido)
+4011 = Verifique el elemento enviado para realizar la búsqueda, inserción o eliminación.  (role-assignments: fin de vigencia no posterior al inicio → HTTP 400)
 4012 = Verifique los campos de los elementos enviados.
 4016 = La contraseña ingresada es incorrecta.
-4018 = (password != confirmPassword / rol no encontrado, según contexto)
+4018 = Las contraseñas no coinciden.  (⚠️ también se usa para "rol no encontrado" en POST /api/user y role-assignments → HTTP 404; ver G-25)
 4019 = El usuario no está registrado. Por favor regístrese.
 4025 = Acceso denegado. Intente volver a iniciar sesión.
 4029 = El usuario no tiene permisos para realizar esta acción.
 4030 = Cuenta eliminada.
 4034 = La contraseña no cumple con los requisitos mínimos de seguridad.
 4050 = Usuario no encontrado.
+4058 = Organización no encontrada.  (organismo inexistente → HTTP 404)
 4059 = Rol no encontrado.
 4060 = Permiso no encontrado.
 4061 = El rol ya existe.
@@ -262,15 +283,23 @@ anyRequest()                  -> authenticated()
 4074 = Una categoría no puede ser su propia categoría padre.
 4075 = No se puede asignar una subcategoría descendiente como padre de la categoría.
 4076 = No se puede renombrar el evento de vida porque está asignado.
+4077 = La transición de publicación solicitada no es válida desde el estado actual.  (🆕 workflow de fichas → HTTP 409)
+4080 = No se puede activar una adopción de plantilla porque se superpone en vigencia con otra adopción del mismo organismo.  (HTTP 409; antes sin mensaje)
+4081 = El usuario ya tiene una asignación de rol vigente que se superpone con el período solicitado.  (🆕 role-assignments → HTTP 409)
+4091 = El recurso fue modificado por otro usuario.  (🆕 edición concurrente → HTTP 409)
 5000 = Ocurrió un error inesperado. Contacte al administrador.
 ```
 > Nota: `4053` = Tipo de organización no encontrada · `4055` = "Uno o más municipios no existen." (texto legacy sin
-> actualizar a "localidades"; usado internamente al validar variantes) · `4058` = Organización no encontrada. El código
+> actualizar a "localidades"; usado internamente al validar variantes). El código
 > `5001` ya **no existe** en `messages.properties`.
 > Los códigos genéricos `4072` (existe) y `4073` (no existe) llevan el **nombre de la entidad** interpolado en el
 > mensaje (`El objeto <Entidad> con el identificador <id> ...`), p.ej. `Categoría`, `Destinatario`, `Ubicación`,
 > `Evento de Vida`, `Etiqueta`.
-> 🆕 **`d800be0` no agrega códigos nuevos**, pero reutiliza `4029` ("El usuario no tiene permisos para realizar esta
+> 🆕 **`58d383a` agrega `4077`, `4081` y `4091`, y le pone mensaje al `4080`** (antes llegaba el literal
+> `"response.code.4080"`). Ojo con dos textos que no corresponden al caso: `4002` ("El usuario ya está registrado…")
+> también se devuelve con **409** cuando se intenta asignar un rol a un **usuario inactivo**, y `4018` cuando el rol no
+> existe (G-25). El front no debe mostrar el `message` de esos dos códigos tal cual.
+> `d800be0` no agregó códigos, pero reutiliza `4029` ("El usuario no tiene permisos para realizar esta
 > acción") con **HTTP 403** cuando un `ADMIN_BACKOFFICE` intenta **actualizar o eliminar el rol `SUPERADMIN`** (§4.4).
 > Ojo: ese 403 viene del *service* → cuerpo **`MessageDTO`**, mientras que el 403 del `CustomAccessDeniedHandler`
 > (falta de rol/permiso) viene como **`ErrorDTO`**. Contemplar ambas formas en el `http-error.service`.
@@ -437,6 +466,8 @@ Controller `UserController` — prefijo `/api/user`.
 |---|---|---|---|---|
 | 1 | `POST /api/user` | `hasAuthority('CREATE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE · ADMIN_ORGANIZATION | Crear usuario administrativo |
 | 2 | `GET /api/user/{id}` | `hasAuthority('READ_USER')` | SUPERADMIN · ADMIN_BACKOFFICE · **ADMIN_ORGANIZATION** 🆕 | Obtener usuario por ID |
+| 2b | 🆕 `GET /api/user` | `hasAuthority('READ_USER')` | SUPERADMIN · ADMIN_BACKOFFICE · ADMIN_ORGANIZATION (solo su organismo) | Listar usuarios (BO-17; en `dev` y en staging) |
+| 2c | 🆕 `POST /api/user/{id}/role-assignments` | `hasAuthority('CREATE_USER')` + regla del servicio | **Solo SUPERADMIN en la práctica** (ver detalle) | Asignar un rol a un usuario existente (solo en `dev`) |
 | 3 | `PUT /api/user/{id}` | `hasAuthority('DELETE_USER')` ⚠️ | SUPERADMIN · ADMIN_BACKOFFICE | Borrado **lógico** (desactivar) |
 | 4 | `DELETE /api/user/{id}/admin` | `hasAuthority('DELETE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE | Borrado **definitivo** |
 | 5 | `PUT /api/user/{id}/change-password` | `hasAuthority('UPDATE_USER')` | SUPERADMIN · ADMIN_BACKOFFICE | Cambiar contraseña de un usuario |
@@ -456,7 +487,7 @@ Controller `UserController` — prefijo `/api/user`.
 ```json
 {
   "email": "string",        // @NotBlank @Email @Size(max~50)
-  "password": "string",     // @NotBlank @Size(min=8,max=30)
+  "password": "string",     // @NotBlank @Size(min=8,max=20) — el mensaje de validación dice "8 a 30", pero el máximo real es 20 (G-25)
   "role": "uuid",           // @NotNull (UUID del rol)
   "organizationId": "uuid", // opcional; para ADMIN_ORGANIZATION se sobrescribe con su org
   "profileDto": { "firstName":"", "lastName":"", "cuil":"", "dni":"", "phone":"" }  // opcional; dni/phone no persisten
@@ -502,8 +533,45 @@ Controller `UserController` — prefijo `/api/user`.
 ```
 → **200** `ResponseDTO<UserResponseDTO>` (2002; `profileComplete` pasa a `true`). Err: `400`, `401`.
 
-> **No hay endpoint de listado/paginado de usuarios** (`GET /api/user` con `Page<T>`) en el controller actual.
-> Si el backoffice necesita una tabla de usuarios, ese endpoint **falta en el backend** (ver §7).
+**2b. 🆕 `GET /api/user`** (BO-17, `4715be1`) → **200** `ResponseDTO<UserResponseDTO[]>` (2013). Sin paginación ni
+filtros (G-7). SA y AB reciben todos; ADMIN_ORGANIZATION, solo los usuarios con una asignación vigente en su organismo.
+> ⚠️ **Sigue sin rol, organismo ni nombre.** `findAllUserDTO` y `findUserDTO` (el de `GET /{id}`) mapean con ModelMapper:
+> `role` y `activeAssignments` llegan en `null`, y `UserResponseDTO` no tiene campos de organismo ni de perfil
+> (`firstName`/`lastName`). El listado solo puede mostrar email y estado de la cuenta (G-13, G-20).
+
+**2c. 🆕 `POST /api/user/{id}/role-assignments`** (`dev` @ `58d383a`; no está en staging) — body `AssignRoleRequestDTO`:
+```json
+{
+  "roleId": "uuid",              // @NotNull
+  "organismId": "uuid",          // opcional: obligatorio si el rol es de alcance "organismo", prohibido si es "global"
+  "effectiveFrom": "2026-11-16", // opcional (LocalDate, yyyy-MM-dd); default: hoy
+  "effectiveTo": "2027-01-01"    // opcional; si viene, tiene que ser posterior a effectiveFrom
+}
+```
+→ **201** `ResponseDTO<UserResponseDTO>` (2001), con `role` poblado con el rol **vigente hoy** del usuario (no
+necesariamente el recién asignado si la vigencia empieza en el futuro). `activeAssignments` sigue en `null`.
+
+| Error | Cuándo |
+|---|---|
+| `404` `4019` | el usuario no existe |
+| `409` `4002` | el usuario está **inactivo** (el mensaje dice "ya está registrado": G-25) |
+| `404` `4018` | el rol no existe (el mensaje dice "Las contraseñas no coinciden": G-25) |
+| `404` `4058` | el organismo no existe |
+| `403` `4029` | rol global **con** organismo, rol de organismo **sin** organismo, o actor no autorizado |
+| `400` `4011` | `effectiveTo` no es posterior a `effectiveFrom` |
+| `409` `4081` | el período se superpone con otra asignación del usuario |
+| `400` `4012` | falta `roleId` |
+
+> **Quién puede asignar** (`UserService.validateRoleAssignmentPermissions`): **SUPERADMIN**, cualquier rol; o
+> **ADMIN_ORGANIZATION**, solo roles de alcance organismo con `assignableByOrgAdmin = true` y dentro de su propio
+> organismo. **ADMIN_BACKOFFICE recibe siempre 403 `4029`** aunque tenga `CREATE_USER` (G-22). Y como
+> `assignable_by_org_admin` es `FALSE` para todos los roles del seed (G-23), en una base nueva **solo SUPERADMIN** puede
+> usar el endpoint.
+>
+> 🚨 **Limitación (G-20): hoy no sirve para cambiar el rol.** Todo usuario creado por API nace con una asignación
+> abierta (sin `effectiveTo`), la validación de solapamiento la cuenta, y no hay endpoint para cerrarla: pedir otro rol
+> para ese usuario responde **409 `4081`** en cualquier caso real. Además, sin `effectiveTo` el servicio usa
+> `LocalDate.MAX` como fin del período en la consulta (G-21, comportamiento contra PostgreSQL sin confirmar).
 
 ---
 
@@ -536,9 +604,16 @@ RoleScopeType · `assignableByOrgAdmin` Boolean · `permissions` Set\<Permission
 `description` · `active` Boolean (col `activo`).
 
 **UserRoleAssignment** (tabla `user_role_assignments`): `id` UUID PK · `user` (FK `user_id`, NOT NULL) ·
-`role` (FK `role_id`, NOT NULL) · `organization` (FK `organization_id`, **nullable**) ·
-`effectiveFrom` LocalDate · `effectiveTo` LocalDate (`NULL`=activa). Constraints: no solapamiento temporal
-por `(user, role, organization)`; solo una asignación activa por combinación.
+`role` (FK `role_id`, NOT NULL) · `organism` (FK `organism_id`, **nullable**; la columna `organization_id` se eliminó en
+`V2.26`) · `effectiveFrom` LocalDate · `effectiveTo` LocalDate (`NULL`=activa).
+
+> 🆕 **Regla vigente desde `V2.25`/`V2.26` (`58d383a`): un usuario = un único rol vigente, en un único organismo.**
+> - `V2.26`: índice único `uk_user_role_assignments_active` sobre `(user_id) WHERE effective_to IS NULL` (una sola
+>   asignación abierta por usuario) y exclusión `ex_user_role_assignments_no_overlap` por usuario y rango de fechas
+>   `[effective_from, effective_to)` (admite períodos consecutivos, no superpuestos). Antes las constraints eran por
+>   `(user, role, organization)`.
+> - `V2.25`: las asignaciones de roles de alcance **global** no llevan organismo (`organism_id = NULL`); las de alcance
+>   **organismo** lo exigen (lo valida el servicio en el alta y en `role-assignments`, 403 `4029`).
 
 ### 4.2 Catálogo (strings exactos para RBAC del frontend)
 
@@ -575,17 +650,46 @@ por `(user, role, organization)`; solo una asignación activa por combinación.
 | Destinatario 🆕 | `CREATE_RECIPIENT` `UPDATE_RECIPIENT` `DELETE_RECIPIENT` | — (nuevos; sin `READ_*`) |
 | Almacenamiento 🆕 | `READ_STORAGE` | — (nuevo) |
 | Analítica | `VIEW_ANALYTICS` | `VIEW_ANALYTICS_INTELIGENCIA` |
+| Adopción 🆕 (`V2.20`) | `CREATE_ADOPTION` `READ_ADOPTION` `UPDATE_ADOPTION` `DELETE_ADOPTION` | — (nuevos) |
+| Punto de atención 🆕 (`V2.23`) | `CREATE_ATTENTION_POINT` `READ_ATTENTION_POINT` `UPDATE_ATTENTION_POINT` `DELETE_ATTENTION_POINT` | — (nuevos) |
+| Etiqueta 🆕 (`V2.24`) | `CREATE_TAG` `READ_TAG` `UPDATE_TAG` `DELETE_TAG` | — (nuevos) |
 
-**Mapeo rol → permisos (seed `V0.1` + `V2.9`)** — esto es lo que determina qué ve cada usuario:
+**Mapeo rol → permisos (seed `V0.1` + `V2.9` + `V2.28` + `V2.30`, `dev` @ `58d383a`)** — esto es lo que determina qué
+ve cada usuario. ⚠️ En staging todavía no corrieron `V2.28` ni `V2.30`: ahí ningún rol tiene `*_ADOPTION`,
+`*_ATTENTION_POINT` ni `*_TAG` (R-3).
 
 | Rol | Permisos efectivos |
 |---|---|
-| `SUPERADMIN` | **TODOS** (el seed hace `INSERT ... SELECT id FROM permissions`, se re-ejecuta en `V2.9`) |
-| `ADMIN_BACKOFFICE` | `CREATE/READ/UPDATE_PROCEDURE` · `CREATE/READ/UPDATE_TAXONOMY` · `VIEW_ANALYTICS` · 🆕 `CREATE/READ/UPDATE/DELETE_USER` · 🆕 `CREATE/UPDATE/DELETE_CATEGORY` · 🆕 `CREATE/UPDATE/DELETE_MODALITY` · 🆕 `CREATE/UPDATE/DELETE_LIFE_EVENT` · 🆕 `CREATE/UPDATE/DELETE_RECIPIENT` · 🆕 `READ_STORAGE` |
-| `ADMIN_ORGANIZATION` | `CREATE/READ/UPDATE/PUBLISH_VARIANT` · `CREATE/READ/UPDATE_CONTACT` · `CREATE/READ_USER` · `VIEW_ANALYTICS` |
-| `AGENT` | `READ/UPDATE_VARIANT` · `CREATE/READ/UPDATE_CONTACT` |
+| `SUPERADMIN` | **TODOS** los de `V0.1`/`V2.9` (el seed hace `INSERT ... SELECT id FROM permissions`, se re-ejecuta en `V2.9`) · 🆕 `*_ADOPTION` · `*_ATTENTION_POINT` · `*_TAG` (`V2.28`) |
+| `ADMIN_BACKOFFICE` | `CREATE/READ/UPDATE_PROCEDURE` · `CREATE/READ/UPDATE_TAXONOMY` · `VIEW_ANALYTICS` · `CREATE/READ/UPDATE/DELETE_USER` · `CREATE/UPDATE/DELETE_CATEGORY` · `CREATE/UPDATE/DELETE_MODALITY` · `CREATE/UPDATE/DELETE_LIFE_EVENT` · `CREATE/UPDATE/DELETE_RECIPIENT` · `READ_STORAGE` · 🆕 `CREATE/READ/UPDATE/DELETE_ADOPTION` · `CREATE/READ/UPDATE/DELETE_ATTENTION_POINT` · `CREATE/READ/UPDATE/DELETE_TAG` |
+| `ADMIN_ORGANIZATION` | `CREATE/READ/UPDATE/PUBLISH_VARIANT` · `CREATE/READ/UPDATE_CONTACT` · `CREATE/READ_USER` · `VIEW_ANALYTICS` · 🆕 `CREATE/READ/UPDATE/DELETE_ADOPTION` · `CREATE/READ/UPDATE/DELETE_ATTENTION_POINT` · `CREATE/READ/UPDATE/DELETE_TAG` |
+| `AGENT` | `READ/UPDATE_VARIANT` · `CREATE/READ/UPDATE_CONTACT` · 🆕 **`READ/UPDATE_ADOPTION`** (`V2.30` le quitó `CREATE_ADOPTION` y `DELETE_ADOPTION`) · `CREATE/READ/UPDATE/DELETE_ATTENTION_POINT` · `CREATE/READ/UPDATE/DELETE_TAG` |
 | `MANAGER` | `READ_PROCEDURE` · `READ_VARIANT` · `VIEW_ANALYTICS` |
 | `USER` | ninguno |
+
+Vista por permiso del núcleo de trámites (misma fuente):
+
+| Permiso | SA | AB | AO | AGENT | MANAGER |
+|---|---|---|---|---|---|
+| `READ_PROCEDURE` | ✓ | ✓ | **✗** | **✗** | ✓ |
+| `CREATE/UPDATE_PROCEDURE` | ✓ | ✓ | ✗ | ✗ | ✗ |
+| `DELETE_PROCEDURE` | ✓ | **✗** | ✗ | ✗ | ✗ |
+| `READ/UPDATE_ADOPTION` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `CREATE/DELETE_ADOPTION` | ✓ | ✓ | ✓ | **✗** (`V2.30`) | ✗ |
+| `READ_VARIANT` | ✓ | **✗** | ✓ | ✓ | ✓ |
+| `CREATE_VARIANT` | ✓ | ✗ | ✓ | ✗ | ✗ |
+| `UPDATE_VARIANT` | ✓ | ✗ | ✓ | ✓ | ✗ |
+| `PUBLISH_VARIANT` | ✓ | **✗** | ✓ | ✗ | ✗ |
+| `DELETE_VARIANT` | ✓ | ✗ | ✗ | ✗ | ✗ (ningún endpoint lo usa) |
+| `*_ATTENTION_POINT` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `*_TAG` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `READ_ORGANISM` | ✓ | **✗** | **✗** | ✗ | ✗ |
+
+> 🚨 **Huecos de la matriz** (`PEDIDOS_BACKEND.md`): AB gestiona adopciones y puntos de atención pero no tiene
+> `READ_VARIANT` (no llega a la ficha de la que cuelgan los puntos) ni `READ_ORGANISM` (no puede elegir para qué
+> organismo adopta) — G-3, G-5. AO adopta pero no tiene `READ_PROCEDURE` (no puede listar plantillas) — G-3. AGENT
+> conserva `UPDATE_ADOPTION`, y un `PUT` con `enabled: false` equivale al `DELETE` que `V2.30` le quitó; además el
+> `DELETE` de la ficha exige `UPDATE_VARIANT` — G-24.
 
 > 🚨 **Gap importante para el backoffice:** **`ADMIN_BACKOFFICE` NO recibe ningún permiso de Organismo ni de Tipo de
 > Organismo** en el seed. Como esos endpoints ahora exigen `READ_ORGANISM` / `CREATE_ORGANISM` / `READ_ORGANISM_TYPE` /
@@ -593,8 +697,9 @@ por `(user, role, organization)`; solo una asignación activa por combinación.
 > Funcionalmente equivale al comportamiento anterior (`hasRole('SUPERADMIN')`), así que **no es una regresión**, pero
 > ahora se puede arreglar sin tocar código: basta asignarle esos permisos al rol desde `PUT /api/role/{id}`.
 >
-> 🚨 **Segundo gap:** roles como `AGENT`, `MANAGER` y `USER` no tienen **ningún** permiso de los que usan los endpoints
-> del backoffice → todo ABM les devuelve **403**. El menú debe construirse desde `permissions` (`/api/auth/me`), no
+> 🚨 **Segundo gap:** `MANAGER` y `USER` no tienen **ningún** permiso de escritura de los que usan los endpoints del
+> backoffice → todo ABM les devuelve **403** (`AGENT` sí opera fichas, adopciones, puntos de atención y etiquetas desde
+> `V2.28`). El menú debe construirse desde `permissions` (`/api/auth/me`), no
 > desde el rol, o van a ver ítems que no pueden usar.
 
 ### 4.3 DTOs (campos en inglés desde `ea65b92`)
@@ -643,9 +748,12 @@ Sigue exponiendo `permissions` completos anidados, **no** `permissionsIds`.
 > Es decir: `ADMIN_BACKOFFICE` puede tocar todos los roles **menos** `SUPERADMIN`.
 > **En la UI:** deshabilitar editar/eliminar sobre la fila `SUPERADMIN` cuando el usuario logueado no sea SUPERADMIN.
 
-> **`GET /api/role/allowed` — comportamiento actual (context-aware por rol del caller):** si el caller es
-> `SUPERADMIN` devuelve **todos** los roles sin filtrar. Si es cualquier otro (ADMIN_BACKOFFICE / ADMIN_ORGANIZATION),
-> **excluye** los roles con `code` `SUPERADMIN` y `ADMIN_BACKOFFICE` (deja ADMIN_ORGANIZATION, AGENT, MANAGER, USER).
+> **`GET /api/role/allowed` — comportamiento actual (por flags, desde `0ea13a0`; verificado en `58d383a`):**
+> `SUPERADMIN` recibe **todos** los roles. `ADMIN_BACKOFFICE` recibe los que tienen `assignableByBackoffice = true`
+> (`USER`, `AGENT` y `ADMIN_ORGANIZATION` según `V2.16`), y `ADMIN_ORGANIZATION` los que tienen
+> `assignableByOrgAdmin = true`. ⚠️ **Ese flag es `FALSE` para todos los roles del seed** (`V0.2` lo crea con
+> `DEFAULT FALSE` y ninguna migración lo cambia): a un ADMIN_ORGANIZATION el endpoint le devuelve **`[]`**, y tampoco
+> puede crear usuarios ni asignar roles (403 `4029`) hasta que un SUPERADMIN active el flag en algún rol (G-23).
 > Útil para poblar el select de rol al crear usuarios.
 
 ### 4.5 Endpoints — `PermissionController` (`/api/permission`)
@@ -835,23 +943,28 @@ Convención: **reads públicos**; 💥 **escrituras por PERMISO** (antes `hasAny
 
 > Reemplaza la sección vieja "Procedure / Variant — pendiente": esas tablas (`procedures`, `procedure_variants`) ya no
 > son el modelo. El núcleo de trámites del DER se expuso en `origin/dev` @ `23fd8f9` y `Tag` en `84fde37`. Contratos,
-> permisos y roles del seed en **§7.0.2**; gaps y bugs abiertos (R-3, G-1 … G-12) en **`PEDIDOS_BACKEND.md`**; plan y
-> estado del front en **`PLAN_TRAMITES_API.md`** (§9).
+> permisos y roles del seed en **§7.0.2**, novedades de `58d383a` en **§7.0.3**; gaps y bugs abiertos (G-1 … G-25) en
+> **`PEDIDOS_BACKEND.md`**; plan y estado del front en **`PLAN_TRAMITES_API.md`** (§9).
 
 El trámite son **4 recursos encadenados** (plantilla → adopción → ficha por localidad → puntos de atención):
 
 | Recurso | Ruta | Permisos | Nombre en la UI | Feature del front | Fuente hoy |
 |---|---|---|---|---|---|
-| Plantilla provincial (`ProcedureTemplate`, alcance global) | `/api/procedure-template` | `READ/CREATE/UPDATE/DELETE_PROCEDURE` | Plantillas provinciales | `plantillas` | **real** |
-| Adopción por organismo (`OrganismProcedure`, vigencia `effectiveFrom/To`) | `/api/organism-procedure` | `READ/CREATE/UPDATE/DELETE_ADOPTION` | Trámites del organismo | `adopciones` | mock hasta **R-3** (grants) |
+| Plantilla provincial (`ProcedureTemplate`, alcance global) | `/api/procedure-template` | `READ/CREATE/UPDATE/DELETE_PROCEDURE` | Plantillas provinciales | `plantillas` | real en `start:local`; mock en `ng serve`, staging y prod hasta **OPS-1** (va con el resto de la cadena) |
+| Adopción por organismo (`OrganismProcedure`, vigencia `effectiveFrom/To`) | `/api/organism-procedure` | `READ/CREATE/UPDATE/DELETE_ADOPTION` | Trámites del organismo | `adopciones` | mock hasta **OPS-1** (R-3 y G-15 resueltos en `dev`, sin desplegar en staging) |
 | Ficha por localidad (`OrganismProcedureLocation`, OTL) + workflow | `/api/organism-procedure-location` · `POST /{id}/submit-review` · `/publish` · `/unpublish` | `READ/CREATE/UPDATE_VARIANT`, `PUBLISH_VARIANT` (`DELETE` con `UPDATE_VARIANT`) | Fichas por localidad | `fichas-locales` | mock hasta **G-1** (response incompleto) |
-| Punto de atención (`AttentionPoint`, cuelga de la ficha) | `/api/attention-point` | `READ/CREATE/UPDATE/DELETE_ATTENTION_POINT` | Puntos de atención (panel del detalle de la ficha) | `puntos-atencion` | mock junto con fichas (G-1) y R-3 |
+| Punto de atención (`AttentionPoint`, cuelga de la ficha) | `/api/attention-point` | `READ/CREATE/UPDATE/DELETE_ATTENTION_POINT` | Puntos de atención (panel del detalle de la ficha) | `puntos-atencion` | mock junto con fichas (G-1); grants de R-3 ya en `dev` |
 
 - Estados de la ficha (`PublicationStatus`, `V2.21`): `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`. Quién
-  publica lo decide el permiso `PUBLISH_VARIANT`, no el rol. El `PUT` acepta `publicationStatus` (R-1): el front manda
-  siempre el estado actual y solo cambia estado por los endpoints de workflow.
+  publica lo decide el permiso `PUBLISH_VARIANT`, no el rol. Desde `58d383a` el `PUT` **ya no aplica**
+  `publicationStatus` (R-1 resuelto en `dev`: el campo sigue en el request y se ignora) y el alta nace siempre en
+  `BORRADOR`; el estado solo cambia por los endpoints de workflow. Transición inválida → **409 `4077`**; ficha,
+  adopción o localidad inexistente o fuera de alcance → **404 `4073`**. Un `PUT` sin `active` sigue dando 500.
+- La ficha tiene `@Version` (`lock_version`, `V2.27`) → **409 `4091`** ante edición concurrente, pero `lockVersion` no
+  viaja en el request ni en el response (G-8). `V2.27` suma `UNIQUE (organism_procedure_id, location_id)` y
+  `UNIQUE (slug, organism_procedure_id)`; una violación no se traduce y sale como 500 (G-9).
 - **Tag** (`/api/tag`, PPDT-5.8): `{ id, slug, local, organismId }`, global ⇔ sin organismo. Integrado (BO-16); contrato
-  en §7.0.2. Las reglas de integridad de la tabla (`uk_tags_slug_organism`, `chk_tags_scope_consistency`) no cambiaron.
+  en §7.0.2. 🆕 `GET /api/tag/public` (sin auth) devuelve solo las globales. Las reglas de integridad de la tabla (`uk_tags_slug_organism`, `chk_tags_scope_consistency`) no cambiaron.
 - Logs internos (`ProcedureVisitLog`, `SearchLog`): sin endpoints de backoffice. Portal: `GET /api/procedure/{slug}`,
   `/api/procedure/search` y feedback ciudadano (§7.0.2).
 
@@ -937,10 +1050,35 @@ si falta token · `400` `{ "success": false, "message": "Error al verificar el r
 
 ## 7. Discrepancias y pendientes (LEER)
 
+### 7.0.3 `origin/dev` @ `58d383a` (2026-11-16) — grants, asignación de roles y workflow de fichas
+
+**Resumen:** el backend resolvió R-3, R-1, G-14 y G-15 y expuso el listado de usuarios y la asignación de roles.
+**Staging no tiene nada de esto salvo G-14 y `GET /api/user`** (quedó en el merge del 2026-10-17): sigue OPS-1. Detalle
+y evidencia por pedido en `PEDIDOS_BACKEND.md` (auditoría 2026-11-16).
+
+| Cambio | Detalle | Front |
+|---|---|---|
+| Grants de módulos (`V2.28`, `V2.30`) — R-3 ✅ | `*_ADOPTION`, `*_ATTENTION_POINT` y `*_TAG` para SA, AB, AO y AGENT; a AGENT se le quitan `CREATE_ADOPTION` y `DELETE_ADOPTION`. Matriz en §4.2 | Sin cambios de código: todo se gatea por permiso. BO-21 cerrado del lado backend |
+| `PUT` de la ficha sin estado — R-1 ✅ | `update` ya no toca `publicationStatus`; `create` fuerza `BORRADOR`. Cabo suelto: `PUT` sin `active` → 500 | El front sigue mandando el estado actual y siempre `active` |
+| Errores del workflow de fichas — G-4 🟠 | Transición inválida → 409 `4077`; "no existe" → 404 `4073`. Sin `reject` ni `return-to-draft`; `BORRADOR → DESPUBLICADO` sigue permitido | BO-23: `4077` y `4073` traducidos |
+| Constraints y `@Version` de la ficha (`V2.27`) — G-9 🟠, G-8 🟠 | `UNIQUE (organism_procedure_id, location_id)`, `UNIQUE (slug, organism_procedure_id)`, `lock_version` → 409 `4091`. `lockVersion` no viaja en el contrato | BO-23: `4091` traducido; el control todavía no es efectivo |
+| Consulta de solapamiento de adopciones — G-15 ✅ | `cast(:excludeId as uuid)` y `cast(:effectiveTo as timestamp)` en `OrganismProcedureRepository.findOverlappingEnabled`. `4080` ya tiene mensaje | Falta correr el e2e local sin el seed SQL |
+| `V2.21` reescrita — G-14 ✅ | `CHECK (publication_status IN (…))` en `organism_procedure_locations` y `otl_versions`, sin `ALTER TYPE` | Sin paso manual para levantar `dev` |
+| `GET /api/user` — BO-17 ✅ | `READ_USER`; AO solo ve su organismo. Sin rol, organismo ni nombre (ModelMapper) — §3.2 | BO-22: listado real; la columna Rol muestra "Sin dato" |
+| 🆕 `POST /api/user/{id}/role-assignments` | `CREATE_USER`. Contrato y errores en §3.2. **Solo SUPERADMIN en la práctica** y siempre 409 `4081` sobre usuarios con rol vigente (G-20 a G-23) | BO-24, limitado por G-20 |
+| Un usuario = un único rol vigente (`V2.25`, `V2.26`) | Índice único por usuario con `effective_to IS NULL` + exclusión por rango; roles globales sin organismo (§4.1) | El form de usuario ya pide organismo según el `scopeType` del rol (BO-25) |
+| 🆕 `GET /api/tag/public` | Público, solo etiquetas globales (§1.3) | Sin uso en el backoffice (portal) |
+| `SecurityConfig` sin rutas muertas | `PUBLIC_URLS` y `ADMIN_URLS` recortadas (§1.3) | Sin impacto |
+| `V2.29`: `search_logs.ip_address` a `varchar` | `GET /api/procedure/search` daba 500 en toda búsqueda (la columna era `inet` y la app mandaba texto) | Sin impacto en el backoffice (portal) |
+| Mensajes nuevos | `4077`, `4080`, `4081`, `4091` (§1.6) | BO-23 |
+
+**Sin cambios en `58d383a`:** `/api/auth/me` (sin organismo, G-2), response de la ficha (G-1), listados sin paginación
+ni filtros (G-7), borrado definitivo de usuario (G-13), `GlobalExceptionHandler` para excepciones de Spring (G-18).
+
 ### 7.0.2 `origin/dev` @ `23fd8f9` (2026-10-10) — API del núcleo de trámites, etiquetas y portal (PPDT-5.2, 5.4–5.8, 5.10–5.12)
 
 **Resumen:** el backend expuso la API que el backoffice esperaba para Trámites y Etiquetas. `UserController` no
-cambió: **`GET /api/user` sigue sin existir** (BO-17).
+cambió en ese commit: `GET /api/user` no existía todavía *(superado: salió en `4715be1`, ver §3.2 y §7.0.3)*.
 
 **Endpoints nuevos de backoffice**
 
@@ -948,7 +1086,7 @@ cambió: **`GET /api/user` sigue sin existir** (BO-17).
 |---|---|---|---|
 | Etiquetas `/api/tag` | `GET`, `GET /{id}`, `POST`, `PUT /{id}`, `DELETE /{id}` · `GET /public` (sin auth, solo globales) | `READ/CREATE/UPDATE/DELETE_TAG` (nuevos, `V2.24`) | SA, AB, AO, AGENT |
 | Plantillas maestras `/api/procedure-template` | CRUD | `READ/CREATE/UPDATE/DELETE_PROCEDURE` | (existentes) |
-| Adopción por organismo `/api/organism-procedure` | CRUD | `READ/CREATE/UPDATE/DELETE_ADOPTION` (nuevos, `V2.20`) | SA, AB, AO |
+| Adopción por organismo `/api/organism-procedure` | CRUD | `READ/CREATE/UPDATE/DELETE_ADOPTION` (nuevos, `V2.20`) | SA, AB, AO; AGENT solo `READ`/`UPDATE` (`V2.30`) |
 | Trámite por localidad `/api/organism-procedure-location` | CRUD (`DELETE` con `UPDATE_VARIANT`) · `POST /{id}/submit-review` · `POST /{id}/publish` · `POST /{id}/unpublish` | `READ/CREATE/UPDATE_VARIANT`, `PUBLISH_VARIANT` | (existentes) |
 | Puntos de atención `/api/attention-point` | CRUD | `READ/CREATE/UPDATE/DELETE_ATTENTION_POINT` (nuevos, `V2.23`) | SA, AB, AO, AGENT |
 
@@ -976,9 +1114,10 @@ organismo = AO, AGENT.
 **Portal (no backoffice)** — `GET /api/procedure/{slug}` (ficha pública), `POST /api/procedure/{slug}/feedback`
 (feedback ciudadano) y filtros avanzados en `GET /api/procedure/search`.
 
-⚠️ **Bug probable en los grants (R-3 / BO-21):** `V2.20`, `V2.23` y `V2.24` asignan permisos con
-`WHERE roles.code IN ('ROLE_SUPERADMIN', …)`, pero `V0.4` normalizó los códigos de rol sin prefijo (`SUPERADMIN`, …).
-Probablemente ningún rol recibió `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT`. Verificar en base y pedir migración correctiva.
+✅ **Bug de los grants (R-3 / BO-21) — resuelto en `dev` (`V2.28` + `V2.30`, §7.0.3), sin desplegar en staging:**
+`V2.20`, `V2.23` y `V2.24` asignaban permisos con `WHERE roles.code IN ('ROLE_SUPERADMIN', …)`, pero `V0.4` había
+normalizado los códigos de rol sin prefijo, así que ningún rol recibía `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT`.
+La columna "Roles con el permiso" de la tabla de arriba vale recién con `V2.28` aplicada.
 
 **Front:** Etiquetas conectada a `/api/tag` (BO-16). Trámites y Puntos de atención: plan en `PLAN_TRAMITES_API.md` (BO-15, BO-19).
 
@@ -990,7 +1129,7 @@ Probablemente ningún rol recibió `*_TAG`, `*_ADOPTION` ni `*_ATTENTION_POINT`.
 | Flag nuevo en `Role`: `assignableByBackoffice` (`V2.16`) | En `RoleRequestDTO` y `RoleResponseDTO`. Es un `boolean` primitivo: **un PUT sin el campo lo resetea a `false`**. La migración lo pone en `true` solo para `USER`, `AGENT` y `ADMIN_ORGANIZATION` | **BO-18**: modelo, mapper, mock, toggle "Asignable por Administrador de Backoffice" en el form de rol (se manda siempre) y meta en el detalle de la lista |
 | `GET /api/role/allowed` por flags | SUPERADMIN recibe todos. ADMIN_BACKOFFICE recibe los roles con `assignableByBackoffice`, ADMIN_ORGANIZATION los de `assignableByOrgAdmin`. Ya no hay exclusión hardcodeada de SA/AB | Sin cambios: el form de usuario ya consume `/allowed` |
 | Usuarios con alcance por organismo para `ADMIN_ORGANIZATION` | En `UserService`: AO solo lee y modifica usuarios de su organismo y **nunca borra** (403 `4029`). SA y AB sin restricción. Crear un usuario con un rol no asignable por el creador → 403 `4029` | Sin cambios hoy: AO no tiene `UPDATE_USER`/`DELETE_USER` en el seed. Relevante para BO-14 |
-| `GET /api/user` | **Sigue sin endpoint.** `UserService.findAllUserDTO()` ya existe y filtra por organismo para AO: falta solo el controller | BO-17 abierto |
+| `GET /api/user` | En `0ea13a0` no tenía endpoint (`UserService.findAllUserDTO()` ya existía). **Expuesto después en `4715be1`** (§3.2) | BO-17 entregado; BO-22 hecho |
 
 ### 7.0 Relevamiento de `origin/dev` @ `2e41090` (2026-10-06) — 31 commits sobre `d800be0`
 
@@ -1036,7 +1175,7 @@ en los controllers que ya consumimos (`AuthController`, incluido `/me`, no cambi
 | PPDT-5.13 / 5.15 / 5.21 | Métricas (`MANAGER`), moderación de feedback, auditoría de cambios sensibles | Desbloquean Dashboard, Feedback y Auditoría |
 | PPDT-5.17 | Desactivar los códigos de permiso duplicados en español | Sin impacto: el front ya usa los códigos en inglés |
 
-⚠️ **`GET /api/user` (listado de usuarios) no tiene tarjeta en el backlog del backend.** Hay que pedirlo (BO-17).
+~~⚠️ `GET /api/user` (listado de usuarios) no tiene tarjeta en el backlog del backend. Hay que pedirlo (BO-17).~~ Entregado en `4715be1` (§3.2).
 
 
 Diferencias entre lo que asume el frontend (`CLAUDE.md`, servicios con mocks) y lo que el backend expone hoy:
@@ -1081,14 +1220,15 @@ E. **🆕 Nuevos códigos de error** 4053, 4055, 4063, 4065–4075 (§1.6) — s
 
 2. ~~Trámites/Variantes y Tag siguen sin API~~ — **superado en `23fd8f9`/`84fde37`**: los 4 recursos de trámites y
    `/api/tag` están expuestos (§5.5, §7.0.2). El front los integró (BO-15, BO-16, BO-19); lo que sigue en mock está
-   bloqueado por R-3 / G-1 (`PEDIDOS_BACKEND.md`). `tramite.service`/`etiqueta.service` ya no existen.
+   bloqueado por OPS-1 (deploy de `dev` a staging; R-3 y G-15 ya están resueltos en `dev`) y por G-1 (`PEDIDOS_BACKEND.md`). `tramite.service`/`etiqueta.service` ya no existen.
 
 2-bis. **🚨 El menú del backoffice debe construirse desde `permissions`, no desde el rol.** Con el modelo nuevo,
    `AGENT`, `MANAGER` y `USER` no tienen **ningún** permiso de los ABMs del backoffice: si el menú se arma por rol,
    ven ítems que devuelven 403 al entrar. Y al revés: `ADMIN_BACKOFFICE` **no** tiene permisos de Organismo/Tipo de
    Organismo en el seed (§4.2), así que ese módulo le va a dar 403 aunque el rol "suene" a que puede.
 
-3. **No hay listado/paginado de usuarios** (`GET /api/user`). Solo GET por id. → Falta endpoint en backend.
+3. ~~No hay listado de usuarios~~ — **superado en `4715be1`**: `GET /api/user` existe (§3.2), sin paginación (G-7) y con
+   `role` en `null` (G-13). El front ya lo consume (BO-22).
 
 4. **No hay endpoint de subida de archivos** (`/api/storage/upload` comentado) ni presigned URLs; además storage
    ahora exige auth. Archivos solo por clave + `GET /download/{fileName}` (binario, con token).
@@ -1152,14 +1292,18 @@ Orden sugerido (lo desbloqueado por backend primero):
 - [X] **🆕 Organismos — acrónimo** (§5.2): mapear **409 `4069`** al campo `acronym` (unicidad ahora global, incluye bajas).
 - [ ] **Storage** (§6.2): descarga por clave **con token + permiso `READ_STORAGE`**; upload bloqueado por backend.
 - [ ] **reCAPTCHA** (§6.3): integrar `verify-recaptcha` donde se requiera (necesita claves reales).
-- [x] **Trámites y Tag** (§5.5): plantillas y etiquetas en real; adopciones, fichas y puntos de atención con HTTP escrito
-  y en mock hasta R-3 / G-1 (`PEDIDOS_BACKEND.md`).
-- [ ] **Bloqueado por backend** (§7): listado de usuarios, upload. Coordinar con backend o mantener mocks.
+- [x] **Trámites y Tag** (§5.5): los cinco features con HTTP escrito. La cadena de trámites va en real solo con
+  `npm run start:local`; en `ng serve`, staging y prod va en mock (plantillas y adopciones hasta OPS-1; fichas y puntos
+  de atención hasta G-1, `PEDIDOS_BACKEND.md`). Etiquetas: real en `ng serve` y `start:local`, mock en staging y prod
+  hasta OPS-1.
+- [x] **Listado de usuarios** (§3.2): `GET /api/user` consumido (BO-22); rol y organismo pendientes de backend (G-13).
+- [ ] **Bloqueado por backend** (§7): upload; cambio de rol de un usuario existente (G-20). Coordinar con backend o mantener mocks.
 
 ---
 
 *Generado a partir del código de `D:/proyectos/PortalMisiones-backend/backend` @ commit `d800be0` (dev, 2026-07-29);
-actualizado con los relevamientos de `origin/dev` @ `2e41090` (§7.0), `0ea13a0` (§7.0.1) y `23fd8f9` (2026-10-10, §7.0.2).
+actualizado con los relevamientos de `origin/dev` @ `2e41090` (§7.0), `0ea13a0` (§7.0.1), `23fd8f9` (2026-10-10, §7.0.2)
+y `58d383a` (2026-11-16, §7.0.3).
 Ante dudas, contrastar con Swagger en vivo (`/swagger-ui.html`) y la colección Postman del backend
 (`docs/Portal_Tramite_Misiones.postman_collection.json`, actualizada en `PPDT-20` con los permisos por endpoint).*
 

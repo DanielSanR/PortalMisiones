@@ -17,14 +17,14 @@ export const environment = {
   // Override por feature. Lo bloqueado por backend (API spec §7) se mantiene en 'mock'.
   featureOverrides: {
     // Usuarios: real (GET/POST /api/user y acciones de cuenta, BO-22). No se ofrecen la edición (sin endpoint)
-    // ni el borrado definitivo (G-13); el rol llega vacío hasta G-13.
+    // ni el borrado definitivo (G-13); `GET /api/user` lista por alcance, pero sin rol, organismo ni nombre (G-13).
     usuarios: 'local',
     // Trámites (PLAN_TRAMITES_API.md): la cadena plantilla → adopción → ficha → punto de atención se referencia
     // por ids, así que va TODA con la misma fuente. Mezclarlas (p. ej. plantillas real + adopciones mock) hace que
     // el front pida al backend plantillas con ids del mock (`pt-1`) → 500. Para la cadena real contra el backend
     // local: `npm run start:local` (environment.local.ts).
     plantillas: 'mock',       // fase 1 (real en start:local)
-    adopciones: 'mock',       // fase 2 (G-15: crear/editar da 500 en dev)
+    adopciones: 'mock',       // fase 2 (real en start:local; G-15 ya corregido en dev)
     'fichas-locales': 'mock', // fase 3 (bloqueado por G-1)
     'puntos-atencion': 'mock', // fase 4 (se activa junto con fichas)
     // organismos: /api/organism real (SUPERADMIN) → hereda default real.

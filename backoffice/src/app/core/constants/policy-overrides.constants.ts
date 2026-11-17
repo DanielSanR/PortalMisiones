@@ -60,7 +60,8 @@ export const ESCRIBIR_ROLES_PERMISOS_ACCESS: AccessRule = {
  * plantillas activas (`GET /api/procedure-template` → `READ_PROCEDURE`) y el select de organismo
  * (`GET /api/organism` → `READ_ORGANISM`). Decisión P-2 (PLAN_TRAMITES_API.md §8): sin `READ_ORGANISM`
  * "Adoptar" se oculta, porque el organismo del usuario no viaja en el JWT ni en `/api/auth/me` (G-2) y
- * el front no tiene qué mandar en `organismId`. Hoy, de facto, solo SUPERADMIN.
+ * el front no tiene qué mandar en `organismId`. `CREATE_ADOPTION` ya está asignado a SA, AB y AO (R-3:
+ * `V2.28`; AGENT no, `V2.30`), pero por `READ_ORGANISM` hoy, de facto, sigue siendo solo SUPERADMIN.
  * Va en el botón del header, el CTA del vacío y el buscador de comandos.
  */
 export const ADOPTAR_ACCESS: AccessRule = {

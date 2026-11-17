@@ -8,6 +8,7 @@ import { HasPermissionDirective } from '../../../../shared/directives/has-permis
 import { CREAR_FICHA_ACCESS } from '@core/constants/policy-overrides.constants';
 import { FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
 import { NO_DISPONIBLE } from '../ficha-save-error';
+import { TEXTO_FUENTE_SIMULADA } from '../ficha-textos';
 import { RUTA_DETALLE_FICHA, RUTA_LISTA_FICHAS, RUTA_NUEVA_FICHA } from '../fichas.rutas';
 
 type EstadoLista =
@@ -19,7 +20,7 @@ type EstadoLista =
 
 /**
  * "Fichas por localidad" de un trámite del organismo (adopción), para su detalle: una fila por ficha
- * (localidad, estado, versión) y "Agregar localidad" (`CREAR_FICHA_ACCESS`). Componente hijo con su
+ * (localidad, estado, versión) y "Agregar ficha por localidad" (`CREAR_FICHA_ACCESS`). Componente hijo con su
  * propio facade (PLAN_TRAMITES_API.md §3): así el detalle de la adopción no inyecta dos facades y
  * `AdopcionesFacade` no depende de fichas (fichas ya depende de adopciones: sería un ciclo).
  * El padre lo muestra solo con `READ_VARIANT`. Si la fuente no dice a qué adopción pertenece cada ficha
@@ -54,6 +55,8 @@ export class FichasDeAdopcionComponent {
   readonly rutaLista = RUTA_LISTA_FICHAS;
   readonly crearFicha = CREAR_FICHA_ACCESS;
   readonly noDisponible = NO_DISPONIBLE;
+  readonly fuenteSimulada = this.facade.fuenteSimulada;
+  readonly textoFuenteSimulada = TEXTO_FUENTE_SIMULADA;
 
   readonly estado$: Observable<EstadoLista> = combineLatest([
     this.adopcionId$.pipe(filter(Boolean), distinctUntilChanged()),

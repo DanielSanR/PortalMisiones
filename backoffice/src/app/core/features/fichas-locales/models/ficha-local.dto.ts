@@ -2,7 +2,7 @@ import { EstadoPublicacion } from '@core/models/estado-publicacion.model';
 
 /**
  * Contrato real de `/api/organism-procedure-location` ("OTL", ficha por localidad), backend
- * `origin/dev` @ `23fd8f9`: `OrganismProcedureLocationRequestDTO` / `OrganismProcedureLocationResponseDTO`
+ * `origin/dev` @ `58d383a`: `OrganismProcedureLocationRequestDTO` / `OrganismProcedureLocationResponseDTO`
  * y el enum `PublicationStatus`. Ver PLAN_TRAMITES_API.md §1.4. Los UUID viajan como string.
  */
 export type PublicationStatus = EstadoPublicacion;
@@ -47,8 +47,10 @@ export interface OrganismProcedureLocationExtendedResponseDTO extends OrganismPr
  * POST/PUT (verbatim). El DTO no tiene validaciones: si falta un campo NOT NULL (`organismProcedureId`,
  * `locationId`, `slug`, `publicationStatus`, `active`) el backend responde 500 `5000`.
  * - POST ignora `publicationStatus` (siempre `BORRADOR`, versión 1).
- * - PUT es reemplazo TOTAL, incluido `publicationStatus` (R-1): el front manda SIEMPRE el estado
- *   actual de la ficha; el estado solo cambia con los endpoints de workflow.
+ * - PUT reemplaza todo el contenido. En `dev` ya NO aplica `publicationStatus` (R-1 resuelto: el estado
+ *   solo cambia con los endpoints de workflow), pero staging corre un backend anterior que sí lo aplica:
+ *   hasta OPS-1 el front sigue mandando SIEMPRE el estado actual de la ficha.
+ * - UNIQUE (adopción, localidad) y (slug, adopción) (`V2.27`): su violación responde 500 `5000`.
  */
 export interface OrganismProcedureLocationRequestDTO {
   organismProcedureId: string;

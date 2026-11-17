@@ -1,8 +1,30 @@
 // ==========================================================================
-// Detalle de Ficha por localidad — lo propio de la pantalla: texto de ayuda,
-// slug y URL. Membrete, grilla, cards y campos son las clases globales
-// `.detail-*` (shared-styles/_components.scss).
+// Detalle de Ficha por localidad — el formulario en modo lectura. Membrete (`.detail-header--ficha`), tarjeta de
+// dos paneles (`.ficha-paneles`, `--lectura`), campos (`.detail-field*`) y enlaces (`.detail-link`) son clases
+// globales (shared-styles/_components.scss). Acá solo lo propio: el bloque "Publicación", el slug y la URL.
 // ==========================================================================
+
+.fichadet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-gap);
+}
+
+// "Publicación" cierra el panel de datos: divisor fino y aire, como los bloques de una card de Plantilla.
+.fichadet-publicacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  padding-top: var(--theme-space-card);
+  border-top: 1px solid var(--theme-border-subtle);
+
+  &__titulo {
+    margin: 0;
+    font-size: var(--theme-font-body-size);
+    font-weight: var(--theme-font-card-title-weight);
+    color: var(--theme-text-primary);
+  }
+}
 
 .fichadet-ayuda {
   margin: 0;
@@ -13,6 +35,7 @@
 .fichadet-slug {
   font-family: var(--theme-font-mono);
   font-size: var(--theme-font-small-size);
+  overflow-wrap: anywhere;
 }
 
 // La URL del trámite es el dato principal del campo: tamaño de cuerpo, no de enlace chico.

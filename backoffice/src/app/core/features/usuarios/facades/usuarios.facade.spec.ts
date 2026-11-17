@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { UsuarioService } from '@core/services/usuario.service';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { AuthUser } from '@core/models/auth.model';
@@ -85,6 +85,38 @@ describe('UsuariosFacade · fuente real (GET /api/user)', () => {
     // Rol global: sin organismo. El backend no lo rechazaría, así que no tiene que viajar.
     await firstValueFrom(facade.create({ ...form, organismoId: null }));
     expect(http.post.calls.mostRecent().args[1].organizationId).toBeUndefined();
+  });
+
+  it('asignar un rol manda solo lo que el form trae y refleja en la fila el rol vigente', async () => {
+    http.get.and.returnValue(of({ code: 2013, message: '', data: [dto()] }));
+    http.post.and.returnValue(of({ code: 2001, message: '', data: dto({ role: { code: 'AGENT' } as UserResponseDTO['role'] }) }));
+    const facade = facadeCon(new UsuariosHttpDataSource(http));
+    await firstValueFrom(facade.loadUsuarios());
+
+    await firstValueFrom(facade.asignarRol('u-1', {
+      rolId: 'rol-uuid', organismoId: 'org-uuid', vigenteDesde: '2026-12-01', vigenteHasta: null,
+    }));
+    expect(http.post.calls.mostRecent().args[0]).toMatch(/\/api\/user\/u-1\/role-assignments$/);
+    expect(http.post.calls.mostRecent().args[1]).toEqual({
+      roleId: 'rol-uuid', organismId: 'org-uuid', effectiveFrom: '2026-12-01', effectiveTo: undefined,
+    });
+    expect((await firstValueFrom(facade.usuarios$))[0].rol).toBe(UserRole.AGENT);
+
+    // Rol global, desde hoy y sin fin: solo viaja el rol.
+    await firstValueFrom(facade.asignarRol('u-1', { rolId: 'rol-uuid', organismoId: null, vigenteDesde: null, vigenteHasta: null }));
+    expect(JSON.parse(JSON.stringify(http.post.calls.mostRecent().args[1]))).toEqual({ roleId: 'rol-uuid' });
+  });
+
+  it('si la asignación falla, la fila no cambia y el error llega a quien llamó', async () => {
+    http.get.and.returnValue(of({ code: 2013, message: '', data: [dto({ role: { code: 'AGENT' } as UserResponseDTO['role'] })] }));
+    http.post.and.returnValue(throwError(() => ({ status: 409, error: { code: 4081, message: '' } })));
+    const facade = facadeCon(new UsuariosHttpDataSource(http));
+    await firstValueFrom(facade.loadUsuarios());
+
+    await expectAsync(firstValueFrom(facade.asignarRol('u-1', {
+      rolId: 'rol-uuid', organismoId: 'org-uuid', vigenteDesde: null, vigenteHasta: null,
+    }))).toBeRejectedWith(jasmine.objectContaining({ status: 409 }));
+    expect((await firstValueFrom(facade.usuarios$))[0].rol).toBe(UserRole.AGENT);
   });
 
   it('edición y borrado definitivo fallan explícitamente, sin tocar el backend', async () => {

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { USUARIOS_DS, UsuariosDataSource } from '../datasources/usuarios.datasource';
-import { UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
+import { AsignacionRolFormValue, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 
 /**
  * Repositorio de usuarios: expone VMs source-agnostic. Inyecta el DataSource vía token
@@ -38,6 +38,10 @@ export class UsuariosRepository {
 
   update(id: string, form: UsuarioFormValue): Observable<UsuarioVM> {
     return this.ds.update(id, form);
+  }
+
+  asignarRol(id: string, form: AsignacionRolFormValue): Observable<UsuarioVM> {
+    return this.ds.asignarRol(id, form);
   }
 
   setAccountStatus(id: string, active: boolean): Observable<void> {

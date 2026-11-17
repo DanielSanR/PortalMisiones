@@ -4,11 +4,23 @@ import { extractErrorCode, extractErrorMessage } from '@core/models/api-response
 import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 
 /**
- * Texto prudente para el `5000` de las fichas (decisión de §8, R-2/G-4). Staging todavía responde 500
- * a casi todo; el backend de `dev` ya distingue transición inválida (`4077`), inexistente (`4073`) y
- * edición concurrente (`4091`), y el `5000` queda para campos obligatorios faltantes (G-1).
+ * Texto prudente para el `5000` de las ACCIONES sobre la ficha (decisión de §8, R-2/G-4). Staging todavía
+ * responde 500 a casi todo; el backend de `dev` ya distingue transición inválida (`4077`), inexistente
+ * (`4073`) y edición concurrente (`4091`), y el `5000` queda para campos obligatorios faltantes (G-1) y
+ * para los UNIQUE de `V2.27` (ver `TEXTO_5000_GUARDADO`).
  */
 export const TEXTO_5000_FICHA = 'Puede que la ficha haya cambiado de estado; recargá e intentá de nuevo.';
+
+/**
+ * `5000` al crear o editar. El backend no valida la unicidad antes de guardar: un duplicado de
+ * (adopción, localidad) o de (slug, adopción) —`V2.27`, que cuenta las fichas desactivadas— llega como
+ * este 500 genérico, sin código propio. Por eso el texto nombra primero el duplicado posible. El form lo
+ * valida antes, pero no ve fichas creadas después de abrirlo ni fuera del alcance del usuario.
+ */
+export const TEXTO_5000_GUARDADO =
+  'Puede que esa localidad ya tenga una ficha de este trámite (activa o desactivada) o que el slug ya esté en uso: '
+  + 'revisalo en Fichas por localidad. Si no es eso, puede que la ficha haya cambiado, o que el trámite del organismo '
+  + 'o la localidad ya no estén disponibles: recargá e intentá de nuevo.';
 
 /** `4091`: otro usuario guardó la ficha antes. */
 export const TEXTO_EDICION_CONCURRENTE = 'Otro usuario modificó la ficha mientras la editabas. Recargá para ver los cambios.';
@@ -17,7 +29,7 @@ export const TEXTO_EDICION_CONCURRENTE = 'Otro usuario modificó la ficha mientr
 export const CONFLICTOS_FICHA: ConflictoDeCampo[] = [
   {
     code: API_CODES.UNEXPECTED,
-    mensaje: 'Puede que la ficha haya cambiado, o que el trámite del organismo o la localidad ya no estén disponibles. Recargá e intentá de nuevo.',
+    mensaje: TEXTO_5000_GUARDADO,
   },
   {
     // Hoy el backend no valida el DTO (G-1); cuando lo haga, un campo obligatorio faltante será `4012`.
@@ -35,7 +47,7 @@ export const CONFLICTOS_FICHA: ConflictoDeCampo[] = [
     mensaje: 'La ficha, el trámite del organismo o la localidad ya no existe o quedó fuera de tu alcance. Recargá e intentá de nuevo.',
   },
   {
-    // G-9 propone un `409`/`4072` para slug repetido (hoy no hay unicidad: lo valida el form).
+    // G-9 propone un `409`/`4072` para slug repetido. Hoy el UNIQUE de `V2.27` llega como `5000` (arriba).
     code: API_CODES.ENTITY_CONFLICT,
     control: 'slug',
     mensaje: 'Ya hay otra ficha con ese slug. Elegí otro.',

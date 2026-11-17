@@ -3,7 +3,8 @@ import { RoleResponseDTO, RoleScopeType, PermissionResponseDTO } from '@core/mod
 /**
  * DTOs del backend real para gestión de usuarios (BACKEND_API_SPEC.md §3).
  * Propios del feature usuarios. Los envelopes (ResponseDTO/MessageDTO) son compartidos (@core/models).
- * Nota: el backend NO expone listado/paginado de usuarios (sólo GET por id).
+ * Nota: `GET /api/user` lista los usuarios del alcance (sin paginado), pero todavía sin rol, organismo ni
+ * nombre (G-13).
  */
 
 /** Perfil de entrada. `dni` y `phone` se aceptan pero NO se persisten (§3.1). */
@@ -59,6 +60,19 @@ export interface UserResponseDTO {
   role: UserRoleSummary | null;
   activeAssignments: RoleResponseDTO[] | null;
   profileComplete: boolean;
+}
+
+/**
+ * Body de POST /api/user/{id}/role-assignments (`AssignRoleRequestDTO`, permiso `CREATE_USER`).
+ * Las fechas son `LocalDate` (`YYYY-MM-DD`). Sin `effectiveFrom` el backend usa hoy; sin `effectiveTo`
+ * la asignación no vence. `organismId` es obligatorio para un rol de scope `organismo` y tiene que
+ * faltar para uno `global` (si no → 403 `4029`).
+ */
+export interface AssignRoleRequest {
+  roleId: string; // UUID del rol
+  organismId?: string | null;
+  effectiveFrom?: string;
+  effectiveTo?: string;
 }
 
 /** PUT /api/user/{id}/change-password */

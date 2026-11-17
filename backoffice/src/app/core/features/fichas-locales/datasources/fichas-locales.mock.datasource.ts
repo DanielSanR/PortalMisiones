@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
 import { API_CODES } from '@core/constants/api-codes.constants';
 import { errorDeNegocio } from '@core/mocks/mock-errors';
+import { semillaAtadaAAdopciones } from '@core/config/data-source.config';
 import { FichasLocalesDataSource } from './fichas-locales.datasource';
 import {
   OrganismProcedureLocationExtendedResponseDTO, OrganismProcedureLocationRequestDTO,
@@ -79,17 +80,20 @@ function semilla(): FilaMock[] {
 
 /**
  * Implementación mock en memoria, con la forma COMPLETA del response (como si G-1 estuviera
- * resuelto) y fiel a `OrganismProcedureLocationService` de `dev` (`b6f505b`) con alcance global:
+ * resuelto) y fiel a `OrganismProcedureLocationService` de `dev` (`58d383a`) con alcance global:
  * - POST siempre en `BORRADOR`, versión 1; PUT del contenido (el estado se conserva, R-1) y
  *   versión N+1; cada transición válida también suma una versión. El `DELETE` no genera versión.
  * - Transiciones según `isAllowedTransition`; las inválidas → 409 `4077`.
  * - Ficha inexistente → 404 `4073`; campos NOT NULL faltantes → `5000` (sin validación del DTO, G-1).
- * - Sin chequeo de unicidad de `(adopción, localidad)` ni de slug (`V2.27`): la valida el form en el cliente.
+ * - Unicidad de `(adopción, localidad)` y de `(slug, adopción)` (`V2.27`), contando las desactivadas. El
+ *   backend no la valida antes de guardar: la violación llega como el `5000` genérico, y acá igual.
  * No puede validar que la adopción y la localidad existan (no conoce otros datasources).
  */
 @Injectable()
 export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
-  private data: FilaMock[] = semilla();
+  readonly fuenteSimulada = true;
+  /** Con adopciones reales las semillas (`op-*`, `loc-*`) no existen: arranca vacío. */
+  private data: FilaMock[] = semillaAtadaAAdopciones(semilla);
 
   list(): Observable<FichaLocal[]> {
     return of(this.data.map((fila) => toFichaLocal({ ...fila }))).pipe(delay(DELAY));
@@ -102,7 +106,7 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
 
   create(form: FichaLocalFormValue): Observable<FichaLocal> {
     const request = toOrganismProcedureLocationRequest(form, 'BORRADOR');
-    if (!this.completo(request)) return this.error5000();
+    if (!this.completo(request) || this.chocaUnicidad(request, null)) return this.error5000();
     const nueva: FilaMock = {
       id: crypto.randomUUID(),
       ...this.contenido(request),
@@ -117,7 +121,7 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
     const existente = this.data.find((x) => x.id === id);
     const request = toOrganismProcedureLocationRequest(form, estadoActual);
     if (!existente) return this.errorInexistente(id);
-    if (!this.completo(request)) return this.error5000();
+    if (!this.completo(request) || this.chocaUnicidad(request, id)) return this.error5000();
     // Igual que el backend (R-1 resuelto): el PUT edita el contenido y conserva el estado vigente.
     const actualizada: FilaMock = {
       ...existente,
@@ -175,6 +179,13 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
   /** Columnas NOT NULL sin validación en el DTO: si faltan, el backend responde 500. */
   private completo(request: OrganismProcedureLocationRequestDTO): boolean {
     return !!request.organismProcedureId && !!request.locationId && !!request.slug && typeof request.active === 'boolean';
+  }
+
+  /** Los dos UNIQUE de `V2.27`. No miran `active`: una ficha desactivada sigue ocupando su lugar. */
+  private chocaUnicidad(request: OrganismProcedureLocationRequestDTO, exceptoId: string | null): boolean {
+    return this.data.some((x) => x.id !== exceptoId
+      && x.organismProcedureId === request.organismProcedureId
+      && (x.locationId === request.locationId || x.slug === request.slug));
   }
 
   private reemplazar(fila: FilaMock): void {

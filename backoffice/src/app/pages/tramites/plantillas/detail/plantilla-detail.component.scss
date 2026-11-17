@@ -13,11 +13,6 @@
   gap: var(--theme-space-gap);
 }
 
-// "Desactivar": texto en `--theme-warn-dark` (#B71C1C del diseño); borde y hover siguen al global.
-.plantdet-desactivar.mat-mdc-outlined-button.mat-warn {
-  --mdc-outlined-button-label-text-color: var(--theme-warn-dark);
-}
-
 .plantdet-encabezado {
   @include accent-heading;
 }

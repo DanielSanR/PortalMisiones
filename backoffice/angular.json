@@ -79,6 +79,10 @@
                   "with": "src/app/core/mocks/mock-auth-init.prod.ts"
                 },
                 {
+                  "replace": "src/app/core/features/adopciones/datasources/adopciones.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
                   "replace": "src/app/core/features/categorias/datasources/categorias.mock.datasource.ts",
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
@@ -88,6 +92,10 @@
                 },
                 {
                   "replace": "src/app/core/features/destinatarios/datasources/destinatarios.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/etiquetas/datasources/etiquetas.mock.datasource.ts",
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
                 {
@@ -108,6 +116,10 @@
                 },
                 {
                   "replace": "src/app/core/features/permisos/datasources/permisos.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/plantillas/datasources/plantillas.mock.datasource.ts",
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
                 {

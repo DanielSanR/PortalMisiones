@@ -6,7 +6,8 @@ import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 export const CONFLICTOS_ADOPCION: ConflictoDeCampo[] = [
   {
     // 409 `4080`: otra adopción habilitada de la misma plantilla en el mismo organismo se pisa con
-    // estas fechas. El backend no tiene texto para este código (llega "response.code.4080").
+    // estas fechas. `dev` ya trae un mensaje para este código; staging, hasta OPS-1, manda la clave cruda
+    // "response.code.4080". Se usa siempre el texto propio, que además dice qué hacer.
     code: API_CODES.ADOPTION_OVERLAP,
     mensaje: 'Ya hay una adopción vigente de este trámite en el organismo para ese período. Cambiá las fechas o editá la adopción existente.',
   },

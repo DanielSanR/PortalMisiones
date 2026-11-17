@@ -109,8 +109,11 @@ export class AdopcionesMockDataSource extends AdopcionesDataSource {
       return errorDeNegocio(API_CODES.VALIDATION, 'Verifique los campos de los elementos enviados.');
     }
     if (request.enabled && this.seSolapa(request, desde, hasta, exceptoId)) {
-      // El backend no tiene texto para 4080: manda la clave cruda, igual que acá.
-      return errorDeNegocio(API_CODES.ADOPTION_OVERLAP, 'response.code.4080');
+      // Texto real de `messages.properties` (`dev` @ `58d383a`).
+      return errorDeNegocio(
+        API_CODES.ADOPTION_OVERLAP,
+        'No se puede activar una adopción de plantilla porque se superpone en vigencia con otra adopción del mismo organismo.',
+      );
     }
     return null;
   }

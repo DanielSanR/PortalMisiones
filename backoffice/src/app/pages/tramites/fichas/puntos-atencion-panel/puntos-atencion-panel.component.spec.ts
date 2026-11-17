@@ -136,3 +136,104 @@ describe('PuntosAtencionPanelComponent — foco tras guardar', () => {
     expect(vacio.querySelector('.state-panel__text')?.textContent).toContain('Agregá dónde se hace el trámite');
   });
 });
+
+describe('PuntosAtencionPanelComponent — con cabecera propia (detalle de la ficha)', () => {
+  let fixture: ComponentFixture<PuntosAtencionPanelComponent>;
+
+  let enfocados = 0;
+  const el = (): HTMLElement => fixture.nativeElement;
+
+  async function crear(puntos: PuntoAtencionVM[], enfocarTitulo: boolean, fuenteSimulada = false): Promise<void> {
+    const facade = {
+      fuenteSimulada,
+      refrescar: () => undefined,
+      cambios$: new BehaviorSubject<void>(undefined),
+      getDeFicha: () => of(puntos),
+    };
+    await TestBed.configureTestingModule({
+      imports: [PuntosAtencionPanelComponent, NoopAnimationsModule],
+      providers: [
+        { provide: PuntosAtencionFacade, useValue: facade },
+        { provide: MatDialog, useValue: { openDialogs: [], open: () => ({ afterClosed: () => of(undefined) }) } },
+        { provide: MatSnackBar, useValue: { open: () => undefined } },
+      ],
+    })
+      .overrideComponent(PuntosAtencionPanelComponent, {
+        remove: { imports: [HasPermissionDirective, RowActionsComponent] },
+        add: { imports: [HasPermissionStub, RowActionsStub] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(PuntosAtencionPanelComponent);
+    document.body.append(fixture.nativeElement);
+    enfocados = 0;
+    fixture.componentInstance.tituloEnfocado.subscribe(() => enfocados++);
+    fixture.componentRef.setInput('fichaId', 'f-1');
+    fixture.componentRef.setInput('cabecera', true);
+    fixture.componentRef.setInput('tituloId', 'ficha-puntos');
+    fixture.componentRef.setInput('enfocarTitulo', enfocarTitulo);
+    fixture.detectChanges();
+  }
+
+  afterEach(() => fixture.nativeElement.remove());
+
+  it('dibuja el título, el total de activos y un solo "Agregar punto de atención"', async () => {
+    await crear([punto('p-1'), { ...punto('p-2'), activo: false }, punto('p-3')], false);
+
+    expect(el().querySelector('#ficha-puntos')!.textContent).toContain('Puntos de atención');
+    expect(el().querySelector('.ficha-paneles__total')!.textContent).toContain('2 activos');
+    const agregar = Array.from(el().querySelectorAll('button')).filter((b) => b.textContent!.includes('Agregar punto de atención'));
+    expect(agregar.length).toBe(1);
+    expect(el().querySelector('.puntos-barra__agregar')).toBeNull();
+  });
+
+  it('con enfocarTitulo lleva el foco al título; sin él no lo toca', async () => {
+    await crear([punto('p-1')], true);
+    expect(document.activeElement).toBe(el().querySelector('#ficha-puntos'));
+    fixture.nativeElement.remove();
+    TestBed.resetTestingModule();
+
+    await crear([punto('p-1')], false);
+    expect(document.activeElement).not.toBe(el().querySelector('#ficha-puntos'));
+  });
+
+  it('avisa al padre (tituloEnfocado) cuando enfocó el título, y no emite si no se pidió el foco', async () => {
+    await crear([punto('p-1')], true);
+    await fixture.whenStable();
+    expect(enfocados).toBe(1);
+    fixture.nativeElement.remove();
+    TestBed.resetTestingModule();
+
+    await crear([punto('p-1')], false);
+    await fixture.whenStable();
+    expect(enfocados).toBe(0);
+  });
+
+  it('no recuerda si ya enfocó: si el padre sigue pidiendo el foco, un panel recreado vuelve a enfocar', async () => {
+    await crear([punto('p-1')], true);
+    fixture.nativeElement.remove();
+    TestBed.resetTestingModule();
+    await crear([punto('p-1')], true);
+    expect(document.activeElement).toBe(el().querySelector('#ficha-puntos'));
+  });
+
+  it('con fuente simulada avisa que los puntos no se guardan en el servidor; con fuente real no', async () => {
+    await crear([punto('p-1')], false, true);
+    const aviso = el().querySelector('.form-aviso[role="note"]')!;
+    expect(aviso.textContent).toContain('Datos de ejemplo');
+    expect(aviso.textContent).toContain('puntos de atención');
+    fixture.nativeElement.remove();
+    TestBed.resetTestingModule();
+
+    await crear([punto('p-1')], false, false);
+    expect(el().querySelector('.form-aviso[role="note"]')).toBeNull();
+  });
+
+  it('sin cabecera (formulario) no dibuja título propio', async () => {
+    await crear([punto('p-1')], false);
+    fixture.componentRef.setInput('cabecera', false);
+    fixture.detectChanges();
+    expect(el().querySelector('#ficha-puntos')).toBeNull();
+    expect(el().querySelector('.puntos-barra__agregar')).not.toBeNull();
+  });
+});

@@ -278,30 +278,32 @@ export class RolesListComponent implements OnInit {
     };
   }
 
+  /** El backend no borra roles: los desactiva. Un rol ya inactivo se reactiva desde "Editar". */
   accionesDe(rol: RolVM): RowAction[] {
+    if (!rol.activo) return [];
     return [{
-      label: 'Eliminar',
-      icon: 'trash',
+      label: 'Desactivar',
+      icon: 'prohibit',
       danger: true,
       rule: ESCRIBIR_ROLES_PERMISOS_ACCESS,
-      ariaLabel: `Eliminar rol ${rol.codigo}`,
+      ariaLabel: `Desactivar rol ${rol.codigo}`,
       run: () => this.onDelete(rol),
     }];
   }
 
   onDelete(rol: RolVM): void {
-    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
+    // Foco tras desactivar: la fila queda pero su menú de acciones desaparece; se captura la posición antes.
     const indice = indiceDeFilaActiva(this.host);
     abrirConfirmacion(this.dialog, {
       data: {
-        title: '¿Eliminar el rol?',
-        // Cuenta la consecuencia, no la restricción: que no se pueda borrar un rol con usuarios
+        title: '¿Desactivar el rol?',
+        // Cuenta la consecuencia, no la restricción: si no se puede desactivar un rol con usuarios
         // asignados lo decide el backend y, si corresponde, vuelve como error.
-        message: `Se eliminará ${rol.codigo} y quienes lo tengan asignado perderán esos permisos. Esta acción no se puede deshacer.`,
+        message: `${rol.codigo} quedará inactivo y quienes lo tengan asignado perderán esos permisos. Podés reactivarlo desde «Editar».`,
         highlight: rol.codigo,
         danger: true,
-        confirmText: 'Sí, eliminar',
-        busyText: 'Eliminando…',
+        confirmText: 'Sí, desactivar',
+        busyText: 'Desactivando…',
         // El diálogo se queda abierto con el botón en spinner hasta que el backend responde, en
         // vez de cerrar optimistamente y dejar al usuario sin señal de qué pasó.
         confirmAction: () => {
@@ -317,7 +319,7 @@ export class RolesListComponent implements OnInit {
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         enfocarTrasEliminar(this.host, indice, this.destroyRef);
-        this.snackBar.open('Rol eliminado', 'OK', {
+        this.snackBar.open('Rol desactivado', 'OK', {
           duration: 3000,
           // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
           panelClass: 'snackbar-success',

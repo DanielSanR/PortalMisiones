@@ -235,6 +235,13 @@ Loading: el ícono pasa a `ph-spinner-gap spin` y el texto a gerundio ("Guardand
 - Selección múltiple de catálogos: `<app-seleccion-multiple>` (chips + lista con buscador, un grupo abierto a la vez) dentro de una
   tarjeta de dos paneles con el pie integrado (`<app-form-actions [integrada]="true">`, indicador en `formActionsInfo`); ver el form de Plantilla.
 
+#### Ver y editar una ficha: la misma pantalla en dos modos
+El detalle de una entidad con formulario de "ficha de dos paneles" (Plantilla, Rol, Ficha por localidad) usa el mismo
+membrete (`.detail-header--flush.detail-header--ficha`, con "Desactivar" dentro de `__actions`) y la misma tarjeta
+(`.ficha-paneles`), con el modificador `.ficha-paneles--lectura` (borde neutro: el celeste señala "en edición") y sin
+`<app-form-actions>`. Los campos van como `.detail-field` dentro de `.ficha-paneles__campos`. Un panel hijo con su propio
+alta (puntos de atención) lleva su cabecera con título, total y botón; con `#<fragmento>` en la URL el foco va al título.
+
 #### Alta y edición: ¿diálogo o página?
 Una sola forma por entidad; nunca las dos para lo mismo.
 - **Diálogo sobre la lista** cuando la entidad tiene pocos campos, no tiene ficha propia y ayuda ver la lista de
