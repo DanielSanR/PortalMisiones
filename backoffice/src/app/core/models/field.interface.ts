@@ -28,6 +28,21 @@ export interface FieldConfig {
   hint?: string;
   cssClass?: 'colspan-full' | 'colspan-half' | 'colspan-third' | 'colspan-wide';
   disabled?: boolean;
+  /**
+   * Dato fijado que la persona no elige (p. ej. el organismo que impone su sesión). A diferencia de
+   * `disabled`, el campo sigue en el orden de tabulación: se dibuja como un `<input readonly>` con el
+   * valor legible (en un `select`, el nombre de la opción elegida), el `hint` —que acá es el MOTIVO—
+   * queda asociado por `aria-describedby`, y no lleva la marca de obligatorio. El control sigue
+   * habilitado: su valor (`value` / `initialData`) viaja en `form.value` como el de cualquier otro.
+   * Vale para cualquier tipo con control; preferirlo a `disabled` siempre que haya un motivo que contar.
+   *
+   * Sus `validations` NO se aplican mientras sea de solo lectura (`DynamicFormComponent.getValidators`): son
+   * reglas sobre lo que la persona ingresa, y acá no puede ingresar nada. Un `required` sobre un valor que
+   * llegó vacío dejaría el envío bloqueado sin error visible ni forma de corregirlo. Si el dato fijado es
+   * indispensable, quien arma el campo tiene que garantizarlo (o no ofrecer el formulario); el backend lo
+   * valida igual. Si el campo deja de ser `readonly`, sus validaciones vuelven a regir.
+   */
+  readonly?: boolean;
   /** El valor es un identificador técnico (`CREATE_PROCEDURE`): se escribe en monoespaciada. Solo `text`. */
   mono?: boolean;
   value?: unknown;

@@ -1,17 +1,18 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EstadoFicha, FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
+import { FichasLocalesFiltro } from '../models/ficha-local.dto';
+import { FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
 import { TransicionBackend } from '../models/workflow';
 
 /**
  * Fuente de datos de las fichas por localidad (`/api/organism-procedure-location`, "OTL"): HTTP real
- * o mock en memoria, según `featureOverrides`. Devuelve los nombres solo si la fuente los trae; si
- * no, los resuelve el facade.
+ * o mock en memoria, según `featureOverrides`. Devuelve ids, no nombres: los resuelve el facade.
  *
- * Errores del backend de `dev`: transición inválida → 409 `4077`; ficha inexistente o fuera del alcance →
- * 404 `4073`; edición concurrente → 409 `4091`. Siguen llegando como 500 `5000` un campo NOT NULL
- * faltante y un duplicado de (adopción, localidad) o de (slug, adopción). Staging, hasta OPS-1, responde
- * 500 `5000` a casi todo (G-4).
+ * Errores del backend (`dev` @ `586b670`): campo obligatorio faltante → 400 `4012`; ficha, adopción o
+ * localidad inexistente o fuera del alcance, y también adopción NO vigente en alta/edición → 404 `4073`;
+ * transición inválida → 409 `4077`; dos escrituras SIMULTÁNEAS de la misma ficha → 409 `4091` (el PUT no lleva
+ * versión: un formulario viejo que pisa lo que otro guardó NO se rechaza; lo mitiga el facade releyendo antes). Un duplicado de (adopción, localidad)
+ * o de (slug, adopción) sigue llegando como 500 `5000` (el servicio no lo valida antes de guardar).
  */
 export abstract class FichasLocalesDataSource {
   /**
@@ -19,18 +20,20 @@ export abstract class FichasLocalesDataSource {
    * servidor. La UI lo avisa de forma persistente, sin saber qué fuente es.
    */
   abstract readonly fuenteSimulada: boolean;
-  /** Todas las fichas del alcance (activas e inactivas). El backend no filtra por adopción (G-1). */
-  abstract list(): Observable<FichaLocal[]>;
+  /**
+   * Fichas del alcance (activas e inactivas). Con `filtro.adopcionId` (`?organismProcedureId=`), solo las
+   * de esa adopción.
+   */
+  abstract list(filtro?: FichasLocalesFiltro): Observable<FichaLocal[]>;
   abstract getById(id: string): Observable<FichaLocal>;
-  /** Alta: siempre queda en `BORRADOR`, versión 1. */
+  /** Alta: siempre queda en `BORRADOR`, versión 1. La adopción tiene que estar vigente. */
   abstract create(form: FichaLocalFormValue): Observable<FichaLocal>;
   /**
-   * Reemplazo total del contenido. `estadoActual` viaja tal cual en `publicationStatus`: `dev` ya lo
-   * ignora (R-1 resuelto), pero el backend de staging todavía lo aplica. El estado solo cambia con
-   * `transicion`.
+   * Reemplazo total del contenido; el estado de publicación se conserva (solo cambia con `transicion`).
+   * La adopción tiene que estar vigente.
    */
-  abstract update(id: string, form: FichaLocalFormValue, estadoActual: EstadoFicha): Observable<FichaLocal>;
-  /** `POST /{id}/submit-review | publish | unpublish`. Inválida → 409 `4077` (500 `5000` en staging hasta OPS-1). */
+  abstract update(id: string, form: FichaLocalFormValue): Observable<FichaLocal>;
+  /** `POST /{id}/submit-review | publish | unpublish`. Inválida → 409 `4077`. */
   abstract transicion(id: string, transicion: TransicionBackend): Observable<FichaLocal>;
   /** `DELETE` lógico: `active=false`; si estaba `PUBLICADO` queda `DESPUBLICADO`. */
   abstract desactivar(id: string): Observable<void>;

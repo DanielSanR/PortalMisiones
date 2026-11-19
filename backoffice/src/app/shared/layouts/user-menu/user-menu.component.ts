@@ -21,6 +21,8 @@ export class UserMenuComponent {
   @Input() email = '';
   @Input() initials = '';
   @Input() role = '';
+  /** Organismo al que pertenece la cuenta; vacío (sesión global o dato no informado) = no se muestra. */
+  @Input() organismo = '';
   /** Sidebar colapsada: solo se ve el avatar (nombre y rol quedan para lectores de pantalla). */
   @Input() compact = false;
   /** Preferencia "Atajos de teclado" (WCAG 2.1.4: se pueden apagar). */

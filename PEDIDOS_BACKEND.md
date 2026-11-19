@@ -1,8 +1,46 @@
 # Pedidos del backoffice al backend — Portal Provincial de Trámites (Misiones)
 
-**Fecha:** 2026-11-16 · **Backend relevado:** `origin/dev` @ `58d383a` (código; migraciones hasta `V2.30`) y API de staging (sondeo del 2026-11-03 con el usuario SA de e2e) · **Contacto:** Daniel Romero (frontend backoffice)
+**Fecha:** 2026-11-19 · **Backend relevado:** `origin/dev` @ `586b670` (código; migraciones hasta `V2.31`) y API de staging (`origin/staging` @ `0a555df`, merge de `dev` que contiene `586b670`, desplegado el 2026-11-19; `/api-docs` consultado ese día, antes y después del deploy) · **Contacto:** Daniel Romero (frontend backoffice)
 
-> **Auditoría 2026-11-16:** se revisó cada pedido contra el código de `dev` @ `58d383a` (lectura de código y
+> **Auditoría 2026-11-19:** se revisaron los 13 commits de `dev` entre `58d383a` y `586b670` (2026-11-16 a 2026-11-18;
+> lectura de código, migraciones, tests y `odd/tasks/*.md`; no se levantó el backend). **Resueltos en `dev` (5),
+> en staging desde el mismo 2026-11-19 (ver "Deploy a staging" más abajo):** **G-1** (`3797fe7`; cierra también el cabo de R-1), **G-2 / BO-20** (`d7aca1c`),
+> **G-6** (`1f51bea`), **G-10** (`130c180`) y **G-22** (`a69925e`). **Avance parcial (4):** G-3 (`V2.31`: `READ_PROCEDURE`
+> solo para AO), G-7 (filtro de puntos de atención por ficha, `0db49a9`), G-9 (vigencia en las consultas públicas,
+> `1888e1a`) y G-12 (§3: fichas sobre adopciones no vigentes, `1888e1a`). **Sin cambios:** G-4, G-5/D-3, G-8, G-11,
+> G-13, G-16 a G-21, G-23 a G-25, DOC-1 y lo que no tiene endpoint (métricas, auditoría, lectura de feedback).
+>
+> **Contrato nuevo que no era pedido nuestro (PPDT-5.1, `a69925e`):** ADMIN_BACKOFFICE ya no puede dar de baja (lógica
+> ni definitiva), cambiar el estado ni cambiar el email de una cuenta con rol vigente `SUPERADMIN` o `ADMIN_BACKOFFICE`
+> → 403 `4029`. Contrato en `BACKEND_API_SPEC.md` §3.2; consecuencia para el front en G-26.
+>
+> **Pedidos nuevos (G-26 a G-29)**, todos surgidos de estos commits y **leídos en el código, no ejecutados**: el front
+> no puede saber qué cuentas son privilegiadas (G-26), una ficha cuya adopción dejó de estar vigente no se puede editar
+> y el error es un 404 "no existe" (G-27), `slugBase` puede canonicalizarse a vacío y los slugs previos no se migran
+> (G-28), y el filtro de puntos de atención por ficha devuelve solo activos (G-29).
+>
+> **Surgidos de la implementación del front (misma fecha, mismo commit `586b670`; leídos en el código, no
+> ejecutados):** tres pedidos nuevos y cinco ampliaciones.
+> - **Nuevos:** los motivos del 403 `4029` de usuarios solo se distinguen por el texto de `details` (**G-30**);
+>   `PUT /api/user/{id}/change-password` es la única mutación de usuario que no valida el alcance del actor (**G-31**,
+>   autorización; latente: con el seed solo SA y AB tienen `UPDATE_USER`); y la vigencia de la adopción se evalúa con la
+>   hora de pared de la JVM, sin zona fijada en ningún lado (**G-32**).
+> - **Ampliados:** G-9 (el duplicado de ficha sigue en 500 `5000` y el front no sabe cuál de las dos restricciones
+>   falló), G-8 (el `PUT` no lleva versión: el front relee la ficha antes de guardar), G-27 (el front reconoce "adopción
+>   no vigente" leyendo la etiqueta dentro del `message`), G-2 (contrato de `/me` a confirmar: `organismAcronym` nulo,
+>   organismo desactivado, 403/404 nuevos) y G-23 (`GET /api/role/allowed` verificado: filtra bien por los flags, no
+>   hace falta pedido).
+>
+> **Deploy a staging (2026-11-19, el mismo día de la auditoría):** al empezar el día staging estaba otra vez atrás de
+> `dev` (`origin/staging` @ `7f2a78f`, merge de `dev` @ `58d383a`; `/api-docs` publicaba el contrato anterior: ficha sin
+> `url`, `requirements` ni `costs`, `/me` sin `scope`) y OPS-1 se reabrió para estos 13 commits y `V2.31`. **Ese mismo
+> día el backend desplegó `dev` en staging:** `origin/staging` = `0a555df` ("Merge branch 'dev' into 'staging'", contiene
+> `586b670`) y `/api-docs` de staging ya publica el contrato nuevo (`AuthMeResponseDTO` con `scope`, `organismId`,
+> `organismName` y `organismAcronym`; `OrganismProcedureLocationResponseDTO` con `organismProcedureId`, `locationId`,
+> `url`, `requirements` y `costs`). **OPS-1 queda cumplido de nuevo.** Solo se verificó el esquema publicado: **todavía
+> no se ejecutó ningún flujo** contra ese backend. Los pedidos abiertos no cambian de estado.
+>
+> **Auditoría 2026-11-16 (historial; esa misma tarde se desplegó `58d383a` en staging, ver OPS-1):** se revisó cada pedido contra el código de `dev` @ `58d383a` (lectura de código y
 > migraciones; no se levantó el backend). **Resueltos en `dev` (5), pendientes de deploy a staging:** R-3 (`V2.28` +
 > `V2.30`), R-1 (queda un cabo: `PUT` sin `active` → 500), G-14, **G-15** (casts en la consulta de solapamiento) y BO-17
 > (con la salvedad de G-13). **Parciales (6):** G-3, G-4, G-6, G-8, G-9 y G-12. **Sin cambios:** G-1, G-2/BO-20, G-13,
@@ -38,47 +76,57 @@
 > (edición concurrente, 409).
 >
 > Historial: la auditoría del 2026-10-16 (contra `23fd8f9`) tenía los 25 pedidos vigentes. Los bloques
-> "Estado 2026-11-03" de cada pedido se conservan; donde algo cambió hay un bloque "Estado 2026-11-16" arriba.
+> "Estado 2026-11-03" y "Estado 2026-11-16" de cada pedido se conservan; donde algo cambió hay un bloque
+> "Estado 2026-11-19" arriba.
 
-El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles, permisos y etiquetas, y está por integrar el núcleo de trámites: plantillas (`/api/procedure-template`), adopciones (`/api/organism-procedure`), fichas por localidad (`/api/organism-procedure-location`, "OTL") y puntos de atención (`/api/attention-point`). En este documento juntamos lo que hace falta corregir o exponer del lado del backend para cerrar esa integración. Cada pedido se verificó contra el código de `origin/dev` @ `23fd8f9` y se volvió a auditar contra `58d383a` (las líneas citadas en los bloques "Estado 2026-11-16" y en G-20 a G-25 son de `58d383a`; las del cuerpo de los pedidos anteriores, de `23fd8f9`). Las rutas son relativas a `src/main/java/org/silicon/misiones/portal_misiones/` (código) y a `src/main/resources/db/` (migraciones), salvo que se indique otra cosa. Cada ítem está pensado para copiarse tal cual como tarjeta de Taiga.
+El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles, permisos y etiquetas, y está por integrar el núcleo de trámites: plantillas (`/api/procedure-template`), adopciones (`/api/organism-procedure`), fichas por localidad (`/api/organism-procedure-location`, "OTL") y puntos de atención (`/api/attention-point`). En este documento juntamos lo que hace falta corregir o exponer del lado del backend para cerrar esa integración. Cada pedido se verificó contra el código de `origin/dev` @ `23fd8f9` y se volvió a auditar contra `58d383a` y `586b670` (las líneas citadas en los bloques "Estado 2026-11-19", en los bloques "Ampliación 2026-11-19" y en G-26 a G-32 son de `586b670`; las de los bloques "Estado 2026-11-16" y de G-20 a G-25, de `58d383a`; las del cuerpo de los pedidos anteriores, de `23fd8f9`). Las rutas son relativas a `src/main/java/org/silicon/misiones/portal_misiones/` (código) y a `src/main/resources/db/` (migraciones), salvo que se indique otra cosa. Cada ítem está pensado para copiarse tal cual como tarjeta de Taiga.
 
 ---
 
 ## Resumen
 
-Estado: ✅ resuelto en `dev` · 🟠 parcial · ⬜ pendiente. "En staging" indica si ya se puede probar online.
+Estado: ✅ resuelto en `dev` · 🟠 parcial · ⬜ pendiente. "En staging" indica si ya se puede probar online
+(staging = `origin/staging` @ `0a555df`, que contiene `dev` @ `586b670`; lo que llegó con ese deploy dice "en staging
+desde el 2026-11-19": verificado en el esquema de `/api-docs`, sin ejecutar flujos).
 
-| ID | Título | Prioridad | Tipo | Estado (2026-11-16, `dev` @ `58d383a`) | Qué desbloquea en el front |
+| ID | Título | Prioridad | Tipo | Estado (2026-11-19, `dev` @ `586b670`) | Qué desbloquea en el front |
 |---|---|---|---|---|---|
-| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | ✅ cumplido el 2026-11-16 (`staging` = `dev` @ `58d383a`, verificado online) | Probar online etiquetas, plantillas, adopciones y el workflow de fichas |
-| **G-1** | Response de la ficha (OTL) incompleto y sin filtro por adopción | 🔴 bloquea | contrato | ⬜ | Pantallas de fichas por localidad con datos reales (hoy editar borraría requisitos, costos y URL) |
-| **G-2 / BO-20** | Organismo del usuario en `/api/auth/me` | 🔴 bloquea | contrato | ⬜ (`/me` sigue con `userId, email, roles, permissions`) | AO adopta trámites; AO/AGENT crean etiquetas locales; preselección de organismo |
-| **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments`; además el `UserResponseDTO` llega con `role` y `activeAssignments` en `null` | 🔴 bloquea | bug | ⬜ — `GET /api/user` y `GET /api/user/{id}` siguen mapeando con ModelMapper | "Eliminar definitivamente" de usuarios (BO-3) y rol/organismo en el listado y el detalle |
-| **G-20** 🆕 | No se puede cambiar el rol de un usuario existente: `role-assignments` siempre da 409 `4081` y no hay cómo cerrar una asignación | 🔴 bloquea | bug + feature | ⬜ (backend lo tiene en Taiga, refs 42 y 43) | Asignar o cambiar rol desde el detalle del usuario (BO-24) |
-| **G-23** 🆕 | `assignable_by_org_admin` es `FALSE` para todos los roles: ADMIN_ORGANIZATION no puede crear usuarios ni asignar roles | 🟡 importante | bug (seed) | ⬜ | Alta de usuarios por el administrador del organismo |
-| **G-22** 🆕 | ADMIN_BACKOFFICE tiene `CREATE_USER` pero `role-assignments` le responde siempre 403 `4029` | 🟡 importante | contrato | ⬜ | Saber a quién ofrecerle "Asignar rol" (BO-24) |
-| **G-3** | Permisos de lectura para AO y AGENT (`READ_PROCEDURE`, `READ_ADOPTION`) y `READ_ORGANISM` para quien adopta | 🟡 importante | contrato (seed) | 🟠 AO y AGENT tienen `READ_ADOPTION` (`V2.28`); falta `READ_PROCEDURE` para AO/AGENT y `READ_ORGANISM` para AB | AO elige plantilla para adoptar; AB elige organismo; AGENT ve de qué trámite es cada ficha |
-| **G-4** | Transiciones inválidas como 4xx + endpoints "rechazar" y "volver a borrador" | 🟡 importante | bug + feature | 🟠 transición inválida → 409 `4077` y "no existe" → 404 `4073`; faltan `reject` y `return-to-draft`; `BORRADOR → DESPUBLICADO` sigue permitido | Bandeja de revisión completa |
-| **G-5 / D-3** | Definir quién publica; AB sin `READ_VARIANT`/`PUBLISH_VARIANT` | 🟡 importante | contrato (seed + doc) | ⬜ — agravado por `V2.28`: AB gestiona puntos de atención pero no llega a la ficha de la que cuelgan | Bandeja de publicación para AB, puntos de atención para AB y textos de la UI |
-| **G-9** | Unicidad de ficha (adopción + localidad) y de slug; cascada de vigencia | 🟡 importante | bug | 🟠 constraints únicas en `V2.27`; sin validación previa (una violación sale como 500), slug no único global y sin cascada de vigencia | Evitar fichas duplicadas y trámites vencidos visibles |
-| **G-24** 🆕 | AGENT conserva `UPDATE_ADOPTION` (un `PUT` con `enabled: false` equivale al `DELETE` que `V2.30` le quitó) y el `DELETE` de la ficha exige `UPDATE_VARIANT` | 🟡 importante | bug (autorización) | ⬜ | Que la UI y la API coincidan en qué puede hacer un AGENT |
-| **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | ⬜ | Panel de puntos de atención por ficha; listados con volumen real |
+| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | ✅ **cumplido de nuevo el 2026-11-19** (`origin/staging` @ `0a555df`, contiene `586b670`; esquema de `/api-docs` verificado, flujos sin ejecutar). Historial: cumplido el 2026-11-16 para `58d383a` y reabierto el 2026-11-19 por los 13 commits hasta `586b670` y `V2.31` | Fichas y puntos de atención reales online; organismo en sesión; AO elige plantilla |
+| **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments`; además el `UserResponseDTO` llega con `role` y `activeAssignments` en `null` | 🔴 bloquea | bug | ⬜ — `GET /api/user` y `GET /api/user/{id}` siguen mapeando con ModelMapper. Más visible desde PPDT-5.1 (G-26) | "Eliminar definitivamente" de usuarios (BO-3) y rol/organismo en el listado y el detalle |
+| **G-20** | No se puede cambiar el rol de un usuario existente: `role-assignments` siempre da 409 `4081` y no hay cómo cerrar una asignación | 🔴 bloquea | bug + feature | ⬜ (backend lo tiene en Taiga, refs 42 y 43) | Asignar o cambiar rol desde el detalle del usuario (BO-24) |
+| **G-23** | `assignable_by_org_admin` es `FALSE` para todos los roles: ADMIN_ORGANIZATION no puede crear usuarios ni asignar roles | 🟡 importante | bug (seed) | ⬜ | Alta de usuarios por el administrador del organismo |
+| **G-3** | Permisos de lectura para AO y AGENT (`READ_PROCEDURE`, `READ_ADOPTION`) y `READ_ORGANISM` para quien adopta | 🟡 importante | contrato (seed) | 🟠 AO tiene `READ_PROCEDURE` (`V2.31`, `fb13104` · en staging desde el 2026-11-19); falta `READ_PROCEDURE` para AGENT y `READ_ORGANISM` para AB | AB elige organismo; AGENT ve de qué trámite es cada ficha |
+| **G-4** | Transiciones inválidas como 4xx + endpoints "rechazar" y "volver a borrador" | 🟡 importante | bug + feature | 🟠 sin cambios: 409 `4077` y 404 `4073`; faltan `reject` y `return-to-draft`; `BORRADOR → DESPUBLICADO` sigue permitido | Bandeja de revisión completa |
+| **G-5 / D-3** | Definir quién publica; AB sin `READ_VARIANT`/`PUBLISH_VARIANT` | 🟡 importante | contrato (seed + doc) | ⬜ sin cambios: AB gestiona puntos de atención pero no llega a la ficha de la que cuelgan | Bandeja de publicación para AB, puntos de atención para AB y textos de la UI |
+| **G-9** | Unicidad de ficha (adopción + localidad) y de slug; cascada de vigencia | 🟡 importante | bug | 🟠 constraints únicas (`V2.27`) y, desde `1888e1a` (en staging desde el 2026-11-19), el portal filtra por vigencia de la adopción; sin validación previa (500 `5000`, sin decir cuál de las dos restricciones falló), slug no único global y sin cascada | Evitar fichas duplicadas; que el estado del backoffice coincida con lo que ve el ciudadano |
+| **G-24** | AGENT conserva `UPDATE_ADOPTION` (un `PUT` con `enabled: false` equivale al `DELETE` que `V2.30` le quitó) y el `DELETE` de la ficha exige `UPDATE_VARIANT` | 🟡 importante | bug (autorización) | ⬜ | Que la UI y la API coincidan en qué puede hacer un AGENT |
+| **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | 🟠 filtros `?organismProcedureLocationId=` (puntos, `0db49a9`) y `?organismProcedureId=` (fichas, `3797fe7`) · en staging desde el 2026-11-19; sin paginación ni el resto de los filtros (ver G-29) | Listados con volumen real |
 | **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | ⬜ | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
-| **G-12** | Fichas y puntos de atención: "no existe" como 500 (ver G-4), workflow sobre inactivas, fichas sobre adopciones deshabilitadas, `DELETE` sin versión | 🟡 importante | bug | 🟠 "no existe" de fichas → 404 `4073`; el resto sin cambios | Mensajes de error precisos y datos consistentes en fichas y puntos |
+| **G-12** | Fichas y puntos de atención: workflow sobre inactivas, fichas sobre adopciones no vigentes, `DELETE` sin versión, puntos sobre fichas inactivas | 🟡 importante | bug | 🟠 §1 (404 `4073`) y §3 (adopción no vigente → 404 `4073`, `1888e1a` · en staging desde el 2026-11-19; ver G-27); §2, §4, §5 y §6 sin cambios | Mensajes de error precisos y datos consistentes en fichas y puntos |
 | **G-16** | Borrar una categoría, etiqueta o destinatario en uso responde 500 (FK) en vez de 409 | 🟡 importante | bug | ⬜ | Mensaje claro al borrar datos de catálogo en uso |
-| **G-21** 🆕 | `LocalDate.MAX` como parámetro de la consulta de solapamiento de asignaciones (posible 500 o solapamiento no detectado) | 🔵 a confirmar | bug | ⬜ — **no confirmado en ejecución** | Asignar un rol sin fecha de fin |
-| **G-25** 🆕 | Textos de error engañosos: `4018` para rol inexistente, `4002` para usuario inactivo, contraseña "8 a 30" con máximo real 20 | 🔵 mejora | bug | ⬜ | Mostrar el mensaje del backend sin traducciones locales |
-| **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | 🟠 `4080` con mensaje; `4072` sigue en 400 | Mensajes de error consistentes sin traducciones locales |
-| **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | 🟠 `@Version` en la ficha y handler → 409 `4091`; `lockVersion` no viaja en el contrato, el handler no cubre la excepción de Spring y falta el endpoint de versiones | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
-| **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | ⬜ | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
+| **G-26** 🆕 | Cuentas privilegiadas (PPDT-5.1): ADMIN_BACKOFFICE recibe 403 `4029` sobre cuentas SA/AB, pero el listado no dice qué rol tiene cada usuario | 🟡 importante | contrato | ⬜ — leído en el código, **no ejecutado** | Ofrecerle a AB solo las acciones de cuenta que el backend le va a aceptar |
+| **G-27** 🆕 | Ficha de una adopción no vigente: el `PUT` responde 404 `4073` ("no existe") y no se puede editar; tampoco preparar fichas antes del inicio de vigencia | 🟡 importante | contrato | ⬜ — leído en el código, **no ejecutado** | Mensaje preciso y saber cuándo ofrecer "Agregar localidad" y "Editar" |
+| **G-29** 🆕 | `GET /api/attention-point?organismProcedureLocationId=` devuelve solo activos (sin filtro, activos e inactivos) y no hay parámetro para pedir los inactivos | 🟡 importante | contrato | ⬜ — leído en el código, **no ejecutado** | Panel de puntos de atención con "Mostrar inactivos" usando el filtro del servidor |
+| **G-31** 🆕 | `PUT /api/user/{id}/change-password` no valida el alcance del actor: quien tenga `UPDATE_USER` cambia la contraseña de cualquier cuenta que no sea SA/AB, también de otro organismo | 🟡 importante | bug (autorización) | ⬜ — leído en el código, **no ejecutado**. Latente: en el seed solo SA y AB tienen `UPDATE_USER` | Poder ofrecer "Cambiar contraseña" por permiso sin abrir un hueco el día que AO reciba `UPDATE_USER` |
+| **G-32** 🆕 | Zona horaria de la vigencia: `effective_from/to` (`TIMESTAMPTZ`) viajan como `LocalDateTime` sin zona y se comparan con `LocalDateTime.now()` de la JVM; ni el `Dockerfile` ni la configuración fijan la zona | 🟡 importante | bug + ops | ⬜ — leído en el código, **no ejecutado**; no se sabe en qué zona corre la JVM de staging | Que "vigente" signifique lo mismo en el backoffice, en la API y en el portal |
+| **G-21** | `LocalDate.MAX` como parámetro de la consulta de solapamiento de asignaciones (posible 500 o solapamiento no detectado) | 🔵 a confirmar | bug | ⬜ — **no confirmado en ejecución** | Asignar un rol sin fecha de fin |
+| **G-25** | Textos de error engañosos: `4018` para rol inexistente, `4002` para usuario inactivo, contraseña "8 a 30" con máximo real 20 | 🔵 mejora | bug | ⬜ | Mostrar el mensaje del backend sin traducciones locales |
+| **G-28** 🆕 | `slugBase`: el canónico puede quedar vacío (`"¡¡¡"` → `""`) y las plantillas anteriores a `130c180` no se recanonicalizan | 🔵 a confirmar | bug | ⬜ — leído en el código, **no ejecutado** | Slugs de plantilla siempre válidos y únicos |
+| **G-30** 🆕 | Usuarios: el 403 `4029` cubre al menos ocho motivos distintos y solo se distinguen por el texto de `details` (dos comparten texto y varios no traen ninguno) | 🔵 mejora | contrato | ⬜ — leído en el código, **no ejecutado** | Marcar el campo correcto del form y explicar el rechazo sin comparar textos |
+| **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | 🟠 sin cambios: `@Version` y handler → 409 `4091`; `lockVersion` no viaja en el contrato (tampoco en el response nuevo de G-1) y falta el endpoint de versiones. El front lo mitiga con un `GET` extra antes de cada `PUT` | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
 | **G-17** | ¿AO/AGENT deben ver las etiquetas globales? Hoy `GET /api/tag` les devuelve solo las locales de su organismo | 🔵 decisión | contrato | ⬜ (existe `GET /api/tag/public`, pero no resuelve la decisión) | Etiquetar plantillas/fichas desde un organismo con etiquetas provinciales |
-| **G-18** | Excepciones de Spring sin manejar responden 500: id no UUID (→ 400), método no soportado (→ 405), body ilegible (→ 400) | 🔵 mejora | bug | ⬜ (el handler solo sumó `OptimisticLockException`) | Errores precisos; no confundir un request inválido con una caída |
+| **G-18** | Excepciones de Spring sin manejar responden 500: id no UUID (→ 400), método no soportado (→ 405), body ilegible (→ 400) | 🔵 mejora | bug | ⬜ (alcanza también a los dos filtros nuevos: un valor que no es UUID → 500) | Errores precisos; no confundir un request inválido con una caída |
 | **G-19** | Seed de ejemplo para el núcleo de trámites en `dev` (plantillas, adopción, fichas) | 🔵 mejora | ops | ⬜ | QA y demos sobre una base nueva sin cargar todo a mano |
 | **OPS-2** | Purgar en staging los registros de prueba `E2E-*` que la API no permite borrar | 🔵 mejora | ops | ⬜ (no verificable desde el código) | Staging limpio (entorno compartido) |
-| **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | ⬜ | Evitar que otros equipos (portal) integren contra información vieja |
-| **R-3** | Grants de `V2.20`/`V2.23`/`V2.24` filtran por `ROLE_*` y no matchean ningún rol | 🔴 bloquea | bug | ✅ `V2.28` (`bab0993`) + `V2.30` · no en staging | Etiquetas, Adopciones y Puntos de atención reales |
-| **R-1** | `PUT` de la ficha acepta `publicationStatus` y saltea el workflow | 🔴 bloquea | bug | ✅ `5186ab1` · no en staging · cabo suelto: `PUT` sin `active` → 500 | Edición segura de fichas |
-| **G-15** | Adopciones: `POST`/`PUT /api/organism-procedure` habilitadas responden 500 (consulta de solapamiento con parámetros sin tipo) | 🔴 bloquea | bug | ✅ casts en `findOverlappingEnabled` · no en staging · no ejecutado por el front | Adoptar trámites y editar vigencias (toda la sección "Trámites del organismo") |
+| **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | ⬜ (los commits nuevos actualizaron `docs/architecture/*`, no la guía) | Evitar que otros equipos (portal) integren contra información vieja |
+| **G-1** | Response de la ficha (OTL) incompleto y sin filtro por adopción | 🔴 bloquea | contrato | ✅ `3797fe7` · en staging desde el 2026-11-19 (sin los nombres ni las fechas "deseables") | Pantallas de fichas por localidad y puntos de atención con datos reales |
+| **G-2 / BO-20** | Organismo del usuario en `/api/auth/me` | 🔴 bloquea | contrato | ✅ `d7aca1c` · en staging desde el 2026-11-19 | AO adopta trámites; AO/AGENT crean etiquetas locales; preselección de organismo |
+| **G-22** | ADMIN_BACKOFFICE tiene `CREATE_USER` pero `role-assignments` le respondía siempre 403 `4029` | 🟡 importante | contrato | ✅ `a69925e` · en staging desde el 2026-11-19 (en la práctica sigue tapado por G-20) | Saber a quién ofrecerle "Asignar rol" (BO-24) |
+| **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | ✅ `1f51bea` · en staging desde el 2026-11-19 (el mensaje del `4080` ya estaba en staging) | Mensajes de error consistentes sin traducciones locales |
+| **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | ✅ `130c180` · en staging desde el 2026-11-19 (casos borde en G-28) | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
+| **R-3** | Grants de `V2.20`/`V2.23`/`V2.24` filtran por `ROLE_*` y no matchean ningún rol | 🔴 bloquea | bug | ✅ `V2.28` (`bab0993`) + `V2.30` · en staging desde el 2026-11-16 | Etiquetas, Adopciones y Puntos de atención reales |
+| **R-1** | `PUT` de la ficha acepta `publicationStatus` y saltea el workflow | 🔴 bloquea | bug | ✅ `5186ab1` · en staging desde el 2026-11-16 · cabo suelto (`PUT` sin `active` → 500) cerrado en `3797fe7` · en staging desde el 2026-11-19 | Edición segura de fichas |
+| **G-15** | Adopciones: `POST`/`PUT /api/organism-procedure` habilitadas responden 500 (consulta de solapamiento con parámetros sin tipo) | 🔴 bloquea | bug | ✅ casts en `findOverlappingEnabled` · en staging desde el 2026-11-16 | Adoptar trámites y editar vigencias (toda la sección "Trámites del organismo") |
 | **G-14** | `V2.21` impide arrancar: `ALTER TYPE publication_status` de un tipo que no existe | 🔴 bloquea | bug | ✅ `4a71cfa` · en staging | Levantar `dev` desde cero y desplegar staging |
 | **BO-17** | Exponer `GET /api/user` | 🔴 bloquea | feature | ✅ `4715be1` · en staging (sin rol, organismo ni nombre: ver G-13) | Listado de usuarios y acciones de fila reales |
 
@@ -160,6 +208,14 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 
 ## R-1 · El `PUT` de la ficha acepta `publicationStatus`
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Cabo suelto cerrado en `3797fe7` (en staging desde el 2026-11-19).** El request ahora
+> valida `organismProcedureId`, `locationId`, `active` (`@NotNull`) y `slug` (`@NotBlank`)
+> (`dto/organismProcedureLocation/OrganismProcedureLocationRequestDTO.java:19-33`), y el controller usa `@Valid` en
+> `POST` y `PUT` (`controller/OrganismProcedureLocationController.java:55, 63`): un `PUT` sin `active` responde **400
+> `4012`** con el detalle por campo, no 500 (`OrganismProcedureLocationControllerSecurityTest` lo cubre para el `POST`;
+> el `PUT` usa el mismo `@Valid`; no ejecutado por el front). El fix
+> principal (`5186ab1`) está en staging desde el 2026-11-16. No queda nada pendiente de este pedido.
+>
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** ✅ **Resuelto en `dev`, pendiente de deploy a staging (OPS-1).** `update`
 > (`service/OrganismProcedureLocationService.java:70-88`) ya no toca `publicationStatus`, y `create` (`:42-49`) fuerza
 > `BORRADOR`. **Cabo suelto (3.er criterio de aceptación):** el request sigue sin validaciones
@@ -195,6 +251,27 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 
 ## G-1 · Response completo de la ficha por localidad + filtro por adopción
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`3797fe7`, PPDT-5.6), en staging desde el 2026-11-19
+> (OPS-1).**
+> - **Response:** `OrganismProcedureLocationResponseDTO` suma `organismProcedureId`, `locationId`, `url`, `requirements`
+>   y `costs` (`dto/organismProcedureLocation/OrganismProcedureLocationResponseDTO.java:17-26`; mapeo en
+>   `service/OrganismProcedureLocationService.java:196-209`). Vale para `GET /`, `GET /{id}`, `POST`, `PUT` y las tres
+>   transiciones (todas pasan por `toResponse`).
+> - **Filtro:** `GET /api/organism-procedure-location?organismProcedureId=<uuid>`
+>   (`controller/OrganismProcedureLocationController.java:38-44`), combinado con el alcance
+>   (`OrganismProcedureLocationService.java:52-70`; `repository/OrganismProcedureLocationRepository.java:40-43`). Sin el
+>   parámetro, el listado es el de antes. Una adopción inexistente o de otro organismo devuelve `200` con `[]` (no 404).
+>   El listado filtrado incluye las fichas inactivas, igual que el listado sin filtro (G-12 §5).
+> - **Validación:** `organismProcedureId`, `locationId`, `active` (`@NotNull`) y `slug` (`@NotBlank`) → 400 `4012`
+>   (`OrganismProcedureLocationRequestDTO.java:19-33`). Cierra el cabo suelto de R-1.
+> - **No se entregó lo "deseable":** nombres (`procedureTitle`, `organismName`, `locationName`), `procedureTemplateId`,
+>   `organismId` y fechas. El front los resuelve por id; para AGENT el título del trámite sigue sin poder resolverse
+>   (no tiene `READ_PROCEDURE`, G-3). `lockVersion` tampoco viaja (G-8).
+> - **Efecto lateral a tener en cuenta (`1888e1a`):** el `PUT` vuelve a validar la adopción, ahora también su vigencia:
+>   ver G-27.
+> - Evidencia del backend: `odd/tasks/front-unblocking-contracts.md` (T1; tests de servicio y de controller con
+>   MockMvc, incluido el roundtrip `GET` → `PUT` sin pérdida). **El front todavía no lo ejecutó** contra un backend real.
+>
 > **Estado 2026-11-03:** ⬜ **Pendiente** (backend lo tiene en su lista: "completar el response de OTL y sus filtros").
 
 **Prioridad:** 🔴 · **Tipo:** contrato
@@ -226,17 +303,67 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
   de filtros) y G-11 §3 (adopciones por plantilla): conviene resolverlos juntos.
 - `@NotNull` en `organismProcedureId`, `locationId`, `slug` y `active` → 400 `4012`.
 
-**Criterio de aceptación**
-- [ ] `GET /` y `GET /{id}` devuelven al menos los campos obligatorios.
-- [ ] Un `GET /{id}` seguido de un `PUT` con ese mismo body no pierde contenido.
-- [ ] `?organismProcedureId=` filtra, respetando el alcance del usuario.
-- [ ] Un request sin campos obligatorios → 400 `4012` con `details` por campo.
+**Criterio de aceptación** *(tildado según el código y los tests de `586b670`; falta verificarlo en ejecución)*
+- [x] `GET /` y `GET /{id}` devuelven al menos los campos obligatorios.
+- [x] Un `GET /{id}` seguido de un `PUT` con ese mismo body no pierde contenido (si la adopción sigue vigente: G-27).
+- [x] `?organismProcedureId=` filtra, respetando el alcance del usuario.
+- [x] Un request sin campos obligatorios → 400 `4012` con `details` por campo.
 
 ---
 
 ## G-2 / BO-20 · Organismo del usuario en `/api/auth/me`
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`d7aca1c`, PPDT-5.2), en staging desde el 2026-11-19
+> (OPS-1).** `AuthMeResponseDTO` suma `scope` (`"global"` | `"organismo"`), `organismId`, `organismName` y
+> `organismAcronym` (`security/dto/AuthMeResponseDTO.java:21-24`), con la forma de la propuesta de abajo.
+> `AuthService.getCurrentAuthContext` (`security/service/AuthService.java:174-195`) los arma con
+> `UserService.getCurrentScope()` (`security/service/UserService.java:424-447`):
+> - Rol vigente de alcance global (SA, AB, MANAGER y también `USER`, por `V2.17`) → `scope: "global"` y los tres campos
+>   de organismo en `null`.
+> - Rol de alcance organismo (AO, AGENT) → `scope: "organismo"` con el organismo de la asignación vigente.
+> - **Cambio de comportamiento:** `/me` ahora puede responder **403 `4029`** (usuario sin asignación vigente, dos
+>   asignaciones igual de prioritarias, o rol de organismo sin organismo) y **404 `4073`** (el organismo de la asignación
+>   no existe). Antes devolvía 200 con lo que hubiera en el token. Es lo que pedía el tercer criterio.
+> - **No se hizo el punto complementario:** si el request de adopción o de etiqueta local llega sin `organismId`, el
+>   backend sigue respondiendo 404 `4073` (no toma el del alcance). Ya no hace falta: el front lo manda desde `/me`.
+> - El JWT sigue sin llevar el organismo; la única fuente es `/me`.
+> - Evidencia del backend: `odd/tasks/front-unblocking-contracts.md` (T2; `AuthServiceTest`, `AuthControllerTest`).
+>   **No ejecutado por el front.** En staging `/me` sigue con los cuatro campos viejos (`/api-docs` del 2026-11-19).
+>
 > **Estado 2026-11-03:** ⬜ **Pendiente.** `/api/auth/me` sigue devolviendo solo `userId, email, roles, permissions` (verificado en staging). Backend lo tiene en su lista.
+
+> **Ampliación 2026-11-19 — contrato de `/me` a confirmar** (surge de integrar el front contra `586b670`; **leído en el
+> código, no ejecutado**). El front ya consume `scope` y el organismo; quedan cuatro puntos que el código responde de
+> una forma pero ningún documento ni test fija como contrato:
+> 1. **¿`scope: "organismo"` implica siempre `organismId` no nulo?** Según el código, sí: `getCurrentScope`
+>    (`security/service/UserService.java:438-446`) responde 403 `4029` si el rol es de organismo y la asignación no
+>    tiene organismo, y `AuthService.java:175-184` responde 404 `4073` si no lo encuentra; no hay camino que devuelva
+>    `"organismo"` con `organismId: null`. También `organismName` (columna `NOT NULL`, `entity/Organism.java:46-47`).
+>    El front lo asume. **Pedimos confirmarlo como invariante** (y un test que lo cubra).
+> 2. **`organismAcronym` puede ser `null` con `scope: "organismo"`.** La columna es opcional (`sigla VARCHAR(100)` sin
+>    `NOT NULL`, `V1.7__rebuild_organisms.sql:9`; `entity/Organism.java:49-50`). El front lo tolera. Confirmar que es
+>    lo esperado.
+> 3. **Organismo desactivado: `/me` responde 200 como si nada.** `AuthService.java:177` usa `findById`, sin mirar
+>    `active` (`entity/Organism.java:52-53`), y el response no trae el estado del organismo. Un AO o AGENT de un
+>    organismo dado de baja (`OrganismService.deleteOrganism`, `service/OrganismService.java:93-97`, es baja lógica)
+>    sigue entrando con su alcance completo y el front no tiene cómo avisarle. **A definir:** ¿debe poder operar? Si no,
+>    un código propio (no `4029`, que el front no puede distinguir de "sin rol"); si sí, sumar `organismActive` al
+>    response para mostrar el aviso.
+> 4. **Los 403 `4029` y 404 `4073` de `/me` dejan al usuario sin sesión utilizable**, y no se distinguen entre sí:
+>    - 403 `4029` sin `details` cubre tres casos (`UserService.java:427-432, 439-445, 769-775`): sin asignación vigente,
+>      dos asignaciones igual de prioritarias, rol de organismo sin organismo. Es además el mismo código de "no tenés
+>      permiso" de cualquier endpoint (ver G-30).
+>    - 404 `4073` ("El objeto Organism con el identificador … no existe"): en la práctica no debería ocurrir, porque
+>      `user_role_assignments.organism_id` tiene FK a `organisms` (`V1.7:54`) y el organismo no se borra físicamente.
+>    - **El login no hace esa validación** (`AuthService.login`, `security/service/AuthService.java:65-110`, no llama
+>      a `getCurrentScope`; solo lo hacen `/me` y los servicios de trámites y etiquetas): un usuario cuya asignación
+>      venció ayer **inicia sesión bien y recibe 403 en `/me`**. El front toma esos dos errores (status y código
+>      juntos) como "el alcance ya no existe" y deja la sesión **abierta pero sin organismo**; no puede decirle a la
+>      persona por qué no ve nada. **Pedimos:** un código propio para "tu cuenta no tiene un rol vigente" (o
+>      rechazarlo ya en el login), y confirmar que un `USER` recién registrado (asignación abierta desde el alta,
+>      `UserService.java:177-182`) siempre obtiene 200.
+>
+> Criterios que se suman abajo.
 
 **Prioridad:** 🔴 · **Tipo:** contrato
 
@@ -264,10 +391,15 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 - `scope`: `global` | `organismo`. Con `global`, `organismId` va en `null`.
 - Complementario (opcional): con alcance de organismo, si el request de adopción o de etiqueta local viene sin `organismId`, que el backend tome el del alcance en vez de responder 404.
 
-**Criterio de aceptación**
-- [ ] Con AO y AGENT, `/api/auth/me` devuelve `scope: "organismo"` y su `organismId`.
-- [ ] Con SA, AB y MANAGER devuelve `scope: "global"` y `organismId: null`.
-- [ ] Un usuario sin asignación vigente sigue respondiendo 403 `4029`, como hoy.
+**Criterio de aceptación** *(tildado según el código y los tests de `586b670`; falta verificarlo en ejecución)*
+- [x] Con AO y AGENT, `/api/auth/me` devuelve `scope: "organismo"` y su `organismId`.
+- [x] Con SA, AB y MANAGER devuelve `scope: "global"` y `organismId: null`.
+- [x] Un usuario sin asignación vigente responde 403 `4029` (en `/me` es nuevo: antes respondía 200).
+- [ ] *(ampliación 2026-11-19)* Está documentado como invariante que `scope: "organismo"` trae siempre `organismId` y
+  `organismName`, y que `organismAcronym` puede ser `null`.
+- [ ] *(ampliación 2026-11-19)* Está definido qué responde `/me` para un usuario cuyo organismo está desactivado.
+- [ ] *(ampliación 2026-11-19)* "Sin rol vigente" llega con un código que el front puede distinguir de "sin permiso"
+  (en `/me` o en el login).
 
 ---
 
@@ -314,6 +446,18 @@ Más adelante se puede paginar (ver G-7).
 
 ## G-3 · Permisos de lectura para AO y AGENT
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** 🟠 **Parcial, con avance (`fb13104`, PPDT-5.4; en staging desde el 2026-11-19).**
+> `V2.31__grant_organization_template_read.sql:1-6` otorga `READ_PROCEDURE` a `ADMIN_ORGANIZATION` (por el código con y
+> sin prefijo). Con eso AO puede listar y consultar plantillas para adoptar; no las puede crear, editar ni desactivar.
+> **Sigue faltando:**
+> - **`READ_PROCEDURE` para AGENT:** `V2.31` filtra solo `ADMIN_ORGANIZATION`, y su test
+>   (`OrganizationTemplateReadPermissionMigrationTest`) verifica a propósito que AGENT y USER quedan sin el permiso.
+>   AGENT ve fichas y adopciones, pero no el título del trámite (el response de la ficha tampoco lo trae: G-1).
+> - **`READ_ORGANISM` para AB:** ninguna migración se lo da. AB sigue sin poder elegir organismo al adoptar ni al crear
+>   un usuario con rol de organismo. Para AO dejó de hacer falta: su organismo llega en `/api/auth/me` (G-2).
+> - `docs/architecture/07_roles_flujo_y_demo.md` del backend lista como pendiente "Validación de permisos efectivos de
+>   AO y AGENT".
+>
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** 🟠 **Parcial.** AO tiene los cuatro `*_ADOPTION`; AGENT, `READ_ADOPTION` y
 > `UPDATE_ADOPTION` (`V2.28` + `V2.30`). **Sigue faltando `READ_PROCEDURE` para AO y AGENT:** ninguna migración
 > posterior a `V2.9` lo otorga. Se suma un hueco del mismo tipo, **`READ_ORGANISM`** (ver "Ampliación 2026-11-16").
@@ -326,7 +470,7 @@ Más adelante se puede paginar (ver G-7).
 
 | Permiso | SA | AB | AO | AGENT | MANAGER |
 |---|---|---|---|---|---|
-| `READ_PROCEDURE` | ✓ | ✓ | **✗** | **✗** | ✓ |
+| `READ_PROCEDURE` | ✓ | ✓ | ✓ (`V2.31`; antes ✗) | **✗** | ✓ |
 | `READ_ADOPTION` (`V2.28`) | ✓ | ✓ | ✓ | ✓ | ✗ |
 | `READ_VARIANT` | ✓ | **✗** | ✓ | ✓ | ✓ |
 | `READ_ORGANISM` | ✓ | **✗** | **✗** | ✗ | ✗ |
@@ -354,7 +498,7 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 - Pedido: `READ_ORGANISM` para AB (y para AO si G-2 no sale), o un endpoint acotado de organismos "seleccionables".
 
 **Criterio de aceptación**
-- [ ] Con AO, `GET /api/procedure-template` → 200.
+- [x] Con AO, `GET /api/procedure-template` → 200 (`V2.31`; verificar en ejecución).
 - [x] Con AGENT, `GET /api/organism-procedure` → 200, solo las de su organismo (`V2.28`; verificar en ejecución).
 - [ ] Con AGENT, `GET /api/procedure-template/{id}` → 200 (para mostrar el título del trámite de cada ficha).
 - [ ] Con AB, `GET /api/organism` → 200 (o existe un endpoint equivalente para elegir organismo al adoptar).
@@ -435,6 +579,45 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 
 ## G-9 · Unicidad de fichas y de slug; cascada de vigencia
 
+> **Ampliación 2026-11-19 — el duplicado sigue en 500 y el front no sabe cuál de las dos restricciones falló**
+> (surge de integrar el front contra `586b670`; **leído en el código, no ejecutado**).
+> - **Sigue igual en `586b670`:** `create` (`service/OrganismProcedureLocationService.java:43-50`) y `update`
+>   (`:80-98`) hacen `saveAndFlush` sin consultar duplicados y sin capturar `DataIntegrityViolationException`; el único
+>   handler que la recibe es el genérico (`exception/GlobalExceptionHandler.java:99-110`) → **500 `5000`** con
+>   `details: null`. En `src/main` solo la capturan `CategoryService` (`:53, 114`) y `OrganismService` (`:64, 86`).
+> - **Quedó como el único recurso del backoffice con este hueco.** Desde `1f51bea` (G-6) los duplicados de plantillas,
+>   etiquetas, categorías, modalidades, hechos de vida y destinatarios responden **409 `4072`** con el nombre del objeto
+>   y el identificador; las fichas, 500.
+> - **Las dos restricciones de `V2.27` (`:1-7`) son indistinguibles para el cliente:** `uk_otl_procedure_location`
+>   (adopción + localidad) y `uk_otl_procedure_slug` (slug + adopción) llegan con el mismo body. El front no puede
+>   marcar el campo que hay que corregir (localidad o slug): muestra un único texto que nombra las dos posibilidades, y
+>   además tiene que tratar **todo** `5000` del guardado de una ficha como "posible duplicado", aunque sea una caída real.
+> - **El front no puede prevenirlo del todo:** valida contra las fichas que ya listó, pero no ve las creadas después de
+>   abrir el form ni las que quedan fuera de su alcance, y las fichas **desactivadas** también ocupan el par (las
+>   constraints no son parciales). También aplica al `PUT` cuando cambia el slug o la localidad.
+> - **Pedido concreto (reemplaza al "409 con código propio" de la propuesta de abajo):** validar antes de guardar (y
+>   capturar la violación por si dos requests llegan juntos) y responder **409 `4072`**, como el resto de los recursos,
+>   de modo que se pueda saber cuál fue: `%s` = "OrganismProcedureLocation" con el `locationId` para el par
+>   adopción + localidad, y `%s` = "Slug" con el slug para el otro; o dos códigos distintos. Criterios sumados abajo.
+
+> **Estado 2026-11-19 (`dev` @ `586b670`):** 🟠 **Parcial, con avance (`1888e1a`, PPDT-5.6; en staging desde el 2026-11-19).**
+> - **Hecho — vigencia en las consultas públicas** (4.º criterio y último punto de la propuesta): el detalle
+>   (`findPublishedBySlug`, `repository/OrganismProcedureLocationRepository.java:32-33`) y la búsqueda
+>   (`repository/ProcedureSearchSpecification.java:38-41`, la que usa `ProcedureService.search`; también
+>   `SEARCH_PREDICATES`, `OrganismProcedureLocationRepository.java:58-59`) exigen `effectiveFrom <= ahora` y
+>   `effectiveTo` nulo o posterior. Una adopción vencida o que todavía no empezó ya no aparece en
+>   `/api/procedure/search` ni en `/api/procedure/{slug}`. Cubierto por `ProcedureServiceTest`; no ejecutado por el front.
+> - **Sigue faltando — cascada:** deshabilitar o vencer una adopción no toca sus fichas, que siguen figurando
+>   `PUBLICADO` en el backoffice aunque el portal ya no las muestre. Backend lo dejó fuera a propósito
+>   (`odd/tasks/claudinio-otl-validity.md`: "Do not implement adoption-to-OTL cascade behavior in this slice; that
+>   remains a separate product decision").
+> - **Sigue faltando — validación previa de duplicados** (una violación de `uk_otl_*` sale como 500) **y slug único
+>   global:** sin cambios respecto del bloque de abajo.
+> - **A confirmar (menor):** el detalle compara contra `CURRENT_TIMESTAMP` (reloj y zona de la base) y la búsqueda
+>   contra `LocalDateTime.now()` (reloj y zona de la JVM). Si las zonas difieren, una adopción que empieza o vence puede
+>   aparecer en una consulta y no en la otra durante esa diferencia. No verificado en ejecución. El problema de fondo
+>   (ninguna zona fijada, fechas sin zona en el contrato) quedó como **G-32**.
+>
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** 🟠 **Parcial.** `V2.27__add_organism_procedure_location_constraints.sql:1-7`
 > agrega `uk_otl_procedure_location` `UNIQUE (organism_procedure_id, location_id)` y `uk_otl_procedure_slug`
 > `UNIQUE (slug, organism_procedure_id)`. Falta:
@@ -486,12 +669,28 @@ CREATE UNIQUE INDEX uk_otl_slug_active
 **Criterio de aceptación**
 - [ ] Crear una segunda ficha activa para la misma adopción y localidad → 409.
 - [ ] Crear una ficha con un slug activo ya usado → 409.
+- [ ] *(ampliación 2026-11-19)* Los dos 409 se distinguen entre sí por el código o por un campo estructurado (no solo
+  por el texto), y ninguno llega como 500 `5000`. Vale también para el `PUT` que cambia slug o localidad.
+- [ ] *(ampliación 2026-11-19)* Test de servicio o de integración que cubra las dos violaciones de `V2.27`.
 - [ ] Deshabilitar una adopción → sus fichas publicadas quedan `DESPUBLICADO`, con versión nueva.
-- [ ] Una adopción con `effectiveTo` en el pasado no aparece en `/api/procedure/search` ni en `/api/procedure/{slug}`.
+- [x] Una adopción con `effectiveTo` en el pasado no aparece en `/api/procedure/search` ni en `/api/procedure/{slug}` (`1888e1a`; verificar en ejecución).
 
 ---
 
 ## G-7 · Paginación y filtros en los listados
+
+> **Estado 2026-11-19 (`dev` @ `586b670`):** 🟠 **Parcial (en staging desde el 2026-11-19).** De la tabla de filtros de abajo salieron dos:
+> - `GET /api/attention-point?organismProcedureLocationId=<uuid>` (`0db49a9`;
+>   `controller/AttentionPointController.java:34-39`, `service/AttentionPointService.java:44-59`), dentro del alcance
+>   (`repository/AttentionPointRepository.java:13-16`). Era "el más urgente". **Ojo:** con el filtro devuelve **solo los
+>   activos**; sin el filtro, activos e inactivos, como antes. Ver G-29.
+> - `GET /api/organism-procedure-location?organismProcedureId=<uuid>` (`3797fe7`, ver G-1).
+>
+> En los dos, un id inexistente o fuera de alcance devuelve `200` con `[]`, y un valor que no es UUID cae en el 500 de
+> G-18. **Sigue faltando:** la paginación (backend la dejó explícitamente fuera:
+> `odd/tasks/claudinio-attention-point-filter.md`), `active` en puntos de atención, `locationId` / `publicationStatus` /
+> `active` en fichas, y todos los filtros de adopciones, plantillas y usuarios (incluye G-11 §3). Los cuatro listados
+> siguen devolviendo `List<T>` completa.
 
 **Prioridad:** 🟡 · **Tipo:** feature
 
@@ -520,13 +719,22 @@ Además:
 | `/api/user` (BO-17) | `q`, `organismId`, `roleCode` |
 
 **Criterio de aceptación**
-- [ ] `GET /api/attention-point?organismProcedureLocationId=…` devuelve solo los puntos de esa ficha, respetando el alcance.
-- [ ] Sin parámetros, los endpoints mantienen el comportamiento actual (compatibilidad), o el cambio de contrato se avisa con anticipación.
+- [x] `GET /api/attention-point?organismProcedureLocationId=…` devuelve solo los puntos de esa ficha, respetando el alcance (`0db49a9`; solo los activos: G-29).
+- [x] Sin parámetros, los endpoints mantienen el comportamiento actual (compatibilidad), o el cambio de contrato se avisa con anticipación.
+- [ ] Paginación (`page`, `size`, `sort`, `direction`) y el resto de los filtros de la tabla.
 
 ---
 
 ## G-6 · Mensaje del `4080` y status del `4072`
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`1f51bea`, PPDT-5.6), en staging desde el 2026-11-19
+> (OPS-1).** El `4072` responde **409** en todos los servicios que lo usan para duplicados:
+> `ProcedureTemplateService.java:104`, `TagService.java:74, 82, 132`, `CategoryService.java:35, 54, 91, 115`,
+> `ModalityService.java:32, 69`, `LifeEventService.java:106, 114` y `RecipientService.java:32, 68`. El código y el
+> mensaje no cambiaron (`messages/messages.properties:104`). El `4080` ya tenía mensaje (en staging desde el
+> 2026-11-16). Quedó sin hacer el test opcional de consistencia de `messages.properties`. **Mientras staging no se
+> actualice, ahí el `4072` sigue llegando con 400.**
+>
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** 🟠 **Parcial, sin cambios.** `messages/messages.properties:110` trae el
 > texto del `4080`. El `4072` sigue en **400** en todos los servicios (`ProcedureTemplateService.java:100`,
 > `TagService.java:74, 82`, `CategoryService.java:35, 54, 91, 115`, `ModalityService.java:32, 69`,
@@ -548,12 +756,31 @@ Además:
 - Opcional: un test en `MessagesPropertiesConsistencyTest` que verifique que todo código usado en `GlobalAppException` tenga mensaje.
 
 **Criterio de aceptación**
-- [ ] El `4080` llega con un mensaje en español.
-- [ ] El `4072` llega con 409 en todos los endpoints.
+- [x] El `4080` llega con un mensaje en español.
+- [x] El `4072` llega con 409 en todos los endpoints (`1f51bea`; en staging desde el 2026-11-19).
 
 ---
 
 ## G-8 · Historial de versiones y control de concurrencia
+
+> **Ampliación 2026-11-19 — el `PUT` no lleva versión: un formulario viejo pisa cambios ajenos sin error** (surge de
+> integrar el front contra `586b670`; **leído en el código, no ejecutado**).
+> - **Sigue igual en `586b670`:** `OrganismProcedureLocationRequestDTO` (`dto/organismProcedureLocation/…RequestDTO.java:19-33`)
+>   no tiene `lockVersion` ni `currentVersionNumber`. `update` (`service/OrganismProcedureLocationService.java:80-98`)
+>   carga la entidad y la guarda en la misma transacción, así que el `@Version` (`entity/OrganismProcedureLocation.java:38-40`)
+>   compara la versión que acaba de leer consigo misma: solo falla si otro commit entra en esos milisegundos. El caso
+>   real (A abre el form, B guarda, A guarda diez minutos después) termina en **200 y se pierde lo de B**, sin 409.
+> - **El response sí trae con qué compararse:** `currentVersionNumber` (`…ResponseDTO`, `toResponse` `:196-209`) sube en
+>   cada `PUT` y en cada transición (`:93-96, 108-110`). Falta que el request lo acepte.
+> - **Qué hace el front mientras tanto:** antes de cada `PUT` vuelve a pedir la ficha (`GET /{id}`) y, si
+>   `currentVersionNumber` o `publicationStatus` cambiaron respecto de lo que leyó el form, no guarda y le avisa al
+>   usuario. Cuesta **un `GET` extra por guardado** y no es un candado: entre esa lectura y el `PUT` queda una ventana
+>   de milisegundos, y no protege a otros clientes de la API.
+> - **Pedido concreto:** aceptar en el `PUT` la versión que el cliente leyó (`currentVersionNumber`, que ya viaja en el
+>   response, o `lockVersion` si se expone) y responder **409 `4091`** si no coincide con la actual. Para no romper a
+>   los clientes actuales puede ser opcional al principio (sin versión = comportamiento de hoy). Lo mismo conviene para
+>   las transiciones y el `DELETE` (G-12 §4). Sigue pendiente lo de `ObjectOptimisticLockingFailureException` del bloque
+>   de abajo: hoy incluso el choque simultáneo saldría como 500 (probable, no ejecutado).
 
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** 🟠 **Parcial, sin cambios.** Lo que hay: `@Version` sobre `lock_version`
 > (`entity/OrganismProcedureLocation.java:38-40`, columna en `V2.27:9-10`) y un handler → 409 `4091`
@@ -589,10 +816,26 @@ Además:
 - [ ] El historial se lista respetando el alcance.
 - [ ] Cada versión trae su autor.
 - [ ] Un `PUT` con `version` desactualizada → 409.
+- [ ] *(ampliación 2026-11-19)* Secuencia A lee (v3) → B guarda (v4) → A manda su `PUT` con v3 → **409 `4091`** y la
+  ficha conserva lo de B. Con test.
+- [ ] *(ampliación 2026-11-19)* Dos `PUT` simultáneos → uno 200 y el otro 409 `4091`, no 500 `5000`.
 
 ---
 
 ## G-10 · Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos
+
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`130c180`, PPDT-5.6), en staging desde el 2026-11-19
+> (OPS-1).**
+> - **Canonicalización:** `ProcedureTemplateService.canonicalize` (`service/ProcedureTemplateService.java:147-153`)
+>   aplica NFD, quita las marcas (`\p{M}+`), pasa a minúsculas, reemplaza `[^a-z0-9]+` por `-` y recorta los guiones de
+>   los extremos: el mismo criterio de `TagService`. `create` (`:50-53`) y `update` (`:79-81`) validan la unicidad y
+>   persisten el valor canónico; el response devuelve el slug ya canonicalizado. Un duplicado → **409** `4072` (G-6).
+> - **`4073` de catálogos:** `resolveAll` (`:131-145`) busca cuál de los ids no existe y lo informa. El id y la entidad
+>   (`Category`, `Tag`, `LifeEvent`, `Recipient`) van interpolados en el **`message`** ("El objeto Tag con el
+>   identificador <uuid> no existe."), no en `details` como decía el criterio. Alcanza para el front.
+> - **Casos borde que quedaron abiertos:** un slug que se canonicaliza a vacío y las plantillas guardadas antes del fix
+>   → G-28.
+> - Cubierto por `ProcedureTemplateServiceTest`; no ejecutado por el front.
 
 **Prioridad:** 🔵 mejora · **Tipo:** bug · Detectado al integrar `/api/procedure-template` (fase 1 del front).
 
@@ -610,8 +853,8 @@ clientes. El "no encontrado" no permite señalar qué selección está mal.
 `[^a-z0-9]+`→`-`, sin guiones al borde) y que `resolveAll` informe el id faltante y su entidad.
 
 **Criterio de aceptación**
-- [ ] `POST`/`PUT` con `slugBase: "Obtener DNI"` persiste `obtener-dni`; un segundo `obtener-DNI` devuelve `4072`.
-- [ ] Un `tagIds` con un UUID inexistente devuelve `4073` con ese UUID y la entidad en `details`.
+- [x] `POST`/`PUT` con `slugBase: "Obtener DNI"` persiste `obtener-dni`; un segundo `obtener-DNI` devuelve `4072` (409).
+- [x] Un `tagIds` con un UUID inexistente devuelve `4073` con ese UUID y la entidad (en `message`, no en `details`).
 
 ---
 
@@ -650,6 +893,18 @@ clientes. El "no encontrado" no permite señalar qué selección está mal.
 
 ## G-12 · Fichas por localidad y puntos de atención: validaciones faltantes
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** 🟠 **Parcial, con avance en §3 (`1888e1a`, PPDT-5.6; en staging desde el 2026-11-19).**
+> - **§3 hecho:** `loadOrganismProcedure` (`service/OrganismProcedureLocationService.java:146-161`) rechaza la adopción
+>   que no está vigente —deshabilitada, con `effectiveFrom` futuro o con `effectiveTo` cumplido
+>   (`entity/OrganismProcedure.java:74-78`, `isEffectiveAt`)— con **404 `4073`** ("El objeto OrganismProcedure con el
+>   identificador … no existe"). Aplica al `POST` y también al `PUT` (`:84`). Cumple el criterio ("→ 4xx"), pero el
+>   código es el mismo que "no existe" y el `PUT` deja las fichas existentes sin poder editarse: ver **G-27**.
+> - **§1:** resuelto desde el 2026-11-03 (G-4).
+> - **Sin cambios:** §2 (`transition`, `:100-112`, sigue sin mirar `active` ni la vigencia: se puede publicar una
+>   ficha inactiva o de una adopción vencida), §4 (`delete`, `:114-122`, sin `buildSnapshot`), §5 (el listado, con o
+>   sin filtro, incluye las inactivas: `:52-70`) y §6 (`AttentionPointService.map`, `service/AttentionPointService.java:88-104`,
+>   no valida que la ficha esté activa ni la escala de las coordenadas).
+>
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** 🟠 **Parcial, sin cambios.** `transition` sigue sin mirar `active`
 > (`service/OrganismProcedureLocationService.java:90-102`), `loadOrganismProcedure` no valida `enabled` ni la vigencia
 > (`:136-145`), `delete` no genera versión (`:104-112`), el listado incluye inactivas (`:51-60`) y
@@ -680,7 +935,7 @@ fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o v
 **Criterio de aceptación**
 - [ ] (§1: ver criterios de G-4.)
 - [ ] `POST /{id}/publish` sobre una ficha con `active=false` → 4xx con código de negocio.
-- [ ] `POST /api/organism-procedure-location` con una adopción deshabilitada o vencida → 4xx.
+- [x] `POST /api/organism-procedure-location` con una adopción deshabilitada o vencida → 4xx (404 `4073`, `1888e1a`; código propio pedido en G-27).
 - [ ] `DELETE` de una ficha incrementa `currentVersionNumber`.
 - [ ] `POST /api/attention-point` con latitud de 7 decimales → 400 `4012`.
 
@@ -688,7 +943,44 @@ fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o v
 
 ## OPS-1 · Desplegar `dev` en staging
 
-> **Estado 2026-11-16 (tarde):** ✅ **Cumplido.** `origin/staging` del backend = `7f2a78f` (merge de `dev` @ `58d383a`).
+> **Estado 2026-11-19 (más tarde, el mismo día):** ✅ **Cumplido de nuevo** (para `586b670`). `origin/staging` del
+> backend = `0a555df` ("Merge branch 'dev' into 'staging'", contiene `586b670`). `/api-docs` de staging ya publica el
+> contrato nuevo: `AuthMeResponseDTO` con `scope`, `organismId`, `organismName` y `organismAcronym`;
+> `OrganismProcedureLocationResponseDTO` con `organismProcedureId`, `locationId`, `url`, `requirements` y `costs`.
+> **Solo se verificó el esquema publicado; no se ejecutó ningún flujo todavía**: de los criterios de la reapertura de
+> abajo queda tildado el primero; los otros dos (parámetros de filtro documentados y `READ_PROCEDURE` del AO de prueba)
+> quedan por confirmar. El front de `feat/alinear-backend-586b670` ya se puede desplegar (requiere backend >=
+> `586b670`). El bloque que sigue queda como historial.
+>
+> **Estado 2026-11-19 (historial; reapertura, cerrada ese mismo día):** ⬜ **Reabierto: staging quedó otra vez atrás de
+> `dev`.** `origin/staging` seguía en `7f2a78f`
+> (merge de `dev` @ `58d383a`) y `dev` avanzó 13 commits, hasta `586b670`
+> (`git log --oneline origin/staging..origin/dev`). Verificado online el 2026-11-19, antes del deploy: `/api-docs` de
+> staging seguía publicando el contrato anterior. Faltaba desplegar:
+>
+> | Commit | Tarjeta | Qué trae | Pedido |
+> |---|---|---|---|
+> | `a69925e` | PPDT-5.1 | AB asigna roles `assignableByBackoffice`; AB no puede dar de baja, cambiar estado ni email de cuentas SA/AB (403 `4029`) | G-22, G-26 |
+> | `3797fe7` | PPDT-5.6 | Response completo de la ficha, filtro `?organismProcedureId=`, validación 400 `4012` | G-1, R-1 |
+> | `d7aca1c` | PPDT-5.2 | `scope` y organismo en `/api/auth/me` | G-2 / BO-20 |
+> | `fb13104` | PPDT-5.4 | `V2.31`: `READ_PROCEDURE` para ADMIN_ORGANIZATION | G-3 |
+> | `1888e1a` | PPDT-5.6 | Vigencia de la adopción en fichas (alta y edición) y en las consultas públicas | G-9, G-12, G-27 |
+> | `0db49a9` | PPDT-5.6 | Filtro `?organismProcedureLocationId=` en puntos de atención | G-7, G-29 |
+> | `1f51bea` | PPDT-5.6 | `4072` → 409 | G-6 |
+> | `130c180` | PPDT-5.6 | `slugBase` canónico y `4073` de catálogos con el id que falta | G-10, G-28 |
+>
+> (Los otros cinco commits son de documentación: `6e883b8`, `b0f2d07`, `3e94966`, `9a54179`, `586b670`.) Es una sola
+> migración nueva (`V2.31`, un `INSERT … ON CONFLICT DO NOTHING`), sin cambios de esquema.
+> **Por qué bloqueaba:** en esta rama el front pasa fichas y puntos de atención a real en staging y prod, y eso solo
+> funciona con `3797fe7` desplegado: contra el backend que staging tenía hasta ese deploy (`58d383a`), el response de
+> la ficha llegaba sin contenido y el formulario de edición lo habría borrado al guardar (el problema original de G-1).
+> **Criterio de aceptación de esta reapertura:**
+> - [x] `/api-docs` de staging: `OrganismProcedureLocationResponseDTO` incluye `organismProcedureId`, `locationId`,
+>   `url`, `requirements` y `costs`; `AuthMeResponseDTO` incluye `scope` y `organismId`. *(Verificado el 2026-11-19.)*
+> - [ ] `GET /api/attention-point` y `GET /api/organism-procedure-location` documentan sus parámetros de filtro.
+> - [ ] Con el AO de prueba, `/api/auth/me` trae `READ_PROCEDURE` (`V2.31` aplicada).
+>
+> **Estado 2026-11-16 (tarde):** ✅ **Cumplido** (para `58d383a`). `origin/staging` del backend = `7f2a78f` (merge de `dev` @ `58d383a`).
 > Verificado online en solo lectura con SUPERADMIN: `/api-docs` publica 58 paths (incluye `/api/tag`,
 > `/api/procedure-template`, `/api/organism-procedure*`, `/api/attention-point`, `role-assignments`); `/me` trae los
 > permisos `*_TAG`, `*_ADOPTION`, `*_ATTENTION_POINT`; los cuatro listados de trámites responden 200 (vacíos).
@@ -751,6 +1043,12 @@ levantando el backend local con Docker.
 
 ## G-13 · El borrado definitivo de usuario siempre falla (500)
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ⬜ **Pendiente.** Lo único que cambió (`a69925e`) es el chequeo previo:
+> `deleteLogicalUserById` y `deleteDefinitiveUserById` (`security/service/UserService.java:136-153`) llaman ahora a
+> `validateUserMutationAccess`, que le niega a ADMIN_BACKOFFICE las cuentas SA/AB (403 `4029`). El borrado definitivo
+> sigue siendo solo `userRepo.delete(user)` (`:152`), y `findUserDTO` (`:91-95`) y `findAllUserDTO` (`:103-113`) siguen
+> con ModelMapper: `role` y `activeAssignments` en `null`. **Ese `null` pesa más que antes:** ver G-26.
+>
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** ⬜ **Pendiente, sin cambios.** `deleteDefinitiveUserById` sigue con solo
 > `userRepo.delete(user)` (`security/service/UserService.java:147-153`), y `findUserDTO` (`:90-95`) y `findAllUserDTO`
 > (`:102-113`) siguen con ModelMapper. Los únicos caminos que arman el rol a mano (`buildUserResponse`, `:690-701`) son
@@ -1094,6 +1392,22 @@ error genérico en vez de "ya tiene un rol vigente".
 
 ## G-22 · ADMIN_BACKOFFICE tiene `CREATE_USER` pero `role-assignments` le responde siempre 403
 
+> **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`a69925e`, PPDT-5.1), en staging desde el 2026-11-19
+> (OPS-1).** La definición quedó: **AB sí asigna**, con la misma regla que en el alta.
+> `validateRoleAssignmentPermissions` (`security/service/UserService.java:294-325`) suma la rama de ADMIN_BACKOFFICE
+> (`:308-313`): pasa si el rol destino tiene `assignableByBackoffice = true` (según `V2.16`: `USER`, `AGENT` y
+> `ADMIN_ORGANIZATION`) y recibe 403 `4029` si no. Quedó documentado en
+> `docs/architecture/04_seguridad_y_autorizacion.md` y como FR-BACKOFFICE-09 (`docs/requirements.md`). Cubierto por
+> `UserServiceTest`; no ejecutado por el front.
+> - **No se hizo:** el código propio para "combinación rol/organismo inválida" (3.er criterio). Rol global con
+>   organismo y rol de organismo sin organismo siguen saliendo como 403 `4029` (`:297-301`), antes de mirar quién es el
+>   actor.
+> - **En la práctica sigue tapado por G-20:** aunque AB ya pasa la autorización, el pedido choca con la asignación
+>   abierta del usuario y responde 409 `4081`.
+> - **A confirmar:** `assignRole` no aplica la protección de cuentas privilegiadas de PPDT-5.1 (no llama a
+>   `validateUserMutationAccess`): AB podría asignarle un rol delegable a un usuario que hoy es SA o AB si su asignación
+>   tiene fecha de fin. Hoy también lo frena G-20 en el caso común. Leído en el código, no ejecutado.
+
 **Prioridad:** 🟡 importante · **Tipo:** contrato (definición) · Detectado en la auditoría del 2026-11-16; no ejecutado.
 
 **Problema**
@@ -1120,8 +1434,8 @@ Hace falta saber si es intencional para ocultarle la acción (regla por rol, com
   datos y no de permisos (400/409).
 
 **Criterio de aceptación**
-- [ ] La regla de quién asigna roles está documentada y coincide entre `POST /api/user` y `role-assignments`.
-- [ ] Con AB: 201 para los roles que le correspondan, o el endpoint deja de estar habilitado por un permiso que AB tiene.
+- [x] La regla de quién asigna roles está documentada y coincide entre `POST /api/user` y `role-assignments`.
+- [x] Con AB: 201 para los roles que le correspondan (pasa la autorización; el 201 real depende de G-20), o el endpoint deja de estar habilitado por un permiso que AB tiene.
 - [ ] Rol global con `organismId`, o rol de organismo sin `organismId` → 4xx con código propio, distinto de `4029`.
 
 ---
@@ -1146,6 +1460,23 @@ Hace falta saber si es intencional para ocultarle la acción (regla por rol, com
 **Impacto en el front:** el form de usuario le muestra a AO un select de rol vacío. Hoy el front además exige
 `READ_ORGANISM` para el alta (`PERMISSION_PREREQUISITES`), así que AO ni llega al form; aun resolviendo eso (G-2), el
 alta seguiría bloqueada por este flag.
+
+**Verificado el 2026-11-19 (`586b670`, leído en el código, no ejecutado) — `GET /api/role/allowed` filtra bien; no hace
+falta un pedido aparte.** El controller (`security/controller/RoleController.java:127-150`) devuelve todos los roles a
+SUPERADMIN (`:137-139`), los de `assignableByBackoffice` a ADMIN_BACKOFFICE y los de `assignableByOrgAdmin` al resto
+(en la práctica ADMIN_ORGANIZATION, por el `@PreAuthorize` de `:129`) (`:144-148`). Son los mismos flags que valida el
+alta (`UserService.java:584-604`) y `role-assignments` (`:308-319`), así que el select de rol no ofrece nada que
+después dé 403 `4029` por el flag. Tres diferencias menores, por si sirven:
+- `/allowed` decide quién consulta por las autoridades del **token** (`:133-143`) y el servicio por la **asignación
+  vigente** en la base (`getCurrentRoleCode`, `UserService.java:729-731`): si el rol cambió después de emitido el token,
+  pueden no coincidir hasta el próximo login.
+- `/allowed` incluye los roles **inactivos** (`RoleService.getRoles`, `security/service/RoleService.java:42-46`, es un
+  `findAll` sin filtrar `active`), y el alta no mira `active` del rol (`UserService.java:226-232`). Pero un rol inactivo
+  no cuenta como asignación vigente (`getActiveAssignments`, `:789`): un usuario creado con ese rol quedaría sin rol
+  vigente y recibiría 403 `4029` en `/me` y en todo lo demás. **A confirmar**; lo simple es que `/allowed` filtre
+  `active = true` (o que el alta rechace un rol inactivo).
+- Para ADMIN_ORGANIZATION, `/allowed` y el alta miran solo el flag, mientras que `role-assignments` exige además que el
+  rol sea de alcance organismo (`UserService.java:315-317`). Hoy no se nota porque ningún rol tiene el flag.
 
 **Propuesta:** una migración como `V2.16` que marque `assignable_by_org_admin = TRUE` para los roles que el
 administrador del organismo debe poder otorgar (como mínimo `AGENT`; definir si también `ADMIN_ORGANIZATION`), filtrando
@@ -1230,6 +1561,382 @@ estos casos tiene que mantener traducciones por endpoint (un `4018` significa co
 
 ---
 
+## G-26 · Cuentas privilegiadas: el front no puede saber a quién no puede tocar ADMIN_BACKOFFICE
+
+**Prioridad:** 🟡 importante · **Tipo:** contrato · Detectado en la auditoría del 2026-11-19 (`dev` @ `586b670`, commit `a69925e`), leyendo el código; **no ejecutado**.
+
+**Contexto — contrato nuevo de PPDT-5.1 (no era pedido nuestro):** desde `a69925e`, cuando el actor es
+ADMIN_BACKOFFICE y el usuario destino tiene una asignación vigente `SUPERADMIN` o `ADMIN_BACKOFFICE`, responden
+**403 `4029`** (`MessageDTO`):
+
+| Endpoint | Permiso | Servicio |
+|---|---|---|
+| `PUT /api/user/{id}` (baja lógica) | `DELETE_USER` | `deleteLogicalUserById` (`security/service/UserService.java:136-140`) |
+| `DELETE /api/user/{id}/admin` (baja definitiva) | `DELETE_USER` | `deleteDefinitiveUserById` (`:149-153`) |
+| `PATCH /api/user/{id}/change-email` | `UPDATE_USER` | `updateEmail` (`:468-472`) |
+| `PUT /api/user/{id}/status-account` | `UPDATE_USER` | `changeAcountStatus` (`:484-492`) |
+
+La regla está en `validateUserAccess` (`:668-691`, rama de AB en `:676-682`). SUPERADMIN conserva todo. Se suma al
+`PUT /api/user/{id}/change-password`, que ya respondía 403 `4029` sobre cuentas SA/AB para cualquier actor
+(`security/controller/UserController.java:138-147`). Documentado en `docs/architecture/04_seguridad_y_autorizacion.md`
+y como FR-BACKOFFICE-10.
+
+**Problema**
+1. **El front no puede anticipar el 403.** La regla depende del rol vigente del usuario **destino**, y `GET /api/user`
+   y `GET /api/user/{id}` devuelven `role` y `activeAssignments` en `null` (G-13). El backoffice gatea por permiso: AB
+   tiene `UPDATE_USER` y `DELETE_USER`, así que ve "Cambiar email" y "Desactivar cuenta" en **todas** las filas, y en
+   las de SA/AB la acción falla recién al confirmar.
+2. **Incluye la cuenta propia.** El chequeo no excluye al actor (`hasAnyActiveRole(targetUser.getId(), …)`, `:677-678`):
+   un AB tampoco puede cambiar su propio email ni desactivarse por estos endpoints, y `PUT /api/user/update-profile`
+   solo cambia nombre, apellido y CUIL. Si es intencional, falta decirlo; si no, hoy el email de un AB solo lo cambia
+   un SUPERADMIN.
+3. **El detalle del error habla de otra cosa.** `forbiddenUserManagement()` (`:703-710`) arma el `4029` con
+   `error.user.creation.permission.denied` = "El rol autenticado no tiene permisos para crear usuarios."
+   (`messages/messages.properties:151`), también cuando lo que se intentó fue dar de baja o cambiar un email. Es el
+   mismo tipo de problema que G-25.
+4. **`role-assignments` quedó fuera de la protección** (ver "A confirmar" en G-22).
+
+**Impacto en el front:** el menú de la fila le ofrece a AB acciones que el backend rechaza, y el detalle que llega no
+explica por qué: hace falta un texto propio para el `4029` de estas acciones.
+
+**Propuesta concreta**
+- Resolver G-13 (rol y asignaciones en `UserResponseDTO`); con eso el front oculta las acciones sobre SA/AB cuando el
+  actor es AB. Alternativa más barata: un booleano por usuario en el listado, calculado para quien consulta
+  (`"managedByCurrentUser": false`).
+- Un detalle propio para este caso ("No podés modificar una cuenta de administrador"), distinto del de alta de usuarios.
+- Definir y documentar el caso de la cuenta propia.
+
+**Criterio de aceptación**
+- [ ] Con AB, `GET /api/user` permite distinguir las cuentas SA/AB (por `role` o por un flag).
+- [ ] El 403 `4029` de estas cuatro operaciones trae un detalle que corresponde al caso.
+- [ ] Está documentado si un AB puede cambiar su propio email y por dónde.
+
+---
+
+## G-27 · Ficha de una adopción no vigente: 404 "no existe" y fichas que no se pueden editar
+
+**Prioridad:** 🟡 importante · **Tipo:** contrato (definición) · Detectado en la auditoría del 2026-11-19 (`dev` @ `586b670`, commit `1888e1a`), leyendo el código; **no ejecutado**.
+
+**Contexto:** `1888e1a` resolvió G-12 §3: `loadOrganismProcedure`
+(`service/OrganismProcedureLocationService.java:146-161`) rechaza con 404 `4073` la adopción que no está vigente
+(`:157-159`; `isEffectiveAt`, `entity/OrganismProcedure.java:74-78`: `enabled`, `effectiveFrom <= ahora` y `effectiveTo`
+nulo o posterior). El método se usa en el alta (`buildEntity`, `:135`) **y en la edición** (`update`, `:84`). El propio
+backend lo declara intencional (`odd/tasks/claudinio-otl-validity.md`: "An OTL cannot be created or updated over a
+disabled adoption").
+
+**Problema**
+1. **El error no se distingue de "no existe".** La adopción existe y el usuario la está viendo en pantalla, pero la
+   respuesta es 404 `4073` "El objeto OrganismProcedure con el identificador … no existe." El front no puede mostrar
+   "la adopción no está vigente" sin adivinar: el mismo código sale por adopción inexistente o de otro organismo
+   (`:150-155`).
+2. **Las fichas existentes quedan sin poder editarse.** Cuando una adopción vence o se deshabilita, cualquier `PUT` de
+   sus fichas responde 404: no se puede corregir un requisito ni desactivarla con `active: false`. Sí siguen
+   funcionando el `DELETE` (`:114-122`) y las transiciones (`:100-112`), que no validan la adopción: una ficha de una
+   adopción vencida todavía se puede **publicar** (200), aunque el portal no la muestre (G-9). Combinado con la falta
+   de cascada, el backoffice muestra `PUBLICADO` y editable algo que no es ninguna de las dos cosas.
+3. **No se pueden preparar fichas antes del inicio de vigencia.** `GET /api/organism-procedure` lista las adopciones
+   habilitadas sin mirar las fechas (`service/OrganismProcedureService.java:58-63`), así que una adopción con
+   `effectiveFrom` futuro aparece en "Trámites del organismo"; "Agregar localidad" responde 404. No hay forma de dejar
+   las fichas en `BORRADOR` listas para el día en que empieza a regir.
+
+**Impacto en el front:** el front calcula `vigente` en el cliente y puede ocultar "Agregar localidad" y "Editar"
+sobre adopciones no vigentes, pero es una regla duplicada (y con el reloj del navegador). Para los casos que se le
+escapen necesita un código que pueda traducir.
+
+**Ampliación 2026-11-19 — cómo lo resuelve hoy el front, y por qué es frágil** (surge de la implementación contra
+`586b670`; leído en el código, no ejecutado):
+- Los tres 404 del guardado de una ficha comparten el código `4073` y solo cambia la etiqueta que `notFound`
+  (`service/OrganismProcedureLocationService.java:178-181`) interpola en el `message`: `"OrganismProcedure"` (adopción,
+  `:151, 155, 158`), `"Location"` (`:175`) y `"OrganismProcedureLocation"` (la ficha, `:167, 170`). Para saber de cuál
+  habla, **el front busca esa etiqueta dentro del texto del `message`** ("El objeto OrganismProcedure con el
+  identificador … no existe.", `messages/messages.properties:105`). Si cambia la redacción, el idioma o el nombre de la
+  clase, deja de reconocerlo.
+- Aun leyendo la etiqueta, **adopción inexistente, adopción de otro organismo y adopción no vigente son el mismo
+  mensaje, letra por letra** (misma etiqueta y mismo id: `:151`, `:155` y `:158`). El front asume "no vigente" porque es
+  el caso más probable y lo dice con un texto que enumera las posibilidades (deshabilitada, todavía no empezó, ya
+  venció), sin poder decir cuál.
+- El "ahora" con el que el backend decide la vigencia es el de la JVM; ver **G-32** (zona horaria): si la JVM corre en
+  UTC, este 404 aparece hasta 3 horas antes de lo que el front calcula como vencimiento.
+- Refuerza el primer punto de "Qué se pide": un **código propio** para "adopción no vigente" (y, si se puede, que el
+  `details` o un campo diga si es por `enabled`, por `effectiveFrom` o por `effectiveTo`), y que el recurso que no se
+  encontró viaje en un campo y no solo dentro del texto.
+
+**Qué se pide**
+- Un código propio para "adopción no vigente" (409, como `4077` y `4080`), distinto del `4073`.
+- Definir si se pueden crear y editar fichas en `BORRADOR` sobre una adopción **todavía no vigente** (el portal ya las
+  filtra por vigencia desde `1888e1a`, así que no se filtrarían al público).
+- En el `PUT`, no revalidar la vigencia cuando `organismProcedureId` no cambia (mismo criterio que G-11 §1), o al menos
+  permitir `active: false`.
+- Aplicar la misma regla a `publish` (G-12 §2), o resolver la cascada (G-9).
+
+**Criterio de aceptación**
+- [ ] `POST` de una ficha sobre una adopción vencida o deshabilitada → 409 con código propio y mensaje.
+- [ ] `PUT` de una ficha existente cuya adopción venció: 200, o 409 con ese código (no 404 `4073`).
+- [ ] Está definido y documentado el caso de la adopción con `effectiveFrom` futuro.
+- [ ] `publish` sobre una ficha de una adopción no vigente → mismo código.
+- [ ] *(ampliación 2026-11-19)* El cliente distingue "adopción no vigente" de "adopción inexistente o fuera de alcance"
+  sin leer el `message`.
+
+---
+
+## G-28 · `slugBase`: canónico vacío y plantillas anteriores sin recanonicalizar
+
+**Prioridad:** 🔵 a confirmar · **Tipo:** bug · Detectado en la auditoría del 2026-11-19 (`dev` @ `586b670`, commit `130c180`); **NO confirmado en ejecución**: surge de leer el código.
+
+**Problema**
+1. **El slug canónico puede quedar vacío.** `slugBase` se valida con `@NotBlank` sobre el valor **original**
+   (`dto/procedureTemplate/ProcedureTemplateRequestDTO.java:19-20`); `canonicalize`
+   (`service/ProcedureTemplateService.java:147-153`) corre después y no vuelve a validar. Un `slugBase` sin letras ni
+   números (`"¡¡¡"`, `"---"`) pasa la validación y se canonicaliza a `""`. `create` (`:50-53`)
+   persistiría una plantilla con `slug_base = ''` (la columna es `NOT NULL` y única, `V2.18`: lo admite), y la segunda
+   respondería 409 `4072` con el identificador vacío.
+2. **Las plantillas anteriores al fix no se migraron.** No hay migración que recanonicalice `procedure_templates.slug_base`
+   (la única nueva es `V2.31`). `ensureUniqueSlug` (`:101-108`) compara el canónico con `findBySlugBase`
+   (`repository/ProcedureTemplateRepository.java:10`, igualdad exacta): si una base tiene `Obtener-DNI` guardado de
+   antes, un `obtener-dni` nuevo no lo encuentra y conviven los dos, que es lo que G-10 quería evitar. La plantilla
+   vieja se corrige sola recién cuando alguien la edita. Depende de que existan datos así (el 2026-11-16 el listado de
+   plantillas de staging estaba vacío).
+
+**Impacto en el front:** el backoffice canonicaliza y valida antes de enviar, así que no genera estos casos; afecta a
+otros clientes y a datos previos.
+
+**Propuesta:** validar el resultado de `canonicalize` (vacío → 400 `4012` sobre `slugBase`),
+y una migración que canonicalice los `slug_base` existentes resolviendo colisiones.
+
+**Criterio de aceptación**
+- [ ] `POST /api/procedure-template` con `slugBase: "¡¡¡"` → 400 `4012`.
+- [ ] Tras la migración, ningún `slug_base` difiere de su forma canónica.
+
+---
+
+## G-29 · El filtro de puntos de atención por ficha devuelve solo los activos
+
+**Prioridad:** 🟡 importante · **Tipo:** contrato · Detectado en la auditoría del 2026-11-19 (`dev` @ `586b670`, commit `0db49a9`), leyendo el código; **no ejecutado**.
+
+**Problema**
+- `GET /api/attention-point` **sin** parámetro devuelve todos los puntos del alcance, activos e inactivos
+  (`service/AttentionPointService.java:48-51`: `findAll()` / `findAllByOrganismProcedureLocationOrganismProcedureOrganismId`).
+- **Con** `?organismProcedureLocationId=` usa `findAllByOrganismProcedureLocationIdAndActiveTrue` y su variante con
+  alcance (`:53-56`; `repository/AttentionPointRepository.java:13-16`): **solo activos**. El mismo endpoint cambia de
+  criterio según lleve o no el filtro, y no está documentado (el Postman lo describe como "Optional filter by procedure
+  sheet location").
+- No hay `active` ni `includeInactive` (estaban en la tabla de G-7), y `GET /api/attention-point/{id}` sí devuelve un
+  punto inactivo. Con el filtro no hay forma de listar los inactivos de una ficha.
+
+**Impacto en el front:** el panel de puntos de atención de la ficha tiene el interruptor "Mostrar inactivos" y permite
+reactivar un punto con el `PUT` (`active: true`). Si usa el filtro del servidor, los inactivos desaparecen y no se
+pueden reactivar; para conservarlos tiene que seguir bajando todos los puntos del alcance y filtrar en el cliente, que
+es lo que G-7 quería evitar.
+
+**Propuesta:** que el filtro por ficha no cambie el criterio de `active`, y sumar `?active=true|false` (o
+`includeInactive`) como parámetro explícito. Si se prefiere "solo activos" por defecto, que valga también sin filtro y
+se avise como cambio de contrato.
+
+**Criterio de aceptación**
+- [ ] `GET /api/attention-point?organismProcedureLocationId=…` y `GET /api/attention-point` aplican el mismo criterio
+  sobre `active`.
+- [ ] Hay un parámetro documentado para incluir o excluir los inactivos.
+
+---
+
+## G-30 · Usuarios: los motivos del 403 `4029` solo se distinguen por el texto
+
+**Prioridad:** 🔵 mejora · **Tipo:** contrato · Detectado el 2026-11-19 al implementar el form de usuarios contra `dev` @ `586b670`, leyendo el código; **no ejecutado**.
+
+**Problema** — en usuarios, el 403 `4029` ("El usuario no tiene permisos para realizar esta acción.",
+`messages/messages.properties:71`) es el único código para motivos que piden reacciones distintas del front. Lo único
+que cambia es `details`, un texto libre que sale de `messages.properties`:
+
+| # | Motivo | Dónde (`security/service/UserService.java`) | `details` |
+|---|---|---|---|
+| 1 | Alta: el rol elegido no es asignable por quien crea (AB sin `assignableByBackoffice`, AO sin `assignableByOrgAdmin`) | `:584-592`, `:596-604` | "El rol objetivo no puede ser creado por el rol autenticado." (`messages.properties:149`) |
+| 2 | Alta: quien crea es ADMIN_ORGANIZATION y **su cuenta** no tiene organismo | `:605-613` | "El administrador de organización debe pertenecer a una organización." (`:150`) |
+| 3 | Alta: el rol elegido es de alcance organismo y el request llegó **sin `organizationId`** | `validateOrganismScopeRequirement`, `:638-649` | **el mismo texto que el #2** (`:150`) |
+| 4 | Alta: el rol de quien crea no da de alta usuarios (ni SA, ni AB, ni AO) | `:618-623` | "El rol autenticado no tiene permisos para crear usuarios." (`:151`) |
+| 5 | `role-assignments`: combinación rol/organismo inválida (rol global con organismo, o de organismo sin organismo) | `:297-301` | *(sin `details`)* |
+| 6 | `role-assignments`: rol no asignable por el actor, actor sin rol de administración, u organismo distinto del propio | `:308-324` → `forbiddenUserManagement` (`:703-710`) | el texto del #4, aunque no se esté creando nada |
+| 7 | Baja, estado, email, `GET /{id}`: cuenta privilegiada (PPDT-5.1), usuario de otro organismo, o actor que no es SA/AB/AO | `validateUserAccess`, `:668-691` | el texto del #4 (G-26 §3) |
+| 8 | `change-password` sobre una cuenta SA/AB | `security/controller/UserController.java:138-147` | "No se puede cambiar la contraseña de un usuario administrador." (`:152`) |
+| 9 | El actor no tiene asignación vigente, o tiene dos igual de prioritarias (cualquier endpoint, también `/me`) | `:427-432`, `:733-741`, `:769-775` | *(sin `details`)* |
+
+Consecuencias:
+- **#2 y #3 son indistinguibles.** Uno se arregla en el form (elegir el organismo); el otro no depende de lo que se
+  cargue (hay que asignarle un organismo a la cuenta de quien crea). El front muestra un texto que explica las dos cosas.
+- **#1 es el único que corresponde marcar en el campo "Rol"**; para saberlo el front compara el `details` **completo**
+  contra el texto en español (y contra la clave `error.user.creation.role.restricted`, por si al entorno le falta la
+  traducción, como pasó con `response.code.4080`). Un cambio de redacción en `messages.properties` rompe el mapeo sin
+  que ningún test lo note.
+- **#5 no es un problema de permisos** sino de datos (es el criterio que quedó sin tildar en G-22), y llega igual que #9.
+- **#6 y #7 reutilizan el texto de "crear usuarios"** para acciones que no crean nada (G-26 §3).
+- De paso, leído en el mismo código: el alta **no** rechaza un rol global que llega con `organizationId`
+  (`validateOrganismScopeRequirement` solo mira el caso inverso, `:638-649`), mientras que `role-assignments` sí
+  (`:297-301`). La asignación quedaría con organismo para un rol global. **A confirmar.**
+
+**Impacto en el front:** `pages/usuarios/usuario-save-error.ts` mantiene una tabla de textos del backend para decidir
+qué campo marcar y qué decirle al usuario, y cae en un mensaje neutro cuando no reconoce el `details`.
+
+**Qué se pide**
+- Un código por motivo, o al menos por familia: rol no asignable por el actor · organismo requerido para el rol ·
+  la cuenta del actor no tiene organismo · combinación rol/organismo inválida (400/409, no 403) · cuenta privilegiada ·
+  usuario fuera del alcance del actor · actor sin rol vigente.
+- Alternativa más barata: mantener `4029` y sumar al body un campo estable (`reason: "ROLE_NOT_ASSIGNABLE"`), dejando
+  `details` solo como texto para mostrar.
+- Que cada texto corresponda a la acción (cierra G-26 §3 y el tercer criterio de G-22).
+
+**Criterio de aceptación**
+- [ ] `POST /api/user` con un rol no asignable, con un rol de organismo sin `organizationId` y desde un AO sin
+  organismo devuelve tres respuestas distinguibles sin leer texto libre.
+- [ ] `role-assignments` con una combinación rol/organismo inválida responde 4xx con código propio, distinto del `4029`.
+- [ ] Los códigos o motivos están documentados (Swagger o `docs/architecture/04_seguridad_y_autorizacion.md`).
+
+---
+
+## G-31 · `change-password` no valida el alcance del actor
+
+**Prioridad:** 🟡 importante · **Tipo:** bug (autorización) · Detectado el 2026-11-19 leyendo el código de `dev` @ `586b670`; **no ejecutado**. **Latente:** con los permisos del seed no es explotable hoy (ver "Alcance real").
+
+**Problema**
+- `PUT /api/user/{id}/change-password` (`security/controller/UserController.java:135-172`) exige `UPDATE_USER` (`:136`)
+  y resuelve todo en el controller, con dos validaciones:
+  1. que el usuario destino **no** tenga un rol vigente `SUPERADMIN` o `ADMIN_BACKOFFICE` (`:138-147`, 403 `4029`),
+     sin importar quién lo pide;
+  2. que la contraseña nueva cumpla el formato (`:149-159`, 406 `4034`).
+- Después hace `userSVC.findById(id)` + `userSVC.setPassword(...)` (`:161-162`). **Ninguno de los dos mira quién es el
+  actor:** `findById` (`security/service/UserService.java:123-127`) es una búsqueda por id y `setPassword` (`:391-394`)
+  codifica y guarda.
+- Es **la única mutación de usuario que no pasa por `validateUserAccess`** (`:668-691`), que es donde vive la regla
+  "ADMIN_ORGANIZATION solo sobre usuarios de su organismo" (`:688`):
+
+| Endpoint | Permiso | ¿Valida el alcance del actor? |
+|---|---|---|
+| `GET /api/user/{id}` | `READ_USER` | sí (`findUserDTO`, `:91-95`) |
+| `GET /api/user` | `READ_USER` | sí para AO (`findAllUserDTO`, `:103-113`) |
+| `PUT /api/user/{id}` (baja lógica) | `DELETE_USER` | sí (`:136-140`) |
+| `DELETE /api/user/{id}/admin` | `DELETE_USER` | sí (`:149-153`) |
+| `PATCH /api/user/{id}/change-email` | `UPDATE_USER` | sí (`updateEmail`, `:468-472`) |
+| `PUT /api/user/{id}/status-account` | `UPDATE_USER` | sí (`changeAcountStatus`, `:484-492`) |
+| **`PUT /api/user/{id}/change-password`** | `UPDATE_USER` | **no** |
+
+- **Resultado:** cualquier actor con `UPDATE_USER` puede fijar la contraseña de **cualquier** cuenta que no sea SA/AB:
+  un ADMIN_ORGANIZATION, la de un usuario de **otro organismo** (otro AO incluido), o la de un MANAGER o un USER
+  (roles globales). Con la contraseña nueva entra como esa persona. El mismo AO recibe 403 `4029` si intenta cambiarle
+  el email o desactivar a ese usuario: la regla existe, pero este endpoint la saltea.
+- Los tests no cubren el alcance: `UserControllerTest` (`src/test/…/security/controller/UserControllerTest.java:164-239`)
+  prueba el rechazo sobre cuentas admin y la contraseña débil; `UserControllerSecurityTest` (`:34`), solo la anotación.
+
+**Alcance real (por qué "latente")**
+- En el seed, `UPDATE_USER` lo tienen solo SUPERADMIN (todos los permisos) y ADMIN_BACKOFFICE
+  (`V2.9__normalize_permission_codes_and_expand_catalog.sql:59-70`), los dos de alcance global. ADMIN_ORGANIZATION tiene
+  `CREATE_USER` y `READ_USER` (`V0.1_permissions_standard_seed.sql:73-74`); AGENT y MANAGER, ninguno de usuarios. Con
+  esos grants **nadie de alcance organismo llega al endpoint**.
+- Se vuelve real en cuanto un rol de alcance organismo reciba `UPDATE_USER`, y eso está a un clic: SUPERADMIN edita los
+  permisos de un rol desde la pantalla de Roles del backoffice, y la documentación del propio backend dice que AO debe
+  poder editar a los suyos ("`ADMIN_ORGANIZATION` solo puede listar, consultar, crear, **editar y desactivar** usuarios
+  cuyo rol vigente pertenezca a su organismo", `docs/architecture/04_seguridad_y_autorizacion.md:111-112`). Para cumplir
+  esa frase hay que darle `UPDATE_USER` a AO, y ese mismo grant abre este hueco.
+
+**A confirmar con backend — rol que no es SA, AB ni AO con permisos de usuario (por ejemplo MANAGER con `UPDATE_USER`)**
+Según `validateUserAccess` (`:684-686`), cualquier actor cuyo rol vigente no sea SUPERADMIN, ADMIN_BACKOFFICE ni
+ADMIN_ORGANIZATION recibe **403 `4029` en toda acción sobre otro usuario**, tenga el permiso que tenga: `GET /{id}`,
+cambio de email, cambio de estado y las dos bajas. Es decir, darle `UPDATE_USER` o `READ_USER` a MANAGER o a AGENT desde
+la pantalla de Roles no habilita nada… salvo dos excepciones que no pasan por esa función:
+- `change-password`, que le funcionaría sobre cualquier cuenta no SA/AB (este pedido);
+- `GET /api/user`, que le devolvería **todos** los usuarios (`findAllUserDTO`, `:103-113`, solo filtra cuando el actor
+  es AO), aunque después el `GET /{id}` de cada uno le responda 403.
+
+¿Es lo esperado que la gestión de usuarios esté atada a esos tres roles además del permiso? Si lo es, pedimos que quede
+documentado (el front gatea por permiso y le mostraría a ese rol acciones que siempre fallan) y que las dos excepciones
+se alineen. Nota relacionada: para AO, `validateUserAccess` rechaza siempre las bajas (`deletion ||`, `:688`), lo que
+coincide con la documentación ("la eliminación… queda reservada a administradores globales").
+
+**Impacto en el front:** "Cambiar contraseña" se ofrece por permiso (`UPDATE_USER`), como el resto de las acciones de
+cuenta. El listado de un AO ya viene filtrado por organismo, así que la UI no ofrecería la acción sobre usuarios
+ajenos; pero la protección tiene que estar en la API: el id va en la URL.
+
+**Propuesta concreta**
+- Mover la lógica a `UserService` (hoy está en el controller) y pasar por `validateUserAccess`, igual que
+  `changeAcountStatus`: mismo alcance para AO, misma protección de cuentas privilegiadas para AB.
+- Definir si SUPERADMIN puede cambiar la contraseña de otra cuenta SA/AB (hoy no puede nadie, `:138-147`; en el resto
+  de las acciones SUPERADMIN "conserva autoridad sobre esas cuentas").
+- Deseable: revocar las sesiones del usuario al cambiarle la contraseña, como hace `changeAcountStatus` al desactivar
+  (`refreshTokenSessionService.revokeAllUserSessions`, `:489-491`). No se verificó si hoy quedan vivas.
+
+**Criterio de aceptación**
+- [ ] Con ADMIN_ORGANIZATION (con `UPDATE_USER` otorgado), `change-password` sobre un usuario de otro organismo → 403
+  `4029`; sobre uno del suyo → 200.
+- [ ] Con un rol que no es SA, AB ni AO y tiene `UPDATE_USER` → la misma respuesta que en `change-email` y
+  `status-account`.
+- [ ] Test de servicio o de controller que cubra el alcance (hoy no hay ninguno).
+- [ ] Está documentado qué roles pueden gestionar usuarios además de tener el permiso, y `GET /api/user` aplica la
+  misma regla que `GET /api/user/{id}`.
+
+---
+
+## G-32 · Zona horaria de la vigencia de las adopciones
+
+**Prioridad:** 🟡 importante · **Tipo:** bug + ops · Detectado el 2026-11-19 leyendo el código y la configuración de `dev` @ `586b670`; **NO confirmado en ejecución** y **no se sabe en qué zona corre la JVM de staging ni la de producción**.
+
+**Problema**
+- `organism_procedures.effective_from` / `effective_to` son `TIMESTAMPTZ` (`V2.12__create_organism_procedure_flow.sql:7-8`),
+  pero la entidad los mapea a `LocalDateTime` (`entity/OrganismProcedure.java:50-54`) y los DTOs también
+  (`dto/organismProcedure/OrganismProcedureRequestDTO.java:30, 32`; `OrganismProcedureResponseDTO.java:21-22`). Por la
+  API viajan **sin zona** (`"2026-12-01T00:00:00"`): el backend los interpreta, y los vuelve a leer de la base, en la
+  zona por defecto de la JVM.
+- La vigencia se decide con el reloj de pared de la JVM: `isEffectiveAt(LocalDateTime.now())`
+  (`service/OrganismProcedureLocationService.java:157`; `entity/OrganismProcedure.java:74-78`), y lo mismo en la
+  búsqueda pública (G-9).
+- **Nada fija esa zona:**
+  - `Dockerfile:14` usa `eclipse-temurin:17-jre` y `:27` define `JAVA_TOOL_OPTIONS` sin `-Duser.timezone`; no hay `ENV TZ`.
+  - `docker/docker-compose.backend.yml:9-15` y `docker/docker-compose.backend-dev.yml:12-18` no pasan `TZ`;
+    `docker/docker-compose.yml:4-10` (PostgreSQL) tampoco (`TZ` / `PGTZ`).
+  - `.env.example` (35 líneas) y `docker/.env.docker.example` (14) no tienen ninguna variable de zona.
+  - `application*.properties` no tienen `spring.jackson.time-zone` ni `hibernate.jdbc.time_zone`, y en `src/main` no
+    hay `TimeZone.setDefault` ni `ZoneId` (búsqueda en todo el repo). El `ObjectMapper`
+    (`config/AppGlobalConfig.java:16-19`) solo desactiva `WRITE_DATES_AS_TIMESTAMPS`.
+  - En un contenedor sin `TZ`, la JVM queda en **UTC**. Es lo que cabe esperar con este `Dockerfile` si el
+    orquestador de staging/prod no inyecta la variable; **no lo pudimos verificar**.
+- **Efecto si la JVM está en UTC** (Argentina es UTC−3 todo el año): quien carga la adopción escribe horas de
+  Argentina, y el backend las toma como UTC. Una vigencia "desde el 01/12 a las 00:00" rige desde el **30/11 a las
+  21:00** de Argentina, y una "hasta el 31/12 a las 23:59" vence a las **20:59**. Durante esas 3 horas:
+  - el portal ya muestra (o ya dejó de mostrar) el trámite (`/api/procedure/search`, `/api/procedure/{slug}`);
+  - el backoffice, que interpreta las mismas fechas como hora local del navegador, muestra la adopción como "todavía
+    no vigente" o "vigente" al revés que el backend, y ofrece (o esconde) "Agregar localidad" y "Editar" mal: el `POST`
+    y el `PUT` de la ficha responden el 404 `4073` de G-27 sobre una adopción que la pantalla da por vigente.
+- **Probablemente reproducible en local, a confirmar:** levantando el backend con estos compose (sin `TZ`) contra un
+  navegador en UTC−3.
+- Relacionado con el "A confirmar (menor)" de G-9: el detalle público compara contra `CURRENT_TIMESTAMP` y la búsqueda
+  contra `LocalDateTime.now()`. Mientras el driver convierta con la zona de la JVM, las dos deberían coincidir; el
+  problema es contra qué hora de pared se interpretan los valores, no entre esas dos consultas.
+
+**Impacto en el front:** el front manda y lee `yyyy-MM-ddTHH:mm:ss` en hora local del navegador (es lo que
+`LocalDateTime` acepta) y calcula `vigente` con esa misma hora. No puede compensar una diferencia que no conoce: no
+sabe en qué zona corre el backend, y hardcodear "+3 horas" rompería el día que se fije.
+
+**Propuesta concreta** — una de dos, y documentarla:
+1. **Fijar la zona del backend en `America/Argentina/Buenos_Aires`** (`ENV TZ=America/Argentina/Buenos_Aires` en el
+   `Dockerfile`, o `-Duser.timezone=…` en `JAVA_TOOL_OPTIONS`, y la variable en `.env.example` y en los compose). Es el
+   cambio mínimo y conserva el contrato actual ("fechas en hora de Argentina, sin zona").
+2. **Serializar con offset:** `OffsetDateTime` o `Instant` en la entidad y los DTOs (`"2026-12-01T00:00:00-03:00"`),
+   como ya hace `SearchLog` (`entity/SearchLog.java:57`), y comparar instantes. Es lo correcto a largo plazo, pero cambia
+   el contrato: hay que avisarlo para que el front y el portal migren a la vez.
+
+A tener en cuenta en cualquiera de los dos casos: si hoy la JVM está en UTC, **las adopciones ya cargadas quedaron
+guardadas 3 horas corridas** respecto de lo que quiso decir quien las cargó, y al cambiar la zona se van a leer con
+otra hora de pared. Conviene revisar los datos existentes (hoy son pocos) en el mismo cambio. Lo mismo vale, con menos
+consecuencias, para los `createdAt` / `updatedAt` que se llenan con `LocalDateTime.now()`
+(`entity/OrganismProcedure.java:62-72`) y para la vigencia de las asignaciones de rol, que usa `LocalDate.now()`
+(`security/service/UserService.java:785`): cerca de la medianoche, "hoy" es otro día según la zona.
+
+**Criterio de aceptación**
+- [ ] Está documentado (README, `.env.example` o la guía de integración) en qué zona interpreta el backend las fechas
+  sin zona, y staging y producción corren con esa zona explícita.
+- [ ] Confirmado en ejecución: una adopción con `effectiveFrom` = ahora + 1 hora (hora de Argentina) **no** está
+  vigente para el backend (crear una ficha sobre ella responde el error de G-27) y no aparece en `/api/procedure/search`.
+- [ ] Una adopción con `effectiveTo` = ahora + 1 hora (hora de Argentina) **sigue** vigente.
+- [ ] Un `GET` devuelve la misma hora que se envió en el `POST`, con el backend en la zona definida.
+
+---
+
 ## DOC-1 · Corregir `docs/frontend_integration_guide.md`
 
 **Prioridad:** 🔵 · **Tipo:** doc
@@ -1254,50 +1961,58 @@ estos casos tiene que mantener traducciones por endpoint (un `4018` significa co
 
 ## Orden sugerido de atención
 
-Actualizado el 2026-11-16 (`dev` @ `58d383a`). Ya resueltos en `dev`: R-3, R-1, G-14, G-15 y BO-17.
+Actualizado el 2026-11-19 (`dev` @ `586b670`). Ya resueltos en `dev`: R-3, R-1, G-14, G-15, BO-17 (en staging) y
+G-1, G-2 / BO-20, G-6, G-10 y G-22 (en staging desde el 2026-11-19).
 
-1. **OPS-1:** desplegar `dev` (hasta `V2.30`) en staging. Con R-3 y G-15 resueltos, es lo único que falta para pasar Etiquetas, Plantillas y Adopciones a real online. Sin esto, `/api/tag`, `/api/organism-procedure` y `/api/attention-point` dan 403 incluso para SA.
-2. **G-1:** mapear campos que ya están en la entidad y sumar los `@NotNull` (cierra también el cabo de R-1: `PUT` sin `active` → 500). Desbloquea toda la sección de fichas y, con ella, puntos de atención.
-3. **G-13 + G-20:** que `UserResponseDTO` traiga rol, organismo, vigencia y `activeAssignments`, y que se pueda cambiar el rol de un usuario (hoy `role-assignments` da siempre 409 `4081`). De paso, confirmar **G-21** (`LocalDate.MAX`).
-4. **G-2 / BO-20:** extender `/api/auth/me`. Desbloquea "Adoptar" y etiquetas locales para AO/AGENT.
-5. **G-23 / G-22:** quién puede crear usuarios y asignar roles (AO no puede hacer ninguna de las dos cosas; AB no puede asignar). Es seed + una definición.
-6. **G-3 / G-5:** `READ_PROCEDURE` para AO/AGENT, `READ_ORGANISM` y `READ_VARIANT` para AB, y la definición de quién publica (decisiones de producto; conviene una sola migración).
-7. **G-24:** que AGENT no pueda deshabilitar adopciones ni despublicar fichas por la vía del `PUT`/`DELETE`.
-8. **G-4:** endpoints `reject` y `return-to-draft` (los 4xx ya están).
-9. **G-9:** validación previa de duplicados (hoy una violación de `uk_otl_*` sería 500), slug único global y cascada de vigencia.
-10. **G-11:** editar adopciones de plantillas desactivadas y cascada al desactivar una plantilla.
-11. **G-12:** resto de las validaciones de fichas y puntos de atención (resolver §3 junto con G-9 §3).
-12. **G-7:** primero el filtro de puntos de atención por ficha; después la paginación (incluye los filtros de G-1 y G-11 §3).
-13. Mejoras y resto: **G-16**, **G-25** (textos de error), **G-6** (`4072`), **G-8** (`lockVersion` en el contrato, excepción de Spring y versiones), **G-10**, **G-17** (decisión), **G-18**, **G-19**, **DOC-1** y **OPS-2**.
+1. ~~**OPS-1:** desplegar `dev` @ `586b670` (13 commits y `V2.31`) en staging.~~ ✅ **Cumplido el 2026-11-19** (`origin/staging` @ `0a555df`). Era lo único que separaba a fichas y puntos de atención de funcionar en real online; con el deploy llegan también `/me` con organismo, `READ_PROCEDURE` para AO y el `4072` como 409. Verificado solo el esquema de `/api-docs`: falta ejecutar los flujos (e2e de staging). Sigue en pie acordar la cadencia (propuesta 3 de OPS-1): fue la segunda vez que staging quedó atrás.
+2. **G-13 + G-20:** que `UserResponseDTO` traiga rol, organismo, vigencia y `activeAssignments`, y que se pueda cambiar el rol de un usuario (hoy `role-assignments` da siempre 409 `4081`, también para AB después de G-22). G-13 destraba además **G-26** (cuentas privilegiadas). De paso, confirmar **G-21** (`LocalDate.MAX`).
+3. **G-27 + G-9 + G-12 §2:** una sola definición sobre fichas y vigencia de la adopción: código propio para "adopción no vigente", si se editan o preparan fichas fuera de vigencia, cascada al deshabilitar o vencer, y que `publish` respete la misma regla. De G-9 quedan además la validación previa de duplicados (hoy 500 `5000`, sin decir cuál de las dos restricciones falló; ampliado el 2026-11-19) y el slug único global. Va junto **G-32** (zona horaria): mientras no esté fijada, "vigente" puede diferir 3 horas entre el backend y lo que ve quien carga la adopción; fijar `TZ` es un cambio de una línea.
+4. **G-29:** que el filtro de puntos de atención por ficha no esconda los inactivos (o exponer `active`). Es chico y condiciona el panel de la ficha.
+5. **G-31:** que `change-password` valide el alcance del actor como el resto de las mutaciones de usuario. Es chico y hoy no es explotable con los permisos del seed, pero **tiene que entrar antes de darle `UPDATE_USER` a un rol de organismo** (lo que pide la documentación del backend para AO). De paso, confirmar la regla para roles que no son SA/AB/AO.
+6. **G-23:** `assignable_by_org_admin` (AO no puede crear usuarios ni asignar roles). Es seed.
+7. **G-3 / G-5:** `READ_PROCEDURE` para AGENT, `READ_ORGANISM` y `READ_VARIANT` para AB, y la definición de quién publica (decisiones de producto; conviene una sola migración).
+8. **G-24:** que AGENT no pueda deshabilitar adopciones ni despublicar fichas por la vía del `PUT`/`DELETE`.
+9. **G-4:** endpoints `reject` y `return-to-draft` (los 4xx ya están).
+10. **G-11:** editar adopciones de plantillas desactivadas y cascada al desactivar una plantilla (backend lo anunció como próximo: `odd/tasks/claudinio-slugbase-catalog-errors.md`, "E2E11").
+11. **G-12:** resto de las validaciones (§4 `DELETE` sin versión, §5 inactivas en el listado, §6 puntos sobre fichas inactivas y escala de coordenadas).
+12. **G-7:** paginación y los filtros que faltan (incluye G-11 §3).
+13. Mejoras y resto: **G-8** (aceptar la versión en el `PUT` → 409 `4091`; hoy el front paga un `GET` extra por guardado y un formulario viejo igual puede pisar cambios; además la excepción de Spring y el endpoint de versiones), **G-16**, **G-25** + **G-30** (textos de error y un código por motivo del `4029` de usuarios; suma el detalle de G-26), **G-2** (confirmar el contrato de `/me`: organismo desactivado y código para "sin rol vigente"), **G-28** (a confirmar), **G-17** (decisión), **G-18**, **G-19**, **DOC-1** y **OPS-2**.
 
 ## Qué hace el front mientras tanto
 
-- **R-3:** resuelto en `dev` (`V2.28` + `V2.30`). Mientras no llegue a staging (OPS-1), SUPERADMIN puede asignar los permisos a mano desde la pantalla de Roles; si no, Etiquetas queda oculta.
-- **R-1:** resuelto en `dev` (el backend ignora el estado en el `PUT`). El front igual reenvía el estado actual y nunca ofrece cambiarlo desde el formulario, y manda siempre `active` (sin él, el `PUT` da 500).
-- **Cadena de trámites (plantillas → adopciones → fichas → puntos):** va toda con la misma fuente, porque se referencia por ids. En `ng serve`, staging y prod va en **mock con la forma real del contrato**; solo `npm run start:local` (`environment.local.ts`, contra `dev` local) la usa en real, fichas y puntos de atención incluidos.
-- **G-1:** el `HttpDataSource` de fichas está escrito y se ejercita con `start:local`, pero con el response mínimo la edición de fichas perdería contenido; por eso fuera de local sigue en mock.
-- **G-2 / G-3:** "Adoptar" se oculta para AO, y el select de organismo de etiquetas solo ofrece lo que el backend acepta.
+- **R-3:** resuelto (`V2.28` + `V2.30`; en staging desde el 2026-11-16). Ya no hace falta que SUPERADMIN asigne los permisos a mano desde la pantalla de Roles.
+- **R-1:** resuelto (en staging desde el 2026-11-16). El front igual reenvía el estado actual y nunca ofrece cambiarlo desde el formulario, y manda siempre `active`: contra un backend anterior a `3797fe7`, sin él el `PUT` da 500; desde `3797fe7` (en staging desde el 2026-11-19), 400 `4012`.
+- **Cadena de trámites (plantillas → adopciones → fichas → puntos):** va toda con la misma fuente, porque se referencia por ids. En `ng serve` (`environment.ts`) va en **mock con la forma real del contrato**; en `npm run start:local`, staging y prod va toda en **real** (en esta rama, `feat/alinear-backend-586b670`, fichas y puntos de atención dejaron de tener override a mock). Siguen en mock en todos los entornos `dashboard`, `auditoria` y `feedback` (sin endpoint).
+- **G-1:** el front consume el response completo y el filtro `?organismProcedureId=`. **Requiere backend >= `586b670`** (en staging desde el 2026-11-19, OPS-1 cumplido): contra uno anterior las fichas llegan sin `url`, `requirements`, `costs`, adopción ni localidad; el front lo detecta (`sinContenido`, compatibilidad temporal), avisa y no deja editar, para no borrar ese contenido al guardar. Los nombres (trámite, organismo, localidad) se resuelven en el cliente por id.
+- **G-2 / G-3:** el front lee `scope` y el organismo de `/api/auth/me` (`auth.service.ts`). "Adoptar" y "Nueva etiqueta" se ofrecen a quien puede elegir organismo (`READ_ORGANISM`) **o** trae uno en la sesión (`ORGANISMO_ELEGIBLE` en `policy-overrides.constants.ts`); "Adoptar" exige además `READ_PROCEDURE`, que AO recibe con `V2.31`. Contra un backend anterior a `d7aca1c` (staging lo tiene desde el 2026-11-19) la sesión no trae organismo y AO sigue sin ver esas acciones. AB sigue sin `READ_ORGANISM` y AGENT sin `READ_PROCEDURE`: sin cambios de código, se gatea por permiso.
 - **BO-17:** el listado de usuarios ya es real (BO-22, 2026-11-10). Mientras el rol llegue en `null` se muestra "Sin dato"; "Editar" queda no disponible (no hay endpoint de edición).
 - **G-4 / G-12:** con el backend de `dev`, transición inválida → 409 `4077` y "no existe" → 404 `4073`; el front ya traduce los dos. "Rechazar" no se ofrece.
-- **G-8:** el front traduce el `4091` ("Otro usuario modificó la ficha mientras la editabas. Recargá para ver los cambios.").
+- **G-8:** el front traduce el `4091`. Como el `PUT` no lleva versión, antes de guardar relee la ficha (`GET /{id}`) y, si cambió de versión o de estado desde que se abrió el form, no guarda y avisa (`fichas-locales.facade.ts`, `verificarBase`). Es un `GET` extra por guardado y deja una ventana de milisegundos; se saca cuando el `PUT` acepte la versión.
 - **G-5:** el front decide todo por permiso (`PUBLISH_VARIANT`) y nunca por rol, así que se adapta al seed sin cambios de código. Solo los textos dependen de D-3.
-- **G-6:** el front traduce el `4080` (el backend ya trae su mensaje) y trata el `4072` como conflicto, sin mirar el status.
-- **G-7:** paginación, orden y filtros en el cliente.
+- **G-6:** resuelto (en staging desde el 2026-11-19). El front traduce el `4080` y trata el `4072` como conflicto por `code`, sin mirar el status: funciona igual con el 400 de un backend anterior y con el 409 de `586b670`.
+- **G-7 / G-29:** paginación, orden y el resto de los filtros, en el cliente. El `HttpDataSource` de puntos de atención ya manda `?organismProcedureLocationId=`: con ese filtro el backend devuelve solo los activos, así que "Mostrar inactivos" del panel no tiene qué mostrar contra el backend real hasta que se resuelva G-29.
 - **G-8:** el historial de versiones no se muestra.
-- **G-9:** el front sugiere slugs a partir de la plantilla y la localidad para bajar la chance de duplicados, pero no los puede garantizar.
-- **G-10:** el front canonicaliza `slugBase` antes de enviar (mismo criterio que `TagService`). No protege a otros clientes.
+- **G-9:** el front sugiere slugs a partir de la plantilla y la localidad para bajar la chance de duplicados, pero no los puede garantizar. Un 500 `5000` al guardar una ficha se muestra como "puede que esa localidad ya tenga una ficha de este trámite o que el slug ya esté en uso" (`pages/tramites/fichas/ficha-save-error.ts`), sin marcar ningún campo, porque no se sabe cuál de las dos restricciones falló. Sin cascada, una ficha de una adopción vencida sigue figurando `PUBLICADO` en el backoffice aunque el portal ya no la muestre (desde `1888e1a`).
+- **G-10 / G-28:** resuelto (en staging desde el 2026-11-19). El front sigue canonicalizando `slugBase` antes de enviar (mismo criterio; inofensivo, y necesario contra un backend anterior a `130c180`) y no manda slugs que queden vacíos.
+- **G-12 / G-27:** adopción no vigente → 404 `4073` al crear o editar una ficha. El front no lo distingue de "no existe" por el código: busca la etiqueta `OrganismProcedure` dentro del `message` para saber que el 404 habla de la adopción (y no de la ficha o la localidad) y muestra un texto que enumera las causas posibles; para ofrecer o no las acciones depende de la vigencia que calcula en el cliente (`AdopcionVM.vigente`).
+- **G-32:** el front envía y lee las fechas de vigencia en hora local del navegador, sin zona, y calcula `vigente` con ese reloj. No compensa la zona del backend: si la JVM corre en UTC, durante 3 horas alrededor del inicio y del fin de la vigencia la pantalla y la API no coinciden.
 - **G-11:** la vista "Organismos que la adoptaron" filtra en el cliente; con la fuente real, una adopción de plantilla desactivada no se puede editar.
 - **G-13:** con la fuente real, "Eliminar definitivamente" no se ofrece; queda la baja lógica (desactivar). La columna Rol muestra "Sin dato".
 - **G-14:** resuelto; el paso de crear el tipo `publication_status` antes de arrancar el backend local ya no hace falta.
-- **G-15:** resuelto en `dev`; falta verificarlo con el e2e local (CP16) y sacar el seed SQL (`E2E_SEED_SQL`). Adopciones sigue en mock fuera de `start:local` hasta OPS-1.
+- **G-15:** resuelto (en staging desde el 2026-11-16); falta verificarlo con el e2e local (CP16) y sacar el seed SQL (`E2E_SEED_SQL`).
 - **G-16:** el error de borrado en uso se muestra con el mensaje genérico de 500.
 - **G-17:** el front muestra lo que devuelve `GET /api/tag`, sin cambios de código: si se amplía el alcance, AO/AGENT las ven solas.
 - **G-18:** los 500 se muestran con el mensaje genérico prudente; el front envía fechas completas (`yyyy-MM-ddTHH:mm:ss`) y nunca ids de mock contra el backend (por eso la cadena de trámites va con una sola fuente).
 - **G-19:** el e2e local siembra por SQL lo que no se puede crear por API; QA y demos usan el mock.
-- **G-20 / G-21 / G-22:** "Asignar rol" (BO-24) queda limitada: contra el backend real, cualquier usuario con rol vigente responde 409 `4081`. El front traduce ese código con texto propio (`pages/usuarios/usuario-rol-save-error.ts`) y no puede ofrecer "cambiar rol" hasta que exista el cierre de la asignación.
+- **G-22:** resuelto (en staging desde el 2026-11-19): AB ya puede asignar roles `assignableByBackoffice`. No cambia lo de abajo.
+- **G-26 (PPDT-5.1):** el listado no trae el rol (G-13), así que el front no puede ocultarle a AB las acciones sobre cuentas SA/AB; el 403 `4029` se muestra con texto propio (`pages/usuarios/usuario-accion-error.ts`), no con el `message` del backend.
+- **G-20 / G-21:** "Asignar rol" (BO-24) queda limitada: contra el backend real, cualquier usuario con rol vigente responde 409 `4081`. El front traduce ese código con texto propio (`pages/usuarios/usuario-rol-save-error.ts`) y no puede ofrecer "cambiar rol" hasta que exista el cierre de la asignación.
 - **G-23:** el form de usuario consume `GET /api/role/allowed`, así que AO verá los roles en cuanto el flag esté en `TRUE`, sin cambios de código.
 - **G-24:** el front gatea por permiso, tal como hoy autoriza el backend; no agrega reglas por rol para AGENT.
+- **G-30:** el alta de usuarios distingue los motivos del 403 `4029` comparando `details` con los textos de `messages.properties` y con sus claves (`pages/usuarios/usuario-save-error.ts`); solo "rol no asignable" se marca en el campo Rol, y lo que no reconoce cae en un texto neutro.
+- **G-31:** "Cambiar contraseña" se ofrece por permiso (`UPDATE_USER`), que en el seed solo tienen SA y AB. El front no agrega una regla por rol ni por organismo: si un rol de organismo recibe `UPDATE_USER` antes del fix, la UI no ofrecería la acción sobre usuarios ajenos (el listado viene filtrado), pero la API la aceptaría.
+- **G-2 (contrato de `/me`):** un 403 `4029` o un 404 `4073` de `/me` deja la sesión abierta y sin organismo (`auth.service.ts`); `organismAcronym` nulo se tolera. No hay tratamiento para un organismo desactivado: el response no lo informa.
 - **G-25:** el front no muestra el `message` del backend para `4018` ni `4002` en usuarios (usa texto propio por contexto) y valida la contraseña con el límite real (8 a 20).
-- **OPS-1:** staging y prod corren con la cadena de trámites y etiquetas en mock (`environment.staging.ts`, `environment.prod.ts`); lo nuevo se prueba con el backend local en Docker (`npm run start:local`). Cuando staging tenga `dev` hasta `V2.30`, se pasan Etiquetas a real; Plantillas y Adopciones van juntas con el resto de la cadena (se referencian por ids), es decir cuando además cierre G-1, salvo que se decida activar la cadena con la edición de fichas bloqueada como en `start:local`.
+- **OPS-1:** cumplido el 2026-11-16 para `58d383a` (Etiquetas, Plantillas y Adopciones en real en staging y prod), reabierto el 2026-11-19 para `586b670` y **cumplido de nuevo ese mismo día** (`origin/staging` @ `0a555df`). En esta rama `environment.staging.ts` y `environment.prod.ts` ya apuntan fichas y puntos de atención a la API real: el front requiere backend >= `586b670`, que staging ya tiene, así que se puede desplegar. Falta ejecutar los flujos contra staging (solo se verificó el esquema de `/api-docs`); mientras tanto lo nuevo está probado con el backend local en Docker (`npm run start:local`).
 - **OPS-2:** el e2e ya no deja registros nuevos en staging; los existentes quedan inactivos.
 - **DOC-1:** el front se integra contra el código de `dev` y este documento, no contra la guía.

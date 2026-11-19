@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Elem
 import { AsyncPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, Observable, catchError, finalize, map, of, startWith, switchMap, tap, timer } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, shareReplay, startWith, switchMap, timer } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { hoy } from '@core/utils/fecha.utils';
@@ -24,7 +25,9 @@ type EstadoOpciones =
 
 /**
  * Diálogo "Adoptar trámite": plantilla activa + organismo + vigencia. Solo se abre con `ADOPTAR_ACCESS`
- * (P-2: sin `READ_ORGANISM` no hay a qué organismo adoptar, por G-2). Queda abierto mientras guarda y,
+ * (P-2: hace falta `READ_ORGANISM` para elegir el organismo, o tener uno propio en la sesión). Con una
+ * sesión de organismo el campo viene como dato de solo lectura, enfocable y con el motivo
+ * (`opciones.organismoFijo`). Queda abierto mientras guarda y,
  * si el backend rechaza (`4080` solapamiento, `4012`, `4073`), cuenta el motivo acá mismo para
  * corregir y reintentar. `afterClosed()` emite la adopción creada, o `undefined` si se canceló.
  */
@@ -33,7 +36,7 @@ type EstadoOpciones =
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AsyncPipe, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule,
+    AsyncPipe, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, FormErrorBannerComponent, LoadingComponent, VigenciaCamposComponent,
   ],
   templateUrl: './adoptar-dialog.component.html',
@@ -61,16 +64,49 @@ export class AdoptarDialogComponent {
 
   private readonly recargar$ = new BehaviorSubject<void>(undefined);
 
+  /**
+   * Estado de la carga de opciones, SIN efectos: lo consume la vista con `async`. Compartido
+   * (`shareReplay`) porque también lo escucha el constructor, y no tiene que pedir las opciones dos veces.
+   */
   readonly estado$: Observable<EstadoOpciones> = this.recargar$.pipe(
     switchMap(() => this.facade.getOpcionesAdoptar().pipe(
       map((opciones): EstadoOpciones => ({ tipo: 'ok', opciones })),
       catchError(() => of<EstadoOpciones>({ tipo: 'error' })),
       startWith<EstadoOpciones>({ tipo: 'cargando' }),
     )),
-    tap((estado) => {
-      if (estado.tipo === 'ok') this.enfocarPrimerCampo();
-    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  /** El organismo lo fijó la sesión en la última carga (para deshacerlo si un "Reintentar" ya no lo trae). */
+  private organismoFijado = false;
+
+  constructor() {
+    // Lo que la carga le hace al formulario va acá y no en un `tap` de `estado$`: ahí correría durante la
+    // suscripción del `async` pipe, en plena detección de cambios, y con una fuente síncrona (caché del
+    // facade) tocar el form daría `ExpressionChangedAfterItHasBeenChecked`. Esta suscripción se hace antes
+    // del primer render y, después, solo recibe emisiones que nacen fuera de él ("Reintentar", la red).
+    this.estado$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((estado) => {
+      if (estado.tipo !== 'ok') return;
+      this.fijarOrganismo(estado.opciones);
+      this.enfocarPrimerCampo();
+    });
+  }
+
+  /**
+   * Sesión de organismo: el control queda con el organismo del usuario (la vista lo muestra de solo
+   * lectura) y su valor viaja como cualquier otro. Sin `emitEvent` ni `markAsDirty`: no es un cambio de la
+   * persona, así que cerrar sin tocar nada más no pide confirmación.
+   */
+  private fijarOrganismo(opciones: AdopcionOpciones): void {
+    const organismo = this.form.controls.organismoId;
+    if (opciones.organismoFijo) {
+      organismo.setValue(opciones.organismoFijo.id, { emitEvent: false });
+    } else if (this.organismoFijado) {
+      // La sesión cambió entre un intento y otro ("Reintentar"): vuelve a ser un select vacío para elegir.
+      organismo.reset('', { emitEvent: false });
+    }
+    this.organismoFijado = !!opciones.organismoFijo;
+  }
 
   /**
    * Los campos recién existen cuando llegan las opciones, así que el `autoFocus` de Material (que corre al

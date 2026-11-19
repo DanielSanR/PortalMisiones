@@ -9,10 +9,14 @@ import { PuntoAtencionFormValue, PuntoAtencionVM } from '../models/punto-atencio
  * Facade de puntos de atención (`/api/attention-point`, real o mock según `featureOverrides`). Solo
  * depende de su repositorio. Expone Observables (async pipe; NO signals).
  *
- * El backend no filtra por ficha: el listado completo del alcance se pide UNA vez, se cachea con
- * `shareReplay(1)` y se filtra por `fichaId` en el cliente. Cada alta, edición o desactivación invalida
- * la caché y avisa por `cambios$`, para que el panel vuelva a leer. Un cambio de sesión también la
- * invalida (`AuthTokenService` solo se usa para eso: es infraestructura de sesión, no autorización).
+ * Dos lecturas, porque el backend filtra por ficha pero entonces devuelve SOLO los activos:
+ * - Lo normal (los puntos activos de una ficha): `?organismProcedureLocationId=`, sin caché.
+ * - Con los desactivados (para verlos y reactivarlos editándolos): no hay filtro que los traiga, así que
+ *   se pide el listado completo del alcance, UNA vez (`shareReplay(1)`), y se filtra por `fichaId` acá.
+ *   Solo se paga cuando alguien pide ver los desactivados.
+ * Cada alta, edición o desactivación invalida la caché y avisa por `cambios$`, para que el panel vuelva a
+ * leer. Un cambio de sesión también la invalida (`AuthTokenService` solo se usa para eso: es
+ * infraestructura de sesión, no autorización).
  */
 @Injectable({ providedIn: 'root' })
 export class PuntosAtencionFacade {
@@ -36,13 +40,18 @@ export class PuntosAtencionFacade {
     return this.puntos.fuenteSimulada;
   }
 
-  /** Puntos (activos e inactivos) de una ficha, ordenados: activos primero, después por nombre. */
-  getDeFicha(fichaId: string): Observable<PuntoAtencionVM[]> {
-    return this.todos().pipe(
-      map((lista) => lista
-        .filter((p) => p.fichaId === fichaId)
-        .sort((a, b) => Number(b.activo) - Number(a.activo)
-          || a.nombre.localeCompare(b.nombre, 'es-AR', { sensitivity: 'base' }))),
+  /**
+   * Puntos de una ficha, ordenados: activos primero, después por nombre. Por defecto solo los activos (los
+   * filtra el backend); con `incluirInactivos` también los desactivados (listado completo, filtrado acá).
+   */
+  getDeFicha(fichaId: string, incluirInactivos = false): Observable<PuntoAtencionVM[]> {
+    const puntos$ = incluirInactivos
+      ? this.todos().pipe(map((lista) => lista.filter((p) => p.fichaId === fichaId)))
+      // El filtro del backend ya devuelve solo activos; se vuelve a filtrar para no depender de eso.
+      : this.puntos.list({ fichaId }).pipe(map((lista) => lista.filter((p) => p.fichaId === fichaId && p.activo)));
+    return puntos$.pipe(
+      map((lista) => [...lista].sort((a, b) => Number(b.activo) - Number(a.activo)
+        || a.nombre.localeCompare(b.nombre, 'es-AR', { sensitivity: 'base' }))),
     );
   }
 
@@ -63,7 +72,7 @@ export class PuntosAtencionFacade {
     return this.puntos.update(id, form).pipe(tap(() => this.huboCambios()));
   }
 
-  /** Borrado lógico (`active=false`): el punto sigue listándose como inactivo. */
+  /** Borrado lógico (`active=false`): el punto deja de venir en el listado de la ficha (solo con los desactivados). */
   desactivar(id: string): Observable<void> {
     return this.puntos.desactivar(id).pipe(tap(() => this.huboCambios()));
   }

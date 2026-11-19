@@ -33,6 +33,8 @@ export const API_CODES = {
   JWT_UNSUPPORTED: 4008,
   JWT_EMPTY_CLAIMS: 4009,
   RELOGIN_REQUIRED: 4025,
+  // 403. También la protección de cuentas privilegiadas (PPDT-5.1, `586b670`): un ADMIN_BACKOFFICE no
+  // gestiona cuentas SUPERADMIN/ADMIN_BACKOFFICE ni asigna roles que no sean `assignableByBackoffice`.
   NO_PERMISSION: 4029,
   ACCOUNT_DELETED: 4030,
   WEAK_PASSWORD: 4034,
@@ -50,6 +52,8 @@ export const API_CODES = {
   ORGANISM_TYPE_IN_USE: 4066,
   ORGANISM_ACRONYM_TAKEN: 4069,
   // Taxonomía (genéricos): conflicto de unicidad (ej. slug repetido en el alcance) / entidad inexistente.
+  // El duplicado (`4072`) viaja con HTTP 409 desde el backend `586b670` (antes 400). El front decide SIEMPRE
+  // por este código, nunca por el status.
   TAXONOMY_CONFLICT: 4072,
   TAXONOMY_NOT_FOUND: 4073,
   // Los mismos 4072/4073, con nombre genérico: ya no son solo de taxonomía (plantillas, adopciones,
@@ -61,8 +65,8 @@ export const API_CODES = {
   // Transición de publicación de la ficha no permitida desde el estado actual (409, backend `dev` 5186ab1).
   PUBLICATION_TRANSITION_INVALID: 4077,
   // Adopción solapada: misma plantilla, mismo organismo, vigencias que se pisan (409). El backend de `dev`
-  // (`58d383a`) ya trae el mensaje; hasta OPS-1 staging manda la clave cruda `"response.code.4080"` y el
-  // front lo traduce.
+  // ya trae el mensaje (en staging desde el 2026-11-16); un backend anterior manda la clave cruda
+  // `"response.code.4080"`. El front lo traduce siempre.
   ADOPTION_OVERLAP: 4080,
   // Asignación de rol que se superpone en vigencia con otra del mismo usuario (409).
   ROLE_ASSIGNMENT_OVERLAP: 4081,

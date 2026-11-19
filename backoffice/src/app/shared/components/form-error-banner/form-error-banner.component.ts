@@ -31,7 +31,10 @@ export class FormErrorBannerComponent {
    */
   @Input() live = true;
 
-  readonly tituloId = `form-error-banner-${nextId++}-titulo`;
+  private readonly id = nextId++;
+  readonly tituloId = `form-error-banner-${this.id}-titulo`;
+  /** El detalle (los mensajes): con `live=false` es la descripción del grupo, para que se lea al enfocarlo. */
+  readonly detalleId = `form-error-banner-${this.id}-detalle`;
 
   @ViewChild('banner') private banner?: ElementRef<HTMLElement>;
 

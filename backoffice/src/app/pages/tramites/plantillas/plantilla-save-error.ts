@@ -5,7 +5,7 @@ import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 /** Errores de guardado de una plantilla con texto propio (`ProcedureTemplateService`). */
 export const CONFLICTOS_PLANTILLA: ConflictoDeCampo[] = [
   {
-    // Slug repetido — 400 `4072`. Es único entre TODAS las plantillas, también las desactivadas
+    // Slug repetido — 409 `4072` (400 antes del backend `586b670`; se decide por código). Es único entre TODAS las plantillas, también las desactivadas
     // (que no se listan): por eso el texto no promete que se vea en el listado.
     code: API_CODES.ENTITY_CONFLICT,
     control: 'slug',

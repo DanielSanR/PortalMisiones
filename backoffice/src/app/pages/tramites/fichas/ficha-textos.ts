@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { PUBLICACION_POLICY } from '@core/constants/policy-overrides.constants';
-import { AccionWorkflow, FichaLocalVM } from '@features/fichas-locales';
+import { AccionWorkflow, FichaAdopcionResumen, FichaLocalVM, MotivoNoVigente } from '@features/fichas-locales';
 import { ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { conMensajeDeAccion } from './ficha-save-error';
 
@@ -78,23 +78,23 @@ export const ACCIONES_UI: Record<AccionWorkflow, AccionUI> = {
 };
 
 /**
- * Aviso persistente cuando la fuente de fichas y puntos de atención es simulada (mock en memoria):
- * nada de lo que se cargue llega al servidor (G-1, `PEDIDOS_BACKEND.md`).
+ * Aviso persistente cuando la fuente de fichas y puntos de atención es simulada (mock en memoria, el modo
+ * todo-mock de `ng serve`): nada de lo que se cargue llega al servidor. Con la fuente real no se muestra.
  */
 export const TEXTO_FUENTE_SIMULADA =
-  'Datos de ejemplo: las fichas y los puntos de atención todavía no se guardan en el servidor. '
+  'Datos de ejemplo: en este modo las fichas y los puntos de atención no se guardan en el servidor. '
   + 'Lo que cargues acá se pierde al recargar la página.';
 
 /** Versión corta para el panel y el diálogo de puntos de atención. */
 export const TEXTO_PUNTOS_SIMULADOS =
-  'Datos de ejemplo: los puntos de atención todavía no se guardan en el servidor y se pierden al recargar la página.';
+  'Datos de ejemplo: en este modo los puntos de atención no se guardan en el servidor y se pierden al recargar la página.';
 
 /** Texto de un snackbar de éxito; con fuente simulada aclara que no se guardó en el servidor. */
 export function textoExito(texto: string, simulada: boolean): string {
   return simulada ? `${texto} (datos de ejemplo, no se guardó en el servidor)` : texto;
 }
 
-/** Nombre legible de una ficha: "Trámite · Localidad" (o el slug si no hay nombres, sin G-1). */
+/** Nombre legible de una ficha: "Trámite · Localidad" (o el slug si no se pudieron resolver los nombres). */
 export function nombreDeFicha(ficha: FichaLocalVM): string {
   const partes = [ficha.plantillaTitulo, ficha.localidadNombre].filter((p): p is string => !!p);
   return partes.length ? partes.join(' · ') : ficha.slug;
@@ -137,4 +137,29 @@ export function confirmDesactivar(ficha: FichaLocalVM, ejecutar: () => Observabl
     busyText: 'Desactivando…',
     confirmAction: () => conMensajeDeAccion(ejecutar()),
   };
+}
+
+/** Fecha corta es-AR (DD/MM/YYYY) para los motivos de vigencia. */
+function fechaCorta(fecha: Date): string {
+  return fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/** Por qué no se le pueden agregar ni editar fichas a un trámite del organismo que no está vigente (sin fechas). */
+export const MOTIVO_NO_VIGENTE: Record<MotivoNoVigente, string> = {
+  deshabilitada: 'está deshabilitado',
+  programada: 'todavía no empezó a regir',
+  vencida: 'ya venció',
+};
+
+/**
+ * Motivo corto, con la fecha, por el que un trámite del organismo no se puede elegir para una ficha
+ * ("Empieza a regir el 01/12/2026"). `null` si está vigente.
+ */
+export function motivoNoElegible(adopcion: Pick<FichaAdopcionResumen, 'motivoNoVigente' | 'vigenteDesde' | 'vigenteHasta'>): string | null {
+  switch (adopcion.motivoNoVigente) {
+    case 'deshabilitada': return 'Deshabilitado';
+    case 'programada': return `Empieza a regir el ${fechaCorta(adopcion.vigenteDesde)}`;
+    case 'vencida': return adopcion.vigenteHasta ? `Venció el ${fechaCorta(adopcion.vigenteHasta)}` : 'Ya venció';
+    default: return null;
+  }
 }

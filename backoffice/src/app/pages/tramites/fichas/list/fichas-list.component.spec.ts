@@ -7,7 +7,7 @@ import { FichasListComponent } from './fichas-list.component';
 
 const FICHA: FichaLocalVM = {
   id: 'f-1', slug: 'licencia-posadas', estado: 'BORRADOR', activa: true, version: 1,
-  adopcionId: 'a-1', localidadId: 'l-1', url: null, requisitos: null, costos: null, contenidoCompleto: true,
+  adopcionId: 'a-1', localidadId: 'l-1', url: null, requisitos: null, costos: null,
   plantillaId: 'p-1', plantillaTitulo: 'Obtener licencia', organismoId: 'o-1', organismoNombre: 'Posadas', localidadNombre: 'Posadas',
 };
 

@@ -5,7 +5,7 @@ import { errorDeNegocio } from '@core/mocks/mock-errors';
 import { semillaAtadaAAdopciones } from '@core/config/data-source.config';
 import { FichasLocalesDataSource } from './fichas-locales.datasource';
 import {
-  OrganismProcedureLocationExtendedResponseDTO, OrganismProcedureLocationRequestDTO,
+  FichasLocalesFiltro, OrganismProcedureLocationRequestDTO, OrganismProcedureLocationResponseDTO,
 } from '../models/ficha-local.dto';
 import { toFichaLocal, toOrganismProcedureLocationRequest } from '../mappers/fichas-locales.mapper';
 import { EstadoFicha, FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
@@ -13,15 +13,15 @@ import { DESTINO_DE_TRANSICION, TransicionBackend, transicionPermitida } from '.
 
 const DELAY = 200;
 
+/** Texto real del `4012` (`messages.properties`). */
+const TEXTO_4012 = 'Verifique los campos de los elementos enviados.';
 /** Texto real del `5000` (`messages.properties`): el handler genérico no manda más detalle. */
 const TEXTO_5000 = 'Ocurrió un error inesperado. Contacte al administrador.';
 /** Texto real del `4077` (`messages.properties`). */
 const TEXTO_4077 = 'La transición de publicación solicitada no es válida desde el estado actual.';
 
-/** Lo que guarda el mock: el response extendido con los obligatorios de G-1, sin nombres. */
-type FilaMock = Required<Pick<OrganismProcedureLocationExtendedResponseDTO,
-  'id' | 'slug' | 'publicationStatus' | 'active' | 'currentVersionNumber'
-  | 'organismProcedureId' | 'locationId' | 'url' | 'requirements' | 'costs'>>;
+/** Lo que guarda el mock: el response real, tal cual. */
+type FilaMock = OrganismProcedureLocationResponseDTO;
 
 /**
  * Semilla atada a las adopciones mock (`op-*`, feature adopciones) y a las localidades mock (`loc-*`),
@@ -79,24 +79,29 @@ function semilla(): FilaMock[] {
 }
 
 /**
- * Implementación mock en memoria, con la forma COMPLETA del response (como si G-1 estuviera
- * resuelto) y fiel a `OrganismProcedureLocationService` de `dev` (`58d383a`) con alcance global:
- * - POST siempre en `BORRADOR`, versión 1; PUT del contenido (el estado se conserva, R-1) y
- *   versión N+1; cada transición válida también suma una versión. El `DELETE` no genera versión.
+ * Implementación mock en memoria, fiel a `OrganismProcedureLocationService` de `dev` (`586b670`) con
+ * alcance global:
+ * - `list` admite el mismo filtro por adopción que `?organismProcedureId=` (activas e inactivas).
+ * - POST siempre en `BORRADOR`, versión 1; PUT del contenido (el estado se conserva) y versión N+1; cada
+ *   transición válida también suma una versión. El `DELETE` no genera versión.
  * - Transiciones según `isAllowedTransition`; las inválidas → 409 `4077`.
- * - Ficha inexistente → 404 `4073`; campos NOT NULL faltantes → `5000` (sin validación del DTO, G-1).
+ * - Ficha inexistente → 404 `4073`; `organismProcedureId`, `locationId`, `slug` o `active` faltantes → 400 `4012`.
  * - Unicidad de `(adopción, localidad)` y de `(slug, adopción)` (`V2.27`), contando las desactivadas. El
  *   backend no la valida antes de guardar: la violación llega como el `5000` genérico, y acá igual.
- * No puede validar que la adopción y la localidad existan (no conoce otros datasources).
+ * No puede validar que la adopción exista y esté vigente, ni que la localidad exista (no conoce otros
+ * datasources): el 404 de adopción no vigente solo se ve contra el backend real.
  */
 @Injectable()
 export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
   readonly fuenteSimulada = true;
-  /** Con adopciones reales las semillas (`op-*`, `loc-*`) no existen: arranca vacío. */
+  /** Si alguien fuerza este mock con adopciones reales, las semillas (`op-*`, `loc-*`) no existen: arranca vacío. */
   private data: FilaMock[] = semillaAtadaAAdopciones(semilla);
 
-  list(): Observable<FichaLocal[]> {
-    return of(this.data.map((fila) => toFichaLocal({ ...fila }))).pipe(delay(DELAY));
+  list(filtro?: FichasLocalesFiltro): Observable<FichaLocal[]> {
+    const filas = filtro?.adopcionId
+      ? this.data.filter((fila) => fila.organismProcedureId === filtro.adopcionId)
+      : this.data;
+    return of(filas.map((fila) => toFichaLocal({ ...fila }))).pipe(delay(DELAY));
   }
 
   getById(id: string): Observable<FichaLocal> {
@@ -105,8 +110,9 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
   }
 
   create(form: FichaLocalFormValue): Observable<FichaLocal> {
-    const request = toOrganismProcedureLocationRequest(form, 'BORRADOR');
-    if (!this.completo(request) || this.chocaUnicidad(request, null)) return this.error5000();
+    const request = toOrganismProcedureLocationRequest(form);
+    if (!this.completo(request)) return this.errorDeValidacion();
+    if (this.chocaUnicidad(request, null)) return this.error5000();
     const nueva: FilaMock = {
       id: crypto.randomUUID(),
       ...this.contenido(request),
@@ -117,12 +123,14 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
     return of(toFichaLocal({ ...nueva })).pipe(delay(DELAY));
   }
 
-  update(id: string, form: FichaLocalFormValue, estadoActual: EstadoFicha): Observable<FichaLocal> {
+  update(id: string, form: FichaLocalFormValue): Observable<FichaLocal> {
     const existente = this.data.find((x) => x.id === id);
-    const request = toOrganismProcedureLocationRequest(form, estadoActual);
+    const request = toOrganismProcedureLocationRequest(form);
+    // Igual que el backend: primero valida el DTO (`@Valid`), después busca la ficha.
+    if (!this.completo(request)) return this.errorDeValidacion();
     if (!existente) return this.errorInexistente(id);
-    if (!this.completo(request) || this.chocaUnicidad(request, id)) return this.error5000();
-    // Igual que el backend (R-1 resuelto): el PUT edita el contenido y conserva el estado vigente.
+    if (this.chocaUnicidad(request, id)) return this.error5000();
+    // Igual que el backend: el PUT edita el contenido y conserva el estado vigente.
     const actualizada: FilaMock = {
       ...existente,
       ...this.contenido(request),
@@ -137,7 +145,7 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
     const destino = DESTINO_DE_TRANSICION[transicion];
     if (!existente) return this.errorInexistente(id);
     if (!transicionPermitida(existente.publicationStatus, destino)) {
-      return errorDeNegocio(API_CODES.PUBLICATION_TRANSITION_INVALID, TEXTO_4077);
+      return errorDeNegocio(API_CODES.PUBLICATION_TRANSITION_INVALID, TEXTO_4077, 409);
     }
     const actualizada: FilaMock = {
       ...existente,
@@ -176,9 +184,9 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
     };
   }
 
-  /** Columnas NOT NULL sin validación en el DTO: si faltan, el backend responde 500. */
+  /** `@NotNull`/`@NotBlank` del DTO: si falta alguno, el backend responde 400 `4012`. */
   private completo(request: OrganismProcedureLocationRequestDTO): boolean {
-    return !!request.organismProcedureId && !!request.locationId && !!request.slug && typeof request.active === 'boolean';
+    return !!request.organismProcedureId && !!request.locationId && !!request.slug.trim() && typeof request.active === 'boolean';
   }
 
   /** Los dos UNIQUE de `V2.27`. No miran `active`: una ficha desactivada sigue ocupando su lugar. */
@@ -192,11 +200,15 @@ export class FichasLocalesMockDataSource extends FichasLocalesDataSource {
     this.data = this.data.map((x) => (x.id === fila.id ? fila : x));
   }
 
+  private errorDeValidacion(): Observable<never> {
+    return errorDeNegocio(API_CODES.VALIDATION, TEXTO_4012, 400);
+  }
+
   private error5000(): Observable<never> {
-    return errorDeNegocio(API_CODES.UNEXPECTED, TEXTO_5000);
+    return errorDeNegocio(API_CODES.UNEXPECTED, TEXTO_5000, 500);
   }
 
   private errorInexistente(id: string): Observable<never> {
-    return errorDeNegocio(API_CODES.ENTITY_NOT_FOUND, `El objeto OrganismProcedureLocation con el identificador ${id} no existe.`);
+    return errorDeNegocio(API_CODES.ENTITY_NOT_FOUND, `El objeto OrganismProcedureLocation con el identificador ${id} no existe.`, 404);
   }
 }

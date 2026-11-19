@@ -6,6 +6,8 @@ import { UserRole } from '../enums/user-role.enum';
  * - `requireRoles`: escape para secciones sin permiso atómico (ej. Auditoría, Permisos) → exige rol.
  * - `anyOf`: además, debe cumplirse AL MENOS UNA de estas sub-reglas (alternativas, p. ej. "tiene
  *   `READ_ORGANISM` o es admin provincial"; ver `CREAR_ETIQUETA_ACCESS`). Vacío/ausente = sin condición.
+ * - `organismoPropio`: exige que la sesión esté atada a un organismo conocido (`scope: "organismo"` de
+ *   `/api/auth/me`). Pensado como alternativa de `anyOf`: "puede leer organismos O ya tiene el suyo".
  * Sin regla (`undefined`) = accesible para cualquier usuario autenticado (ej. Dashboard/Home).
  */
 export interface AccessRule {
@@ -13,4 +15,5 @@ export interface AccessRule {
   mode?: 'any' | 'all';
   requireRoles?: UserRole[];
   anyOf?: AccessRule[];
+  organismoPropio?: boolean;
 }

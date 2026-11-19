@@ -64,6 +64,11 @@ interface EtiquetasVista extends EstadoVacio {
   pageIndex: number;
   hayFiltros: boolean;
   filtrosActivos: FiltroActivo[];
+  /**
+   * Se ofrece el filtro "Todas / Globales / Locales". No para una sesión con organismo: solo ve las
+   * etiquetas locales del suyo, así que los tres chips darían siempre lo mismo (o cero).
+   */
+  filtraPorAlcance: boolean;
 }
 
 @Component({
@@ -102,7 +107,10 @@ export class EtiquetasListComponent implements OnInit {
   deletingId: string | null = null;
 
   readonly searchCtrl = new FormControl('', { nonNullable: true });
-  /** Filtro "Todas/Globales/Locales" (campo real `local`), client-side sobre el stream ya cargado. */
+  /**
+   * Filtro "Todas/Globales/Locales" (campo real `local`), client-side sobre el stream ya cargado. Solo se
+   * ofrece y se aplica si la sesión ve etiquetas de más de un alcance (`EtiquetasVista.filtraPorAlcance`).
+   */
   readonly filtro$ = new BehaviorSubject<AlcanceFiltro>('todas');
   readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
 
@@ -122,8 +130,9 @@ export class EtiquetasListComponent implements OnInit {
 
   readonly vista$ = combineLatest([
     this.etiquetas$, this.filtro$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
+    this.facade.soloEtiquetasLocales$,
   ]).pipe(
-    map(([etiquetas, filtro, search, sort, pageIndex, pageSize]): EtiquetasVista => {
+    map(([etiquetas, filtro, search, sort, pageIndex, pageSize, soloLocales]): EtiquetasVista => {
       const filtradas = this.ordenar(filtrarPorAlcance(this.buscar(etiquetas, search), filtro), sort);
       // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de
       // mostrar una tabla vacía con resultados que sí existen.
@@ -139,6 +148,7 @@ export class EtiquetasListComponent implements OnInit {
         pageIndex: pagina,
         hayFiltros,
         filtrosActivos,
+        filtraPorAlcance: !soloLocales,
         ...this.estadoVacio(hayFiltros),
       };
     }),
@@ -170,6 +180,14 @@ export class EtiquetasListComponent implements OnInit {
     },
     noEncontrada: 'No encontramos esa etiqueta. Puede que la hayan eliminado.',
   });
+
+  constructor() {
+    // Sin el filtro a la vista tampoco puede quedar aplicado: uno elegido antes (la sesión cambió con la
+    // pantalla abierta) dejaría la lista filtrada sin ningún control para deshacerlo.
+    this.facade.soloEtiquetasLocales$
+      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.filtro$.next('todas'));
+  }
 
   ngOnInit(): void {
     this.load();

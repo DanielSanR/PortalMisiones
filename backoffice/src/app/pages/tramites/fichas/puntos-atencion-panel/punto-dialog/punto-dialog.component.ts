@@ -9,14 +9,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FieldConfig } from '@core/models/field.interface';
-import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { FormErrorMessageDirective } from '@shared/components/dynamic-form-field/FormErrorMessage.directive';
 import { FormErrorBannerComponent } from '@shared/components/form-error-banner/form-error-banner.component';
 import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 import { cierreConConfirmacion } from '@shared/utils/cierre-con-confirmacion';
 import { PuntoAtencionFormValue, PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
 import { MAX_DECIMALES, coordenadaValida, formatearCoordenada, parsearCoordenada, urlMapa } from '../coordenadas';
-import { CONFLICTOS_PUNTO, FALLBACK_PUNTO } from '../punto-save-error';
+import { puntoErrorGuardado } from '../punto-save-error';
 import { TEXTO_PUNTOS_SIMULADOS } from '../../ficha-textos';
 
 /** Qué abre el diálogo: alta (sin `punto`) o edición. */
@@ -183,7 +182,8 @@ export class PuntoDialogComponent {
         error: (err: unknown) => {
           this.guardando = false;
           this.cdr.markForCheck();
-          this.errorMensaje = aplicarErrorDeGuardado(err, this.form, CONFLICTOS_PUNTO, FALLBACK_PUNTO);
+          // Siempre un texto propio: nunca el `message` del backend.
+          this.errorMensaje = puntoErrorGuardado(err, this.form);
         },
       });
   }

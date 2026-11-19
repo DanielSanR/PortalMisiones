@@ -33,6 +33,14 @@ describe('EtiquetasMockDataSource', () => {
     expect(await firstValueFrom(ds.getById(etiqueta.id))).toEqual(etiqueta);
   });
 
+  it('un duplicado responde 409 con 4072, como el backend 586b670 (antes 400)', async () => {
+    const [etiqueta] = await firstValueFrom(ds.list());
+    const err = await firstValueFrom(ds.create({ slug: etiqueta.slug.toUpperCase(), organismoId: etiqueta.organismoId }))
+      .then(() => null, (e: unknown) => e as { status?: number; error?: { code?: number } });
+    expect(err?.status).toBe(409);
+    expect(err?.error?.code).toBe(4072);
+  });
+
   it('eliminar una etiqueta inexistente → 4073', async () => {
     expect(await codigoDeError(firstValueFrom(ds.delete('no-existe')))).toBe(4073);
     const [etiqueta] = await firstValueFrom(ds.list());

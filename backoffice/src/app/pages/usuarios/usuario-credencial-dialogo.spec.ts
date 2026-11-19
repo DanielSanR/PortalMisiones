@@ -6,6 +6,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { DynamicFormComponent } from '@shared/components/dynamic-form/dynamic-form.component';
 import { FormDialogComponent, FormDialogData } from '@shared/components/form-dialog';
+import { UserRole } from '@core/enums/user-role.enum';
 import { CredencialDeUsuario, dialogoDeCredencial } from './usuario-credencial-dialogo';
 
 function credencial(extra: Partial<CredencialDeUsuario> = {}): CredencialDeUsuario & { guardar: jasmine.Spy } {
@@ -98,6 +99,31 @@ describe('dialogoDeCredencial', () => {
       expect(data.errorDeGuardado!({ error: { code: 4000, message: 'La contraseña es débil' } }, form()))
         .toBe('La contraseña es débil');
       expect(data.errorDeGuardado!({}, form())).toBe('No se pudo guardar el cambio. Intentá de nuevo.');
+    });
+  });
+
+  describe('403 4029: cuenta privilegiada (PPDT-5.1)', () => {
+    const DENEGADO = { status: 403, error: { code: 4029, message: 'El usuario no tiene permisos para realizar esta acción.' } };
+
+    it('email, operando un Administrador de Backoffice: texto propio, nunca el mensaje del backend', () => {
+      const data = dialogoDeCredencial(credencial({ modo: 'email', operador: UserRole.ADMIN_BACKOFFICE }));
+
+      const texto = data.errorDeGuardado!(DENEGADO, undefined);
+
+      expect(texto).toBe('No podés cambiar el email de esta cuenta: es de un Super Administrador o de un Administrador de Backoffice, y solo un Super Administrador puede gestionarlas.');
+      expect(texto).not.toContain(DENEGADO.error.message);
+    });
+
+    it('contraseña: explica que la de una cuenta privilegiada no se cambia desde el panel', () => {
+      const data = dialogoDeCredencial(credencial({ modo: 'password', operador: UserRole.SUPERADMIN }));
+
+      expect(data.errorDeGuardado!(DENEGADO, undefined)).toContain('su contraseña no se cambia desde el panel');
+    });
+
+    it('sin saber quién opera, igual hay texto propio', () => {
+      const data = dialogoDeCredencial(credencial({ modo: 'email' }));
+
+      expect(data.errorDeGuardado!(DENEGADO, undefined)).toBe('No podés cambiar el email de esta cuenta: tu rol no permite gestionar cuentas de otros usuarios.');
     });
   });
 });

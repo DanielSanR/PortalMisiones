@@ -30,7 +30,10 @@
   </div>
 
   <div class="list-toolbar__row list-toolbar__row--chips">
-    <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    <!-- Con una sesión de organismo solo hay etiquetas locales: el filtro por alcance no filtraría nada. -->
+    @if (vista.filtraPorAlcance) {
+      <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
+    }
     <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
       <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
     </button>

@@ -1,5 +1,5 @@
 /**
- * Contrato real de `/api/attention-point` (backend `origin/dev` @ `23fd8f9`, `AttentionPointRequestDTO`
+ * Contrato real de `/api/attention-point` (backend `origin/dev` @ `586b670`, `AttentionPointRequestDTO`
  * / `AttentionPointResponseDTO`). Ver PLAN_TRAMITES_API.md §1.5. Los UUID viajan como string.
  *
  * `latitude`/`longitude` son `BigDecimal` (`NUMERIC(9,6)` desde `V2.22`): Jackson los serializa como
@@ -35,4 +35,13 @@ export interface AttentionPointRequestDTO {
   latitude: number;
   longitude: number;
   active: boolean;
+}
+
+/** Filtros de `GET /api/attention-point` (se combinan con el alcance del usuario). */
+export interface PuntosAtencionFiltro {
+  /**
+   * `?organismProcedureLocationId=<uuid>`: los puntos de esa ficha. OJO: con el filtro el backend devuelve
+   * SOLO los activos (`...AndActiveTrue`); sin él, activos e inactivos de todo el alcance.
+   */
+  fichaId?: string;
 }

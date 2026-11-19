@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
-import { AuthUser } from '../models/auth.model';
+import { AuthUser, OrganismoDeSesion } from '../models/auth.model';
 import { UserRole } from '../enums/user-role.enum';
-import { AuthzContext, canPerform, evaluateAccess, resolveRoleLabel } from '../utils/authorization.utils';
+import { AuthzContext, authzContextDe, canPerform, evaluateAccess, resolveRoleLabel } from '../utils/authorization.utils';
+import { organismoDeSesion } from '../utils/session.utils';
 import { AccessRule } from '../models/access-rule.model';
 
 const ACCESS_TOKEN_KEY = 'access_token';
@@ -97,8 +98,20 @@ export class AuthTokenService {
     return this.isAuthenticated() && !this.isAccessTokenExpired();
   }
 
+  // ── Alcance y organismo de la sesión (`GET /api/auth/me`, backend `586b670`, G-2) ─────────────
+  // El alcance crudo (`scope`) queda en `getCurrentUser()`: la UI no decide por él sino por el organismo.
+  /** Id del organismo de la sesión, o `null` (global / no informado). Atajo de `getUserOrganismo()?.id`. */
   getUserOrganismoId(): string | null {
-    return this.currentUser.getValue()?.organismoId ?? null;
+    return this.getUserOrganismo()?.id ?? null;
+  }
+
+  /**
+   * Organismo de la sesión (id + nombre + sigla), o `null` si es global o el backend no lo informa.
+   * Sirve para fijar el campo "Organismo" sin pedir `GET /api/organism`. Para reaccionar a un cambio de
+   * sesión, derivarlo de `getCurrentUser$()` (así lo hacen los facades).
+   */
+  getUserOrganismo(): OrganismoDeSesion | null {
+    return organismoDeSesion(this.currentUser.getValue());
   }
 
   // ── Permisos (gating fino, derivado del claim `roles` del JWT) ─────────────
@@ -112,27 +125,28 @@ export class AuthTokenService {
   // componente calculado UNA vez en ngOnInit: no reaccionaría a un cambio de sesión (refresh de
   // token con otros permisos, switcher de rol). Para gating reactivo, suscribirse a `getCurrentUser$()`
   // y recalcular con `can*` en cada emisión (así lo hacen `*appHasPermission` y el nav).
-  private authzContext(): AuthzContext {
-    return { permissions: this.getPermissions(), roles: this.getUserRoles() };
+  /** Contexto de autorización del snapshot de sesión, para `evaluateAccess` (guards). */
+  getAuthzContext(): AuthzContext {
+    return authzContextDe(this.currentUser.getValue());
   }
 
   can(permission: string): boolean {
-    return canPerform(this.authzContext(), permission);
+    return canPerform(this.getAuthzContext(), permission);
   }
 
   canAny(...permissions: string[]): boolean {
-    const ctx = this.authzContext();
+    const ctx = this.getAuthzContext();
     return permissions.some((p) => canPerform(ctx, p));
   }
 
   canAll(...permissions: string[]): boolean {
-    const ctx = this.authzContext();
+    const ctx = this.getAuthzContext();
     return permissions.every((p) => canPerform(ctx, p));
   }
 
   /** Evalúa una `AccessRule` completa (permisos + roles), igual que el guard y el nav. */
   canAccess(rule: AccessRule): boolean {
-    return evaluateAccess(this.authzContext(), rule);
+    return evaluateAccess(this.getAuthzContext(), rule);
   }
 
   /** Códigos de rol crudos (canónicos + custom) para display. */

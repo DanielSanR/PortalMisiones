@@ -155,21 +155,65 @@ describe('UsuariosFacade · sesion$', () => {
   it('un superadmin se reconoce por su rol y no depende de un organismo', async () => {
     const facade = facadeConSesion({ id: 'u-1', email: 'sa@misiones.gob.ar', role: UserRole.SUPERADMIN, organismoId: null });
     expect(await firstValueFrom(facade.sesion$)).toEqual({
-      usuarioId: 'u-1', email: 'sa@misiones.gob.ar', esSuperAdmin: true, organismoId: null,
+      usuarioId: 'u-1', email: 'sa@misiones.gob.ar', esSuperAdmin: true, rol: UserRole.SUPERADMIN, organismoId: null,
     });
   });
 
   it('un usuario de organismo no es superadmin y trae su organismo', async () => {
     const facade = facadeConSesion({ id: 'u-2', email: 'ana@misiones.gob.ar', role: UserRole.ADMIN_ORGANIZATION, organismoId: 'org-1' });
     expect(await firstValueFrom(facade.sesion$)).toEqual({
-      usuarioId: 'u-2', email: 'ana@misiones.gob.ar', esSuperAdmin: false, organismoId: 'org-1',
+      usuarioId: 'u-2', email: 'ana@misiones.gob.ar', esSuperAdmin: false, rol: UserRole.ADMIN_ORGANIZATION, organismoId: 'org-1',
     });
+  });
+
+  it('un organismo que llegara con scope global no cuenta como propio', async () => {
+    const facade = facadeConSesion({ id: 'u-3', email: 'ab@misiones.gob.ar', role: UserRole.ADMIN_BACKOFFICE, scope: 'global', organismoId: 'org-9' });
+    expect((await firstValueFrom(facade.sesion$)).organismoId).toBeNull();
   });
 
   it('sin sesión no hay usuario ni privilegios', async () => {
     const facade = facadeConSesion(null);
     expect(await firstValueFrom(facade.sesion$)).toEqual({
-      usuarioId: null, email: null, esSuperAdmin: false, organismoId: null,
+      usuarioId: null, email: null, esSuperAdmin: false, rol: null, organismoId: null,
     });
+  });
+});
+
+describe('UsuariosFacade · getFormData y el organismo de la sesión (G-2)', () => {
+  let organismos: jasmine.SpyObj<OrganismosRepository>;
+
+  function facadeConOrganismo(organismo: { id: string; nombre: string; sigla: string | null } | null): UsuariosFacade {
+    organismos = jasmine.createSpyObj<OrganismosRepository>('OrganismosRepository', ['getOptions']);
+    organismos.getOptions.and.returnValue(of([{ id: 'org-1', nombre: 'IPS' }, { id: 'org-2', nombre: 'DGR' }]));
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: USUARIOS_DS, useValue: {} },
+        { provide: OrganismosRepository, useValue: organismos },
+        { provide: RolesRepository, useValue: { listAllowed: () => of([]) } },
+        { provide: AuthTokenService, useValue: { getCurrentUser$: () => of(null), getUserOrganismo: () => organismo } },
+      ],
+    });
+    return TestBed.inject(UsuariosFacade);
+  }
+
+  it('sesión de organismo: no pide /api/organism y arma la única opción con el nombre y la sigla de la sesión', async () => {
+    const facade = facadeConOrganismo({ id: 'org-1', nombre: 'Instituto de Previsión Social', sigla: 'IPS' });
+    const datos = await firstValueFrom(facade.getFormData(null));
+
+    expect(organismos.getOptions).not.toHaveBeenCalled();
+    expect(datos.organismos).toEqual([{ id: 'org-1', nombre: 'Instituto de Previsión Social (IPS)' }]);
+    expect(datos.organismoFijo).toEqual({
+      id: 'org-1', nombre: 'Instituto de Previsión Social (IPS)',
+      motivo: 'Tu cuenta pertenece a Instituto de Previsión Social (IPS): los usuarios que crees quedan en ese organismo.',
+    });
+  });
+
+  it('sesión global o backend sin G-2: pide el catálogo y no fija nada (como antes)', async () => {
+    const facade = facadeConOrganismo(null);
+    const datos = await firstValueFrom(facade.getFormData(null));
+
+    expect(organismos.getOptions).toHaveBeenCalledTimes(1);
+    expect(datos.organismos.length).toBe(2);
+    expect(datos.organismoFijo).toBeNull();
   });
 });

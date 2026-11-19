@@ -10,7 +10,7 @@ export interface PuntoAtencionVM {
   /** `null` solo en filas viejas sin coordenadas (la columna lo admite; el request las exige). */
   latitud: number | null;
   longitud: number | null;
-  /** `false` = desactivado (`DELETE` lógico). El backend lo sigue listando. */
+  /** `false` = desactivado (`DELETE` lógico). Solo viene en el listado sin filtro por ficha. */
   activo: boolean;
 }
 

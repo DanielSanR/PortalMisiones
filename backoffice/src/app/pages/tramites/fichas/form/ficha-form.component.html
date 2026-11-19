@@ -35,7 +35,8 @@
 
         <div class="detail-header__identity">
           <div class="detail-header__row">
-            <h2 class="detail-header__title" [class.detail-header__title--muted]="!v.titulo">
+            <!-- `tabindex="-1"`: destino del foco tras recargar la ficha (el aviso que tenía el foco desaparece). -->
+            <h2 class="detail-header__title fichaform-titulo" tabindex="-1" [class.detail-header__title--muted]="!v.titulo">
               {{ v.titulo || (v.sinAdopcion ? 'Elegí el trámite del organismo' : 'Trámite ' + noDisponible.toLowerCase()) }}
             </h2>
             @if (ficha) {
@@ -73,7 +74,74 @@
     </header>
 
     @if (serverError) {
-      <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
+      <!-- Sin `live`: grupo con nombre que recibe el foco (el botón que lo provocó está al pie de la tarjeta). -->
+      <app-form-error-banner data-banner="error-servidor" [live]="false"
+                             [errors]="[serverError]" [titulo]="serverErrorTitulo"></app-form-error-banner>
+    }
+    @if (conflicto; as c) {
+      <!-- La relectura previa al guardado encontró la ficha cambiada: no se guardó nada (el backend no lo detecta,
+           el PUT va sin versión) y el form ya se rebasó sobre la ficha actual. Grupo con nombre que recibe el foco
+           (como el banner de errores sin `live`): se lee al enfocarlo, sin sumar un anuncio asertivo. -->
+      <div class="form-aviso fichaform-conflicto" role="group" tabindex="-1" data-aviso="ficha-cambiada"
+           aria-labelledby="fichaform-conflicto-titulo" aria-describedby="fichaform-conflicto-detalle">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        <div>
+          <p id="fichaform-conflicto-titulo">
+            <strong>Todavía no se guardó: otra persona modificó esta ficha mientras la editabas.</strong>
+          </p>
+          <div id="fichaform-conflicto-detalle">
+            <p class="fichaform-conflicto__texto">
+              Actualizamos los campos que no habías tocado con lo que hay ahora en el servidor (versión {{ c.actual.version }}).
+              Lo que escribiste vos sigue como lo dejaste.
+            </p>
+            @if (c.enDisputa.length) {
+              <p class="fichaform-conflicto__texto" data-conflicto="en-disputa">
+                <strong>{{ c.enDisputa.length === 1 ? 'Este campo lo cambiaron los dos' : 'Estos campos los cambiaron los dos' }}:
+                  {{ c.enDisputa.join(', ') }}.</strong>
+                {{ c.enDisputa.length === 1 ? 'Quedó' : 'Quedaron' }} con tu valor: si guardás, va a reemplazar lo que cargó la otra persona.
+              </p>
+            } @else {
+              <p class="fichaform-conflicto__texto">Ninguno de tus cambios pisa lo que cambió la otra persona.</p>
+            }
+            @if (activaRestablecida) {
+              <p class="fichaform-conflicto__texto" data-conflicto="activa-restablecida">
+                Además, ahora la ficha está publicada: "Ficha activa" volvió a quedar prendido. Para desactivarla usá "Desactivar" en el detalle de la ficha.
+              </p>
+            }
+          </div>
+          <!-- Sin `disabled` nativo mientras guarda: el botón enfocado no suelta el foco; el método ignora la repetición. -->
+          <div class="fichaform-conflicto__acciones">
+            <button type="button" mat-flat-button color="primary" [class.is-unavailable]="saving"
+                    [attr.aria-disabled]="saving ? 'true' : null" (click)="guardarMisCambios()">
+              <i class="ph ph-floppy-disk" aria-hidden="true"></i> Guardar mis cambios
+            </button>
+            <button type="button" mat-stroked-button color="primary" [class.is-unavailable]="saving"
+                    [attr.aria-disabled]="saving ? 'true' : null" (click)="descartarMisCambios()">
+              <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Descartar mis cambios
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+    @if (fichaActualizada !== null) {
+      <!-- La ficha cambió en el servidor pero acá no había cambios propios: no hay nada que resolver. -->
+      <div class="form-aviso fichaform-conflicto" role="group" tabindex="-1" data-aviso="ficha-actualizada"
+           aria-labelledby="fichaform-actualizada-titulo" aria-describedby="fichaform-actualizada-detalle">
+        <i class="ph ph-info" aria-hidden="true"></i>
+        <div>
+          <p id="fichaform-actualizada-titulo"><strong>Otra persona modificó esta ficha mientras la tenías abierta.</strong></p>
+          <div id="fichaform-actualizada-detalle">
+            <p class="fichaform-conflicto__texto">
+              No tenías cambios propios, así que no se guardó nada: ya estás viendo cómo quedó (versión {{ fichaActualizada }}).
+            </p>
+            @if (activaRestablecida) {
+              <p class="fichaform-conflicto__texto" data-conflicto="activa-restablecida">
+                Ahora la ficha está publicada: "Ficha activa" volvió a quedar prendido. Para desactivarla usá "Desactivar" en el detalle de la ficha.
+              </p>
+            }
+          </div>
+        </div>
+      </div>
     }
     <app-form-error-banner [errors]="errorSummary"></app-form-error-banner>
 
@@ -89,18 +157,27 @@
         <p><strong>Esta ficha está publicada.</strong> Los cambios se verán en el portal al guardar.</p>
       </div>
     }
-    @if (datos.adopcion && !datos.adopcion.habilitada) {
-      <div class="form-aviso">
-        <i class="ph ph-warning" aria-hidden="true"></i>
-        <p>El trámite del organismo está deshabilitado: esta ficha no se va a ver en el portal aunque se publique.</p>
+    @if (seDespublicaAlGuardar) {
+      <!-- Única vez que "Guardar" cambia el estado: se avisa antes (y el snackbar lo confirma después). -->
+      <div class="form-aviso" role="note" data-aviso="se-despublica">
+        <i class="ph ph-eye-slash" aria-hidden="true"></i>
+        <p>
+          <strong>Esta ficha figura como publicada, pero está desactivada.</strong>
+          Al guardar se va a despublicar, aunque no cambies nada más: usá "Guardar y despublicar".
+          Si antes la reactivás con "Ficha activa", conserva su estado y vuelve a verse en el portal.
+        </p>
       </div>
     }
-    @if (!isEdit && !datos.ocupadas.localidadesVerificables) {
-      <div class="form-aviso">
+    @if (avisoNoVigente; as aviso) {
+      <!-- El backend solo acepta crear o editar fichas de un trámite del organismo vigente (si no, 404).
+           `.form-aviso` es el aviso global; `data-aviso` solo lo identifica (no hay estilo propio). -->
+      <div class="form-aviso" data-aviso="no-vigente">
         <i class="ph ph-warning" aria-hidden="true"></i>
         <p>
-          Todavía no podemos verificar si la localidad ya tiene una ficha de este trámite. Antes de guardar, revisá la lista de
-          <a class="form-aviso__link" [routerLink]="rutaLista">Fichas por localidad</a> para no duplicarla.
+          {{ aviso }}
+          @if (datos.adopcion; as adopcion) {
+            <a class="form-aviso__link" [routerLink]="[rutaAdopcion, adopcion.id]" *appHasPermission="'READ_ADOPTION'">Revisar su vigencia</a>.
+          }
         </p>
       </div>
     }
@@ -117,7 +194,8 @@
               <div class="ficha-paneles__encabezado">
                 <h3 class="detail-card__title" id="fichaform-datos">Datos de la ficha</h3>
                 <p class="detail-card__subtitle">
-                  {{ isEdit ? 'Guardar no cambia el estado de publicación' : 'Lo propio del trámite en una localidad' }}
+                  {{ !isEdit ? 'Lo propio del trámite en una localidad'
+                    : seDespublicaAlGuardar ? 'Al guardar, la ficha se despublica' : 'Guardar no cambia el estado de publicación' }}
                 </p>
               </div>
             </header>
@@ -140,7 +218,7 @@
                         @if (cargandoAdopcion) {
                           <i class="ph ph-spinner-gap spin" aria-hidden="true"></i> Leyendo las localidades del trámite…
                         } @else {
-                          Lo que ofrece un organismo. Solo se listan los habilitados.
+                          Lo que ofrece un organismo. Solo se pueden elegir los vigentes: los que todavía no rigen o ya vencieron figuran con el motivo.
                         }
                       </span>
                       @if (campoInvalido('adopcion')) {
@@ -160,6 +238,21 @@
                           <button type="button" mat-button color="primary" (click)="reintentarAdopcion()">
                             <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
                           </button>
+                        </div>
+                      }
+                      @if (sinAdopcionesVigentes) {
+                        <div class="form-aviso" role="status">
+                          <i class="ph ph-warning" aria-hidden="true"></i>
+                          <span>
+                            Hoy no hay ningún trámite del organismo vigente al que agregarle una ficha. Revisá las fechas en
+                            <a class="form-aviso__link" [routerLink]="rutaAdopciones">Trámites del organismo</a>.
+                          </span>
+                        </div>
+                      }
+                      @if (adopcionElegidaNoVigente) {
+                        <div class="form-aviso" role="alert">
+                          <i class="ph ph-warning" aria-hidden="true"></i>
+                          <span>Ese trámite del organismo ya no está vigente, así que no se le pueden agregar fichas. Elegí otro de la lista.</span>
                         </div>
                       }
                       @if (adopcionInexistente) {
@@ -199,9 +292,7 @@
                     </mat-select>
                     <mat-hint>{{ isEdit
                         ? 'No se puede cambiar: otra localidad es otra ficha.'
-                        : datos.ocupadas.localidadesVerificables
-                          ? 'Las localidades que ya tienen ficha de este trámite no se pueden elegir. Si la ficha está desactivada, reactivala editándola.'
-                          : 'Todavía no podemos verificar si la localidad ya tiene ficha de este trámite: revisalo en Fichas por localidad antes de guardar.' }}
+                        : 'Las localidades que ya tienen ficha de este trámite no se pueden elegir. Si la ficha está desactivada, reactivala editándola.' }}
                     </mat-hint>
                     <mat-error appFormErrorMessage [control]="form.controls.localidadId" [field]="campos.localidadId"></mat-error>
                   </mat-form-field>
@@ -241,6 +332,11 @@
                         <i class="ph ph-arrow-bend-down-right field-preview__icono" aria-hidden="true"></i>
                         <span>Se guardará como:</span>
                         <code class="field-preview__valor">{{ previsto }}</code>
+                      </p>
+                    } @else if (slugHeredado) {
+                      <p class="field-preview__texto">
+                        <i class="ph ph-info field-preview__icono" aria-hidden="true"></i>
+                        <span>Este slug es anterior al formato actual: se guarda tal cual mientras no lo edites.</span>
                       </p>
                     }
                   </div>
@@ -373,8 +469,7 @@
 
         <!-- Pie de la tarjeta: abarca los dos paneles. El indicador es informativo, no bloquea el guardado. -->
         <app-form-actions [integrada]="true"
-                          [helpText]="isEdit ? (sinCambios ? 'Sin cambios para guardar.' : 'Guardar no cambia el estado de publicación.') : 'La ficha se crea en borrador.'"
-                          [submitText]="isEdit ? 'Guardar cambios' : 'Crear ficha'" savingText="Guardando…"
+                          [helpText]="ayudaDelPie" [submitText]="textoGuardar" savingText="Guardando…"
                           [saving]="saving" [sinCambios]="sinCambios" (cancelar)="cancelar()">
           <span formActionsInfo class="pill ficha-paneles__indicador" aria-live="polite"
                 [class.pill--success]="v.recomendadosCompletos" [class.pill--warning]="!v.recomendadosCompletos">

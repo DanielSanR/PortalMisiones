@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PUNTOS_ATENCION_DS, PuntosAtencionDataSource } from '../datasources/puntos-atencion.datasource';
+import { PuntosAtencionFiltro } from '../models/punto-atencion.dto';
 import { PuntoAtencionFormValue, PuntoAtencionVM } from '../models/punto-atencion.vm';
 
 /** Repositorio de puntos de atención. Inyecta el DataSource vía token. */
@@ -12,8 +13,8 @@ export class PuntosAtencionRepository {
     return this.ds.fuenteSimulada;
   }
 
-  list(): Observable<PuntoAtencionVM[]> {
-    return this.ds.list();
+  list(filtro?: PuntosAtencionFiltro): Observable<PuntoAtencionVM[]> {
+    return this.ds.list(filtro);
   }
 
   getById(id: string): Observable<PuntoAtencionVM> {

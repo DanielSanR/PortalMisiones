@@ -3,11 +3,11 @@ import { FieldConfig } from '@core/models/field.interface';
 import { extractErrorMessage } from '@core/models/api-response.model';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { UserRole, ROLE_TO_SPANISH } from '@core/enums/user-role.enum';
-import { UsuariosFacade, UsuarioFormValue, UsuarioVM } from '@features/usuarios';
+import { UsuariosFacade, UsuarioFormValue, UsuarioOrganismoFijo, UsuarioVM } from '@features/usuarios';
 import { OrganismoOption } from '@features/organismos';
 import { RolVM } from '@features/roles';
 import { FormDialogData, FormDialogErrorCarga } from '@shared/components/form-dialog';
-import { CONFLICTOS_USUARIO, FALLBACK_USUARIO } from './usuario-save-error';
+import { CONFLICTOS_ALTA_USUARIO, CONFLICTOS_EDICION_USUARIO, FALLBACK_USUARIO } from './usuario-save-error';
 
 type Opcion = { id: string; name: string };
 
@@ -21,10 +21,12 @@ export interface UsuarioGuardado {
   desactivacionFallida: boolean;
 }
 
-/** Quién abre el diálogo: de eso depende qué roles y organismo se le ofrecen. */
+/**
+ * Quién abre el diálogo: de eso depende qué roles se le ofrecen en la edición. El organismo de la sesión
+ * ya no viaja acá: lo entrega el facade junto con los datos del form (`UsuarioFormData.organismoFijo`).
+ */
 export interface SesionDeUsuarioDialogo {
   esSuperAdmin: boolean;
-  organismoId: string | null;
 }
 
 /** Campos que solo existen en el alta: la contraseña y el estado inicial de la cuenta. */
@@ -57,6 +59,9 @@ function errorDeCarga(err: unknown): FormDialogErrorCarga {
  * (config `USUARIO`). `usuarioId` null = alta. Lo propio de usuarios:
  * - "Organismo" aparece (y es obligatorio) solo si el rol elegido es de scope `organismo`, según el
  *   `scopeTipo` del catálogo `/api/role/allowed` (en el alta el valor del select es el UUID del rol).
+ * - Si quien crea tiene alcance de organismo (`/api/auth/me`, G-2), "Organismo" viene con el suyo como dato
+ *   de solo lectura (`FieldConfig.readonly`: enfocable, con el motivo asociado); la opción sale de la sesión,
+ *   sin `GET /api/organism`.
  * - Edición con una fuente que no la soporta (backend real): se avisa en vez de mostrar el form.
  * - Alta con "Activar la cuenta" en OFF: el backend crea la cuenta activa, así que se desactiva en un
  *   segundo paso. Si ese paso falla, el usuario YA existe: se devuelve `desactivacionFallida` en vez de
@@ -79,6 +84,8 @@ export function dialogoDeUsuario(
   /** Catálogo de roles asignables: de acá sale el scope del rol elegido. */
   let rolesAllowed: RolVM[] = [];
   let organismos: OrganismoOption[] = [];
+  /** Organismo impuesto por la sesión de quien crea (solo en el alta); `null` = lo elige. */
+  let organismoFijo: UsuarioOrganismoFijo | null = null;
   /** Rol elegido ahora en el form: UUID en el alta, código en la edición (mock). */
   let rolActual = '';
   /**
@@ -96,17 +103,13 @@ export function dialogoDeUsuario(
     const roles: Opcion[] = esEdicion
       ? rolesEdicion
       : rolesAllowed.map((r) => ({ id: r.id, name: r.descripcion || r.codigo }));
-    // Quien no es superadmin y tiene organismo solo puede crear usuarios en el suyo (el backend lo pisa
-    // igual): se muestra elegido y bloqueado.
-    const organismoFijo = !esEdicion && !sesion.esSuperAdmin ? sesion.organismoId : null;
-
     return baseFields
       .filter((field) => !(esEdicion && SOLO_ALTA.includes(field.name)))
       .filter((field) => field.name !== 'organismoId' || requiereOrganismo(rolActual))
       .map((field): FieldConfig => {
         switch (field.name) {
           case 'email':
-            return esEdicion ? { ...field, disabled: true, hint: 'El email no puede modificarse' } : { ...field };
+            return esEdicion ? { ...field, readonly: true, hint: 'El email no puede modificarse' } : { ...field };
           case 'rol':
             return { ...field, options: roles, optionsLoaded: true };
           case 'organismoId':
@@ -114,7 +117,11 @@ export function dialogoDeUsuario(
               ...field,
               options: organismos.map((o) => ({ id: o.id, name: o.nombre })),
               optionsLoaded: true,
-              ...(organismoFijo ? { value: organismoFijo, disabled: true } : { value: ultimoOrganismoId }),
+              // Quien pertenece a un organismo solo crea usuarios en el suyo (el backend lo pisa igual):
+              // se muestra como dato de solo lectura (enfocable, no un select deshabilitado), con el motivo.
+              ...(organismoFijo
+                ? { value: organismoFijo.id, readonly: true, hint: organismoFijo.motivo }
+                : { value: ultimoOrganismoId }),
             };
           default:
             return { ...field };
@@ -125,10 +132,10 @@ export function dialogoDeUsuario(
   const aFormValue = (data: Record<string, unknown>): UsuarioFormValue => {
     const rol = String(data['rol'] ?? '');
     // Solo un rol de scope `organismo` lleva organismo: el backend no rechaza un rol global con
-    // organismo y dejaría la asignación atada a él. Dentro de ese caso, fallback para el
-    // no-superadmin: el suyo (el backend lo pisa igual si es ADMIN_ORGANIZATION).
+    // organismo y dejaría la asignación atada a él. Dentro de ese caso, con una sesión de organismo
+    // viaja siempre el suyo (el campo es de solo lectura; el backend lo pisa igual si es ADMIN_ORGANIZATION).
     const organismoId = requiereOrganismo(rol)
-      ? String(data['organismoId'] ?? '') || (!sesion.esSuperAdmin ? sesion.organismoId : null) || null
+      ? organismoFijo?.id || String(data['organismoId'] ?? '') || null
       : null;
     return {
       nombre:   String(data['nombre'] ?? ''),
@@ -180,6 +187,7 @@ export function dialogoDeUsuario(
       }).pipe(map(({ config, datos }) => {
         baseFields = config.getFormConfig('USUARIO').fields ?? [];
         organismos = datos.organismos;
+        organismoFijo = esEdicion ? null : datos.organismoFijo;
         rolesAllowed = datos.rolesAllowed;
         const usuario = datos.usuario;
         rolActual = usuario?.rol ?? '';
@@ -210,6 +218,9 @@ export function dialogoDeUsuario(
       ? facade.update(usuarioId, aFormValue(valor)).pipe(map((usuario) => ({ usuario, desactivacionFallida: false })))
       : crear(valor),
 
-    errorDeGuardado: (err, form) => aplicarErrorDeGuardado(err, form, CONFLICTOS_USUARIO, FALLBACK_USUARIO),
+    // Alta y edición no comparten los textos del 403: el backend reusa el `details` "…para crear usuarios".
+    errorDeGuardado: (err, form) => aplicarErrorDeGuardado(
+      err, form, esEdicion ? CONFLICTOS_EDICION_USUARIO : CONFLICTOS_ALTA_USUARIO, FALLBACK_USUARIO,
+    ),
   };
 }

@@ -1,9 +1,11 @@
 import { Observable, map, throwError } from 'rxjs';
 import { FormGroup } from '@angular/forms';
 import { FieldConfig } from '@core/models/field.interface';
+import { UserRole } from '@core/enums/user-role.enum';
 import { extractErrorMessage } from '@core/models/api-response.model';
 import { FormDialogData } from '@shared/components/form-dialog';
 import { formDialogEstatico } from '@shared/components/form-dialog/form-dialog-estatico';
+import { errorDeAccionDeCuenta } from './usuario-accion-error';
 
 /** Qué credencial se cambia. */
 export type CredencialModo = 'email' | 'password';
@@ -14,6 +16,8 @@ export interface CredencialDeUsuario {
   nombre: string;
   /** Email actual: precarga el campo en modo `email`. */
   emailActual?: string;
+  /** Rol de quien opera: de eso depende el texto si el backend rechaza con 403 `4029` (PPDT-5.1). */
+  operador?: UserRole | null;
   /** Ejecuta el cambio. El diálogo espera su resultado antes de cerrar. */
   guardar: (valor: string) => Observable<unknown>;
 }
@@ -73,8 +77,11 @@ const CAMPOS_DE_PASSWORD: FieldConfig[] = [
   },
 ];
 
-/** El backend no informa campos: su mensaje va al banner. La única marca en un campo es la de "no coinciden". */
-function errorDeGuardado(err: unknown, form: FormGroup | undefined): string {
+/**
+ * El backend no informa campos: su mensaje va al banner. La única marca en un campo es la de "no coinciden".
+ * La excepción es el 403 `4029` (cuenta privilegiada o fuera de alcance, PPDT-5.1), que lleva texto propio.
+ */
+function errorDeGuardado(err: unknown, form: FormGroup | undefined, credencial: CredencialDeUsuario): string {
   if (err === NO_COINCIDEN) {
     const repetida = form?.get('repetida');
     if (!repetida) return NO_COINCIDEN_TEXTO;
@@ -82,7 +89,9 @@ function errorDeGuardado(err: unknown, form: FormGroup | undefined): string {
     repetida.markAsTouched();
     return 'Revisá el campo marcado.';
   }
-  return extractErrorMessage((err as { error?: unknown })?.error) || FALLBACK;
+  return errorDeAccionDeCuenta(err, credencial.modo, credencial.operador ?? null)
+    || extractErrorMessage((err as { error?: unknown })?.error)
+    || FALLBACK;
 }
 
 /**
@@ -116,6 +125,6 @@ export function dialogoDeCredencial(credencial: CredencialDeUsuario): FormDialog
       },
       fallback: FALLBACK,
     }),
-    errorDeGuardado,
+    errorDeGuardado: (err, form) => errorDeGuardado(err, form, credencial),
   };
 }

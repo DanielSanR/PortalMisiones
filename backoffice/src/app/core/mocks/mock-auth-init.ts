@@ -12,6 +12,8 @@ export function initMockAuth(): void {
       roles: [UserRole.SUPERADMIN],
       // Todos los permisos para poder probar gating fino sin backend.
       permissions: Object.values(PERMISSIONS),
+      // Superadmin: alcance global, sin organismo (misma forma que arma `/api/auth/me`).
+      scope: 'global',
       organismoId: null,
     };
     localStorage.setItem('user_data', JSON.stringify(mockUser));

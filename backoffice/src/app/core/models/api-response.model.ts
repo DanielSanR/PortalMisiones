@@ -65,3 +65,13 @@ export function extractErrorCode(body: unknown): number | null {
   const code = (body as Record<string, unknown>)['code'];
   return typeof code === 'number' ? code : null;
 }
+
+/**
+ * `details` de un `MessageDTO` de error: el motivo fino que algunos rechazos agregan al `message` genérico
+ * del código (p. ej. los 403 `4029` de `UserService`). Sirve para DISCRIMINAR el caso, no para mostrarlo.
+ */
+export function extractErrorDetails(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null;
+  const details = (body as Record<string, unknown>)['details'];
+  return typeof details === 'string' && details.trim() ? details.trim() : null;
+}

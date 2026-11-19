@@ -1,5 +1,5 @@
 /**
- * Contrato real de `/api/organism-procedure` (backend `origin/dev` @ `23fd8f9`,
+ * Contrato real de `/api/organism-procedure` (backend `origin/dev` @ `586b670`,
  * `OrganismProcedureRequestDTO` / `OrganismProcedureResponseDTO`). Ver PLAN_TRAMITES_API.md §1.3.
  *
  * Los UUID viajan como string. Las fechas son `LocalDateTime` SIN zona: el backend las serializa con

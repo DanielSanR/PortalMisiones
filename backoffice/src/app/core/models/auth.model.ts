@@ -14,7 +14,35 @@ export interface AuthUser {
   roleCodes: string[];
   /** Permisos atómicos del claim `roles` (sin prefijo ROLE_) — fuente primaria de autorización. */
   permissions: string[];
+  /**
+   * Alcance de la sesión según `GET /api/auth/me` (backend `dev` @ `586b670`, G-2): `global` (SUPERADMIN,
+   * ADMIN_BACKOFFICE, MANAGER) u `organismo` (ADMIN_ORGANIZATION, AGENT). `null`/ausente = el backend
+   * todavía no lo informa (o `/me` falló): la UI se comporta como antes de G-2.
+   */
+  scope?: SessionScope | null;
+  /**
+   * Organismo del usuario (`organismId` de `/me`; con un backend viejo, el claim `organismoId` del JWT si
+   * existiera). `null` en sesiones globales. Para consumirlo, preferir `AuthTokenService.getUserOrganismo()`.
+   */
   organismoId?: string | null;
+  /** `organismName` de `/me`. */
+  organismoNombre?: string | null;
+  /** `organismAcronym` de `/me`. */
+  organismoSigla?: string | null;
+}
+
+/** Alcance de la sesión (`AuthMeResponseDTO.scope`). */
+export type SessionScope = 'global' | 'organismo';
+
+/**
+ * Organismo al que pertenece la sesión, listo para mostrar o para armar la opción de un select sin
+ * pedir `GET /api/organism` (el rol puede no tener `READ_ORGANISM`).
+ */
+export interface OrganismoDeSesion {
+  id: string;
+  /** Nombre visible: `organismName`; si faltara, la sigla. */
+  nombre: string;
+  sigla: string | null;
 }
 // Para pasar en el payload
 export interface LoginRequest {
@@ -29,13 +57,21 @@ export interface RefreshTokenRequest {
 /** Claims reales del access/refresh token (BACKEND_API_SPEC.md §1.2). */
 /**
  * `GET /api/auth/me` → contexto EFECTIVO del usuario autenticado (fuente de verdad del RBAC).
- * `roles` viene con prefijo `ROLE_`; `permissions`, los códigos atómicos.
+ * `roles` viene con prefijo `ROLE_`; `permissions`, los códigos atómicos. Desde `586b670` suma el alcance
+ * y el organismo del usuario (`AuthService.getCurrentAuthContext`).
  */
 export interface AuthMeResponseDTO {
   userId: string;
   email: string;
   roles: string[];
   permissions: string[];
+  // Desde `586b670` (G-2). Opcionales: un backend anterior no los manda.
+  /** `"global"` | `"organismo"`. */
+  scope?: string | null;
+  /** UUID; `null` en roles globales. */
+  organismId?: string | null;
+  organismName?: string | null;
+  organismAcronym?: string | null;
 }
 
 export interface JwtPayload {

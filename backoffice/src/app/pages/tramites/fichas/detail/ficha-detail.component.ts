@@ -14,13 +14,14 @@ import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
 import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
+import { UnavailableDirective } from '../../../../shared/directives/unavailable.directive';
 import { AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
 import { RUTA_DETALLE_ADOPCION } from '../../adopciones/adopciones.rutas';
 import {
-  ACCIONES_UI, AccionUI, QUIEN_PUBLICA, TEXTO_FUENTE_SIMULADA, confirmAccion, confirmDesactivar, textoExito,
+  ACCIONES_UI, AccionUI, MOTIVO_NO_VIGENTE, QUIEN_PUBLICA, TEXTO_FUENTE_SIMULADA, confirmAccion, confirmDesactivar, textoExito,
 } from '../ficha-textos';
 import {
-  NO_DISPONIBLE, TEXTOS_FICHA_ERROR_CARGA, TEXTOS_FICHA_INEXISTENTE, esFichaInexistente,
+  NO_DISPONIBLE, TEXTOS_FICHA_ERROR_CARGA, TEXTOS_FICHA_INEXISTENTE, TEXTO_FICHA_SIN_CONTENIDO, esFichaInexistente,
 } from '../ficha-save-error';
 import { FRAGMENTO_PUNTOS, RUTA_EDITAR_FICHA, RUTA_LISTA_FICHAS } from '../fichas.rutas';
 import { PuntosAtencionPanelComponent } from '../puntos-atencion-panel/puntos-atencion-panel.component';
@@ -49,9 +50,13 @@ const AYUDA_ESTADO: Record<EstadoFicha, string> = {
  * Detalle de una ficha por localidad, en el mismo lenguaje que su formulario: membrete + una tarjeta de dos
  * paneles (datos | puntos de atención) en modo lectura. Muestra los datos, requisitos y costos, el workflow de
  * publicación (botones según estado y permiso, nunca rol: D-3), "Desactivar" (en el membrete, como Plantilla),
- * "Vista previa pública" (solo `PUBLICADO`) y el panel de puntos de atención (componente hijo con su propio
+ * "Vista previa pública" (solo `PUBLICADO`, activa y con el trámite del organismo vigente: es lo que exige la API
+ * pública; si no está vigente se dice por qué no hay vista previa) y el panel de puntos de atención (componente hijo con su propio
  * facade, con cabecera propia). Con `#puntos-atencion` el foco va al título de ese panel. El resumen de
  * feedback se oculta hasta que exista la API (P-7).
+ *
+ * COMPATIBILIDAD TEMPORAL: si el servidor entrega la ficha sin su contenido (`sinContenido`, backend anterior a
+ * `586b670`), se avisa, no se muestran datos vacíos como si fueran reales y "Editar" queda no disponible.
  */
 @Component({
   selector: 'app-ficha-detail',
@@ -59,7 +64,7 @@ const AYUDA_ESTADO: Record<EstadoFicha, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe, RouterLink, MatButtonModule, MatSnackBarModule, EstadoBadgeComponent, HasPermissionDirective,
-    PageActionsDirective, PuntosAtencionPanelComponent,
+    PageActionsDirective, PuntosAtencionPanelComponent, UnavailableDirective,
   ],
   templateUrl: './ficha-detail.component.html',
   styleUrl: './ficha-detail.component.scss',
@@ -77,7 +82,8 @@ export class FichaDetailComponent {
   readonly textosErrorCarga = TEXTOS_FICHA_ERROR_CARGA;
   readonly rutaAdopcion = RUTA_DETALLE_ADOPCION;
   readonly rutaEditar = RUTA_EDITAR_FICHA;
-  readonly ayudaEstado = AYUDA_ESTADO;
+  readonly motivoNoVigente = MOTIVO_NO_VIGENTE;
+  readonly textoSinContenido = TEXTO_FICHA_SIN_CONTENIDO;
   readonly fragmentoPuntos = FRAGMENTO_PUNTOS;
   /** La fuente es simulada: aviso persistente, nada de lo que se haga llega al servidor. */
   readonly fuenteSimulada = this.facade.fuenteSimulada;
@@ -137,6 +143,17 @@ export class FichaDetailComponent {
       return vistas.map((v): AccionVista => ({ ...v, primaria: v === primaria }));
     }),
   );
+
+  /**
+   * Qué significa el estado de la ficha. Una PUBLICADA cuyo trámite del organismo no está vigente NO se ve en el
+   * portal (la API pública exige la adopción vigente): decir "Se ve en el portal" sería falso.
+   */
+  ayuda(ficha: FichaLocalVM): string {
+    if (ficha.estado === 'PUBLICADO' && ficha.activa && ficha.adopcionNoVigente) {
+      return `Está publicada, pero hoy no se ve en el portal: el trámite del organismo ${MOTIVO_NO_VIGENTE[ficha.adopcionNoVigente]}.`;
+    }
+    return AYUDA_ESTADO[ficha.estado];
+  }
 
   /** Dirección pública de la ficha publicada (`null` si la fuente no tiene: mock). */
   urlPublica(ficha: FichaLocalVM): string | null {

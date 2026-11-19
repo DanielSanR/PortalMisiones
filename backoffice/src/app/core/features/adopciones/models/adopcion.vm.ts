@@ -55,5 +55,16 @@ export interface AdopcionOpcion {
 /** Lo que necesita el diálogo "Adoptar trámite": plantillas activas y organismos activos. */
 export interface AdopcionOpciones {
   plantillas: AdopcionOpcion[];
+  /** Con `organismoFijo`, solo esa opción (no se pide el catálogo). */
   organismos: AdopcionOpcion[];
+  /**
+   * Organismo de la sesión cuando el usuario tiene alcance de organismo (`/api/auth/me`, G-2): el campo
+   * va con él, como dato de solo lectura. `null` = sesión global (o backend anterior): elige del select.
+   */
+  organismoFijo: AdopcionOpcionFija | null;
+}
+
+/** Opción impuesta por la sesión, con el texto que explica por qué no se puede cambiar. */
+export interface AdopcionOpcionFija extends AdopcionOpcion {
+  motivo: string;
 }

@@ -6,12 +6,8 @@ import { FichasLocalesMockDataSource } from './datasources/fichas-locales.mock.d
 
 /**
  * Wiring del feature fichas por localidad: `/api/organism-procedure-location` real o mock según
- * `featureOverrides`.
- *
- * ⚠️ El override `'fichas-locales'` queda en `'mock'` (también en prod) hasta que el backend cierre
- * G-1: el response real no trae adopción, localidad, URL, requisitos ni costos, y como el PUT es
- * reemplazo total, editar una ficha real los borraría. Se activa JUNTO con `'puntos-atencion'`, para
- * no mezclar ids de fichas reales con ids mock (PLAN_TRAMITES_API.md §8).
+ * `featureOverrides`. Va con la misma fuente que `'puntos-atencion'` (y que el resto de la cadena de
+ * trámites), para no mezclar ids reales con ids mock (PLAN_TRAMITES_API.md §8).
  */
 export const provideFichasLocalesFeature = (): Provider[] => [
   provideDataSource(FICHAS_LOCALES_DS, 'fichas-locales', FichasLocalesHttpDataSource, FichasLocalesMockDataSource),

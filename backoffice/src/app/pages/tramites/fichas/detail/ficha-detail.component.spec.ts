@@ -21,6 +21,8 @@ class PuntosPanelStub {
 }
 
 let SIMULADA = false;
+/** Lo que devuelve `FichasLocalesFacade.urlPublica` en el test en curso (`null` = la fuente no tiene). */
+let URL_PUBLICA: string | null = null;
 
 /** Gating por permiso: dibuja solo si el permiso está en `PERMISOS`. */
 let PERMISOS: string[] = [];
@@ -38,12 +40,14 @@ class HasPermissionStub {
 const FICHA: FichaLocalVM = {
   id: 'f-1', slug: 'obtener-licencia-posadas', estado: 'BORRADOR', activa: true, version: 3,
   adopcionId: 'a-1', localidadId: 'l-1', url: 'https://licencias.posadas.gob.ar',
-  requisitos: 'DNI vigente', costos: 'Gratis', contenidoCompleto: true,
+  requisitos: 'DNI vigente', costos: 'Gratis',
   plantillaId: 'p-1', plantillaTitulo: 'Obtener la licencia de conducir',
   organismoId: 'o-1', organismoNombre: 'Municipalidad de Posadas', localidadNombre: 'Posadas',
 };
 
 describe('FichaDetailComponent', () => {
+  beforeEach(() => { URL_PUBLICA = null; });
+
   let fixture: ComponentFixture<FichaDetailComponent>;
   let fragment$: BehaviorSubject<string | null>;
   let facade: jasmine.SpyObj<FichasLocalesFacade>;
@@ -55,7 +59,7 @@ describe('FichaDetailComponent', () => {
     fragment$ = new BehaviorSubject<string | null>(fragmento);
     facade = jasmine.createSpyObj<FichasLocalesFacade>('FichasLocalesFacade', ['getDetalle', 'urlPublica', 'ejecutar', 'desactivar']);
     facade.getDetalle.and.returnValue(ficha instanceof Error ? throwError(() => ficha) : of(ficha));
-    facade.urlPublica.and.returnValue(null);
+    facade.urlPublica.and.returnValue(URL_PUBLICA);
     Object.assign(facade, { accionesWorkflow$: of(() => []), fuenteSimulada: SIMULADA });
 
     await TestBed.configureTestingModule({
@@ -216,12 +220,50 @@ describe('FichaDetailComponent', () => {
       expect(el().textContent).toContain('La vista previa todavía no está disponible');
     });
 
-    it('con contenido no disponible avisa y marca los datos como no disponibles', async () => {
-      await crear({
-        ...FICHA, contenidoCompleto: false, localidadNombre: null, url: null, requisitos: null, costos: null,
-      });
-      expect(el().querySelector('.detail-header__notice')!.textContent).toContain('todavía no están disponibles');
-      expect(el().querySelector('.ficha-paneles__panel')!.textContent).toContain('No disponible');
+    it('publicada pero con el trámite del organismo no vigente: no ofrece el enlace y dice que no se ve en el portal (M6)', async () => {
+      URL_PUBLICA = 'https://api/procedure/obtener-licencia-posadas';
+      await crear({ ...FICHA, estado: 'PUBLICADO', adopcionNoVigente: 'vencida' });
+
+      const aviso = el().querySelector('[data-aviso="vista-previa-no-vigente"]')!;
+      expect(aviso.textContent).toContain('el trámite del organismo ya venció');
+      expect(el().querySelector('.fichadet-publicacion a')).toBeNull();
+      expect(el().querySelector('.fichadet-ayuda')!.textContent).toContain('hoy no se ve en el portal');
+      expect(el().querySelector('.fichadet-ayuda')!.textContent).not.toContain('Se ve en el portal.');
+    });
+
+    it('publicada, activa y con el trámite vigente: ofrece el enlace de la fuente', async () => {
+      URL_PUBLICA = 'https://api/procedure/obtener-licencia-posadas';
+      await crear({ ...FICHA, estado: 'PUBLICADO', adopcionNoVigente: null });
+
+      expect(el().querySelector<HTMLAnchorElement>('.fichadet-publicacion a')!.getAttribute('href')).toBe('https://api/procedure/obtener-licencia-posadas');
+      expect(el().querySelector('[data-aviso="vista-previa-no-vigente"]')).toBeNull();
+    });
+
+    it('backend viejo, ficha sin contenido (B1): lo avisa, no muestra campos vacíos como reales ni enlaza a una adopción sin id', async () => {
+      await crear({ ...FICHA, adopcionId: '', localidadId: '', url: null, requisitos: null, costos: null, localidadNombre: null, sinContenido: true });
+
+      expect(el().querySelector('[data-aviso="sin-contenido"]')!.textContent)
+        .toContain('El servidor todavía no entrega el contenido de la ficha; no se puede editar hasta que se actualice.');
+      expect(el().querySelector('[data-aviso="datos-sin-contenido"]')).not.toBeNull();
+      expect(el().textContent).not.toContain('Sin requisitos cargados.');
+      expect(el().querySelector('.detail-header__actions')!.textContent).not.toContain('Ver trámite del organismo');
+    });
+
+    it('sin URL, requisitos ni costos cargados lo dice campo por campo (no "no disponible")', async () => {
+      await crear({ ...FICHA, url: null, requisitos: null, costos: null });
+      const panel = el().querySelector('.ficha-paneles__panel')!.textContent!;
+      expect(panel).toContain('Sin URL');
+      expect(panel).toContain('Sin requisitos cargados.');
+      expect(panel).toContain('Sin costos cargados.');
+      expect(panel).not.toContain('No disponible');
+      expect(el().querySelector('.detail-header__notice')).toBeNull();
+    });
+
+    it('si no se pudo resolver el nombre de la localidad, solo eso figura como no disponible', async () => {
+      await crear({ ...FICHA, localidadNombre: null });
+      const panel = el().querySelector('.ficha-paneles__panel')!.textContent!;
+      expect(panel).toContain('No disponible');
+      expect(panel).toContain(FICHA.requisitos!);
     });
 
     it('si la ficha no existe muestra el estado "no existe" con salida al listado y sin reintentar', async () => {

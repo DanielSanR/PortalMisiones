@@ -118,7 +118,9 @@
         @include truncate;
     }
 
-    &__rol {
+    // Fila "rótulo → valor" de la ficha de la cuenta (rol, organismo): el rótulo a la izquierda y el dato a
+    // la derecha, como insignia (`-badge`) o como texto (`-valor`).
+    &__dato {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -133,6 +135,17 @@
             letter-spacing: var(--theme-font-overline-track);
             text-transform: uppercase;
             color: var(--theme-text-secondary);
+        }
+
+        // Dato en texto plano a la derecha (p. ej. el organismo): puede ser largo, así que baja de línea
+        // en vez de truncarse (no hay otro lugar donde leerlo completo).
+        &-valor {
+            min-width: 0;
+            font-size: var(--theme-font-caption-size);
+            font-weight: var(--theme-font-weight-semibold);
+            color: var(--theme-text-primary);
+            text-align: right;
+            overflow-wrap: anywhere;
         }
 
         &-badge {

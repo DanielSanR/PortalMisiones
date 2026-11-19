@@ -31,23 +31,25 @@
       <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
       Cargando los puntos de atención…
     </p>
-  } @else if (estado.tipo === 'error') {
-    <div class="puntos-mensaje puntos-mensaje--error" role="alert">
-      <i class="ph ph-cloud-slash" aria-hidden="true"></i>
-      <span>No pudimos cargar los puntos de atención.</span>
-      <button type="button" mat-button color="primary" (click)="reintentar()">
-        <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
-      </button>
-    </div>
   } @else {
     <div class="puntos">
-      @if (!cabecera || estado.inactivos) {
+      <!-- La barra está siempre que no sea la carga inicial, también en error: si no, tras un fallo el interruptor
+           desaparece y no hay cómo volver. "Mostrar inactivos" no depende de que haya: los desactivados no vienen con
+           los de la ficha (el backend los filtra), así que no se sabe si hay hasta pedirlos. Es el camino para reactivarlos. -->
       <div class="puntos-barra">
-        @if (estado.inactivos) {
-          <mat-slide-toggle color="primary" [formControl]="inactivosCtrl">
-            Mostrar inactivos ({{ estado.inactivos }})
-          </mat-slide-toggle>
-        }
+        <mat-slide-toggle color="primary" [formControl]="inactivosCtrl" [attr.aria-describedby]="tituloId + '-inactivos'">
+          Mostrar inactivos
+        </mat-slide-toggle>
+        <!-- Región viva: anuncia que se están pidiendo y, después, cuántos hay. -->
+        <span class="puntos-barra__inactivos" [id]="tituloId + '-inactivos'" aria-live="polite">
+          @if (estado.tipo === 'ok') {
+            @if (estado.cargandoInactivos) {
+              <i class="ph ph-spinner-gap spin" aria-hidden="true"></i> Cargando puntos inactivos…
+            } @else if (estado.conInactivos) {
+              {{ estado.inactivos === 0 ? 'No hay puntos inactivos' : estado.inactivos === 1 ? '1 inactivo' : estado.inactivos + ' inactivos' }}
+            }
+          }
+        </span>
         @if (!cabecera) {
           <button type="button" mat-stroked-button color="primary" class="puntos-barra__agregar" (click)="agregar()"
                   *appHasPermission="'CREATE_ATTENTION_POINT'">
@@ -55,18 +57,40 @@
           </button>
         }
       </div>
+
+      @if (estado.tipo === 'error') {
+        <div class="puntos-mensaje puntos-mensaje--error" role="alert">
+          <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+          <span>No pudimos cargar los puntos de atención.</span>
+          <button type="button" mat-button color="primary" (click)="reintentar()">
+            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+          </button>
+        </div>
+      } @else {
+      @if (estado.errorInactivos) {
+        <!-- Falló solo la lectura con inactivos: los activos siguen abajo y el interruptor volvió a apagado. -->
+        <div class="puntos-mensaje puntos-mensaje--error" role="alert" data-aviso="error-inactivos">
+          <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+          <span>No pudimos cargar los puntos inactivos. Se muestran solo los activos.</span>
+          <button type="button" mat-button color="primary" (click)="reintentarInactivos()">
+            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+          </button>
+        </div>
       }
 
-      @if (visibles$ | async; as puntos) {
+      @if (estado.puntos; as puntos) {
         @if (!puntos.length) {
           <!-- Estado vacío centrado en el alto que sobra del panel (la ficha lo estira): ícono, título y una línea. -->
           <div class="state-panel puntos-vacio">
             <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-map-pin"></i></span>
-            @if (estado.puntos.length) {
-              <p class="state-panel__title">No hay puntos de atención activos</p>
-            } @else {
+            @if (estado.conInactivos) {
               <p class="state-panel__title">Todavía no hay puntos de atención</p>
               <p class="state-panel__text">Agregá dónde se hace el trámite en esta localidad.</p>
+            } @else {
+              <p class="state-panel__title">No hay puntos de atención activos</p>
+              <p class="state-panel__text">
+                Agregá dónde se hace el trámite en esta localidad. Si desactivaste alguno, lo ves con "Mostrar inactivos".
+              </p>
             }
           </div>
         } @else {
@@ -124,6 +148,7 @@
             }
           </ul>
         }
+      }
       }
     </div>
   }

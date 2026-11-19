@@ -89,6 +89,22 @@ export class DynamicFormFieldComponent implements OnInit, OnChanges {
     );
   }
 
+  /**
+   * Texto de un campo `readonly`: el nombre de la opción elegida si el campo tiene `options` (varios, con
+   * coma, en un multi-select) y, si no, el valor tal cual. Un id que no está entre las opciones no se
+   * muestra crudo (sería un UUID): queda el `placeholder`.
+   */
+  get valorDeSoloLectura(): string {
+    const valor: unknown = this.group.get(this.field.name)?.value;
+    const opciones = this.field.options;
+    if (!opciones) return valor == null ? '' : String(valor);
+    const elegidos = Array.isArray(valor) ? valor : [valor];
+    const nombres = elegidos
+      .map((id) => opciones.find((opcion) => opcion.id === id)?.name)
+      .filter((nombre): nombre is string => !!nombre);
+    return nombres.length ? nombres.join(', ') : this.field.placeholder ?? '';
+  }
+
   togglePassword() {
     this.showPassword = !this.showPassword;
   }

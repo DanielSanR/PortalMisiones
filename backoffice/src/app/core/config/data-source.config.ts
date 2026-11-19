@@ -50,9 +50,15 @@ export function isMock(feature: FeatureKey): boolean {
 }
 
 /**
- * Semilla de un mock cuyas filas referencian adopciones (`op-*`) y localidades (`loc-*`) del mock.
- * Si el feature `adopciones` corre contra el backend real esos ids no existen (el front pediría
- * `/api/organism-procedure/op-N` y fallaría): el mock arranca VACÍO. En modo todo-mock se conserva.
+ * Semilla de un mock cuyas filas referencian adopciones (`op-*`) y localidades (`loc-*`) del mock (fichas por
+ * localidad y puntos de atención). En el modo todo-mock (`ng serve`) se conserva. Ningún entorno mezcla hoy
+ * las fuentes de la cadena de trámites, pero si alguien fuerza estos mocks con `adopciones` en real, esos ids
+ * no existen (el front pediría `/api/organism-procedure/op-N` y fallaría): el mock arranca VACÍO.
+ *
+ * HOY ES CÓDIGO SIN ALCANZAR: ningún `environment*.ts` deja fichas o puntos en mock con adopciones en real
+ * (`ng serve` va todo en mock → rama `semilla()`; `start:local`, staging y prod van todo en real → estos mocks
+ * ni se instancian, y en prod se excluyen del build). La rama `[]` solo corre si alguien arma esa mezcla a mano
+ * con `featureOverrides`. Se conserva como defensa para ese caso; no es un camino de ningún entorno.
  */
 export function semillaAtadaAAdopciones<T>(semilla: () => T[]): T[] {
   return isMock('adopciones') ? semilla() : [];

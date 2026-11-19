@@ -31,7 +31,8 @@ export const PERMISSIONS = {
   READ_ROLE: 'READ_ROLE',
   UPDATE_ROLE: 'UPDATE_ROLE',
   DELETE_ROLE: 'DELETE_ROLE',
-  // Trámite
+  // Trámite (plantillas provinciales, `/api/procedure-template`). `READ_PROCEDURE` también lo tiene
+  // ADMIN_ORGANIZATION desde `V2.31` (backend `586b670`): ve las plantillas y puede adoptarlas.
   CREATE_PROCEDURE: 'CREATE_PROCEDURE',
   READ_PROCEDURE: 'READ_PROCEDURE',
   UPDATE_PROCEDURE: 'UPDATE_PROCEDURE',

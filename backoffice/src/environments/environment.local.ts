@@ -3,9 +3,10 @@
  *
  * - `apiBaseUrl: ''` → same-origin; `proxy.local.cjs` reenvía `/api` a http://localhost:8080 (así el e2e
  *   puede usar la API vía :4200 igual que contra staging).
- * - Todo lo que expone `dev` (@ 58d383a) va en real, incluidas fichas y puntos de atención: sirve para
- *   ejercitar la API nueva. Ojo: con el response mínimo de la ficha (G-1) la edición de fichas queda
- *   bloqueada por diseño (`contenidoCompleto = false`); alta, detalle y workflow sí funcionan.
+ * - Todo lo que expone `dev` va en real, incluidas fichas y puntos de atención. REQUIERE el backend local en
+ *   `dev` >= `586b670` (desde ahí el response de la ficha trae su contenido completo: alta, edición, detalle y
+ *   workflow funcionan). Con un checkout anterior las fichas llegan sin contenido y no se pueden editar (la UI
+ *   lo avisa). Esto describe el backend LOCAL; staging tiene `586b670` desde el 2026-11-19.
  * - Requiere la base local migrada hasta `V2.30`: los grants de R-3 llegan con `V2.28` (+ `V2.30`: AGENT
  *   conserva solo READ/UPDATE_ADOPTION). Con una base anterior, Etiquetas, Adopciones y Puntos de atención
  *   responden 403.

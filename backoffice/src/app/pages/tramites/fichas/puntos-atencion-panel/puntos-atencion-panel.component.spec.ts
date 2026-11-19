@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BehaviorSubject, Subject, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
 import { PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
@@ -127,13 +127,328 @@ describe('PuntosAtencionPanelComponent — foco tras guardar', () => {
     expect(document.activeElement).toBe(document.body);
   }));
 
-  it('sin puntos muestra el estado vacío con ícono, título y una línea', () => {
+  describe('tras "Desactivar" (I6, WCAG 2.4.3)', () => {
+    /** Confirma el diálogo de "Desactivar" (el mock de `MatDialog` cierra con lo que emita `cierre$`). */
+    const confirmar = (): void => (cierre$ as unknown as Subject<boolean>).next(true);
+
+    it('sin "Mostrar inactivos" la tarjeta desaparece: espera a la relectura y enfoca "Agregar punto de atención"', fakeAsync(() => {
+      fixture.componentInstance.desactivar(punto('p-1'));
+      (document.activeElement as HTMLElement | null)?.blur();
+      confirmar();
+      fixture.detectChanges();
+      tick(50);
+      // La lista todavía es la de antes (la tarjeta sigue activa): no se enfoca un nodo que está por irse.
+      expect(document.activeElement).toBe(document.body);
+
+      lista$.next([]);
+      fixture.detectChanges();
+      tick(50);
+
+      expect(document.activeElement).toBe(el().querySelector('.puntos-barra__agregar'));
+      flush();
+    }));
+
+    it('con "Mostrar inactivos" el punto sigue a la vista (inactivo): el foco va a su acción', fakeAsync(() => {
+      fixture.componentInstance.inactivosCtrl.setValue(true);
+      fixture.detectChanges();
+      fixture.componentInstance.desactivar(punto('p-1'));
+      (document.activeElement as HTMLElement | null)?.blur();
+      confirmar();
+
+      lista$.next([{ ...punto('p-1'), activo: false }]);
+      fixture.detectChanges();
+      tick(50);
+
+      expect(el().querySelector('[data-punto-id="p-1"]')!.classList).toContain('is-inactivo');
+      expect(document.activeElement).toBe(botonDe('p-1'));
+      flush();
+    }));
+
+    it('sin "Agregar punto de atención" (sin permiso de alta) el foco va al interruptor "Mostrar inactivos"', fakeAsync(() => {
+      el().querySelector('.puntos-barra__agregar')!.remove();
+      fixture.componentInstance.desactivar(punto('p-1'));
+      (document.activeElement as HTMLElement | null)?.blur();
+      confirmar();
+
+      lista$.next([]);
+      fixture.detectChanges();
+      tick(50);
+
+      expect(document.activeElement).toBe(el().querySelector('.puntos-barra mat-slide-toggle button'));
+      flush();
+    }));
+
+    it('si la relectura nunca llega, igual no deja el foco en body: al agotar la espera enfoca lo que haya', fakeAsync(() => {
+      fixture.componentInstance.desactivar(punto('p-1'));
+      (document.activeElement as HTMLElement | null)?.blur();
+      confirmar();
+      fixture.detectChanges();
+      tick(50 * 40);
+
+      expect(document.activeElement).not.toBe(document.body);
+      flush();
+    }));
+
+    it('si se cancela la confirmación no toca el foco', fakeAsync(() => {
+      fixture.componentInstance.desactivar(punto('p-1'));
+      (document.activeElement as HTMLElement | null)?.blur();
+      (cierre$ as unknown as Subject<boolean>).next(false);
+      fixture.detectChanges();
+      tick(50 * 40);
+
+      expect(document.activeElement).toBe(document.body);
+    }));
+  });
+
+  it('sin puntos activos lo dice y remite a "Mostrar inactivos" (no se sabe si hay desactivados)', () => {
     lista$.next([]);
     fixture.detectChanges();
 
     const vacio = el().querySelector('.puntos-vacio.state-panel')!;
-    expect(vacio.querySelector('.state-panel__title')?.textContent).toContain('Todavía no hay puntos de atención');
+    expect(vacio.querySelector('.state-panel__title')?.textContent).toContain('No hay puntos de atención activos');
     expect(vacio.querySelector('.state-panel__text')?.textContent).toContain('Agregá dónde se hace el trámite');
+    expect(vacio.querySelector('.state-panel__text')?.textContent).toContain('Mostrar inactivos');
+  });
+
+  it('con "Mostrar inactivos" y sin ningún punto, el vacío es real', () => {
+    lista$.next([]);
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    const vacio = el().querySelector('.puntos-vacio.state-panel')!;
+    expect(vacio.querySelector('.state-panel__title')?.textContent).toContain('Todavía no hay puntos de atención');
+    expect(el().querySelector('.puntos-barra__inactivos')?.textContent).toContain('No hay puntos inactivos');
+  });
+});
+
+describe('PuntosAtencionPanelComponent — activos por defecto, inactivos a pedido', () => {
+  let fixture: ComponentFixture<PuntosAtencionPanelComponent>;
+  let pedidos: Array<{ fichaId: string; conInactivos: boolean }>;
+
+  const el = (): HTMLElement => fixture.nativeElement;
+  const ACTIVO = punto('p-1');
+  const INACTIVO: PuntoAtencionVM = { ...punto('p-2'), activo: false };
+
+  beforeEach(async () => {
+    pedidos = [];
+    const facade = {
+      fuenteSimulada: false,
+      refrescar: () => undefined,
+      cambios$: new BehaviorSubject<void>(undefined),
+      getDeFicha: (fichaId: string, conInactivos = false) => {
+        pedidos.push({ fichaId, conInactivos });
+        return of(conInactivos ? [ACTIVO, INACTIVO] : [ACTIVO]);
+      },
+    };
+    await TestBed.configureTestingModule({
+      imports: [PuntosAtencionPanelComponent, NoopAnimationsModule],
+      providers: [
+        { provide: PuntosAtencionFacade, useValue: facade },
+        { provide: MatDialog, useValue: { openDialogs: [], open: () => ({ afterClosed: () => of(undefined) }) } },
+        { provide: MatSnackBar, useValue: { open: () => undefined } },
+      ],
+    })
+      .overrideComponent(PuntosAtencionPanelComponent, {
+        remove: { imports: [HasPermissionDirective, RowActionsComponent] },
+        add: { imports: [HasPermissionStub, RowActionsStub] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(PuntosAtencionPanelComponent);
+    fixture.componentRef.setInput('fichaId', 'f-1');
+    fixture.detectChanges();
+  });
+
+  it('al entrar pide solo los activos de la ficha y ofrece "Mostrar inactivos" sin afirmar cuántos hay', () => {
+    expect(pedidos).toEqual([{ fichaId: 'f-1', conInactivos: false }]);
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(1);
+    expect(el().querySelector('mat-slide-toggle')?.textContent).toContain('Mostrar inactivos');
+    expect(el().querySelector('.puntos-barra__inactivos')?.textContent?.trim()).toBe('');
+  });
+
+  it('con "Mostrar inactivos" vuelve a pedir con los desactivados, los marca y dice cuántos son', () => {
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    expect(pedidos[pedidos.length - 1]).toEqual({ fichaId: 'f-1', conInactivos: true });
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(2);
+    expect(el().querySelector('[data-punto-id="p-2"]')?.classList).toContain('is-inactivo');
+    expect(el().querySelector('.puntos-barra__inactivos')?.textContent).toContain('1 inactivo');
+  });
+
+  it('al apagarlo vuelve a la lectura filtrada (solo activos)', () => {
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.componentInstance.inactivosCtrl.setValue(false);
+    fixture.detectChanges();
+
+    expect(pedidos[pedidos.length - 1]).toEqual({ fichaId: 'f-1', conInactivos: false });
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(1);
+  });
+});
+
+describe('PuntosAtencionPanelComponent — "Mostrar inactivos" que carga lento o falla (I1, M4)', () => {
+  let fixture: ComponentFixture<PuntosAtencionPanelComponent>;
+  let pedidos: boolean[];
+  let cambios$: BehaviorSubject<void>;
+  /** Qué responde cada lectura del test en curso. */
+  let activos: () => Observable<PuntoAtencionVM[]>;
+  let conInactivos: () => Observable<PuntoAtencionVM[]>;
+
+  const el = (): HTMLElement => fixture.nativeElement;
+  const ACTIVO = punto('p-1');
+  const INACTIVO: PuntoAtencionVM = { ...punto('p-2'), activo: false };
+  const fallo = (): Observable<PuntoAtencionVM[]> => throwError(() => ({ status: 500 }));
+  const region = (): string => el().querySelector('.puntos-barra__inactivos')?.textContent?.trim() ?? '';
+
+  beforeEach(async () => {
+    pedidos = [];
+    activos = () => of([ACTIVO]);
+    conInactivos = () => of([ACTIVO, INACTIVO]);
+    cambios$ = new BehaviorSubject<void>(undefined);
+    const facade = {
+      fuenteSimulada: false,
+      refrescar: () => undefined,
+      cambios$,
+      getDeFicha: (_fichaId: string, inactivos = false) => {
+        pedidos.push(inactivos);
+        return inactivos ? conInactivos() : activos();
+      },
+    };
+    await TestBed.configureTestingModule({
+      imports: [PuntosAtencionPanelComponent, NoopAnimationsModule],
+      providers: [
+        { provide: PuntosAtencionFacade, useValue: facade },
+        { provide: MatDialog, useValue: { openDialogs: [], open: () => ({ afterClosed: () => of(undefined) }) } },
+        { provide: MatSnackBar, useValue: { open: () => undefined } },
+      ],
+    })
+      .overrideComponent(PuntosAtencionPanelComponent, {
+        remove: { imports: [HasPermissionDirective, RowActionsComponent] },
+        add: { imports: [HasPermissionStub, RowActionsStub] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(PuntosAtencionPanelComponent);
+    fixture.componentRef.setInput('fichaId', 'f-1');
+    fixture.detectChanges();
+  });
+
+  it('mientras se piden los inactivos lo anuncia en la región viva, con indicador, y los activos siguen a la vista', () => {
+    const respuesta$ = new Subject<PuntoAtencionVM[]>();
+    conInactivos = () => respuesta$;
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    const viva = el().querySelector('.puntos-barra__inactivos')!;
+    expect(viva.getAttribute('aria-live')).toBe('polite');
+    expect(region()).toBe('Cargando puntos inactivos…');
+    expect(viva.querySelector('.ph-spinner-gap')).not.toBeNull();
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(1);
+
+    respuesta$.next([ACTIVO, INACTIVO]);
+    fixture.detectChanges();
+    expect(region()).toBe('1 inactivo');
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(2);
+  });
+
+  it('si falla la lectura con inactivos NO se cae el panel: quedan los activos, la barra y un aviso con reintento', () => {
+    conInactivos = fallo;
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    expect(el().querySelectorAll('[data-punto-id]').length).withContext('los activos siguen visibles').toBe(1);
+    expect(el().querySelector('.puntos-barra mat-slide-toggle')).withContext('la barra sigue').not.toBeNull();
+    const aviso = el().querySelector('[data-aviso="error-inactivos"]')!;
+    expect(aviso.getAttribute('role')).toBe('alert');
+    expect(aviso.textContent).toContain('No pudimos cargar los puntos inactivos');
+    // El interruptor vuelve a apagado: dice la verdad (no se están mostrando) y prenderlo de nuevo reintenta.
+    expect(fixture.componentInstance.inactivosCtrl.value).toBeFalse();
+    expect(region()).toBe('');
+    // No quedó en el error general (el que escondía todo).
+    expect(el().textContent).not.toContain('No pudimos cargar los puntos de atención.');
+    // Se pidieron los inactivos y, al fallar, los activos; ninguna lectura más.
+    expect(pedidos).toEqual([false, true, false]);
+  });
+
+  it('tras el fallo, agregar o editar un punto relee SOLO los activos: no vuelve a pedir inactivos con el interruptor apagado', () => {
+    conInactivos = fallo;
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+    pedidos = [];
+
+    // Un ABM: el facade avisa por `cambios$` y el panel vuelve a leer.
+    conInactivos = () => of([ACTIVO, INACTIVO]);
+    cambios$.next();
+    fixture.detectChanges();
+
+    expect(pedidos).withContext('el interruptor está apagado: no se piden inactivos').toEqual([false]);
+    expect(fixture.componentInstance.inactivosCtrl.value).toBeFalse();
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(1);
+    expect(region()).withContext('la región viva no afirma nada de inactivos').toBe('');
+    // El aviso sigue: los inactivos siguen sin poder verse hasta reintentar.
+    expect(el().querySelector('[data-aviso="error-inactivos"]')).not.toBeNull();
+  });
+
+  it('tras el fallo, prender de nuevo el interruptor pide los inactivos y saca el aviso', () => {
+    conInactivos = fallo;
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    conInactivos = () => of([ACTIVO, INACTIVO]);
+    pedidos = [];
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+    cambios$.next();
+    fixture.detectChanges();
+
+    expect(pedidos).toEqual([true, true]);
+    expect(region()).toBe('1 inactivo');
+    expect(el().querySelector('[data-aviso="error-inactivos"]')).toBeNull();
+  });
+
+  it('"Reintentar" del aviso vuelve a pedir los inactivos y, si anda, los muestra y saca el aviso', () => {
+    conInactivos = fallo;
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    conInactivos = () => of([ACTIVO, INACTIVO]);
+    el().querySelector<HTMLButtonElement>('[data-aviso="error-inactivos"] button')!.click();
+    fixture.detectChanges();
+
+    expect(pedidos[pedidos.length - 1]).toBeTrue();
+    expect(fixture.componentInstance.inactivosCtrl.value).toBeTrue();
+    expect(el().querySelector('[data-aviso="error-inactivos"]')).toBeNull();
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(2);
+  });
+
+  it('si falla TODO (también los activos), la barra con el interruptor sigue visible y "Reintentar" pide los activos, no los inactivos', () => {
+    conInactivos = fallo;
+    activos = fallo;
+    fixture.componentInstance.inactivosCtrl.setValue(true);
+    fixture.detectChanges();
+
+    expect(el().textContent).toContain('No pudimos cargar los puntos de atención.');
+    expect(el().querySelector('.puntos-barra mat-slide-toggle')).withContext('la barra sigue en error').not.toBeNull();
+    expect(fixture.componentInstance.inactivosCtrl.value).toBeFalse();
+
+    activos = () => of([ACTIVO]);
+    pedidos = [];
+    const reintentar = Array.from(el().querySelectorAll<HTMLButtonElement>('.puntos-mensaje--error button'))
+      .find((b) => b.textContent!.includes('Reintentar'))!;
+    reintentar.click();
+    fixture.detectChanges();
+
+    expect(pedidos).toEqual([false]);
+    expect(el().querySelectorAll('[data-punto-id]').length).toBe(1);
+  });
+
+  it('un fallo de la carga inicial (sin inactivos) también deja la barra a la vista', () => {
+    activos = fallo;
+    fixture.componentInstance.reintentar();
+    fixture.detectChanges();
+
+    expect(el().textContent).toContain('No pudimos cargar los puntos de atención.');
+    expect(el().querySelector('.puntos-barra mat-slide-toggle')).not.toBeNull();
   });
 });
 

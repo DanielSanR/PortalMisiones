@@ -429,3 +429,109 @@ describe('DynamicFormComponent — nivel del encabezado de sección', () => {
     expect(el.querySelector('h2.section-header-title')).toBeNull();
   });
 });
+
+/**
+ * `readonly`: un dato fijado (p. ej. el organismo que impone la sesión) se muestra como `<input readonly>`
+ * y no como un control deshabilitado, que sale del orden de tabulación y deja el motivo sin leer.
+ */
+describe('DynamicFormComponent — campo de solo lectura (`readonly`)', () => {
+  let fixture: ComponentFixture<DynamicFormComponent>;
+  let component: DynamicFormComponent;
+
+  const MOTIVO = 'Tu cuenta pertenece a IPS: no se puede elegir otro.';
+  const fields: FieldConfig[] = [
+    { name: 'nombre', label: 'Nombre', type: 'text', validations: { required: true } },
+    {
+      name: 'organismoId', label: 'Organismo', type: 'select', readonly: true, value: 'org-1', hint: MOTIVO,
+      options: [{ id: 'org-1', name: 'Instituto de Previsión Social (IPS)' }, { id: 'org-2', name: 'Rentas' }],
+      optionsLoaded: true, validations: { required: true },
+    },
+    { name: 'codigo', label: 'Código', type: 'text', readonly: true, value: 'CREATE_USER', mono: true },
+    {
+      name: 'alcance', label: 'Alcance', type: 'select', readonly: true, value: 'uuid-que-no-esta',
+      placeholder: 'Ninguno', options: [{ id: 'a', name: 'A' }], optionsLoaded: true,
+    },
+  ];
+
+  const input = (nombre: string): HTMLInputElement => fixture.nativeElement.querySelector(`input#${nombre}`);
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, NoopAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DynamicFormComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('fields', fields);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    document.body.appendChild(fixture.nativeElement);
+  });
+
+  afterEach(() => (fixture.nativeElement as HTMLElement).remove());
+
+  it('un select fijado se dibuja como input `readonly` con el nombre de la opción, no como mat-select', () => {
+    expect(input('organismoId').readOnly).toBeTrue();
+    expect(input('organismoId').disabled).toBeFalse();
+    expect(input('organismoId').value).toBe('Instituto de Previsión Social (IPS)');
+    expect(fixture.nativeElement.querySelector('mat-select#organismoId')).toBeNull();
+  });
+
+  it('sigue en el orden de tabulación: se puede enfocar', () => {
+    input('organismoId').focus();
+
+    expect(document.activeElement).toBe(input('organismoId'));
+    expect(input('organismoId').tabIndex).toBe(0);
+  });
+
+  it('tiene nombre accesible (su label) y el motivo asociado por `aria-describedby`', () => {
+    const etiqueta: HTMLElement = fixture.nativeElement.querySelector('#organismoId-label');
+    expect(input('organismoId').getAttribute('aria-labelledby')).toBe('organismoId-label');
+    expect(etiqueta.textContent).toContain('Organismo');
+
+    const descritoPor = (input('organismoId').getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean);
+    const descripcion = descritoPor.map((id) => document.getElementById(id)?.textContent ?? '').join(' ');
+    expect(descripcion).toContain(MOTIVO);
+  });
+
+  it('no lleva la marca de obligatorio: no hay nada que completar', () => {
+    const etiqueta = (nombre: string): HTMLElement => fixture.nativeElement.querySelector(`#${nombre}-label`);
+
+    expect(etiqueta('organismoId').querySelector('.form-field__required')).toBeNull();
+    expect(etiqueta('nombre').querySelector('.form-field__required')).not.toBeNull();
+  });
+
+  it('el control sigue habilitado y su valor (el id, no el texto) viaja en el envío', () => {
+    const enviado = jasmine.createSpy('formSubmit');
+    component.formSubmit.subscribe(enviado);
+    component.form.get('nombre')?.setValue('Ana');
+
+    component.submit();
+
+    expect(component.form.get('organismoId')?.enabled).toBeTrue();
+    expect(component.form.value.organismoId).toBe('org-1');
+    expect(enviado).toHaveBeenCalledOnceWith(jasmine.objectContaining({ organismoId: 'org-1', codigo: 'CREATE_USER' }));
+  });
+
+  it('no deja el formulario dirty ni se puede editar tipeando', () => {
+    expect(component.form.pristine).toBeTrue();
+
+    input('organismoId').value = 'Otro';
+    input('organismoId').dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(component.form.get('organismoId')?.value).toBe('org-1');
+    expect(component.form.pristine).toBeTrue();
+  });
+
+  it('un campo de texto muestra su valor tal cual (y en mono si lo pide)', () => {
+    expect(input('codigo').value).toBe('CREATE_USER');
+    expect(input('codigo').readOnly).toBeTrue();
+    expect(input('codigo').classList).toContain('form-field__mono');
+  });
+
+  it('un id que no está entre las opciones no se muestra crudo: queda el placeholder', () => {
+    expect(input('alcance').value).toBe('Ninguno');
+  });
+});

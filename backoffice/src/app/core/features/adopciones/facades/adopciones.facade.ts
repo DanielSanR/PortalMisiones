@@ -5,11 +5,12 @@ import {
 } from 'rxjs';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { ADOPTAR_ACCESS } from '@core/constants/policy-overrides.constants';
+import { etiquetaDeOrganismo, hintDeOrganismoPropio } from '@core/utils/session.utils';
 import { PlantillasRepository } from '@features/plantillas';
 import { OrganismosRepository } from '@features/organismos';
 import { AdopcionesRepository } from '../repositories/adopciones.repository';
 import {
-  Adopcion, AdopcionFormValue, AdopcionOpcion, AdopcionOpciones, AdopcionVM,
+  Adopcion, AdopcionFormValue, AdopcionOpcion, AdopcionOpcionFija, AdopcionOpciones, AdopcionVM,
 } from '../models/adopcion.vm';
 import { estadoDeVigencia } from '../models/vigencia';
 
@@ -33,8 +34,9 @@ interface Nombres {
  *
  * Los nombres degradan a `null` en vez de tumbar la pantalla:
  * - Sin `READ_ORGANISM` (AB, AO) ni siquiera se pide `/api/organism` (respondería 403 y su datasource
- *   abriría el diálogo global): el organismo queda sin nombre.
- * - Sin `READ_PROCEDURE` (AO, por G-3) tampoco se piden las plantillas.
+ *   abriría el diálogo global): el organismo queda sin nombre, salvo el de la propia sesión (AO/AGENT),
+ *   que viene en `/api/auth/me` desde el backend `586b670` (G-2).
+ * - Sin `READ_PROCEDURE` tampoco se piden las plantillas (AO lo tiene desde `V2.31`; AGENT, no).
  * La sesión se consulta en `AuthTokenService` (infra de sesión, fuera del patrón de features) en cada
  * llamada, no al construir: el facade es singleton y los permisos pueden cambiar.
  *
@@ -61,7 +63,8 @@ export class AdopcionesFacade {
     // Cambio de sesión (logout/login, otro usuario): nada de lo leído con la sesión anterior sirve.
     // Singleton `root`: vive lo mismo que el injector raíz, y se corta con él (`takeUntilDestroyed`).
     this.auth.getCurrentUser$()
-      .pipe(map((usuario) => usuario?.id ?? null), distinctUntilChanged(), skip(1), takeUntilDestroyed())
+      // El organismo va en la clave: sus nombres se resuelven con él (mismo usuario, otra asignación).
+      .pipe(map((usuario) => `${usuario?.id ?? ''}|${usuario?.organismoId ?? ''}`), distinctUntilChanged(), skip(1), takeUntilDestroyed())
       .subscribe(() => {
         this.nombresCache$ = null;
         this.nombresClave = '';
@@ -107,16 +110,34 @@ export class AdopcionesFacade {
    * Opciones del diálogo "Adoptar trámite": plantillas activas (el backend solo lista esas, y solo esas
    * se pueden adoptar) y organismos activos. A diferencia de los nombres, acá un error NO se degrada:
    * el diálogo no sirve sin opciones y muestra su estado de error con "Reintentar".
+   *
+   * Con una sesión de organismo (`/api/auth/me`, G-2) el organismo es el del usuario: el backend rechaza
+   * cualquier otro (`OrganismProcedureService.resolveOrganismId` → `4073`), así que no se pide el catálogo
+   * (ese rol puede no tener `READ_ORGANISM`) y la única opción se arma con los datos de la sesión.
    */
   getOpcionesAdoptar(): Observable<AdopcionOpciones> {
+    const organismoFijo = this.organismoFijo();
     return forkJoin({
       plantillas: this.plantillas.list().pipe(
         map((lista) => ordenar(lista.filter((p) => p.activa).map((p) => ({ id: p.id, nombre: p.titulo })))),
       ),
-      organismos: this.auth.can(LEER_ORGANISMOS)
-        ? this.organismos.getOptions().pipe(map(ordenar))
-        : of([] as AdopcionOpcion[]),
-    });
+      organismos: organismoFijo
+        ? of<AdopcionOpcion[]>([{ id: organismoFijo.id, nombre: organismoFijo.nombre }])
+        : this.auth.can(LEER_ORGANISMOS)
+          ? this.organismos.getOptions().pipe(map(ordenar))
+          : of([] as AdopcionOpcion[]),
+    }).pipe(map((opciones) => ({ ...opciones, organismoFijo })));
+  }
+
+  /** Organismo de la sesión como opción fija del diálogo, o `null` si la sesión no está atada a uno. */
+  private organismoFijo(): AdopcionOpcionFija | null {
+    const organismo = this.auth.getUserOrganismo();
+    if (!organismo) return null;
+    return {
+      id: organismo.id,
+      nombre: etiquetaDeOrganismo(organismo),
+      motivo: `${hintDeOrganismoPropio(organismo)}: solo podés adoptar trámites para ese organismo.`,
+    };
   }
 
   /**
@@ -201,7 +222,7 @@ export class AdopcionesFacade {
   }
 
   private nombres(refrescar = false): Observable<Nombres> {
-    const clave = `${this.auth.can(LEER_PLANTILLAS)}|${this.auth.can(LEER_ORGANISMOS)}`;
+    const clave = `${this.auth.can(LEER_PLANTILLAS)}|${this.auth.can(LEER_ORGANISMOS)}|${this.auth.getUserOrganismoId() ?? ''}`;
     if (clave !== this.nombresClave) {
       this.nombresClave = clave;
       this.titulosSueltos.clear();
@@ -219,7 +240,7 @@ export class AdopcionesFacade {
       }).pipe(
         map(({ plantillas, organismos }): Nombres => ({
           plantillas: plantillas.mapa,
-          organismos: organismos.mapa,
+          organismos: this.conOrganismoDeSesion(organismos.mapa),
           degradado: plantillas.fallo || organismos.fallo,
         })),
         tap((nombres) => {
@@ -231,6 +252,18 @@ export class AdopcionesFacade {
       this.nombresCache$ = cache$;
     }
     return this.nombresCache$;
+  }
+
+  /**
+   * El organismo de la propia sesión se nombra con lo que trae `/api/auth/me`, aunque el catálogo no se
+   * haya podido leer (sin `READ_ORGANISM`). Va con la MISMA etiqueta que en el diálogo "Adoptar trámite"
+   * (`etiquetaDeOrganismo`: "Nombre (SIGLA)"), también si el catálogo lo trae: si no, la misma persona
+   * vería su organismo escrito de dos formas según la pantalla.
+   */
+  private conOrganismoDeSesion(mapa: Map<string, string>): Map<string, string> {
+    const propio = this.auth.getUserOrganismo();
+    if (!propio) return mapa;
+    return new Map(mapa).set(propio.id, etiquetaDeOrganismo(propio));
   }
 
   /** Lee un catálogo de nombres si hay permiso; si falla, queda vacío y lo anota. */

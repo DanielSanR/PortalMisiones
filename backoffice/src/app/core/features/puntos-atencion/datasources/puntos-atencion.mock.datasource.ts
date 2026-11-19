@@ -4,7 +4,7 @@ import { API_CODES } from '@core/constants/api-codes.constants';
 import { errorDeNegocio } from '@core/mocks/mock-errors';
 import { semillaAtadaAAdopciones } from '@core/config/data-source.config';
 import { PuntosAtencionDataSource } from './puntos-atencion.datasource';
-import { AttentionPointRequestDTO, AttentionPointResponseDTO } from '../models/punto-atencion.dto';
+import { AttentionPointRequestDTO, AttentionPointResponseDTO, PuntosAtencionFiltro } from '../models/punto-atencion.dto';
 import { toAttentionPointRequest, toPuntoAtencionVM } from '../mappers/puntos-atencion.mapper';
 import { PuntoAtencionFormValue, PuntoAtencionVM } from '../models/punto-atencion.vm';
 
@@ -12,7 +12,7 @@ const DELAY = 200;
 
 /**
  * Semilla con la forma real del response, atada a las fichas mock (`fl-*`, feature fichas-locales).
- * Hay un punto desactivado, que el backend igual lista.
+ * Hay un punto desactivado: el backend lo lista sin filtro, pero no al filtrar por ficha.
  */
 function semilla(): AttentionPointResponseDTO[] {
   return [
@@ -50,18 +50,21 @@ function semilla(): AttentionPointResponseDTO[] {
 }
 
 /**
- * Implementación mock en memoria, fiel a `AttentionPointService` con alcance global: lista activos e
- * inactivos, `4012` por campos obligatorios vacíos o coordenadas fuera de rango, `4073` si el punto no
- * existe, PUT total y `DELETE` lógico. No puede validar que la ficha exista (no conoce otros datasources).
+ * Implementación mock en memoria, fiel a `AttentionPointService` (`dev` @ `586b670`) con alcance global: sin
+ * filtro lista activos e inactivos, y filtrando por ficha solo los activos; `4012` por campos obligatorios vacíos
+ * o coordenadas fuera de rango, `4073` si el punto no existe, PUT total y `DELETE` lógico. No puede validar que la ficha exista (no conoce otros datasources).
  */
 @Injectable()
 export class PuntosAtencionMockDataSource extends PuntosAtencionDataSource {
   readonly fuenteSimulada = true;
-  /** Sus fichas semilla (`fl-*`) cuelgan de adopciones mock: con adopciones reales arranca vacío. */
+  /** Sus fichas semilla (`fl-*`) cuelgan de adopciones mock: si alguien lo fuerza con adopciones reales, arranca vacío. */
   private data: AttentionPointResponseDTO[] = semillaAtadaAAdopciones(semilla);
 
-  list(): Observable<PuntoAtencionVM[]> {
-    return of(this.data.map(toPuntoAtencionVM)).pipe(delay(DELAY));
+  list(filtro?: PuntosAtencionFiltro): Observable<PuntoAtencionVM[]> {
+    const filas = filtro?.fichaId
+      ? this.data.filter((x) => x.organismProcedureLocationId === filtro.fichaId && x.active)
+      : this.data;
+    return of(filas.map(toPuntoAtencionVM)).pipe(delay(DELAY));
   }
 
   getById(id: string): Observable<PuntoAtencionVM> {
@@ -101,10 +104,10 @@ export class PuntosAtencionMockDataSource extends PuntosAtencionDataSource {
   }
 
   private invalido(): Observable<never> {
-    return errorDeNegocio(API_CODES.VALIDATION, 'Verifique los campos de los elementos enviados.');
+    return errorDeNegocio(API_CODES.VALIDATION, 'Verifique los campos de los elementos enviados.', 400);
   }
 
   private noExiste(id: string): Observable<never> {
-    return errorDeNegocio(API_CODES.ENTITY_NOT_FOUND, `El objeto AttentionPoint con el identificador ${id} no existe.`);
+    return errorDeNegocio(API_CODES.ENTITY_NOT_FOUND, `El objeto AttentionPoint con el identificador ${id} no existe.`, 404);
   }
 }

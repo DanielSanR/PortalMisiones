@@ -13,11 +13,11 @@ const guardPorRol = validarDialogoDeLista({ nuevo: soloSuperadmin, editar: soloS
 describe('validarDialogoDeLista', () => {
   const bypassOriginal = environment.bypassAuthGuards;
 
-  function correr(url: string, permissions: string[], roles: UserRole[] = [], g = guard): boolean | UrlTree {
+  function correr(url: string, permissions: string[], roles: UserRole[] = [], g = guard, organismoPropio = false): boolean | UrlTree {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: AuthTokenService, useValue: { getPermissions: () => permissions, getUserRoles: () => roles } },
+        { provide: AuthTokenService, useValue: { getAuthzContext: () => ({ permissions, roles, organismoPropio }) } },
       ],
     });
     const query: Record<string, string> = {};
@@ -81,11 +81,11 @@ describe('validarDialogoDeLista — usuarios', () => {
   const bypassOriginal = environment.bypassAuthGuards;
   const guardUsuarios = validarDialogoDeLista({ nuevo: 'CREATE_USER', editar: EDITAR_USUARIO_ACCESS });
 
-  function correr(url: string, permissions: string[], roles: UserRole[]): boolean | UrlTree {
+  function correr(url: string, permissions: string[], roles: UserRole[], organismoPropio = false): boolean | UrlTree {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: AuthTokenService, useValue: { getPermissions: () => permissions, getUserRoles: () => roles } },
+        { provide: AuthTokenService, useValue: { getAuthzContext: () => ({ permissions, roles, organismoPropio }) } },
       ],
     });
     const query: Record<string, string> = {};
@@ -112,6 +112,14 @@ describe('validarDialogoDeLista — usuarios', () => {
     TestBed.resetTestingModule();
     const sinPermiso = correr(ALTA, ['READ_USER', 'READ_ORGANISM'], [UserRole.ADMIN_BACKOFFICE]);
     expect((sinPermiso as UrlTree).toString()).toBe('/dashboard/usuarios/lista');
+  });
+
+  it('con el organismo en la sesión (G-2), el alta no exige READ_ORGANISM a un Administrador de Organismo', () => {
+    expect(correr(ALTA, ['READ_USER', 'CREATE_USER'], [UserRole.ADMIN_ORGANIZATION], true)).toBeTrue();
+  });
+
+  it('sin organismo en la sesión (backend anterior) el alta sigue exigiendo READ_ORGANISM, como antes', () => {
+    expect(correr(ALTA, ['READ_USER', 'CREATE_USER'], [UserRole.ADMIN_ORGANIZATION], false)).not.toBeTrue();
   });
 
   it('la edición exige EDITAR_USUARIO_ACCESS: UPDATE_USER + READ_ORGANISM + rol admin', () => {

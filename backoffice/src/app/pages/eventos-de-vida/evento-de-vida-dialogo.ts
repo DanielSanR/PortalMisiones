@@ -8,7 +8,7 @@ import { formDialogEstatico } from '@shared/components/form-dialog/form-dialog-e
 /** Rechazos del backend que se marcan en su campo. */
 const CONFLICTOS: ConflictoDeCampo[] = [
   {
-    // El slug que sale del nombre ya existe (400 `4072`).
+    // El slug que sale del nombre ya existe (409 `4072` desde el backend `586b670`; antes 400).
     code: API_CODES.ENTITY_CONFLICT,
     control: 'nombre',
     mensaje: 'Ya existe un evento de vida con ese nombre',

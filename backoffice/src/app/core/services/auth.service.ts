@@ -14,12 +14,39 @@ import {
   JwtDTO,
   RefreshTokenResponseDTO,
   ResponseDTO,
+  extractErrorCode,
 } from '../models/api-response.model';
+import { API_CODES } from '../constants/api-codes.constants';
 import { AuthTokenService } from './auth-token.service';
 import { parseAuthorities, pickHighestRole } from '../utils/role.utils';
+import { AlcanceDeSesion, SIN_ALCANCE, alcanceDeSesion } from '../utils/session.utils';
 import { UserRole } from '../enums/user-role.enum';
 import { NoBackofficeAccessError } from '../errors/no-backoffice-access.error';
 import { sinDialogoGlobal } from '../interceptors/http-error.interceptor';
+
+/**
+ * Qué se supo de `GET /api/auth/me` al abrir la sesión:
+ * - `ok`: respondió; manda lo que diga.
+ * - `sin-respuesta`: fallo PASAJERO (red, timeout, 5xx…): no dice nada sobre el alcance del usuario.
+ * - `sin-organismo`: el backend contestó que el usuario ya no tiene un alcance válido (ver `esAlcancePerdido`).
+ */
+type ResultadoDeMe =
+  | { tipo: 'ok'; me: AuthMeResponseDTO }
+  | { tipo: 'sin-respuesta' }
+  | { tipo: 'sin-organismo' };
+
+/**
+ * ¿`/me` falló porque el alcance del usuario dejó de existir? Son las dos respuestas DEFINITIVAS de
+ * `AuthService.getCurrentAuthContext` (backend `586b670`): 403 `4029` si ya no tiene una asignación de rol
+ * vigente (`UserService.getCurrentScope`) y 404 `4073` si el organismo de su alcance no existe. Se exigen el
+ * status y el código juntos: un 403/404 de otro origen (proxy, WAF) no cuenta.
+ */
+function esAlcancePerdido(err: unknown): boolean {
+  const { status, error } = (err ?? {}) as { status?: number; error?: unknown };
+  const code = extractErrorCode(error);
+  return (status === 403 && code === API_CODES.NO_PERMISSION)
+    || (status === 404 && code === API_CODES.ENTITY_NOT_FOUND);
+}
 
 /** Payload de registro administrativo público (`UserRequestDTO`). */
 export interface RegisterRequest {
@@ -104,13 +131,15 @@ export class AuthService {
   /**
    * Arma la sesión con los roles/permisos EFECTIVOS de `GET /api/auth/me` (fuente de verdad del
    * RBAC, BACKEND_API_SPEC §2). Si `/me` falla, cae al decode del JWT: un problema de ese endpoint
-   * no puede dejar a nadie afuera del login. Un error de sesión (token corrupto, sin acceso al
-   * backoffice) sí se propaga.
+   * no puede dejar a nadie afuera del login. Lo que sí distingue es POR QUÉ falló (`ResultadoDeMe`),
+   * porque de eso depende si se conserva el organismo que la sesión ya tenía (`alcance`). Un error de
+   * sesión (token corrupto, sin acceso al backoffice) sí se propaga.
    */
   private openSession(tokens: JwtDTO | RefreshTokenResponseDTO): Observable<AuthUser> {
     return this.fetchMe(tokens.accessToken).pipe(
-      catchError(() => of(null)),
-      map((me) => this.saveSession(tokens, me)),
+      map((me): ResultadoDeMe => ({ tipo: 'ok', me })),
+      catchError((err: unknown) => of<ResultadoDeMe>({ tipo: esAlcancePerdido(err) ? 'sin-organismo' : 'sin-respuesta' })),
+      map((resultado) => this.saveSession(tokens, resultado)),
     );
   }
 
@@ -130,12 +159,13 @@ export class AuthService {
 
   /**
    * Persiste el par de tokens y reconstruye la sesión. Roles y permisos salen de `/me` si llegó;
-   * si no, del access token decodificado.
+   * si no, del access token decodificado. El alcance y el organismo del usuario solo vienen en `/me`.
    * La autorización es POR PERMISO: un usuario sin rol canónico (solo rol custom) es una sesión
    * VÁLIDA — `role` queda `null` y el acceso se resuelve por sus permisos. Solo propaga error si
    * el token no se puede decodificar (token corrupto → el LoginComponent muestra el error inline).
    */
-  private saveSession(tokens: JwtDTO | RefreshTokenResponseDTO, me: AuthMeResponseDTO | null): AuthUser {
+  private saveSession(tokens: JwtDTO | RefreshTokenResponseDTO, resultado: ResultadoDeMe): AuthUser {
+    const me = resultado.tipo === 'ok' ? resultado.me : null;
     const payload = this.decodeToken(tokens.accessToken);
     // Separa roles y permisos (de `/me`, o del token: tolera el claim viejo mezclado y el nuevo).
     const { roles, roleCodes, permissions } = parseAuthorities(
@@ -158,12 +188,39 @@ export class AuthService {
       roles,
       roleCodes,
       permissions,
-      organismoId: payload.organismoId ?? null,
+      ...this.alcance(resultado, payload),
     };
 
     this.authTokenService.setTokens(tokens.accessToken, tokens.refreshToken);
     this.authTokenService.setUserData(user);
     return user;
+  }
+
+  /**
+   * Alcance y organismo de la sesión (`scope`, `organismId`, `organismName`, `organismAcronym` de `/me`,
+   * backend `dev` @ `586b670`), según qué pasó con `/me`:
+   *
+   * - Respondió: manda lo que diga.
+   * - Fallo pasajero (red, 5xx) y el token es del mismo usuario que ya estaba en sesión: se conserva lo que
+   *   se sabía. Un endpoint caído no puede liberar el campo "Organismo" ni sacarle el organismo al perfil.
+   * - El backend dijo que el alcance ya no existe (403 `4029` sin asignación vigente, 404 `4073` organismo
+   *   inexistente): la sesión queda SIN organismo. Conservar el anterior dejaría a la persona operando
+   *   sobre un organismo que ya no es el suyo, o que no existe. Tampoco se cae al claim del JWT.
+   */
+  private alcance(resultado: ResultadoDeMe, payload: JwtPayload): AlcanceDeSesion {
+    if (resultado.tipo === 'ok') return alcanceDeSesion(resultado.me, payload.organismoId);
+    if (resultado.tipo === 'sin-organismo') return SIN_ALCANCE;
+
+    const previa = this.authTokenService.getCurrentUser();
+    if (previa && previa.id === payload.userId && previa.scope) {
+      return {
+        scope: previa.scope,
+        organismoId: previa.organismoId ?? null,
+        organismoNombre: previa.organismoNombre ?? null,
+        organismoSigla: previa.organismoSigla ?? null,
+      };
+    }
+    return alcanceDeSesion(null, payload.organismoId);
   }
 
   private decodeToken(token: string): JwtPayload {

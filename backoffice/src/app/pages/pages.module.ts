@@ -21,7 +21,8 @@ const SUPER_AB_AO = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.AD
  * espejar el `@PreAuthorize hasAuthority(...)` del backend (§4.1/§5); las excepciones que el backend
  * autoriza por rol (Roles/Permisos) y las sin backend (Auditoría/Feedback) usan `requireRoles`. La
  * MISMA regla filtra el nav → nav y ruta nunca se desalinean. Usuarios: listar es lectura (READ_USER);
- * crear/editar exigen además lo que el form necesita leer (`READ_ORGANISM` + rol admin) — ver
+ * crear/editar exigen además lo que el form necesita: rol admin + (`READ_ORGANISM` o un organismo propio en la
+ * sesión, que alcanza para asignarlo sin leer el catálogo) — ver
  * `PERMISSION_PREREQUISITES` / `EDITAR_USUARIO_ACCESS` en `policy-overrides.constants.ts`.
  */
 // Cada pantalla es su propio chunk (`loadComponent`): entrar a una sección no descarga las otras 44.
@@ -53,7 +54,7 @@ const routes: Routes = [
       { path: 'tramites/adopciones', loadComponent: () => import('./tramites/adopciones/list/adopciones-list.component').then(m => m.AdopcionesListComponent), canActivate: [accessGuard], data: { access: { permissions: ['READ_ADOPTION'] }, redirectTo: HOME, breadcrumb: ['Trámites del organismo'] } },
       { path: 'tramites/adopciones/detalle/:id', loadComponent: () => import('./tramites/adopciones/detail/adopcion-detail.component').then(m => m.AdopcionDetailComponent), canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: { permissions: ['READ_ADOPTION'] }, redirectTo: HOME, breadcrumb: ['Trámites del organismo', 'Detalle'] } },
 
-      // Fichas por localidad (`/api/organism-procedure-location`, en MOCK hasta G-1). Alcance por organismo en el
+      // Fichas por localidad (`/api/organism-procedure-location`). Alcance por organismo en el
       // backend; permisos `*_VARIANT` y `PUBLISH_VARIANT` (workflow, en el detalle y en la tab "En revisión").
       // El alta cuelga de una adopción (`?adopcion=`): CREAR_FICHA_ACCESS = CREATE_VARIANT + READ_ADOPTION.
       { path: 'tramites/fichas', loadComponent: () => import('./tramites/fichas/list/fichas-list.component').then(m => m.FichasListComponent), canActivate: [accessGuard], data: { access: { permissions: ['READ_VARIANT'] }, redirectTo: HOME, breadcrumb: ['Fichas por localidad'] } },
@@ -98,7 +99,7 @@ const routes: Routes = [
       { path: 'feedback', loadComponent: () => import('./feedback/feedback.component').then(m => m.FeedbackComponent), canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME, breadcrumb: ['Feedback Ciudadano'] } },
 
       // Usuarios: listar = READ_USER (SA/AB/AO). Crear = CREATE_USER + prerrequisitos del form; editar =
-      // EDITAR_USUARIO_ACCESS (UPDATE_USER + READ_ORGANISM + rol admin). Ver policy-overrides.constants.ts.
+      // EDITAR_USUARIO_ACCESS (UPDATE_USER + rol admin + (READ_ORGANISM u organismo propio en la sesión)). Ver policy-overrides.constants.ts.
       { path: 'usuarios/lista', loadComponent: () => import('./usuarios/list/usuarios-list.component').then(m => m.UsuariosListComponent), canActivate: [accessGuard, validarDialogoDeLista({ nuevo: 'CREATE_USER', editar: EDITAR_USUARIO_ACCESS })], runGuardsAndResolvers: 'paramsOrQueryParamsChange', data: { access: { permissions: ['READ_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios'] } },
       // Alta y edición en diálogo sobre la lista: estas rutas son solo la puerta de entrada y conservan su permiso.
       { path: 'usuarios/nuevo', canActivate: [accessGuard, redirigirAlDialogo('/dashboard/usuarios/lista', 'nuevo')], children: [], data: { access: { permissions: ['CREATE_USER'] }, redirectTo: HOME, breadcrumb: ['Usuarios', 'Nuevo usuario'] } },

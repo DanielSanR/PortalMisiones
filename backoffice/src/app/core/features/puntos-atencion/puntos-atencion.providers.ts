@@ -6,8 +6,7 @@ import { PuntosAtencionMockDataSource } from './datasources/puntos-atencion.mock
 
 /**
  * Wiring del feature puntos de atención: `/api/attention-point` real o mock según `featureOverrides`.
- * El override `'puntos-atencion'` queda en `'mock'` mientras las fichas sean mock (G-1): se activan
- * juntos, para no mezclar ids de fichas reales con ids mock.
+ * Va con la misma fuente que `'fichas-locales'`, para no mezclar ids de fichas reales con ids mock.
  */
 export const providePuntosAtencionFeature = (): Provider[] => [
   provideDataSource(PUNTOS_ATENCION_DS, 'puntos-atencion', PuntosAtencionHttpDataSource, PuntosAtencionMockDataSource),

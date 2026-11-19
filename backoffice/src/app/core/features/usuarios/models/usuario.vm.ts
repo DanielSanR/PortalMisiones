@@ -51,12 +51,27 @@ export interface SesionUsuariosVM {
   usuarioId: string | null;
   email: string | null;
   esSuperAdmin: boolean;
+  /** Rol canónico de mayor privilegio de quien opera (`null` = solo roles custom). Solo para textos. */
+  rol: UserRole | null;
+  /** Organismo de la sesión (`AuthTokenService.getUserOrganismoId()`); `null` si es global o no se informa. */
   organismoId: string | null;
+}
+
+/** Organismo impuesto por la sesión, con el texto que explica por qué no se puede cambiar. */
+export interface UsuarioOrganismoFijo extends OrganismoOption {
+  motivo: string;
 }
 
 /** Datos que necesita el formulario, resueltos en una sola llamada (orquestación del facade). */
 export interface UsuarioFormData {
+  /** Con `organismoFijo`, solo esa opción (no se pide el catálogo). */
   organismos: OrganismoOption[];
+  /**
+   * Organismo de la sesión cuando quien opera tiene alcance de organismo (`/api/auth/me`, G-2): solo crea
+   * usuarios en el suyo (el backend lo pisa igual), así que el campo va con él, como dato de solo lectura.
+   * `null` = sesión global (o backend anterior): elige del select.
+   */
+  organismoFijo: UsuarioOrganismoFijo | null;
   rolesAllowed: RolVM[];
   usuario: UsuarioVM | null;
 }

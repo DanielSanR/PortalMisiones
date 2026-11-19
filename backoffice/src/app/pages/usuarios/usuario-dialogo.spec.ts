@@ -4,11 +4,15 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { NEVER, Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { UserRole } from '@core/enums/user-role.enum';
-import { UsuariosFacade, UsuarioVM } from '@features/usuarios';
+import { UsuariosFacade, UsuarioOrganismoFijo, UsuarioVM } from '@features/usuarios';
 import { RolVM } from '@features/roles';
 import { DynamicFormComponent } from '@shared/components/dynamic-form/dynamic-form.component';
 import { FormDialogComponent, FormDialogData } from '@shared/components/form-dialog';
 import { SesionDeUsuarioDialogo, UsuarioGuardado, dialogoDeUsuario } from './usuario-dialogo';
+import {
+  MENSAJE_ALTA_DENEGADA, MENSAJE_EDICION_DENEGADA, MENSAJE_ORGANISMO_REQUERIDO, MENSAJE_ROL_RESTRINGIDO,
+  MENSAJE_SIN_PERMISO_DE_ALTA,
+} from './usuario-save-error';
 
 const rol = (id: string, codigo: string, scopeTipo: RolVM['scopeTipo']): RolVM => ({
   id, codigo, descripcion: codigo, scopeTipo, asignablePorOrgAdmin: false, asignablePorBackoffice: false,
@@ -30,18 +34,30 @@ const EXISTENTE: UsuarioVM = {
 
 const BASE = { nombre: 'Ana', apellido: 'Paz', email: 'ana@example.com', password: 'Clave1234', activo: true };
 
-const SUPERADMIN: SesionDeUsuarioDialogo = { esSuperAdmin: true, organismoId: null };
-const ADMIN_DE_ORGANISMO: SesionDeUsuarioDialogo = { esSuperAdmin: false, organismoId: 'org-1' };
+const SUPERADMIN: SesionDeUsuarioDialogo = { esSuperAdmin: true };
+const ADMIN_DE_ORGANISMO: SesionDeUsuarioDialogo = { esSuperAdmin: false };
+/** Lo que entrega el facade con una sesión de organismo (`/api/auth/me`, G-2): la única opción, sin catálogo. */
+const ORGANISMO_FIJO: UsuarioOrganismoFijo = {
+  id: 'org-1', nombre: 'Instituto de Previsión Social (IPS)',
+  motivo: 'Tu cuenta pertenece a Instituto de Previsión Social (IPS): los usuarios que crees quedan en ese organismo.',
+};
 
 describe('dialogoDeUsuario', () => {
   let facade: jasmine.SpyObj<UsuariosFacade>;
+  /** Sesión con la que se arma el facade de la prueba en curso. */
+  let sesionActual: SesionDeUsuarioDialogo = SUPERADMIN;
+
+  beforeEach(() => { sesionActual = SUPERADMIN; });
 
   function crearFacade(usuario: UsuarioVM | null = null, edicionDisponible = true): void {
     facade = jasmine.createSpyObj<UsuariosFacade>('UsuariosFacade', ['getFormData', 'create', 'update', 'setAccountStatus'], {
       edicionDisponible,
     });
+    // Con una sesión de organismo el facade entrega solo esa opción (no pide `/api/organism`).
+    const organismoFijo = sesionActual === ADMIN_DE_ORGANISMO ? ORGANISMO_FIJO : null;
     facade.getFormData.and.returnValue(of({
-      organismos: [{ id: 'org-1', nombre: 'IPS' }],
+      organismos: organismoFijo ? [{ id: organismoFijo.id, nombre: organismoFijo.nombre }] : [{ id: 'org-1', nombre: 'IPS' }],
+      organismoFijo,
       rolesAllowed: [ROL_GLOBAL, ROL_ORGANISMO],
       usuario,
     }));
@@ -54,6 +70,7 @@ describe('dialogoDeUsuario', () => {
   async function configurar(
     usuario: UsuarioVM | null = null, sesion: SesionDeUsuarioDialogo = SUPERADMIN,
   ): Promise<FormDialogData<UsuarioGuardado>> {
+    sesionActual = sesion;
     crearFacade(usuario);
     const data = dialogoDeUsuario(facade, usuario?.id ?? null, sesion);
     await firstValueFrom(data.cargar());
@@ -102,7 +119,7 @@ describe('dialogoDeUsuario', () => {
       const nombres = fields.map((f) => f.name);
       expect(nombres).not.toContain('password');
       expect(nombres).not.toContain('activo');
-      expect(fields.find((f) => f.name === 'email')?.disabled).toBeTrue();
+      expect(fields.find((f) => f.name === 'email')?.readonly).toBeTrue();
       expect(initialData).toEqual({ nombre: 'Martín', apellido: 'Fernández', email: 'martin@example.com', rol: UserRole.AGENT });
       // Rol de organismo (AGENT está en el catálogo con scope organismo): "Organismo" ya viene, con su valor.
       expect(fields.find((f) => f.name === 'organismoId')?.value).toBe('org-1');
@@ -156,13 +173,39 @@ describe('dialogoDeUsuario', () => {
       expect(vuelta?.find((f) => f.name === 'organismoId')?.value).toBe('org-1');
     });
 
-    it('quien no es superadmin ve su organismo elegido y bloqueado', async () => {
+    it('con una sesión de organismo, "Organismo" viene con el suyo, de solo lectura y con el motivo en el hint', async () => {
       const data = await configurar(null, ADMIN_DE_ORGANISMO);
 
       const campo = data.alCambiar!({ rol: ROL_ORGANISMO.id })?.find((f) => f.name === 'organismoId');
 
       expect(campo?.value).toBe('org-1');
-      expect(campo?.disabled).toBeTrue();
+      // Solo lectura, no deshabilitado: sigue en el orden de tabulación y el motivo se puede leer.
+      expect(campo?.readonly).toBeTrue();
+      expect(campo?.disabled).toBeFalsy();
+      expect(campo?.hint).toContain('Tu cuenta pertenece a Instituto de Previsión Social (IPS)');
+      // La opción sale de la sesión (nombre y sigla), no del catálogo `/api/organism`.
+      expect(campo?.options).toEqual([{ id: 'org-1', name: 'Instituto de Previsión Social (IPS)' }]);
+    });
+
+    it('con una sesión global (o un backend sin G-2) el organismo se elige: sin bloqueo ni hint de sesión', async () => {
+      const data = await configurar();
+
+      const campo = data.alCambiar!({ rol: ROL_ORGANISMO.id })?.find((f) => f.name === 'organismoId');
+
+      expect(campo?.disabled).toBeFalsy();
+      expect(campo?.readonly).toBeFalsy();
+      expect(campo?.hint).not.toContain('Tu cuenta pertenece');
+      expect(campo?.options).toEqual([{ id: 'org-1', name: 'IPS' }]);
+    });
+
+    it('en edición no se impone el organismo de la sesión: manda el del usuario editado', async () => {
+      const data = await configurar({ ...EXISTENTE, organismoId: 'org-7' }, ADMIN_DE_ORGANISMO);
+      const { fields } = await firstValueFrom(data.cargar());
+
+      const campo = fields.find((f) => f.name === 'organismoId');
+      expect(campo?.value).toBe('org-7');
+      expect(campo?.disabled).toBeFalsy();
+      expect(campo?.readonly).toBeFalsy();
     });
   });
 
@@ -219,10 +262,13 @@ describe('dialogoDeUsuario', () => {
       expect(facade.setAccountStatus).not.toHaveBeenCalled();
     });
 
-    it('quien no es superadmin: con un rol de organismo viaja el suyo; con uno global, `null`', async () => {
+    it('sesión de organismo: con un rol de organismo viaja el suyo (aunque el form trajera otro); con uno global, `null`', async () => {
       const data = await configurar(null, ADMIN_DE_ORGANISMO);
 
       await firstValueFrom(data.guardar({ ...BASE, rol: ROL_ORGANISMO.id }));
+      expect(facade.create.calls.mostRecent().args[0].organismoId).toBe('org-1');
+
+      await firstValueFrom(data.guardar({ ...BASE, rol: ROL_ORGANISMO.id, organismoId: 'org-ajeno' }));
       expect(facade.create.calls.mostRecent().args[0].organismoId).toBe('org-1');
 
       await firstValueFrom(data.guardar({ ...BASE, rol: ROL_GLOBAL.id }));
@@ -256,6 +302,115 @@ describe('dialogoDeUsuario', () => {
       expect(texto).toBe('Revisá el campo marcado.');
     });
 
+    /**
+     * 403 `4029` del alta (`UserService.createUser`, backend `586b670`): el `message` es siempre el genérico
+     * y el caso viaja en `details`. Solo el del rol se arregla eligiendo otro rol.
+     */
+    describe('403 4029 del alta, según `details`', () => {
+      const MESSAGE = 'El usuario no tiene permisos para realizar esta acción.';
+      const denegado = (details: string | null) => ({ status: 403, error: { code: 4029, message: MESSAGE, details } });
+
+      /** Form con los controles "Rol" y "Organismo" espiados: ningún caso que no sea el del rol los toca. */
+      function formEspiado() {
+        const control = () => ({ setErrors: jasmine.createSpy('setErrors'), markAsTouched: jasmine.createSpy('markAsTouched') });
+        const controles: Record<string, ReturnType<typeof control>> = { rol: control(), organismoId: control() };
+        return { controles, form: { get: (nombre: string) => controles[nombre] ?? null } };
+      }
+
+      it('rol no asignable por quien crea: se marca en "Rol" con "Elegí otro"', async () => {
+        const data = await configurar();
+        const { controles, form } = formEspiado();
+        const err = denegado('El rol objetivo no puede ser creado por el rol autenticado.');
+
+        expect(data.errorDeGuardado!(err, form as never)).toBe('Revisá el campo marcado.');
+        expect(controles['rol'].setErrors).toHaveBeenCalledOnceWith({ server: MENSAJE_ROL_RESTRINGIDO });
+        expect(controles['rol'].markAsTouched).toHaveBeenCalled();
+        expect(MENSAJE_ROL_RESTRINGIDO).toContain('Elegí otro');
+        // Sin el control (form todavía sin armar) el texto propio va al banner: nunca el `message` crudo.
+        expect(data.errorDeGuardado!(err, undefined)).toBe(MENSAJE_ROL_RESTRINGIDO);
+      });
+
+      it('rol no asignable, con la clave sin traducir en `details`: también se marca en "Rol"', async () => {
+        const data = await configurar();
+        const { controles, form } = formEspiado();
+
+        data.errorDeGuardado!(denegado('error.user.creation.role.restricted'), form as never);
+
+        expect(controles['rol'].setErrors).toHaveBeenCalledOnceWith({ server: MENSAJE_ROL_RESTRINGIDO });
+      });
+
+      const AL_BANNER: { caso: string; details: string | null; mensaje: string }[] = [
+        {
+          caso: 'falta el organismo (admin de organismo sin organismo, o rol de organismo sin `organizationId`)',
+          details: 'El administrador de organización debe pertenecer a una organización.',
+          mensaje: MENSAJE_ORGANISMO_REQUERIDO,
+        },
+        {
+          caso: 'el rol de quien crea no da de alta usuarios',
+          details: 'El rol autenticado no tiene permisos para crear usuarios.',
+          mensaje: MENSAJE_SIN_PERMISO_DE_ALTA,
+        },
+        { caso: 'sin `details` (sin asignación de rol vigente)', details: null, mensaje: MENSAJE_ALTA_DENEGADA },
+        { caso: 'con un `details` que no se reconoce', details: 'Texto nuevo del backend.', mensaje: MENSAJE_ALTA_DENEGADA },
+      ];
+
+      AL_BANNER.forEach(({ caso, details, mensaje }) => {
+        it(`${caso}: va al banner con texto propio, sin marcar "Rol" ni sugerir otro rol`, async () => {
+          const data = await configurar();
+          const { controles, form } = formEspiado();
+
+          const texto = data.errorDeGuardado!(denegado(details), form as never);
+
+          expect(texto).toBe(mensaje);
+          expect(texto).not.toContain('Elegí otro');
+          expect(texto).not.toContain(MESSAGE);
+          if (details) expect(texto).not.toContain(details);
+          expect(controles['rol'].setErrors).not.toHaveBeenCalled();
+          expect(controles['organismoId'].setErrors).not.toHaveBeenCalled();
+        });
+      });
+    });
+
+    /**
+     * `UserService.forbiddenUserManagement()` rechaza la gestión de una cuenta existente con el `details` del
+     * alta ("…no tiene permisos para crear usuarios"): en edición no se puede leer como "no podés crear".
+     */
+    describe('403 4029 en edición', () => {
+      const MESSAGE = 'El usuario no tiene permisos para realizar esta acción.';
+      const DETALLES: (string | null)[] = [
+        'El rol autenticado no tiene permisos para crear usuarios.',
+        'error.user.creation.permission.denied',
+        'El rol objetivo no puede ser creado por el rol autenticado.',
+        'El administrador de organización debe pertenecer a una organización.',
+        null,
+      ];
+
+      DETALLES.forEach((details) => {
+        it(`con details "${details}": habla de modificar, nunca de crear, y no marca ningún campo`, async () => {
+          const data = await configurar(EXISTENTE);
+          const control = { setErrors: jasmine.createSpy('setErrors'), markAsTouched: jasmine.createSpy('markAsTouched') };
+          const form = { get: () => control };
+
+          const texto = data.errorDeGuardado!({ status: 403, error: { code: 4029, message: MESSAGE, details } }, form as never);
+
+          expect(texto).toBe(MENSAJE_EDICION_DENEGADA);
+          expect(texto).toContain('modificar este usuario');
+          expect(texto.toLowerCase()).not.toContain('crear');
+          expect(texto).not.toContain(MESSAGE);
+          expect(control.setErrors).not.toHaveBeenCalled();
+        });
+      });
+
+      it('el email repetido (409 4002) se sigue marcando en su campo', async () => {
+        const data = await configurar(EXISTENTE);
+        const control = { setErrors: jasmine.createSpy('setErrors'), markAsTouched: jasmine.createSpy('markAsTouched') };
+
+        data.errorDeGuardado!({ error: { code: 4002, message: 'ya está' } }, { get: () => control } as never);
+
+        expect(control.setErrors).toHaveBeenCalledWith({ server: 'Ya existe un usuario con ese email' });
+      });
+    });
+
     it('otro rechazo muestra el mensaje del backend, o uno genérico si no hay', async () => {
       const data = await configurar();
 
@@ -277,6 +432,7 @@ describe('dialogoDeUsuario', () => {
       fixture.debugElement.query(By.directive(DynamicFormComponent)).componentInstance;
 
     async function abrir(usuario: UsuarioVM | null = null, sesion: SesionDeUsuarioDialogo = SUPERADMIN): Promise<void> {
+      sesionActual = sesion;
       crearFacade(usuario);
       close = jasmine.createSpy('close');
       matDialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
@@ -341,13 +497,26 @@ describe('dialogoDeUsuario', () => {
       expect(form().form.get('organismoId')?.valid).toBeTrue();
     });
 
-    it('quien no es superadmin ve su organismo bloqueado', async () => {
+    it('con una sesión de organismo ve su organismo como dato de solo lectura enfocable, con el motivo asociado', async () => {
       await abrir(null, ADMIN_DE_ORGANISMO);
 
       elegirRol(ROL_ORGANISMO.id);
+      await fixture.whenStable();
+      fixture.detectChanges();
 
+      // El control sigue habilitado (el id viaja en el valor del form) y el form no quedó dirty por esto.
       expect(form().form.get('organismoId')?.value).toBe('org-1');
-      expect(form().form.get('organismoId')?.disabled).toBeTrue();
+      expect(form().form.get('organismoId')?.enabled).toBeTrue();
+      expect(form().form.get('organismoId')?.valid).toBeTrue();
+
+      const input: HTMLInputElement = fixture.nativeElement.querySelector('input#organismoId');
+      expect(input.readOnly).toBeTrue();
+      expect(input.disabled).toBeFalse();
+      expect(input.value).toBe('Instituto de Previsión Social (IPS)');
+      expect(fixture.nativeElement.querySelector('mat-select#organismoId')).toBeNull();
+      const descripcion = (input.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean)
+        .map((id) => (fixture.nativeElement as HTMLElement).querySelector(`[id="${id}"]`)?.textContent ?? '').join(' ');
+      expect(descripcion).toContain('Tu cuenta pertenece a Instituto de Previsión Social (IPS)');
     });
 
     it('edición: precarga al usuario y deja el email fijo, con "Guardar cambios" bloqueado', async () => {
@@ -355,7 +524,9 @@ describe('dialogoDeUsuario', () => {
 
       expect(fixture.nativeElement.querySelector('h2[mat-dialog-title]').textContent).toContain('Editar usuario');
       expect(form().form.get('nombre')?.value).toBe('Martín');
-      expect(form().form.get('email')?.disabled).toBeTrue();
+      const email = fixture.nativeElement.querySelector('input[readonly]') as HTMLInputElement | null;
+      expect(form().form.get('email')?.enabled).toBeTrue();
+      expect(email?.value).toBe('martin@example.com');
       expect(fixture.nativeElement.querySelector('.dialogo-formulario__pie button:last-child').getAttribute('aria-disabled')).toBe('true');
     });
 

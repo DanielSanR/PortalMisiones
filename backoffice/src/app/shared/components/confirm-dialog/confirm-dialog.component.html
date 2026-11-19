@@ -20,6 +20,10 @@
             <p *ngIf="ejecutando && lenta" class="form-dialog__texto" role="status">
                 Está tardando más de lo habitual. Podés cancelar y revisar el estado en la lista.
             </p>
+            <!-- Escape o un clic afuera con la acción en vuelo: no cierran, y se dice por qué. -->
+            <p *ngIf="ejecutando && cierreBloqueado" class="form-dialog__texto" role="status" data-aviso="cierre-bloqueado">
+                La acción todavía se está procesando. Esperá a que termine o usá "{{ data.cancelText || 'Cancelar' }}" para dejar de esperar.
+            </p>
         </div>
     </div>
     <mat-dialog-actions align="end">
@@ -27,11 +31,16 @@
         <button mat-stroked-button color="primary" type="button" (click)="cancelar()">
             {{ data.cancelText || 'Cancelar' }}
         </button>
+        <!-- Sin `disabled` nativo mientras corre la acción: un botón deshabilitado suelta el foco (cae al
+             `body`) y, si la acción falla, quien usa teclado o lector queda fuera del diálogo. Sigue enfocado y
+             se anuncia ocupado (`aria-disabled` + `aria-busy`); `confirmar()` ignora el segundo clic o Enter.
+             `.is-unavailable` (global, la de `appUnavailable`) lo muestra no disponible sin sacarlo del foco. -->
         <button mat-flat-button [color]="esDestructivo ? 'warn' : 'primary'" type="button"
-            [disabled]="ejecutando"
-            [attr.aria-busy]="ejecutando"
+            [class.is-unavailable]="ejecutando"
+            [attr.aria-disabled]="ejecutando ? 'true' : null"
+            [attr.aria-busy]="ejecutando ? 'true' : null"
             (click)="confirmar()">
-            <mat-spinner *ngIf="ejecutando" diameter="18"></mat-spinner>
+            <i *ngIf="ejecutando" class="ph ph-spinner-gap spin" aria-hidden="true"></i>
             <span>{{ ejecutando ? (data.busyText || 'Procesando…') : (data.confirmText || 'Confirmar') }}</span>
         </button>
     </mat-dialog-actions>

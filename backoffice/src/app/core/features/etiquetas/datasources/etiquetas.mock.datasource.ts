@@ -47,7 +47,7 @@ export class EtiquetasMockDataSource extends EtiquetasDataSource {
     const actual = this.data.find((x) => x.id === id);
     if (!actual) return errorDeNegocio(API_CODES.TAXONOMY_NOT_FOUND, 'La etiqueta no existe');
 
-    // Cambiar de organismo no se permite. El backend responde el mismo 400 `4072` que para un slug repetido.
+    // Cambiar de organismo no se permite. El backend responde el mismo 409 `4072` que para un slug repetido.
     if (form.organismoId !== actual.organismoId) {
       return errorDeNegocio(API_CODES.TAXONOMY_CONFLICT, `El objeto Etiqueta con el identificador ${form.slug} existe.`);
     }

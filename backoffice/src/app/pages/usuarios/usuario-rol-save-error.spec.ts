@@ -43,7 +43,11 @@ describe('errores de la asignación de rol', () => {
   });
 
   it('4029: explica la regla de rol y organismo en el banner', () => {
-    expect(traducir(4029)).toContain('un rol global no lleva organismo');
+    const texto = traducir(4029, 'El usuario no tiene permisos para realizar esta acción.');
+    expect(texto).toContain('un rol global no lleva organismo');
+    // PPDT-5.1: un Administrador de Backoffice solo asigna roles `assignableByBackoffice`.
+    expect(texto).toContain('solo los asigna un Super Administrador');
+    expect(texto).not.toContain('El usuario no tiene permisos');
     expect(form.valid).toBeTrue();
   });
 

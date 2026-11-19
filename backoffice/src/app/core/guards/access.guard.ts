@@ -26,7 +26,7 @@ export const accessGuard: CanActivateFn = (route) => {
   }
 
   const { access, redirectTo } = getRouteData(route);
-  const ctx = { permissions: tokenService.getPermissions(), roles: tokenService.getUserRoles() };
+  const ctx = tokenService.getAuthzContext();
 
   return evaluateAccess(ctx, access) ? true : router.createUrlTree([redirectTo || '/dashboard/home']);
 };

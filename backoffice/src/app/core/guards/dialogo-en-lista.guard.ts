@@ -53,7 +53,7 @@ export function validarDialogoDeLista(permisos: Record<ModoDialogo, string | Acc
     if ((modo !== 'nuevo' && modo !== 'editar') || environment.bypassAuthGuards) return true;
 
     const tokenService = inject(AuthTokenService);
-    const ctx = { permissions: tokenService.getPermissions(), roles: tokenService.getUserRoles() };
+    const ctx = tokenService.getAuthzContext();
     const requerido = permisos[modo];
     if (evaluateAccess(ctx, typeof requerido === 'string' ? { permissions: [requerido] } : requerido)) return true;
 

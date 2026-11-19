@@ -34,13 +34,14 @@ describe('FichasLocalesMockDataSource', () => {
     const creada = await firstValueFrom(ds.create(FORM));
     expect(creada.estado).toBe('BORRADOR');
     expect(creada.version).toBe(1);
-    expect(creada.contenidoCompleto).toBeTrue();
+    expect(creada.adopcionId).toBe('op-1');
+    expect(creada.localidadId).toBe('loc-garupa');
     expect(creada.requisitos).toBe('DNI');
   });
 
   it('cada edición y cada transición suma una versión', async () => {
     const creada = await firstValueFrom(ds.create(FORM));
-    const editada = await firstValueFrom(ds.update(creada.id, { ...FORM, costos: '$5' }, creada.estado));
+    const editada = await firstValueFrom(ds.update(creada.id, { ...FORM, costos: '$5' }));
     expect(editada.version).toBe(2);
     expect(editada.costos).toBe('$5');
     const enRevision = await firstValueFrom(ds.transicion(creada.id, 'submit-review'));
@@ -71,15 +72,42 @@ describe('FichasLocalesMockDataSource', () => {
     expect(f.estado).toBe('DESPUBLICADO');
   });
 
-  it('el PUT conserva el estado aunque el request mande otro (R-1)', async () => {
-    const editada = await firstValueFrom(ds.update('fl-8', { ...FORM, costos: '$1' }, 'PUBLICADO'));
+  it('el PUT conserva el estado de publicación', async () => {
+    // fl-8: op-3 + Leandro N. Alem, EN_REVISION.
+    const editada = await firstValueFrom(ds.update('fl-8', {
+      ...FORM, adopcionId: 'op-3', localidadId: 'loc-lnalem', slug: 'obtener-carnet-sanitario-leandro-n-alem', costos: '$1',
+    }));
     expect(editada.estado).toBe('EN_REVISION');
+    expect(editada.costos).toBe('$1');
   });
 
-  it('ficha inexistente → 4073; campos NOT NULL faltantes → 5000', async () => {
+  it('ficha inexistente → 4073; obligatorios faltantes (adopción, localidad, slug) → 4012', async () => {
     expect(await codigoDeError(firstValueFrom(ds.getById('no-existe')))).toBe(4073);
     expect(await codigoDeError(firstValueFrom(ds.transicion('no-existe', 'publish')))).toBe(4073);
-    expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, localidadId: '' })))).toBe(5000);
+    expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, localidadId: '' })))).toBe(4012);
+    expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, adopcionId: '' })))).toBe(4012);
+    expect(await codigoDeError(firstValueFrom(ds.create({ ...FORM, slug: '¡¡¡' })))).toBe(4012);
+    expect(await codigoDeError(firstValueFrom(ds.update('fl-3', { ...FORM, localidadId: '' })))).toBe(4012);
+  });
+
+  describe('filtro por adopción (?organismProcedureId=)', () => {
+    it('devuelve solo las fichas de esa adopción, activas e inactivas', async () => {
+      const deOp2 = await firstValueFrom(ds.list({ adopcionId: 'op-2' }));
+      expect(deOp2.map((f) => f.id)).toEqual(['fl-4', 'fl-5', 'fl-6']);
+      expect(deOp2.find((f) => f.id === 'fl-6')?.activa).toBeFalse();
+    });
+
+    it('una adopción sin fichas da lista vacía; sin filtro (o vacío) vienen todas', async () => {
+      expect(await firstValueFrom(ds.list({ adopcionId: 'op-99' }))).toEqual([]);
+      expect((await firstValueFrom(ds.list())).length).toBe(8);
+      expect((await firstValueFrom(ds.list({}))).length).toBe(8);
+    });
+
+    it('lo recién creado aparece en el filtro de su adopción', async () => {
+      const creada = await firstValueFrom(ds.create(FORM));
+      const deOp1 = await firstValueFrom(ds.list({ adopcionId: 'op-1' }));
+      expect(deOp1.map((f) => f.id)).toContain(creada.id);
+    });
   });
 
   describe('unicidad (V2.27): responde el 5000 genérico, como el backend', () => {
@@ -100,9 +128,9 @@ describe('FichasLocalesMockDataSource', () => {
       const fl3: FichaLocalFormValue = {
         ...FORM, localidadId: 'loc-eldorado', slug: 'obtener-licencia-de-conducir-eldorado',
       };
-      const editada = await firstValueFrom(ds.update('fl-3', { ...fl3, costos: '$1' }, 'BORRADOR'));
+      const editada = await firstValueFrom(ds.update('fl-3', { ...fl3, costos: '$1' }));
       expect(editada.costos).toBe('$1');
-      expect(await codigoDeError(firstValueFrom(ds.update('fl-3', { ...fl3, localidadId: 'loc-obera' }, 'BORRADOR')))).toBe(5000);
+      expect(await codigoDeError(firstValueFrom(ds.update('fl-3', { ...fl3, localidadId: 'loc-obera' })))).toBe(5000);
     });
   });
 });
@@ -124,7 +152,7 @@ describe('FichasLocalesMockDataSource · semillas según la fuente de adopciones
     expect(lista.map((f) => f.id)).toEqual(['fl-1', 'fl-2', 'fl-3', 'fl-4', 'fl-5', 'fl-6', 'fl-7', 'fl-8']);
   });
 
-  it('con adopciones reales arranca vacío, y sigue permitiendo crear y leer lo creado', async () => {
+  it('forzado con adopciones reales arranca vacío, y sigue permitiendo crear y leer lo creado', async () => {
     overrides['adopciones'] = 'prod';
     const ds = new FichasLocalesMockDataSource();
     expect(await firstValueFrom(ds.list())).toEqual([]);

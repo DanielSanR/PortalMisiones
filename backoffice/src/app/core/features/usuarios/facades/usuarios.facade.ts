@@ -2,9 +2,10 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, distinctUntilChanged, forkJoin, map, of, tap } from 'rxjs';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { UserRole } from '@core/enums/user-role.enum';
+import { etiquetaDeOrganismo, hintDeOrganismoPropio, organismoDeSesion } from '@core/utils/session.utils';
 import { UsuariosRepository } from '../repositories/usuarios.repository';
 import {
-  AsignacionRolFormValue, SesionUsuariosVM, UsuarioFormData, UsuarioFormValue, UsuarioVM,
+  AsignacionRolFormValue, SesionUsuariosVM, UsuarioFormData, UsuarioFormValue, UsuarioOrganismoFijo, UsuarioVM,
 } from '../models/usuario.vm';
 import { OrganismosRepository } from '@features/organismos';
 import { RolesRepository } from '@features/roles';
@@ -30,18 +31,19 @@ export class UsuariosFacade {
     private usuarios: UsuariosRepository,
     private organismos: OrganismosRepository,
     private roles: RolesRepository,
-    auth: AuthTokenService,
+    private auth: AuthTokenService,
   ) {
     this.sesion$ = auth.getCurrentUser$().pipe(
       map((usuario): SesionUsuariosVM => ({
         usuarioId: usuario?.id ?? null,
         email: usuario?.email ?? null,
         esSuperAdmin: usuario?.role === UserRole.SUPERADMIN,
-        organismoId: usuario?.organismoId ?? null,
+        rol: usuario?.role ?? null,
+        organismoId: organismoDeSesion(usuario)?.id ?? null,
       })),
       distinctUntilChanged((a, b) =>
         a.usuarioId === b.usuarioId && a.email === b.email
-        && a.esSuperAdmin === b.esSuperAdmin && a.organismoId === b.organismoId),
+        && a.esSuperAdmin === b.esSuperAdmin && a.rol === b.rol && a.organismoId === b.organismoId),
     );
   }
 
@@ -69,16 +71,34 @@ export class UsuariosFacade {
 
   /**
    * Resuelve en una sola llamada lo que necesita el formulario (organismos + roles + usuario en edición).
-   * Solo lo consumen las rutas usuarios/nuevo y usuarios/editar, que exigen además `READ_ORGANISM` y un rol
-   * admin (`/api/role/allowed`) — ver `PERMISSION_PREREQUISITES` / `EDITAR_USUARIO_ACCESS` —, así que no
-   * hace falta degradar nada.
+   * Solo lo consumen las rutas usuarios/nuevo y usuarios/editar, que exigen un rol admin
+   * (`/api/role/allowed`) y, para el organismo, `READ_ORGANISM` o un organismo propio en la sesión — ver
+   * `PERMISSION_PREREQUISITES` / `EDITAR_USUARIO_ACCESS` —, así que no hace falta degradar nada.
+   *
+   * Excepción documentada de sesión (igual que `AdopcionesFacade`/`EtiquetasFacade`): con una sesión de
+   * organismo NO se pide `/api/organism` (ese rol puede no tener `READ_ORGANISM` y el 403 abriría el
+   * diálogo global); la única opción se arma con el organismo que trae `/api/auth/me`.
    */
   getFormData(id: string | null): Observable<UsuarioFormData> {
+    const organismoFijo = this.organismoFijo();
     return forkJoin({
-      organismos: this.organismos.getOptions(),
+      organismos: organismoFijo
+        ? of([{ id: organismoFijo.id, nombre: organismoFijo.nombre }])
+        : this.organismos.getOptions(),
       rolesAllowed: this.roles.listAllowed(),
       usuario: id ? this.usuarios.getById(id) : of(null),
-    });
+    }).pipe(map((datos) => ({ ...datos, organismoFijo })));
+  }
+
+  /** Organismo de la sesión como única opción del form, o `null` si la sesión no está atada a uno. */
+  private organismoFijo(): UsuarioOrganismoFijo | null {
+    const organismo = this.auth.getUserOrganismo();
+    if (!organismo) return null;
+    return {
+      id: organismo.id,
+      nombre: etiquetaDeOrganismo(organismo),
+      motivo: `${hintDeOrganismoPropio(organismo)}: los usuarios que crees quedan en ese organismo.`,
+    };
   }
 
   create(form: UsuarioFormValue): Observable<UsuarioVM> {

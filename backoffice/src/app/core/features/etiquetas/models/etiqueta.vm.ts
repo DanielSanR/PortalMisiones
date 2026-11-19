@@ -24,7 +24,21 @@ export interface EtiquetaFormValue {
 /** Lo que necesita el formulario, resuelto en una sola llamada por el facade. */
 export interface EtiquetaFormData {
   etiqueta: EtiquetaVM | null;
-  /** Vacío si el usuario no puede leer organismos: el form sigue permitiendo etiquetas globales. */
+  /**
+   * Vacío si el usuario no puede leer organismos: el form sigue permitiendo etiquetas globales.
+   * Con `organismoFijo`, solo esa opción (no se pide el catálogo).
+   */
   organismos: OrganismoOption[];
+  /**
+   * Organismo de la sesión cuando el usuario tiene alcance de organismo (`/api/auth/me`, G-2): solo puede
+   * crear etiquetas locales de ese organismo, así que el campo va con él, como dato de solo lectura.
+   * `null` = sesión global (o backend anterior): elige el alcance en el select.
+   */
+  organismoFijo: EtiquetaOrganismoFijo | null;
+}
+
+/** Organismo impuesto por la sesión, con el texto que explica por qué no se puede cambiar. */
+export interface EtiquetaOrganismoFijo extends OrganismoOption {
+  motivo: string;
 }
 

@@ -1,30 +1,24 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '@env/environment';
 import { ResponseDTO } from '@core/models/api-response.model';
 import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 import { FichasLocalesDataSource } from './fichas-locales.datasource';
-import { OrganismProcedureLocationExtendedResponseDTO } from '../models/ficha-local.dto';
+import { FichasLocalesFiltro, OrganismProcedureLocationResponseDTO } from '../models/ficha-local.dto';
 import { toFichaLocal, toOrganismProcedureLocationRequest } from '../mappers/fichas-locales.mapper';
-import { EstadoFicha, FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
+import { FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
 import { TransicionBackend } from '../models/workflow';
 
 /**
  * Implementación HTTP real (`/api/organism-procedure-location`, permisos `*_VARIANT` y
- * `PUBLISH_VARIANT`). Completa, pero **NO ACTIVA**: el override `'fichas-locales'` sigue en `'mock'`
- * hasta que el backend cierre G-1.
+ * `PUBLISH_VARIANT`), contra el backend `dev` @ `586b670`.
  *
- * Por qué no se activa: el response real trae solo `{ id, slug, publicationStatus, active,
- * currentVersionNumber }` y el `PUT` es reemplazo total. Sin saber la adopción, la localidad, la URL,
- * los requisitos ni los costos de la ficha, cualquier edición los mandaría vacíos y los BORRARÍA.
- * (Además, el form se niega a editar una ficha con `contenidoCompleto = false`.) El mapper ya tolera
- * el response extendido: cuando G-1 esté, alcanza con quitar el override.
- *
+ * - El response trae la ficha completa (adopción, localidad, URL, requisitos, costos): lo leído con un
+ *   `GET` es base suficiente para el `PUT`, que es reemplazo total.
  * - El alcance lo decide el backend (`OrganismScope`): global para SA/MANAGER, el organismo para AO/AGENT.
  * - Nada abre el diálogo global de error (`sinDialogoGlobal()`): cada pantalla traduce el error
- *   (`4077`, `4073`, `4091`; un 500 `5000` para duplicados y, en staging hasta OPS-1, para casi todo: G-4)
- *   con un texto prudente.
+ *   (`4012`, `4073`, `4077`, `4091`, y el 500 `5000` de los duplicados) con un texto propio.
  * - Todos los segmentos interpolados van con `encodeURIComponent`.
  */
 @Injectable()
@@ -37,40 +31,41 @@ export class FichasLocalesHttpDataSource extends FichasLocalesDataSource {
     super();
   }
 
-  list(): Observable<FichaLocal[]> {
+  list(filtro?: FichasLocalesFiltro): Observable<FichaLocal[]> {
+    // El filtro es opcional: sin él, el backend devuelve todo el alcance.
+    const params = filtro?.adopcionId
+      ? new HttpParams().set('organismProcedureId', filtro.adopcionId)
+      : undefined;
     return this.http
-      .get<ResponseDTO<OrganismProcedureLocationExtendedResponseDTO[]>>(this.apiUrl, sinDialogoGlobal())
+      .get<ResponseDTO<OrganismProcedureLocationResponseDTO[]>>(this.apiUrl, { ...sinDialogoGlobal(), params })
       .pipe(map((res) => (res.data ?? []).map(toFichaLocal)));
   }
 
   getById(id: string): Observable<FichaLocal> {
     return this.http
-      .get<ResponseDTO<OrganismProcedureLocationExtendedResponseDTO>>(this.urlDe(id), sinDialogoGlobal())
+      .get<ResponseDTO<OrganismProcedureLocationResponseDTO>>(this.urlDe(id), sinDialogoGlobal())
       .pipe(map((res) => toFichaLocal(res.data)));
   }
 
   create(form: FichaLocalFormValue): Observable<FichaLocal> {
-    // El alta nace siempre en BORRADOR: el backend ignora el estado del POST. Se manda igual para el backend
-    // de staging (anterior), donde la columna NOT NULL lo exige.
     return this.http
-      .post<ResponseDTO<OrganismProcedureLocationExtendedResponseDTO>>(
-        this.apiUrl, toOrganismProcedureLocationRequest(form, 'BORRADOR'), sinDialogoGlobal(),
+      .post<ResponseDTO<OrganismProcedureLocationResponseDTO>>(
+        this.apiUrl, toOrganismProcedureLocationRequest(form), sinDialogoGlobal(),
       )
       .pipe(map((res) => toFichaLocal(res.data)));
   }
 
-  update(id: string, form: FichaLocalFormValue, estadoActual: EstadoFicha): Observable<FichaLocal> {
-    // `dev` ya no aplica `publicationStatus` en el PUT; staging (backend anterior) sí: se manda el estado actual.
+  update(id: string, form: FichaLocalFormValue): Observable<FichaLocal> {
     return this.http
-      .put<ResponseDTO<OrganismProcedureLocationExtendedResponseDTO>>(
-        this.urlDe(id), toOrganismProcedureLocationRequest(form, estadoActual), sinDialogoGlobal(),
+      .put<ResponseDTO<OrganismProcedureLocationResponseDTO>>(
+        this.urlDe(id), toOrganismProcedureLocationRequest(form), sinDialogoGlobal(),
       )
       .pipe(map((res) => toFichaLocal(res.data)));
   }
 
   transicion(id: string, transicion: TransicionBackend): Observable<FichaLocal> {
     return this.http
-      .post<ResponseDTO<OrganismProcedureLocationExtendedResponseDTO>>(
+      .post<ResponseDTO<OrganismProcedureLocationResponseDTO>>(
         `${this.urlDe(id)}/${encodeURIComponent(transicion)}`, null, sinDialogoGlobal(),
       )
       .pipe(map((res) => toFichaLocal(res.data)));

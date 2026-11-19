@@ -1664,6 +1664,15 @@ mat-select,
   font-family: var(--theme-font-mono);
 }
 
+// Dato fijado que no se elige (p. ej. el organismo que impone la sesión): `<input matInput readonly>` dentro
+// de `<mat-form-field class="form-field__solo-lectura">`. Sigue enfocable y con el texto en `text-primary`
+// (un campo `disabled` sale del orden de tabulación y su texto no llega a AA); la caja gris solo lo
+// distingue de uno editable, igual que la de los deshabilitados.
+.mat-mdc-form-field.form-field__solo-lectura .mat-mdc-text-field-wrapper {
+  background-color: var(--theme-neutral-100);
+  border-radius: var(--theme-radius-md);
+}
+
 // Vista previa derivada de un campo (p. ej. cómo queda el slug al guardarse). El bloque es la región viva
 // (`aria-live`), siempre montada y sin caja propia: vacía no ocupa lugar. El espaciado va en `__texto`.
 //   <div class="field-preview" aria-live="polite">

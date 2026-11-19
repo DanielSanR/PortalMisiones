@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  BehaviorSubject, Observable, catchError, concatMap, throwError, defer, distinctUntilChanged, forkJoin, from, last, map, of,
-  shareReplay, skip, switchMap, tap,
+  BehaviorSubject, Observable, catchError, concatMap, throwError, defer, distinctUntilChanged, forkJoin, from, last, map,
+  mergeMap, of, shareReplay, skip, switchMap, tap, toArray,
 } from 'rxjs';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { PUBLICACION_POLICY } from '@core/constants/policy-overrides.constants';
@@ -13,9 +13,12 @@ import { OrganismosRepository } from '@features/organismos';
 import { LocalidadVM, LocalidadesRepository } from '@features/localidades';
 import { FichasLocalesRepository } from '../repositories/fichas-locales.repository';
 import {
-  FichaAdopcionResumen, FichaFormData, FichaLocal, FichaLocalFormValue, FichaLocalVM, FichasDeAdopcion,
+  FichaAdopcionResumen, FichaBase, FichaFormData, FichaGuardada, FichaLocal, FichaLocalFormValue, FichaLocalVM,
+  FichasDeAdopcion, MotivoNoVigente,
 } from '../models/ficha-local.vm';
+import { DespublicacionFallidaError, FichaCambiadaError, FichaSinContenidoError } from '../models/ficha-errores';
 import { AccionWorkflow, TRANSICIONES_DE_ACCION, accionesDisponibles } from '../models/workflow';
+import { motivoNoVigente } from '../models/vigencia-adopcion';
 
 /** Permisos que exige leer cada catálogo de nombres en el backend. Las localidades son públicas. */
 const LEER_ADOPCIONES = 'READ_ADOPTION';
@@ -23,6 +26,15 @@ const LEER_PLANTILLAS = 'READ_PROCEDURE';
 const LEER_ORGANISMOS = 'READ_ORGANISM';
 /** Permiso de publicar/despublicar (D-3: decide el permiso, nunca el rol). */
 const PUBLICAR = 'PUBLISH_VARIANT';
+
+/** Lecturas sueltas (`GET /{id}`) en paralelo, como mucho: un listado con muchas adopciones deshabilitadas no abre N conexiones. */
+const CONCURRENCIA_SUELTAS = 4;
+
+/** El `GET /{id}` dijo que no existe o que está fuera del alcance: volver a pedirlo no cambia nada. */
+function esLecturaDefinitiva(err: unknown): boolean {
+  const status = (err as { status?: number } | null)?.status;
+  return status === 404 || status === 403;
+}
 
 /** Acciones de workflow que se ofrecen para una ficha con la sesión vigente. */
 export type ResolverAccionesWorkflow = (ficha: Pick<FichaLocalVM, 'estado' | 'activa'>) => AccionWorkflow[];
@@ -60,22 +72,11 @@ interface Lectura<T> {
  * `READ_PROCEDURE` (G-3), y solo SA tiene `READ_ORGANISM`; pedirlos abriría 403. Las localidades son
  * públicas. Se decide siempre por permiso, nunca por rol.
  *
- * Con el response real de hoy (G-1) la ficha no trae adopción ni localidad: todos los nombres quedan
- * en `null` y el form no deja editar (`contenidoCompleto = false`).
- *
  * También deriva de la sesión, como Observables, lo que el workflow ofrece (`puedePublicar$`,
  * `accionesWorkflow$`): así las pantallas consumen solo este facade y no inyectan `AuthTokenService`.
  * La regla es `accionesDisponibles` (permiso, nunca rol: D-3) + `PUBLICACION_POLICY`; el permiso de
  * cada acción lo vuelve a exigir el backend.
  */
-/**
- * ¿La fuente dice a qué adopción pertenece cada ficha? Con el response mínimo del backend (G-1) no:
- * `adopcionId` llega en `null` y no se puede agrupar ni validar duplicados de localidad.
- */
-function puedeAgruparPorAdopcion(lista: FichaLocal[]): boolean {
-  return lista.every((f) => f.adopcionId !== null);
-}
-
 @Injectable({ providedIn: 'root' })
 export class FichasLocalesFacade {
   private readonly _fichas$ = new BehaviorSubject<FichaLocalVM[]>([]);
@@ -93,7 +94,7 @@ export class FichasLocalesFacade {
 
   /**
    * ¿Los datos son simulados (no se guardan en el servidor)? Lo decide la fuente; la UI muestra un aviso
-   * persistente. Mientras G-1 siga abierto, vale para fichas y puntos de atención.
+   * persistente solo en ese caso (hoy, el modo todo-mock de `ng serve`).
    */
   get fuenteSimulada(): boolean {
     return this.fichas.fuenteSimulada;
@@ -102,10 +103,17 @@ export class FichasLocalesFacade {
   private contextoCache$: Observable<Contexto> | null = null;
   /** Permisos con los que se armó la caché: si la sesión cambia (otro rol, refresh), se rearma. */
   private contextoClave = '';
-  /** Adopciones deshabilitadas (no vienen en el listado), leídas de a una con `GET /{id}`. */
-  private readonly adopcionesSueltas = new Map<string, Adopcion>();
-  /** Plantillas desactivadas (no vienen en el listado), leídas de a una con `GET /{id}`. */
-  private readonly plantillasSueltas = new Map<string, PlantillaNombre>();
+  /**
+   * Adopciones deshabilitadas (no vienen en el listado), leídas de a una con `GET /{id}` y recordadas por id
+   * hasta que cambie la sesión o sus permisos: recargar el listado no las vuelve a pedir. `null` = el backend
+   * dijo que no existe o está fuera del alcance (tampoco se reintenta). La lectura de UNA ficha (`getDetalle`)
+   * sí vuelve a pedir la suya, para que el aviso de vigencia no salga de un dato viejo.
+   */
+  private readonly adopcionesSueltas = new Map<string, Adopcion | null>();
+  /** Plantillas desactivadas (no vienen en el listado): misma regla que `adopcionesSueltas`. */
+  private readonly plantillasSueltas = new Map<string, PlantillaNombre | null>();
+  /** Sube con cada invalidación: una lectura suelta que termina tarde no se guarda en la caché de otra sesión. */
+  private generacion = 0;
 
   constructor(
     private fichas: FichasLocalesRepository,
@@ -150,26 +158,43 @@ export class FichasLocalesFacade {
     );
   }
 
-  /** Una ficha (activa o no) con los nombres resueltos. */
+  /**
+   * Una ficha (activa o no) con los nombres resueltos. Es la lectura de una PANTALLA (detalle, form de edición):
+   * la vigencia de su adopción (`adopcionNoVigente`) se calcula con datos recién leídos, no con la caché de la
+   * sesión; si no, habilitar/deshabilitar la adopción o cambiarle la vigencia en "Trámites del organismo" no se
+   * vería acá hasta cerrar sesión. Cuesta releer los catálogos y, a lo sumo, un `GET` de su adopción.
+   */
   getDetalle(id: string): Observable<FichaLocalVM> {
-    return this.fichas.getById(id).pipe(switchMap((ficha) => this.aVM(ficha)));
+    return this.fichas.getById(id).pipe(switchMap((ficha) => this.aVM(ficha, true)));
   }
 
   /**
-   * Fichas (activas e inactivas) de una adopción, para el detalle del trámite del organismo. El
-   * backend no filtra por adopción (G-1): se pide el listado completo del alcance y se filtra acá.
-   * Si la fuente no informa la adopción de cada ficha (response mínimo de G-1), no se puede filtrar:
-   * devuelve `disponible: false` en vez de una lista vacía engañosa. No toca `fichas$`.
+   * Fichas (activas e inactivas) de una adopción, para el detalle del trámite del organismo: las filtra
+   * la fuente (`?organismProcedureId=`). Además dice si hoy se le pueden agregar fichas (el backend solo
+   * lo acepta con la adopción vigente); si la adopción no se puede leer, eso queda sin decidir (`null`)
+   * y la lista se muestra igual. No toca `fichas$`.
+   *
+   * Se vuelve a filtrar acá por `adopcionId` para no depender del filtro del servidor (igual que
+   * `PuntosAtencionFacade.getDeFicha`): un backend anterior a `586b670` ignora `?organismProcedureId=` y
+   * devuelve TODO el alcance, que se mostraría como fichas de esta adopción. COMPATIBILIDAD TEMPORAL: ese
+   * backend además no dice de qué adopción es cada ficha; en ese caso no se muestra ninguna y `sinContenido`
+   * lo avisa (un vacío sin aviso se leería como "no tiene fichas").
    */
   getDeAdopcion(adopcionId: string): Observable<FichasDeAdopcion> {
-    return this.fichas.list().pipe(
-      switchMap((lista) => {
-        if (!puedeAgruparPorAdopcion(lista)) return of<FichasDeAdopcion>({ disponible: false, fichas: [] });
-        return this.aVMs(lista.filter((f) => f.adopcionId === adopcionId)).pipe(
-          map((fichas): FichasDeAdopcion => ({ disponible: true, fichas })),
-        );
-      }),
-    );
+    const motivo$: Observable<MotivoNoVigente | null> = this.auth.can(LEER_ADOPCIONES)
+      ? this.adopciones.getById(adopcionId).pipe(
+        map((adopcion) => motivoNoVigente(adopcion, new Date())),
+        catchError(() => of(null)),
+      )
+      : of(null);
+    return forkJoin({
+      leidas: this.fichas.list({ adopcionId }).pipe(
+        switchMap((lista) => this.aVMs(lista.filter((f) => f.adopcionId === adopcionId)).pipe(
+          map((fichas) => ({ fichas, sinContenido: lista.some((f) => f.sinContenido) })),
+        )),
+      ),
+      motivoNoVigente: motivo$,
+    }).pipe(map(({ leidas, motivoNoVigente: motivo }) => ({ ...leidas, motivoNoVigente: motivo })));
   }
 
   /**
@@ -177,6 +202,13 @@ export class FichasLocalesFacade {
    * slug sugerido, P-5), las localidades y lo ya ocupado para validar duplicados antes de guardar.
    * En alta, que la adopción no exista es un error (no hay a qué colgar la ficha); en edición, no
    * poder leerla solo deja los nombres sin resolver.
+   *
+   * Se pide el listado completo del alcance (sin `?organismProcedureId=`) porque los slugs se validan
+   * contra TODAS las fichas visibles, no solo las de la adopción; con ese mismo listado se sacan las
+   * localidades ocupadas de la adopción, sin un segundo pedido.
+   *
+   * La vigencia de la adopción sale siempre de una lectura nueva: la de la ficha por `getDetalle` (que relee
+   * los catálogos) y la del resumen por `GET /{id}` de la adopción.
    */
   getFormData(fichaId: string | null, adopcionId: string | null): Observable<FichaFormData> {
     const ficha$: Observable<FichaLocalVM | null> = fichaId ? this.getDetalle(fichaId) : of(null);
@@ -191,11 +223,8 @@ export class FichasLocalesFacade {
           map(({ adopcion, localidades, todas }): FichaFormData => {
             // También las desactivadas: los UNIQUE del backend (`V2.27`) no distinguen `active`.
             const otras = todas.filter((f) => f.id !== ficha?.id);
-            const localidadesVerificables = puedeAgruparPorAdopcion(todas);
-            const deLaAdopcion = idAdopcion && localidadesVerificables
-              ? otras.filter((f) => f.adopcionId === idAdopcion && f.localidadId)
-              : [];
-            const conFichaActiva = new Set(deLaAdopcion.filter((f) => f.activa).map((f) => f.localidadId as string));
+            const deLaAdopcion = idAdopcion ? otras.filter((f) => f.adopcionId === idAdopcion) : [];
+            const conFichaActiva = new Set(deLaAdopcion.filter((f) => f.activa).map((f) => f.localidadId));
             return {
               ficha,
               adopcion,
@@ -203,11 +232,10 @@ export class FichasLocalesFacade {
                 .map((l) => ({ id: l.id, nombre: l.nombre, departamentoNombre: l.departamentoNombre }))
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es-AR', { sensitivity: 'base' })),
               ocupadas: {
-                localidadIds: [...new Set(deLaAdopcion.map((f) => f.localidadId as string))],
+                localidadIds: [...new Set(deLaAdopcion.map((f) => f.localidadId))],
                 localidadIdsDesactivadas: [...new Set(deLaAdopcion
-                  .map((f) => f.localidadId as string)
+                  .map((f) => f.localidadId)
                   .filter((id) => !conFichaActiva.has(id)))],
-                localidadesVerificables,
                 slugs: otras.map((f) => canonicalizarSlug(f.slug)),
               },
             };
@@ -218,27 +246,21 @@ export class FichasLocalesFacade {
   }
 
   /**
-   * Trámites del organismo (adopciones) habilitados a los que se les puede colgar una ficha, con el
-   * nombre del trámite y del organismo: es lo que el alta sin `?adopcion=` deja elegir. Sin
-   * `READ_ADOPTION` devuelve `[]` (el alta tampoco se ofrece sin ese permiso: `CREAR_FICHA_ACCESS`).
-   * Relee los catálogos (no usa la caché): lo que se acaba de adoptar tiene que aparecer. Ordenadas por
-   * trámite y organismo; las que no tienen nombre (sin `READ_PROCEDURE`) quedan al final.
+   * Trámites del organismo (adopciones) habilitados, con el nombre del trámite y del organismo y si están
+   * VIGENTES: es lo que el alta sin `?adopcion=` deja elegir. El backend solo acepta fichas de una adopción
+   * vigente (si no, 404), así que las habilitadas que todavía no empezaron o ya vencieron vienen marcadas
+   * (`vigente = false` + motivo) para que el form las muestre como no elegibles en vez de esconderlas. Las
+   * deshabilitadas no vienen: el listado del backend no las devuelve. Sin `READ_ADOPTION` devuelve `[]` (el
+   * alta tampoco se ofrece sin ese permiso: `CREAR_FICHA_ACCESS`). Relee los catálogos (no usa la caché): lo
+   * que se acaba de adoptar tiene que aparecer. Ordenadas por trámite y organismo; las que no tienen nombre
+   * (sin `READ_PROCEDURE`) quedan al final.
    */
   getAdopcionesParaFicha(): Observable<FichaAdopcionResumen[]> {
     if (!this.auth.can(LEER_ADOPCIONES)) return of([]);
     return this.contexto(true).pipe(
       map((contexto) => [...contexto.adopciones.values()]
         .filter((a) => a.habilitada)
-        .map((a): FichaAdopcionResumen => {
-          const plantilla = contexto.plantillas.get(a.plantillaId);
-          return {
-            id: a.id,
-            plantillaTitulo: plantilla?.titulo ?? null,
-            plantillaSlug: plantilla?.slug ?? null,
-            organismoNombre: contexto.organismos.get(a.organismoId) ?? null,
-            habilitada: a.habilitada,
-          };
-        })
+        .map((a) => this.aResumen(a, contexto.plantillas.get(a.plantillaId) ?? null, contexto.organismos.get(a.organismoId) ?? null))
         .sort((a, b) => {
           if (!a.plantillaTitulo !== !b.plantillaTitulo) return a.plantillaTitulo ? -1 : 1;
           return (a.plantillaTitulo ?? '').localeCompare(b.plantillaTitulo ?? '', 'es-AR', { sensitivity: 'base' })
@@ -256,28 +278,62 @@ export class FichasLocalesFacade {
   }
 
   /**
-   * Edición (PUT total). Antes de guardar se relee la ficha para mandar su estado ACTUAL en
-   * `publicationStatus`: `dev` ya no lo aplica (R-1 resuelto), pero staging corre un backend anterior
-   * donde una edición con datos viejos revertiría una publicación o despublicación hecha mientras
-   * tanto. No quitar la relectura hasta OPS-1. El estado nunca lo elige el usuario.
+   * Edición (PUT total sobre lo que devolvió el `GET`). Guardar no cambia el estado de publicación: el
+   * backend lo conserva. Hay una excepción, y el resultado la informa (`despublicada`):
    *
-   * Desactivar una ficha PUBLICADA va por el mismo camino que "Desactivar" (`DELETE`, que además la
-   * despublica): un PUT con `active=false` la dejaría inactiva pero `PUBLICADO`. El form ya no lo
-   * ofrece; esto cubre que se haya publicado mientras se editaba.
+   * Desactivar una ficha PUBLICADA es cosa de "Desactivar" (`DELETE`, que además la despublica): un PUT
+   * con `active=false` la deja inactiva pero `PUBLICADO`. El form no lo ofrece (bloquea el interruptor de
+   * una publicada activa), pero pasa igual si la publicaron mientras se editaba, o al guardar cualquier cambio
+   * en una ficha que YA estaba publicada e inactiva. Ahí se completa con el `DELETE` y se relee, para que no
+   * quede en ese estado contradictorio. Si ese segundo paso falla, el error es `DespublicacionFallidaError`
+   * (los cambios SÍ se guardaron), no un error de guardado.
+   *
+   * `base` (lo que el form leyó): el PUT no viaja con versión, así que el backend solo rechaza dos escrituras
+   * simultáneas (`4091`); un formulario abierto hace rato pisaría sin aviso lo que otro guardó. Para
+   * achicar ese riesgo se relee la ficha justo antes del PUT y, si cambió de versión, de estado o de `activa`
+   * (el `DELETE` que desactiva no suma versión), no se guarda:
+   * `FichaCambiadaError` con la ficha actual, y la pantalla decide (recargar, o volver a llamar con la base
+   * nueva para guardar a sabiendas). Es una mitigación, no un candado: entre esa lectura y el PUT queda una
+   * ventana de milisegundos. Sin `base` no se compara.
+   *
+   * COMPATIBILIDAD TEMPORAL: sin adopción o localidad (ficha `sinContenido`, backend anterior a `586b670`)
+   * no se envía nada: `FichaSinContenidoError`.
    */
-  update(id: string, form: FichaLocalFormValue): Observable<FichaLocalVM> {
-    return this.fichas.getById(id).pipe(
-      switchMap((actual) => {
-        if (!(actual.estado === 'PUBLICADO' && actual.activa && !form.activa)) {
-          return this.fichas.update(id, form, actual.estado);
-        }
-        return this.fichas.update(id, { ...form, activa: true }, actual.estado).pipe(
-          switchMap(() => this.fichas.desactivar(id)),
-          switchMap(() => this.fichas.getById(id)),
+  update(id: string, form: FichaLocalFormValue, base?: FichaBase): Observable<FichaGuardada> {
+    if (!form.adopcionId || !form.localidadId) return throwError(() => new FichaSinContenidoError());
+    return this.verificarBase(id, base).pipe(
+      switchMap(() => this.fichas.update(id, form)),
+      switchMap((guardada): Observable<{ ficha: FichaLocal; despublicada: boolean }> => {
+        if (guardada.estado !== 'PUBLICADO' || guardada.activa) return of({ ficha: guardada, despublicada: false });
+        return this.fichas.desactivar(id).pipe(
+          // Solo el `DELETE`: si falla, el PUT ya está persistido y la lista tiene que reflejarlo.
+          catchError(() => this.aVM(guardada).pipe(
+            tap((vm) => this.reemplazar(vm)),
+            switchMap((vm) => throwError(() => new DespublicacionFallidaError(vm))),
+          )),
+          // El `DELETE` salió bien: si la relectura falla, vale la regla del backend (publicada → despublicada).
+          switchMap(() => this.fichas.getById(id).pipe(
+            catchError(() => of<FichaLocal>({ ...guardada, estado: 'DESPUBLICADO' })),
+          )),
+          map((releida) => ({ ficha: releida, despublicada: releida.estado !== 'PUBLICADO' })),
         );
       }),
-      switchMap((ficha) => this.aVM(ficha)),
-      tap((actualizada) => this.reemplazar(actualizada)),
+      switchMap(({ ficha, despublicada }) => this.aVM(ficha).pipe(map((vm): FichaGuardada => ({ ficha: vm, despublicada })))),
+      tap(({ ficha }) => this.reemplazar(ficha)),
+    );
+  }
+
+  /** Relee la ficha y falla con `FichaCambiadaError` si ya no es la que el form leyó (ver `update`). */
+  private verificarBase(id: string, base: FichaBase | undefined): Observable<void> {
+    if (!base) return of(void 0);
+    return this.fichas.getById(id).pipe(
+      switchMap((actual) => {
+        if (actual.sinContenido) return throwError(() => new FichaSinContenidoError());
+        // `activa` aparte de la versión: desactivar (`DELETE`) una ficha que no está publicada no cambia ni la
+        // versión ni el estado, y el PUT (que lleva `active`) la reactivaría sin que nadie lo pidiera.
+        if (actual.version === base.version && actual.estado === base.estado && actual.activa === base.activa) return of(void 0);
+        return this.aVM(actual).pipe(switchMap((vm) => throwError(() => new FichaCambiadaError(vm))));
+      }),
     );
   }
 
@@ -351,80 +407,123 @@ export class FichasLocalesFacade {
           : of(null),
         contexto: this.contexto(),
       }).pipe(
-        map(({ plantilla, contexto }): FichaAdopcionResumen => ({
-          id: adopcion.id,
-          plantillaTitulo: plantilla?.titulo ?? null,
-          plantillaSlug: plantilla?.slug ?? null,
-          organismoNombre: contexto.organismos.get(adopcion.organismoId) ?? null,
-          habilitada: adopcion.habilitada,
-        })),
+        map(({ plantilla, contexto }) => this.aResumen(adopcion, plantilla, contexto.organismos.get(adopcion.organismoId) ?? null)),
       )),
     );
     return estricto ? resumen$ : resumen$.pipe(catchError(() => of(null)));
   }
 
-  private aVM(ficha: FichaLocal): Observable<FichaLocalVM> {
-    return this.aVMs([ficha]).pipe(map(([vm]) => vm));
+  /** Resumen de una adopción, con su vigencia calculada ahora (misma regla que el backend al guardar la ficha). */
+  private aResumen(adopcion: Adopcion, plantilla: PlantillaNombre | null, organismoNombre: string | null): FichaAdopcionResumen {
+    const motivo = motivoNoVigente(adopcion, new Date());
+    return {
+      id: adopcion.id,
+      plantillaTitulo: plantilla?.titulo ?? null,
+      plantillaSlug: plantilla?.slug ?? null,
+      organismoNombre,
+      habilitada: adopcion.habilitada,
+      vigente: motivo === null,
+      motivoNoVigente: motivo,
+      vigenteDesde: adopcion.vigenteDesde,
+      vigenteHasta: adopcion.vigenteHasta,
+    };
   }
 
-  /** Completa los nombres. Las adopciones y plantillas que no vienen en sus listados se piden de a una. */
-  private aVMs(lista: FichaLocal[], refrescar = false): Observable<FichaLocalVM[]> {
+  /** `alDia`: relee los catálogos y la adopción de la ficha (lectura de una pantalla; ver `getDetalle`). */
+  private aVM(ficha: FichaLocal, alDia = false): Observable<FichaLocalVM> {
+    return this.aVMs([ficha], alDia, alDia).pipe(map(([vm]) => vm));
+  }
+
+  /**
+   * Completa los nombres. Las adopciones y plantillas que no vienen en sus listados se piden de a una (una vez
+   * por sesión). `releerSueltas`: olvida lo recordado de las adopciones de ESTAS fichas, para que si no vienen en
+   * el listado (deshabilitadas) se vuelvan a pedir; solo para la lectura de una ficha, nunca para un listado
+   * (sería un `GET` por adopción en cada recarga).
+   */
+  private aVMs(lista: FichaLocal[], refrescar = false, releerSueltas = false): Observable<FichaLocalVM[]> {
     if (!lista.length) return of([]);
     return this.contexto(refrescar).pipe(
+      tap(() => {
+        if (releerSueltas) lista.forEach((ficha) => this.adopcionesSueltas.delete(ficha.adopcionId));
+      }),
       switchMap((contexto) => this.completarSueltas(lista, contexto)),
       map((contexto) => lista.map((ficha) => this.resolver(ficha, contexto))),
     );
   }
 
   private resolver(ficha: FichaLocal, ctx: Contexto): FichaLocalVM {
-    const adopcion = ficha.adopcionId
-      ? ctx.adopciones.get(ficha.adopcionId) ?? this.adopcionesSueltas.get(ficha.adopcionId)
-      : undefined;
-    const plantillaId = ficha.plantillaId ?? adopcion?.plantillaId ?? null;
-    const organismoId = ficha.organismoId ?? adopcion?.organismoId ?? null;
+    const adopcion = this.adopcionDe(ficha, ctx);
+    const plantillaId = adopcion?.plantillaId ?? null;
+    const organismoId = adopcion?.organismoId ?? null;
     const plantilla = plantillaId ? ctx.plantillas.get(plantillaId) ?? this.plantillasSueltas.get(plantillaId) : undefined;
     return {
       ...ficha,
       plantillaId,
       organismoId,
-      plantillaTitulo: ficha.plantillaTitulo ?? plantilla?.titulo ?? null,
-      organismoNombre: ficha.organismoNombre ?? (organismoId ? ctx.organismos.get(organismoId) : undefined) ?? null,
-      localidadNombre: ficha.localidadNombre ?? (ficha.localidadId ? ctx.localidades.get(ficha.localidadId)?.nombre : undefined) ?? null,
+      plantillaTitulo: plantilla?.titulo ?? null,
+      organismoNombre: (organismoId ? ctx.organismos.get(organismoId) : undefined) ?? null,
+      localidadNombre: ctx.localidades.get(ficha.localidadId)?.nombre ?? null,
+      // Sin la adopción (sin permiso o no se pudo leer) queda sin decidir: `null`.
+      adopcionNoVigente: adopcion ? motivoNoVigente(adopcion, new Date()) : null,
     };
+  }
+
+  /** La adopción de una ficha: la del listado o, si está deshabilitada, la leída suelta. */
+  private adopcionDe(ficha: FichaLocal, ctx: Contexto): Adopcion | null {
+    return ctx.adopciones.get(ficha.adopcionId) ?? this.adopcionesSueltas.get(ficha.adopcionId) ?? null;
   }
 
   /**
    * El listado de adopciones solo trae las habilitadas, y el de plantillas solo las activas: una ficha
    * de una adopción deshabilitada (o de una plantilla desactivada) quedaría sin nombres. Esas se leen
-   * con `GET /{id}` (que también devuelve las inactivas) y se recuerdan.
+   * con `GET /{id}` (que también devuelve las inactivas) y se recuerdan por id (`adopcionesSueltas`,
+   * `plantillasSueltas`): cada una se pide una sola vez por sesión, no en cada recarga del listado, y de a
+   * `CONCURRENCIA_SUELTAS` por vez. Si una deshabilitada vuelve a habilitarse aparece en el listado, que gana.
    */
   private completarSueltas(lista: FichaLocal[], ctx: Contexto): Observable<Contexto> {
     const faltanAdopciones = this.auth.can(LEER_ADOPCIONES)
-      ? [...new Set(lista.map((f) => f.adopcionId).filter((id): id is string => !!id))]
+      // `filter(Boolean)`: una ficha `sinContenido` no trae adopción; no hay nada que pedir.
+      ? [...new Set(lista.map((f) => f.adopcionId).filter(Boolean))]
         .filter((id) => !ctx.adopciones.has(id) && !this.adopcionesSueltas.has(id))
       : [];
-    const adopciones$ = faltanAdopciones.length
-      ? forkJoin(faltanAdopciones.map((id) => this.adopciones.getById(id).pipe(
-        tap((a) => this.adopcionesSueltas.set(a.id, a)),
-        catchError(() => of(null)),
-      )))
-      : of([]);
 
-    return adopciones$.pipe(
+    return this.leerSueltas(faltanAdopciones, (id) => this.adopciones.getById(id), this.adopcionesSueltas).pipe(
       switchMap(() => {
         if (!this.auth.can(LEER_PLANTILLAS)) return of(ctx);
         const faltanPlantillas = [...new Set(lista
-          .map((f) => f.plantillaId ?? (f.adopcionId
-            ? (ctx.adopciones.get(f.adopcionId) ?? this.adopcionesSueltas.get(f.adopcionId))?.plantillaId
-            : undefined))
+          .map((f) => this.adopcionDe(f, ctx)?.plantillaId)
           .filter((id): id is string => !!id))]
           .filter((id) => !ctx.plantillas.has(id) && !this.plantillasSueltas.has(id));
-        if (!faltanPlantillas.length) return of(ctx);
-        return forkJoin(faltanPlantillas.map((id) => this.plantillas.getById(id).pipe(
-          tap((p) => this.plantillasSueltas.set(p.id, { titulo: p.titulo, slug: p.slug })),
-          catchError(() => of(null)),
-        ))).pipe(map(() => ctx));
+        return this.leerSueltas(
+          faltanPlantillas,
+          (id) => this.plantillas.getById(id).pipe(map((p): PlantillaNombre => ({ titulo: p.titulo, slug: p.slug }))),
+          this.plantillasSueltas,
+        ).pipe(map(() => ctx));
       }),
+    );
+  }
+
+  /**
+   * Lee `ids` de a uno, con concurrencia acotada, y los recuerda en `cache`. Un fallo no tumba el resto: el
+   * nombre queda sin resolver. Un 404/403 se recuerda como `null` (no se reintenta); cualquier otro fallo
+   * (conexión, 5xx) no se recuerda, para volver a probar en la próxima lectura.
+   */
+  private leerSueltas<T>(ids: string[], leer: (id: string) => Observable<T>, cache: Map<string, T | null>): Observable<void> {
+    if (!ids.length) return of(void 0);
+    const generacion = this.generacion;
+    const recordar = (id: string, valor: T | null): void => {
+      if (generacion === this.generacion) cache.set(id, valor);
+    };
+    return from(ids).pipe(
+      mergeMap((id) => leer(id).pipe(
+        tap((valor) => recordar(id, valor)),
+        catchError((err: unknown) => {
+          if (esLecturaDefinitiva(err)) recordar(id, null);
+          return of(null);
+        }),
+      ), CONCURRENCIA_SUELTAS),
+      toArray(),
+      map(() => void 0),
     );
   }
 
@@ -436,10 +535,7 @@ export class FichasLocalesFacade {
       refrescar = true;
     }
     if (!this.contextoCache$ || refrescar) {
-      if (refrescar) {
-        this.adopcionesSueltas.clear();
-        this.plantillasSueltas.clear();
-      }
+      // Refrescar relee los LISTADOS; las lecturas sueltas se conservan (ver `completarSueltas`).
       const cache$: Observable<Contexto> = forkJoin({
         adopciones: this.leer(LEER_ADOPCIONES, () => this.adopciones.list().pipe(
           map((lista) => lista.map((a): [string, Adopcion] => [a.id, a])),
@@ -476,6 +572,7 @@ export class FichasLocalesFacade {
   private invalidarContexto(): void {
     this.contextoCache$ = null;
     this.contextoClave = '';
+    this.generacion++;
     this.adopcionesSueltas.clear();
     this.plantillasSueltas.clear();
   }

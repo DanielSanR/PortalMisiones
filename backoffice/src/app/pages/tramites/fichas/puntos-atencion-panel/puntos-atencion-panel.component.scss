@@ -46,6 +46,12 @@
   flex-wrap: wrap;
   gap: var(--theme-space-sm) var(--theme-space-md);
 
+  // Cuántos inactivos hay: solo se sabe después de pedirlos con "Mostrar inactivos".
+  &__inactivos {
+    color: var(--theme-text-secondary);
+    font-size: var(--theme-font-size-sm);
+  }
+
   &__agregar {
     margin-left: auto;
   }

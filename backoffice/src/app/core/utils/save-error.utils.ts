@@ -8,6 +8,12 @@ import { extractErrorCode, extractErrorMessage } from '../models/api-response.mo
 export interface ConflictoDeCampo {
   /** Código de negocio del backend (`API_CODES`). */
   code: number;
+  /**
+   * Condición extra sobre el cuerpo del error, para un código que el backend reusa en varios casos (p. ej.
+   * el `details` de un 403 `4029`). Gana el PRIMER conflicto que coincide: los que llevan `cuando` van
+   * antes que el genérico del mismo código.
+   */
+  cuando?: (body: unknown) => boolean;
   /** Nombre del control del form donde se marca. Sin él, el mensaje va directo al banner. */
   control?: string;
   /** Texto bajo el campo (o del banner, si no hay `control`). */
@@ -16,7 +22,7 @@ export interface ConflictoDeCampo {
 
 /**
  * Traduce un error de guardado al form. Si el código de negocio coincide con algún conflicto
- * declarado, lo marca en su campo (`setErrors({ server })`, que `form-error-messages.util` muestra
+ * declarado (y con su `cuando`, si lo tiene), lo marca en su campo (`setErrors({ server })`, que `form-error-messages.util` muestra
  * y que se limpia solo al editar el valor) y devuelve el texto del banner. Si no, devuelve el
  * mensaje del backend o el `fallback`.
  *
@@ -30,7 +36,7 @@ export function aplicarErrorDeGuardado(
 ): string {
   const body = (err as { error?: unknown })?.error;
   const code = extractErrorCode(body);
-  const conflicto = conflictos.find((c) => c.code === code);
+  const conflicto = conflictos.find((c) => c.code === code && (c.cuando?.(body) ?? true));
 
   if (conflicto) {
     const control = conflicto.control ? form?.get(conflicto.control) : null;

@@ -38,7 +38,10 @@ export function toPlantillaVM(dto: ProcedureTemplateResponseDTO): PlantillaVM {
 /**
  * Form → request. `active` va SIEMPRE (es `@NotNull`), y las listas siempre como array: el PUT es
  * reemplazo total y un `null` vaciaría los puentes igual que `[]`, pero así el contrato queda explícito.
- * El slug se canonicaliza acá porque el backend no lo hace (a diferencia de `/api/tag`).
+ * El slug se canonicaliza acá con la misma regla que el backend (`ProcedureTemplateService.canonicalize`,
+ * desde `586b670`; `slug.utils.spec.ts` fija la equivalencia): es idempotente, así que no cambia el
+ * resultado, y mantiene el comportamiento contra un backend anterior que no canonicalizaba. El slug que
+ * se muestra tras guardar sale del response (`toPlantillaVM`), no de este request.
  */
 export function toProcedureTemplateRequest(form: PlantillaFormValue): ProcedureTemplateRequestDTO {
   return {

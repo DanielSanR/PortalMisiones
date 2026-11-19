@@ -4,8 +4,8 @@
 // pill, `.form-field` (con `__fila` y `__mono`), `.form-aviso`, `.field-preview`, `.form-toggle`
 // (con `__interruptor` bloqueado), `.pasos-lista` y la tarjeta de dos paneles (`.ficha-paneles`, con
 // `__campos--grilla`, `__nota` y `--acotado`) son clases globales.
-// Acá solo lo propio: el departamento en las opciones de localidad, la ayuda del trámite del organismo y el
-// enlace de la nota de puntos.
+// Acá solo lo propio: el departamento en las opciones de localidad, la ayuda del trámite del organismo, el
+// enlace de la nota de puntos, el aviso de conflicto (párrafos y botones) y el foco programático del título.
 // ==========================================================================
 
 @use 'shared-styles/mixins' as *;
@@ -23,4 +23,26 @@
 // La nota de puntos usa el tamaño de cuerpo de la nota; el enlace no lo achica.
 .fichaform-nota__enlace {
   font-size: inherit;
+}
+
+// Destino del foco tras recargar la ficha (`tabindex="-1"`): que se vea dónde quedó.
+.fichaform-titulo {
+  @include focus-ring;
+}
+
+// Avisos "otra persona modificó la ficha" (`.form-aviso` global): reciben el foco al aparecer; acá solo el aire
+// entre sus párrafos (el global les saca el margen) y la fila de sus dos salidas.
+.fichaform-conflicto {
+  @include focus-ring;
+
+  &__texto {
+    margin-top: var(--theme-space-xs);
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--theme-space-sm);
+    margin-top: var(--theme-space-sm);
+  }
 }

@@ -34,10 +34,13 @@ export const CONFLICTOS_ASIGNACION_ROL: ConflictoDeCampo[] = [
     mensaje: 'Ese rol ya no existe. Elegí otro.',
   },
   {
-    // 403: rol global con organismo, rol de organismo sin organismo, o quien opera no puede asignarlo.
+    // 403: rol global con organismo, rol de organismo sin organismo, o quien opera no puede asignarlo
+    // (backend `586b670`, PPDT-5.1: un Administrador de Backoffice solo asigna roles `assignableByBackoffice`;
+    // uno de Organismo, roles `assignableByOrgAdmin` y dentro de su organismo).
     code: API_CODES.NO_PERMISSION,
-    mensaje: 'No se puede asignar ese rol: puede que no tengas permiso para asignarlo, o que el rol y el organismo '
-      + 'no se correspondan (un rol global no lleva organismo; uno de organismo lo exige).',
+    mensaje: 'No se puede asignar ese rol: puede que no tengas permiso para asignarlo (los roles de Super '
+      + 'Administrador y de Administrador de Backoffice solo los asigna un Super Administrador), o que el rol y el '
+      + 'organismo no se correspondan (un rol global no lleva organismo; uno de organismo lo exige).',
   },
   {
     // 409: en este flujo `4002` significa "usuario inactivo" (en el alta es "email repetido"): sin campo.

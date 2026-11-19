@@ -17,7 +17,7 @@
              class="form-field__label"
              [id]="field.name + '-label'"
              [attr.for]="field.name">
-        {{ field.label }}<span *ngIf="field.validations?.required" class="form-field__required" aria-hidden="true"> *</span>
+        {{ field.label }}<span *ngIf="field.validations?.required && !field.readonly" class="form-field__required" aria-hidden="true"> *</span>
       </label>
       <app-dynamic-form-field
         [field]="field"

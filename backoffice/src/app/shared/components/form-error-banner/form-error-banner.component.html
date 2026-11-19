@@ -5,13 +5,14 @@
   <div #banner class="form-error-banner"
        [attr.role]="live ? 'alert' : 'group'"
        [attr.tabindex]="live ? null : -1"
-       [attr.aria-labelledby]="live ? null : tituloId">
+       [attr.aria-labelledby]="live ? null : tituloId"
+       [attr.aria-describedby]="live ? null : detalleId">
     <i class="ph ph-warning-circle form-error-banner__icon" aria-hidden="true"></i>
     <div class="form-error-banner__body">
       <span class="form-error-banner__title" [id]="tituloId">
         {{ titulo || 'Revisá ' + errors.length + ' campo' + (errors.length === 1 ? '' : 's') + ' para poder guardar' }}
       </span>
-      <span class="form-error-banner__detail">{{ errors.join(' · ') }}</span>
+      <span class="form-error-banner__detail" [id]="detalleId">{{ errors.join(' · ') }}</span>
     </div>
   </div>
 }

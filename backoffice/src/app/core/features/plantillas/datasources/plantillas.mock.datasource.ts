@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { Observable, delay, map, of } from 'rxjs';
 import { API_CODES } from '@core/constants/api-codes.constants';
 import { errorDeNegocio } from '@core/mocks/mock-errors';
+import { canonicalizarSlug } from '@core/utils/slug.utils';
 import { PlantillasDataSource } from './plantillas.datasource';
-import { ProcedureTemplateResponseDTO } from '../models/plantilla.dto';
+import { ProcedureTemplateRequestDTO, ProcedureTemplateResponseDTO } from '../models/plantilla.dto';
 import { toPlantillaVM, toProcedureTemplateRequest } from '../mappers/plantillas.mapper';
 import { PlantillaFormValue, PlantillaVM } from '../models/plantilla.vm';
 
@@ -60,8 +61,12 @@ const SEMILLA: ProcedureTemplateResponseDTO[] = [
 
 /**
  * Implementación mock en memoria, fiel a las reglas de `ProcedureTemplateService`: listado solo de
- * activas, slug único (`4072`), plantilla inexistente (`4073`), PUT total y DELETE lógico. No puede
- * validar que los ids de catálogo existan (no conoce otros datasources).
+ * activas, slug canonicalizado POR EL SERVIDOR y único (409 `4072`), plantilla inexistente (404 `4073`),
+ * PUT total y DELETE lógico. No puede validar que los ids de catálogo existan (no conoce otros datasources).
+ *
+ * `post` / `put` son el "servidor" simulado: reciben el request tal como viajaría y hacen lo que hace el
+ * backend con él, sin confiar en que el front ya lo haya normalizado. `create` / `update` (el contrato del
+ * datasource) solo arman el request y traducen la respuesta, igual que el datasource HTTP.
  */
 @Injectable()
 export class PlantillasMockDataSource extends PlantillasDataSource {
@@ -77,23 +82,36 @@ export class PlantillasMockDataSource extends PlantillasDataSource {
   }
 
   create(form: PlantillaFormValue): Observable<PlantillaVM> {
-    const request = toProcedureTemplateRequest(form);
-    if (this.slugEnUso(request.slugBase, null)) return this.conflictoDeSlug();
-
-    const nueva: ProcedureTemplateResponseDTO = { id: crypto.randomUUID(), ...request };
-    this.data = [...this.data, nueva];
-    return of(toPlantillaVM(nueva)).pipe(delay(DELAY));
+    return this.post(toProcedureTemplateRequest(form)).pipe(map(toPlantillaVM));
   }
 
   update(id: string, form: PlantillaFormValue): Observable<PlantillaVM> {
+    return this.put(id, toProcedureTemplateRequest(form)).pipe(map(toPlantillaVM));
+  }
+
+  /**
+   * `POST /api/procedure-template` simulado (`ProcedureTemplateService.create`): canonicaliza el slug
+   * recibido, exige que el canónico sea único y devuelve la plantilla con ESE slug, no con el enviado.
+   */
+  post(request: ProcedureTemplateRequestDTO): Observable<ProcedureTemplateResponseDTO> {
+    const slugBase = canonicalizarSlug(request.slugBase);
+    if (this.slugEnUso(slugBase, null)) return this.conflictoDeSlug();
+
+    const nueva: ProcedureTemplateResponseDTO = { id: crypto.randomUUID(), ...request, slugBase };
+    this.data = [...this.data, nueva];
+    return of({ ...nueva }).pipe(delay(DELAY));
+  }
+
+  /** `PUT /api/procedure-template/{id}` simulado (`ProcedureTemplateService.update`): misma regla del slug. */
+  put(id: string, request: ProcedureTemplateRequestDTO): Observable<ProcedureTemplateResponseDTO> {
     if (!this.data.some((x) => x.id === id)) return this.noExiste();
 
-    const request = toProcedureTemplateRequest(form);
-    if (this.slugEnUso(request.slugBase, id)) return this.conflictoDeSlug();
+    const slugBase = canonicalizarSlug(request.slugBase);
+    if (this.slugEnUso(slugBase, id)) return this.conflictoDeSlug();
 
-    const actualizada: ProcedureTemplateResponseDTO = { id, ...request };
+    const actualizada: ProcedureTemplateResponseDTO = { id, ...request, slugBase };
     this.data = this.data.map((x) => (x.id === id ? actualizada : x));
-    return of(toPlantillaVM(actualizada)).pipe(delay(DELAY));
+    return of({ ...actualizada }).pipe(delay(DELAY));
   }
 
   desactivar(id: string): Observable<void> {
@@ -102,12 +120,13 @@ export class PlantillasMockDataSource extends PlantillasDataSource {
     return of(void 0).pipe(delay(DELAY));
   }
 
-  /** `uk_procedure_templates_slug_base`: el slug es único entre TODAS (activas o no). */
-  private slugEnUso(slug: string, exceptoId: string | null): boolean {
-    return this.data.some((x) => x.id !== exceptoId && x.slugBase === slug);
+  /** `uk_procedure_templates_slug_base`: el slug (ya canónico) es único entre TODAS (activas o no). */
+  private slugEnUso(slugCanonico: string, exceptoId: string | null): boolean {
+    return this.data.some((x) => x.id !== exceptoId && x.slugBase === slugCanonico);
   }
 
   private conflictoDeSlug(): Observable<never> {
+    // 409 `4072`, como `ProcedureTemplateService.ensureUniqueSlug` (`586b670`); el status sale del código.
     return errorDeNegocio(API_CODES.ENTITY_CONFLICT, 'Ya existe una plantilla con ese slug');
   }
 

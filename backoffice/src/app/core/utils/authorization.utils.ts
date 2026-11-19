@@ -1,11 +1,27 @@
 import { ROLE_TO_SPANISH, UserRole } from '../enums/user-role.enum';
 import { PERMISSION_PREREQUISITES } from '../constants/policy-overrides.constants';
 import { AccessRule } from '../models/access-rule.model';
+import { AuthUser } from '../models/auth.model';
+import { organismoDeSesion } from './session.utils';
 
 /** Lo mínimo de la sesión para evaluar autorización. */
 export interface AuthzContext {
   permissions: string[];
   roles: UserRole[];
+  /**
+   * La sesión está atada a un organismo conocido (`scope: "organismo"` de `/api/auth/me`, G-2). Habilita
+   * las reglas con `organismoPropio`. Ausente = `false` (backend anterior: todo como antes).
+   */
+  organismoPropio?: boolean;
+}
+
+/** Contexto de autorización de una sesión. Única forma de armarlo: nav, guards, directiva y `can*` coinciden. */
+export function authzContextDe(user: AuthUser | null | undefined): AuthzContext {
+  return {
+    permissions: user?.permissions ?? [],
+    roles: user?.roles ?? [],
+    organismoPropio: organismoDeSesion(user) !== null,
+  };
 }
 
 /**
@@ -20,7 +36,8 @@ export function canPerform(ctx: AuthzContext, permission: string): boolean {
   if (!pre) return true;
   const permisosOk = (pre.permissions ?? []).every((p) => ctx.permissions.includes(p));
   const rolesOk = !pre.roles?.length || pre.roles.some((r) => ctx.roles.includes(r));
-  return permisosOk && rolesOk;
+  const alternativasOk = !pre.anyOf?.length || pre.anyOf.some((alt) => evaluateAccess(ctx, alt));
+  return permisosOk && rolesOk && alternativasOk;
 }
 
 /** Evalúa una `AccessRule` (permiso primario + escape por rol + alternativas `anyOf`). Sin regla = permitido. */
@@ -34,8 +51,9 @@ export function evaluateAccess(ctx: AuthzContext, rule: AccessRule | undefined):
         ? perms.every((p) => canPerform(ctx, p))
         : perms.some((p) => canPerform(ctx, p));
   const roleOk = !rule.requireRoles?.length || rule.requireRoles.some((r) => ctx.roles.includes(r));
+  const organismoOk = !rule.organismoPropio || ctx.organismoPropio === true;
   const alternativasOk = !rule.anyOf?.length || rule.anyOf.some((alt) => evaluateAccess(ctx, alt));
-  return permOk && roleOk && alternativasOk;
+  return permOk && roleOk && organismoOk && alternativasOk;
 }
 
 /**

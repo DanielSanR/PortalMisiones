@@ -103,6 +103,10 @@
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
                 {
+                  "replace": "src/app/core/features/fichas-locales/datasources/fichas-locales.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
                   "replace": "src/app/core/features/localidades/datasources/localidades.mock.datasource.ts",
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
@@ -120,6 +124,10 @@
                 },
                 {
                   "replace": "src/app/core/features/plantillas/datasources/plantillas.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
+                  "replace": "src/app/core/features/puntos-atencion/datasources/puntos-atencion.mock.datasource.ts",
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
                 {

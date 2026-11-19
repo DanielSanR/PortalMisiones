@@ -18,9 +18,17 @@
           </button>
         }
       }
-      <a mat-stroked-button color="primary" [routerLink]="[rutaEditar, estado.ficha.id]" *appHasPermission="'UPDATE_VARIANT'">
-        <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
-      </a>
+      @if (estado.ficha.sinContenido) {
+        <!-- Compatibilidad temporal: sin el contenido no hay sobre qué editar. Visible, no disponible y con el motivo. -->
+        <button type="button" mat-stroked-button color="primary" [appUnavailable]="textoSinContenido"
+                *appHasPermission="'UPDATE_VARIANT'">
+          <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+        </button>
+      } @else {
+        <a mat-stroked-button color="primary" [routerLink]="[rutaEditar, estado.ficha.id]" *appHasPermission="'UPDATE_VARIANT'">
+          <i class="ph ph-pencil-simple" aria-hidden="true"></i> Editar
+        </a>
+      }
     }
   }
 </ng-template>
@@ -57,6 +65,13 @@
           <p>{{ textoFuenteSimulada }}</p>
         </div>
       }
+      @if (estado.ficha.sinContenido) {
+        <!-- COMPATIBILIDAD TEMPORAL (backend anterior a `586b670`): la ficha llegó sin su contenido. -->
+        <div class="form-aviso" role="note" data-aviso="sin-contenido">
+          <i class="ph ph-warning" aria-hidden="true"></i>
+          <p>{{ textoSinContenido }}</p>
+        </div>
+      }
       <header class="detail-header detail-header--flush detail-header--ficha">
         <div class="detail-header__body">
           <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
@@ -89,12 +104,6 @@
               <p class="detail-header__notice">
                 <i class="ph ph-info" aria-hidden="true"></i>
                 Está desactivada: no se ofrece en esta localidad. Para reactivarla, editala y marcala como activa.
-              </p>
-            }
-            @if (!estado.ficha.contenidoCompleto) {
-              <p class="detail-header__notice">
-                <i class="ph ph-warning" aria-hidden="true"></i>
-                Hay datos de esta ficha que todavía no están disponibles (localidad, URL, requisitos y costos). Por eso no se puede editar.
               </p>
             }
           </div>
@@ -130,6 +139,12 @@
 
             <div class="ficha-paneles__cuerpo">
               <div class="ficha-paneles__campos">
+                @if (estado.ficha.sinContenido) {
+                  <!-- Sin contenido no se dibujan los campos: "Sin requisitos cargados" sería falso. -->
+                  <p class="detail-field__value detail-field__value--muted" data-aviso="datos-sin-contenido">
+                    Los datos de la ficha (localidad, URL, requisitos y costos) no están disponibles todavía.
+                  </p>
+                } @else {
                 <dl class="detail-fields detail-fields--grid">
                   <div class="detail-field">
                     <dt class="detail-field__label">Localidad</dt>
@@ -146,7 +161,7 @@
                           <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
                         </a>
                       } @else {
-                        <span class="detail-field__value--muted">{{ estado.ficha.contenidoCompleto ? 'Sin URL' : noDisponible }}</span>
+                        <span class="detail-field__value--muted">Sin URL</span>
                       }
                     </dd>
                   </div>
@@ -160,32 +175,40 @@
                   <div class="detail-field">
                     <dt class="detail-field__label">Requisitos</dt>
                     <dd class="detail-field__value detail-field__value--pre" [class.detail-field__value--muted]="!estado.ficha.requisitos">{{
-                      estado.ficha.requisitos ?? (estado.ficha.contenidoCompleto ? 'Sin requisitos cargados.' : noDisponible) }}</dd>
+                      estado.ficha.requisitos ?? 'Sin requisitos cargados.' }}</dd>
                   </div>
                   <div class="detail-field">
                     <dt class="detail-field__label">Costos</dt>
                     <dd class="detail-field__value detail-field__value--pre" [class.detail-field__value--muted]="!estado.ficha.costos">{{
-                      estado.ficha.costos ?? (estado.ficha.contenidoCompleto ? 'Sin costos cargados.' : noDisponible) }}</dd>
+                      estado.ficha.costos ?? 'Sin costos cargados.' }}</dd>
                   </div>
                 </dl>
+                }
               </div>
 
               <!-- Publicación: dónde está la ficha y qué sigue. Va dentro del panel de datos, separada por un divisor. -->
               <div class="fichadet-publicacion" role="group" aria-labelledby="fichadet-publicacion">
                 <h4 class="fichadet-publicacion__titulo" id="fichadet-publicacion">Publicación</h4>
-                <p class="fichadet-ayuda">{{ ayudaEstado[estado.ficha.estado] }}</p>
+                <p class="fichadet-ayuda">{{ ayuda(estado.ficha) }}</p>
                 @if (estado.ficha.estado === 'PUBLICADO' && estado.ficha.activa) {
                   <dl class="detail-fields">
                     <div class="detail-field">
                       <dt class="detail-field__label">Vista previa pública</dt>
                       <dd class="detail-field__value">
-                        @if (urlPublica(estado.ficha); as url) {
-                          <a class="detail-link" [href]="url" target="_blank" rel="noopener noreferrer">
-                            Ver lo que publica la API <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-                            <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
-                          </a>
+                        @if (estado.ficha.adopcionNoVigente; as motivo) {
+                          <!-- La API pública exige además la adopción vigente: el enlace daría un 404. -->
+                          <span class="detail-field__value--muted" data-aviso="vista-previa-no-vigente">
+                            No hay vista previa: el trámite del organismo {{ motivoNoVigente[motivo] }}, así que la ficha no se publica en la API.
+                          </span>
                         } @else {
-                          <span class="detail-field__value--muted">La vista previa todavía no está disponible. El portal muestra la ficha con el slug de arriba.</span>
+                          @if (urlPublica(estado.ficha); as url) {
+                            <a class="detail-link" [href]="url" target="_blank" rel="noopener noreferrer">
+                              Ver lo que publica la API <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                              <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
+                            </a>
+                          } @else {
+                            <span class="detail-field__value--muted">La vista previa todavía no está disponible. El portal muestra la ficha con el slug de arriba.</span>
+                          }
                         }
                       </dd>
                     </div>

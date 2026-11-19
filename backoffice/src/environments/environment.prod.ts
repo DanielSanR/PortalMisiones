@@ -10,8 +10,14 @@ export const environment = {
   // ── Adaptador de fuente de datos (ver migracion_arquitectura.md §3.1) ──
   dataSource: 'prod' as 'mock' | 'local' | 'prod',
   // En prod, lo aún no expuesto por backend permanece mockeado hasta que exista el endpoint.
-  // `apiBaseUrl` apunta al host de staging, que corre el backend `dev` @ 58d383a (deploy del 16/11/2026):
-  // etiquetas, plantillas y adopciones ya van en real. Revisar en cada deploy.
+  // `apiBaseUrl` apunta al host de staging. Toda la cadena de trámites (etiquetas, plantillas, adopciones, fichas
+  // por localidad y puntos de atención) va en real.
+  // Requiere backend >= `586b670` (en staging desde el 2026-11-19; G-1: el response de la ficha trae su contenido
+  // completo). Verificado en el esquema de `/api-docs`; los flujos contra ese host todavía no se ejecutaron.
+  // Fichas y puntos quedan en real por decisión del dueño del producto (no volver a mock).
+  // Si igual se lo corre contra un backend anterior, no rompe datos pero queda limitado: las fichas llegan sin
+  // contenido, no se pueden editar y la UI lo avisa (compatibilidad temporal, ver `FichaLocal.sinContenido`).
+  // Revisar en cada deploy.
   // ⚠️ Los MockDataSource de los features que acá van por HTTP se EXCLUYEN del build (angular.json →
   // production → fileReplacements → core/mocks/excluded-mock.datasource.ts). Si pasás un feature a 'mock',
   // quitá su reemplazo; si pasás uno a real, agregalo. `npm run check:prod-mocks` (prebuild) lo valida.
@@ -22,8 +28,8 @@ export const environment = {
     // Trámites (PLAN_TRAMITES_API.md §5): cada recurso se activa en su fase.
     // plantillas: /api/procedure-template real → hereda default real.
     // adopciones: /api/organism-procedure real → hereda default real.
-    'fichas-locales': 'mock', // bloqueado por G-1 (el response de la ficha no trae su contenido)
-    'puntos-atencion': 'mock', // fase 4 (se activa junto con fichas)
+    // fichas-locales: /api/organism-procedure-location real (G-1 resuelto en el backend >= 586b670) → hereda default real.
+    // puntos-atencion: /api/attention-point real (misma fuente que fichas) → hereda default real.
     // etiquetas: /api/tag real → hereda default real.
     // organismos: /api/organism real (SUPERADMIN) → hereda default real.
     // tipos-organismo: /api/organism-type real (SUPERADMIN) → hereda default real.

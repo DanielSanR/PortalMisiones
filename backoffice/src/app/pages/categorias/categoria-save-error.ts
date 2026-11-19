@@ -4,7 +4,7 @@ import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 /** Conflictos de guardado de categoría que se marcan en su campo. */
 export const CONFLICTOS_CATEGORIA: ConflictoDeCampo[] = [
   {
-    // Unicidad del slug (`4072`; hoy el backend lo responde con 400, ver PEDIDOS_BACKEND.md).
+    // Unicidad del slug (409 `4072` desde el backend `586b670`; antes 400. Se decide por código).
     code: API_CODES.ENTITY_CONFLICT,
     control: 'slug',
     mensaje: 'Ya existe una categoría con ese slug',

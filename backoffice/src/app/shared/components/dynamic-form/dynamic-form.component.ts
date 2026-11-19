@@ -208,8 +208,15 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     Object.keys(data).forEach((nombre) => this.form.get(nombre)?.markAsPristine());
   }
 
+  /**
+   * Validadores de lo que la persona escribe o elige. Un campo `readonly` no lleva ninguno: no se puede editar,
+   * así que un `required` (o un `pattern`…) sobre un valor que llegó vacío o inválido bloquearía el envío sin
+   * forma de corregirlo ni de verlo (la vista de solo lectura no tiene `mat-error` ni marca de obligatorio).
+   * Lo que viaja lo valida el backend. Ver `FieldConfig.readonly`.
+   */
   private getValidators(field: FieldConfig) {
     const validators: ValidatorFn[] = [];
+    if (field.readonly) return validators;
     const textoLibre = TIPOS_DE_TEXTO_LIBRE.includes(field.type);
 
     if (field.validations) {

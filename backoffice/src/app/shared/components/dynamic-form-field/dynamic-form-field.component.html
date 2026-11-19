@@ -23,6 +23,21 @@
        con `disabled: true` no renderizaba su caja: solo quedaba el label. `get()` sí los
        encuentra. -->
   <ng-container *ngIf="field.type !== 'section-header' && !!group.get(field.name)">
+    <!-- Solo lectura (`field.readonly`): el dato fijado, enfocable y con su motivo. No va atado al control
+         (muestra el texto legible, no el id): el valor sigue viajando desde el `FormGroup`. Material cablea
+         el `mat-hint` al `aria-describedby` del input. -->
+    <mat-form-field *ngIf="field.readonly; else editable" appearance="outline" subscriptSizing="dynamic"
+                    class="form-field__solo-lectura">
+      <input matInput readonly
+             [id]="field.name"
+             [attr.aria-labelledby]="field.name + '-label'"
+             [class.form-field__mono]="field.mono"
+             [value]="valorDeSoloLectura">
+      <i class="ph ph-lock-simple dynamic-form-field__icon" matIconSuffix aria-hidden="true"></i>
+      <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
+    </mat-form-field>
+
+    <ng-template #editable>
     <ng-container [ngSwitch]="field.type">
 
       <!-- Text -->
@@ -177,6 +192,7 @@
       </div>
 
     </ng-container>
+    </ng-template>
 
     <!-- Vista previa derivada del valor (`field.preview`). La región viva queda montada
          siempre que el campo la declare —si se creara junto con el texto, los lectores de

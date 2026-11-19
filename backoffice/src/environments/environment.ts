@@ -25,8 +25,8 @@ export const environment = {
     // local: `npm run start:local` (environment.local.ts).
     plantillas: 'mock',       // fase 1 (real en start:local)
     adopciones: 'mock',       // fase 2 (real en start:local; G-15 ya corregido en dev)
-    'fichas-locales': 'mock', // fase 3 (bloqueado por G-1)
-    'puntos-atencion': 'mock', // fase 4 (se activa junto con fichas)
+    'fichas-locales': 'mock', // fase 3 (real en start:local, staging y prod; requiere backend >= 586b670, en staging desde el 2026-11-19)
+    'puntos-atencion': 'mock', // fase 4 (misma fuente que fichas)
     // organismos: /api/organism real (SUPERADMIN) → hereda default real.
     // tipos-organismo: /api/organism-type real (SUPERADMIN) → hereda default real.
     // categorias: /api/category real → hereda default real.

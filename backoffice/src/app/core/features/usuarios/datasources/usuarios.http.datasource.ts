@@ -12,11 +12,14 @@ import {
 import { AsignacionRolFormValue, UsuarioFormValue, UsuarioVM } from '../models/usuario.vm';
 
 /**
- * DataSource real de usuarios (`/api/user`, backend `dev` @ `58d383a`):
+ * DataSource real de usuarios (`/api/user`, backend `dev` @ `586b670`):
  *  - `list` → `GET /api/user` (`READ_USER`; AO recibe solo los de su organismo, PPDT-5.2).
  *  - `getById` → `GET /api/user/{id}`. `create` → `POST /api/user`.
  *  - `asignarRol` → `POST /api/user/{id}/role-assignments` (todavía sin pantalla).
  *  - Estado de la cuenta (explícito, nunca un toggle), email y contraseña → endpoints reales por usuario.
+ *    PPDT-5.1: si quien opera es ADMIN_BACKOFFICE y la cuenta es de un SUPERADMIN o ADMIN_BACKOFFICE, el
+ *    backend responde 403 `4029` (también al asignar un rol que no es `assignableByBackoffice`). Todas van
+ *    con `sinDialogoGlobal()`: el texto propio lo pone la pantalla (`pages/usuarios/usuario-accion-error.ts`).
  *  - `update` → NO DISPONIBLE: el backend no tiene edición de perfil/rol (`PUT /api/user/{id}` es la baja
  *    lógica). `soportaEdicion = false`, la lista no ofrece "Editar".
  *  - `deleteDefinitive` → NO DISPONIBLE hasta G-13 (hoy siempre 500 por la FK de `user_role_assignments`).
@@ -48,7 +51,7 @@ export class UsuariosHttpDataSource extends UsuariosDataSource {
   }
 
   /**
-   * REAL: POST /api/user (`CreateUserRequest`, backend `dev` @ `58d383a`). `form.rol` = UUID del rol.
+   * REAL: POST /api/user (`CreateUserRequest`, backend `dev` @ `586b670`). `form.rol` = UUID del rol.
    * `form.organismoId` viaja como `organizationId`: el backend lo exige si el rol es de scope
    * `organismo` (si falta → 403 `4029`) y, si quien crea es ADMIN_ORGANIZATION, lo pisa con el suyo.
    * Para un rol `global` el form manda `null` y el campo se omite: el backend NO lo rechaza y dejaría

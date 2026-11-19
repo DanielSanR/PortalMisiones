@@ -109,7 +109,8 @@ export class AdopcionesMockDataSource extends AdopcionesDataSource {
       return errorDeNegocio(API_CODES.VALIDATION, 'Verifique los campos de los elementos enviados.');
     }
     if (request.enabled && this.seSolapa(request, desde, hasta, exceptoId)) {
-      // Texto real de `messages.properties` (`dev` @ `58d383a`).
+      // 409 `4080` (`OrganismProcedureService.ensureNoOverlap`), con el texto real de `messages.properties`
+      // (`dev` @ `586b670`). El status lo pone `errorDeNegocio` según el código.
       return errorDeNegocio(
         API_CODES.ADOPTION_OVERLAP,
         'No se puede activar una adopción de plantilla porque se superpone en vigencia con otra adopción del mismo organismo.',

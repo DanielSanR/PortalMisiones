@@ -10,16 +10,34 @@ export interface Prerrequisito {
   permissions?: string[];
   /** Roles de los que hay que tener al menos uno. */
   roles?: UserRole[];
+  /** Además, debe cumplirse al menos una de estas alternativas (misma semántica que `AccessRule.anyOf`). */
+  anyOf?: AccessRule[];
 }
 
 /**
- * El formulario de usuario carga el select de organismos (`GET /api/organism` → `READ_ORGANISM`) y
- * el de roles (`GET /api/role/allowed` → `hasRole` SUPERADMIN, ADMIN_BACKOFFICE o ADMIN_ORGANIZATION).
+ * De dónde sale el organismo de un formulario con alcance de organismo: o el usuario puede leer el
+ * catálogo (`GET /api/organism` → `READ_ORGANISM`) y lo elige en el select, o su sesión ya está atada a
+ * uno (`scope: "organismo"` de `/api/auth/me`, backend `586b670`, G-2) y el campo viene preseleccionado y
+ * bloqueado con ese, sin pedir el catálogo. Con un backend anterior (sin esos campos en `/me`) la segunda
+ * alternativa nunca se cumple y todo queda como antes: hace falta `READ_ORGANISM`.
+ */
+const ORGANISMO_ELEGIBLE: AccessRule[] = [
+  { permissions: ['READ_ORGANISM'] },
+  { organismoPropio: true },
+];
+
+/**
+ * El formulario de usuario necesita el organismo (ver `ORGANISMO_ELEGIBLE`) y el catálogo de roles
+ * (`GET /api/role/allowed` → `hasRole` SUPERADMIN, ADMIN_BACKOFFICE o ADMIN_ORGANIZATION).
  * Sin eso el form no puede armarse, aunque el backend acepte `CREATE_USER`/`UPDATE_USER`.
+ *
+ * Antes de G-2 exigía `READ_ORGANISM` a secas. Ahora un usuario de organismo (ADMIN_ORGANIZATION) no lo
+ * necesita: el backend le pisa el organismo con el suyo (`UserService.validateUserCreationPermissions`) y
+ * el form lo muestra fijo. Un rol global (SA/AB) sigue necesitándolo para poder elegir.
  */
 const FORM_USUARIO: Prerrequisito = {
-  permissions: ['READ_ORGANISM'],
   roles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION],
+  anyOf: ORGANISMO_ELEGIBLE,
 };
 
 /**
@@ -37,9 +55,9 @@ export const PERMISSION_PREREQUISITES: Record<string, Prerrequisito> = {
  * edición y en la acción "Editar", no en el permiso.
  */
 export const EDITAR_USUARIO_ACCESS: AccessRule = {
-  permissions: ['UPDATE_USER', ...(FORM_USUARIO.permissions ?? [])],
-  mode: 'all',
+  permissions: ['UPDATE_USER'],
   requireRoles: FORM_USUARIO.roles,
+  anyOf: FORM_USUARIO.anyOf,
 };
 
 /**
@@ -57,34 +75,36 @@ export const ESCRIBIR_ROLES_PERMISOS_ACCESS: AccessRule = {
 
 /**
  * "Adoptar trámite" (`POST /api/organism-procedure` → `CREATE_ADOPTION`). El diálogo lista las
- * plantillas activas (`GET /api/procedure-template` → `READ_PROCEDURE`) y el select de organismo
- * (`GET /api/organism` → `READ_ORGANISM`). Decisión P-2 (PLAN_TRAMITES_API.md §8): sin `READ_ORGANISM`
- * "Adoptar" se oculta, porque el organismo del usuario no viaja en el JWT ni en `/api/auth/me` (G-2) y
- * el front no tiene qué mandar en `organismId`. `CREATE_ADOPTION` ya está asignado a SA, AB y AO (R-3:
- * `V2.28`; AGENT no, `V2.30`), pero por `READ_ORGANISM` hoy, de facto, sigue siendo solo SUPERADMIN.
+ * plantillas activas (`GET /api/procedure-template` → `READ_PROCEDURE`) y necesita un organismo
+ * (`ORGANISMO_ELEGIBLE`): el del select (`READ_ORGANISM`) o el de la sesión. Decisión P-2
+ * (PLAN_TRAMITES_API.md §8), actualizada con G-2 resuelto (backend `586b670`): quien no puede leer
+ * organismos ni tiene uno propio en la sesión sigue sin ver "Adoptar", porque el front no tendría qué
+ * mandar en `organismId`. `CREATE_ADOPTION` está asignado a SA, AB y AO (R-3: `V2.28`; AGENT no, `V2.30`)
+ * y `READ_PROCEDURE` a AO desde `V2.31`: con el organismo en la sesión, AO ya puede adoptar para el suyo.
  * Va en el botón del header, el CTA del vacío y el buscador de comandos.
  */
 export const ADOPTAR_ACCESS: AccessRule = {
-  permissions: ['CREATE_ADOPTION', 'READ_PROCEDURE', 'READ_ORGANISM'],
+  permissions: ['CREATE_ADOPTION', 'READ_PROCEDURE'],
   mode: 'all',
+  anyOf: ORGANISMO_ELEGIBLE,
 };
 
 /**
  * "Nueva etiqueta" (`POST /api/tag` → `CREATE_TAG`; seed: SA, AB, AO, AGENT). El backend acota el
  * alcance: SA/AB crean globales o locales de cualquier organismo; el resto (AO/AGENT) solo locales de
- * SU organismo (global u otro organismo → `4073`). El form solo puede ofrecer un organismo con el select
- * (`GET /api/organism` → `READ_ORGANISM`), y la sesión no trae el organismo del usuario (BO-20/G-2).
- * Así, quien no es SA/AB ni tiene `READ_ORGANISM` no tiene ningún alcance válido para elegir: se le
- * oculta "Crear" (botón del header, CTA del vacío, ruta `etiquetas/nuevo` y buscador de comandos).
+ * SU organismo (global u otro organismo → `4073`). El alcance sale de `ORGANISMO_ELEGIBLE`: el select
+ * (`READ_ORGANISM`) o el organismo de la sesión (BO-20/G-2, backend `586b670`), que el form preselecciona
+ * y bloquea como alcance local. Quien no es SA/AB, no tiene `READ_ORGANISM` y tampoco trae organismo en
+ * la sesión (backend anterior a G-2) no tiene ningún alcance válido para elegir: se le oculta "Crear"
+ * (botón del header, CTA del vacío, ruta `etiquetas/nuevo` y buscador de comandos).
  * Listar, editar y borrar sus etiquetas locales siguen con `READ_TAG`/`UPDATE_TAG`/`DELETE_TAG`.
  *
- * TODO(BO-20): cuando `/api/auth/me` traiga el organismo del usuario, el form lo preselecciona como
- * alcance local y esta regla vuelve a ser solo `{ permissions: ['CREATE_TAG'] }`.
+ * No vuelve a ser solo `{ permissions: ['CREATE_TAG'] }` mientras haya algún entorno sin G-2 desplegado.
  */
 export const CREAR_ETIQUETA_ACCESS: AccessRule = {
   permissions: ['CREATE_TAG'],
   anyOf: [
-    { permissions: ['READ_ORGANISM'] },
+    ...ORGANISMO_ELEGIBLE,
     { requireRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE] },
   ],
 };

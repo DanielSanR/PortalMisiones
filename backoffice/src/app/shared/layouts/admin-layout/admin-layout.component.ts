@@ -19,7 +19,8 @@ import { AuthUser } from '../../../core/models/auth.model';
 import { COMANDOS } from '../../../core/constants/comandos.constants';
 import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
 import { UserRole } from '../../../core/enums/user-role.enum';
-import { evaluateAccess } from '../../../core/utils/authorization.utils';
+import { AuthzContext, authzContextDe, evaluateAccess } from '../../../core/utils/authorization.utils';
+import { etiquetaDeOrganismo, organismoDeSesion } from '../../../core/utils/session.utils';
 import { BreadcrumbDeclarado, BreadcrumbItem, resolverBreadcrumb } from '../../../core/utils/breadcrumb.utils';
 
 /** Icono genérico cuando el primer segmento del breadcrumb no matchea ningún `NavItem`
@@ -77,6 +78,8 @@ export class AdminLayoutComponent implements OnInit {
   userEmail = '';
   userInitials = '';
   userRoleSpanish = '';
+  /** Organismo al que pertenece la sesión ("Nombre (SIGLA)"), o `''` si es global / no informado. */
+  userOrganismo = '';
 
   /** Grupos de nav visibles (por permiso + búsqueda), lo que consume el template. */
   navGroups: NavGroupView[] = [];
@@ -90,8 +93,7 @@ export class AdminLayoutComponent implements OnInit {
   indiceActivo = -1;
 
   /** Contexto de autorización del usuario actual, para gatear los comandos. */
-  private permisosActuales: string[] = [];
-  private rolesActuales: UserRole[] = [];
+  private authz: AuthzContext = authzContextDe(null);
 
   /**
    * Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio".
@@ -212,8 +214,8 @@ export class AdminLayoutComponent implements OnInit {
       this.userEmail = '';
       this.userInitials = '';
       this.userRoleSpanish = '';
-      this.permisosActuales = [];
-      this.rolesActuales = [];
+      this.userOrganismo = '';
+      this.authz = authzContextDe(null);
       this.accessibleGroups = [];
       this.recomputeNavGroups();
       this.updateBreadcrumb();
@@ -229,9 +231,11 @@ export class AdminLayoutComponent implements OnInit {
       ? `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase()
       : this.userName.slice(0, 2).toLocaleUpperCase('es-AR');
     this.userRoleSpanish = this.authTokenService.getUserRoleLabel();
-    this.permisosActuales = user.permissions ?? [];
-    this.rolesActuales = user.roles ?? [];
-    const ctx = { permissions: this.permisosActuales, roles: this.rolesActuales };
+    // Organismo de la sesión (`/api/auth/me`, G-2): vacío en sesiones globales o con un backend anterior.
+    const organismo = organismoDeSesion(user);
+    this.userOrganismo = organismo ? etiquetaDeOrganismo(organismo) : '';
+    this.authz = authzContextDe(user);
+    const ctx = this.authz;
     this.accessibleGroups = NAV_GROUPS
       .map((group) => ({ label: group.label, items: group.items.filter((item) => evaluateAccess(ctx, item.rule)) }))
       .filter((group) => group.items.length > 0);
@@ -313,7 +317,7 @@ export class AdminLayoutComponent implements OnInit {
       .filter((item) => item.label.toLocaleLowerCase('es-AR').includes(q))
       .map((item) => ({ tipo: 'nav' as const, label: item.label, icon: item.icon, route: item.route }));
 
-    const ctx = { permissions: this.permisosActuales, roles: this.rolesActuales };
+    const ctx = this.authz;
     const comandos: ResultadoBuscador[] = COMANDOS
       .filter((c) => evaluateAccess(ctx, c.rule))
       .filter((c) => c.label.toLocaleLowerCase('es-AR').includes(q)

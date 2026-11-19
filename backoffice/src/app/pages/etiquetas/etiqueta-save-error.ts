@@ -4,7 +4,7 @@ import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 /** Conflictos de guardado de etiqueta que se marcan en su campo. */
 export const CONFLICTOS_ETIQUETA: ConflictoDeCampo[] = [
   {
-    // Slug repetido en el mismo alcance (global u organismo) — 400 `4072`.
+    // Slug repetido en el mismo alcance (global u organismo) — 409 `4072` (era 400 hasta el backend `586b670`).
     code: API_CODES.TAXONOMY_CONFLICT,
     control: 'slug',
     mensaje: 'Ya existe una etiqueta con ese slug en ese alcance (global u organismo)',

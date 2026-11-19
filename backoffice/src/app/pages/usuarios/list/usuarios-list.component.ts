@@ -27,10 +27,16 @@ import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
 import { UsuarioGuardado, dialogoDeUsuario } from '../usuario-dialogo';
 import { CredencialModo, dialogoDeCredencial } from '../usuario-credencial-dialogo';
+import { errorDeAccionDeCuenta } from '../usuario-accion-error';
 
 /**
  * Roles cuya contraseña el backend no deja cambiar desde el panel (403 `4029` en
- * `PUT /api/user/{id}/change-password`): la acción no se ofrece en esas filas.
+ * `PUT /api/user/{id}/change-password`): la acción no se ofrece en esas filas, cuando el rol se conoce.
+ *
+ * Desde el backend `586b670` (PPDT-5.1) un Administrador de Backoffice tampoco puede eliminar,
+ * activar/desactivar ni cambiarles el email (mismo 403 `4029`). Como `GET /api/user` no trae el rol, esas
+ * acciones no se pueden ocultar de antemano: se ofrecen y, si el backend las rechaza, el diálogo de cada
+ * una cuenta el motivo con texto propio (`usuario-accion-error.ts`).
  */
 const ROLES_CON_PASSWORD_PROTEGIDA: readonly UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE];
 
@@ -151,8 +157,8 @@ export class UsuariosListComponent implements OnInit {
   /** Alta y edición van en diálogo sobre la lista; el diálogo guarda y acá solo se avisa y se refresca. */
   private readonly dialogo = new DialogoEnLista<UsuarioVM, UsuarioGuardado>({
     abrir: async (usuario) => {
-      const { esSuperAdmin, organismoId } = await firstValueFrom(this.facade.sesion$);
-      return abrirFormDialog(this.dialog, dialogoDeUsuario(this.facade, usuario?.id ?? null, { esSuperAdmin, organismoId }));
+      const { esSuperAdmin } = await firstValueFrom(this.facade.sesion$);
+      return abrirFormDialog(this.dialog, dialogoDeUsuario(this.facade, usuario?.id ?? null, { esSuperAdmin }));
     },
     buscar: async (id) => (await firstValueFrom(this.usuarios$)).find((fila) => fila.id === id),
     alGuardar: (guardado, usuario) => {
@@ -378,6 +384,7 @@ export class UsuariosListComponent implements OnInit {
       modo,
       nombre: this.nombreCompleto(usuario),
       emailActual: usuario.email,
+      operador: this.sesion?.rol ?? null,
       guardar: (valor) => modo === 'email'
         ? this.facade.changeEmail(usuario.id, valor)
         : this.facade.changePassword(usuario.id, valor),
@@ -417,6 +424,7 @@ export class UsuariosListComponent implements OnInit {
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
         confirmAction: () => this.conFilaOcupada(usuario, this.facade.deleteDefinitive(usuario.id)),
+        errorDeAccion: (err) => errorDeAccionDeCuenta(err, 'eliminar', this.sesion?.rol ?? null),
       },
       panelClass: 'custom-modal-panel',
     })
@@ -467,6 +475,8 @@ export class UsuariosListComponent implements OnInit {
         // El diálogo se queda abierto con el botón en spinner hasta que el backend
         // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
         confirmAction: () => this.cambiarEstado(usuario, activo),
+        // 403 `4029` (cuenta privilegiada o fuera de alcance): texto propio, no el `message` del backend.
+        errorDeAccion: (err) => errorDeAccionDeCuenta(err, activo ? 'activar' : 'desactivar', this.sesion?.rol ?? null),
       },
       panelClass: 'custom-modal-panel',
     })
