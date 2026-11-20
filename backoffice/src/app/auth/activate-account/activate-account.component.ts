@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
 import { UnavailableDirective } from '../../shared/directives/unavailable.directive';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
+import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
 
 /**
  * Activación de cuenta vía token del email (`/auth/activacion/:token`).
@@ -52,10 +53,13 @@ export class ActivateAccountComponent implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(() => this.router.navigateByUrl('/dashboard/home'));
     } catch (err: unknown) {
-      const e = err as { error?: { message?: string; details?: string } };
       this.estado = 'error';
-      this.errorMessage =
-        e.error?.message || e.error?.details || 'El enlace de activación expiró o ya fue utilizado.';
+      // Un 4xx acá es siempre el enlace (vencido, usado o inválido): solo la conexión y el 5xx llevan otro texto.
+      this.errorMessage = textoDeErrorHttp(
+        err,
+        'El enlace de activación expiró o ya fue utilizado.',
+        { contexto: 'accion', solo: ['sin-conexion', 'servidor'] },
+      );
       this.cdr.markForCheck();
     }
   }

@@ -4,6 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { NEVER, Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { UserRole } from '@core/enums/user-role.enum';
+import { TEXTOS_DE_ERROR_HTTP } from '@core/utils/http-error-text.utils';
 import { UsuariosFacade, UsuarioOrganismoFijo, UsuarioVM } from '@features/usuarios';
 import { RolVM } from '@features/roles';
 import { DynamicFormComponent } from '@shared/components/dynamic-form/dynamic-form.component';
@@ -135,16 +136,17 @@ describe('dialogoDeUsuario', () => {
       expect(data.errorDeCarga!(err)).toEqual(jasmine.objectContaining({ titulo: 'Edición no disponible', reintentable: false }));
     });
 
-    it('un fallo de carga se cuenta con el motivo del backend y se puede reintentar', () => {
+    it('un fallo de carga se cuenta con texto propio según el tipo (nunca el del backend) y se puede reintentar', () => {
       crearFacade();
       const data = dialogoDeUsuario(facade, null, SUPERADMIN);
 
-      const error = data.errorDeCarga!({ error: { code: 5000, message: 'Sin conexión con roles' } });
+      const error = data.errorDeCarga!({ status: 500, error: { code: 5000, message: 'Sin conexión con roles' } });
 
       expect(error).toEqual(jasmine.objectContaining({
-        titulo: 'No pudimos cargar el formulario', texto: 'Sin conexión con roles', reintentable: true,
+        titulo: 'No pudimos cargar el formulario', texto: TEXTOS_DE_ERROR_HTTP.servidor.accion, reintentable: true,
       }));
-      expect(data.errorDeCarga!(new Error('x')).texto).toContain('Revisá tu conexión');
+      expect(data.errorDeCarga!({ status: 0, error: null }).texto).toBe(TEXTOS_DE_ERROR_HTTP['sin-conexion'].accion);
+      expect(data.errorDeCarga!(new Error('x')).texto).toBe('No pudimos cargar los datos del formulario. Intentá de nuevo.');
     });
   });
 
@@ -411,10 +413,10 @@ describe('dialogoDeUsuario', () => {
       });
     });
 
-    it('otro rechazo muestra el mensaje del backend, o uno genérico si no hay', async () => {
+    it('otro rechazo muestra un texto propio según el tipo de error (nunca el mensaje del backend), o el genérico', async () => {
       const data = await configurar();
 
-      expect(data.errorDeGuardado!({ error: { code: 5000, message: 'Roto' } }, undefined)).toBe('Roto');
+      expect(data.errorDeGuardado!({ status: 500, error: { code: 5000, message: 'Roto' } }, undefined)).toBe(TEXTOS_DE_ERROR_HTTP.servidor.formulario);
       expect(data.errorDeGuardado!(new Error('x'), undefined)).toBe('No se pudo guardar el usuario. Intentá de nuevo.');
     });
   });

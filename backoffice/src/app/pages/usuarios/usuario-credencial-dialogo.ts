@@ -2,7 +2,8 @@ import { Observable, map, throwError } from 'rxjs';
 import { FormGroup } from '@angular/forms';
 import { FieldConfig } from '@core/models/field.interface';
 import { UserRole } from '@core/enums/user-role.enum';
-import { extractErrorMessage } from '@core/models/api-response.model';
+import { API_CODES } from '@core/constants/api-codes.constants';
+import { ConflictoDeCampo, aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { FormDialogData } from '@shared/components/form-dialog';
 import { formDialogEstatico } from '@shared/components/form-dialog/form-dialog-estatico';
 import { errorDeAccionDeCuenta } from './usuario-accion-error';
@@ -77,9 +78,26 @@ const CAMPOS_DE_PASSWORD: FieldConfig[] = [
   },
 ];
 
+/** Rechazos del backend con un motivo que se arregla en un campo. El resto va al banner, con texto propio. */
+const CONFLICTOS: Record<CredencialModo, ConflictoDeCampo[]> = {
+  email: [
+    // 409 `4002`: el email ya es de otra cuenta.
+    { code: API_CODES.USER_ALREADY_REGISTERED, control: 'email', mensaje: 'Ya existe un usuario con ese email' },
+  ],
+  password: [
+    {
+      // `4034`: no cumple la política (`UtilsCommons.validPassword`). El form ya la valida; esto cubre un cambio del backend.
+      code: API_CODES.WEAK_PASSWORD,
+      control: 'nueva',
+      mensaje: `Tiene que tener entre ${PASSWORD_MIN} y ${PASSWORD_MAX} caracteres, con mayúscula, minúscula y número`,
+    },
+  ],
+};
+
 /**
- * El backend no informa campos: su mensaje va al banner. La única marca en un campo es la de "no coinciden".
- * La excepción es el 403 `4029` (cuenta privilegiada o fuera de alcance, PPDT-5.1), que lleva texto propio.
+ * Texto del error de guardado, siempre propio (nunca el `message` del backend): "no coinciden" en su campo, el
+ * 403 `4029` (cuenta privilegiada o fuera de alcance, PPDT-5.1) con su motivo, los rechazos de `CONFLICTOS` en
+ * su campo y, para lo no previsto, el texto compartido según el tipo de error.
  */
 function errorDeGuardado(err: unknown, form: FormGroup | undefined, credencial: CredencialDeUsuario): string {
   if (err === NO_COINCIDEN) {
@@ -90,8 +108,7 @@ function errorDeGuardado(err: unknown, form: FormGroup | undefined, credencial: 
     return 'Revisá el campo marcado.';
   }
   return errorDeAccionDeCuenta(err, credencial.modo, credencial.operador ?? null)
-    || extractErrorMessage((err as { error?: unknown })?.error)
-    || FALLBACK;
+    || aplicarErrorDeGuardado(err, form, CONFLICTOS[credencial.modo], FALLBACK);
 }
 
 /**

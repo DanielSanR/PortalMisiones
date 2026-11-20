@@ -93,8 +93,12 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    */
   revision = 0;
 
-  /** Banner de resumen de validación: se enfoca al enviar un formulario inválido. */
-  @ViewChild(FormErrorBannerComponent) private resumen?: FormErrorBannerComponent;
+  /**
+   * Banner de resumen de validación: se enfoca al enviar un formulario inválido. Por template ref y no por
+   * tipo: `@ViewChild(FormErrorBannerComponent)` tomaba el PRIMER banner, que con un error de guardado a la
+   * vista es el del servidor (`role="alert"`, no enfocable), y el resumen no recibía el foco ni se leía.
+   */
+  @ViewChild('resumen') private resumen?: FormErrorBannerComponent;
 
   private readonly destroyRef = inject(DestroyRef);
   /** true mientras se aplica `initialData`: ese `patchValue` no se reemite por `valueChanges`. */

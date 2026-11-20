@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 import { CuentaFacade } from '@features/cuenta';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
+import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
 
 @Component({
   selector: 'app-forgot-password',
@@ -66,9 +67,11 @@ export class ForgotPasswordComponent {
         'Si el correo existe en nuestro sistema, te enviamos las instrucciones para restablecer tu contraseña.';
       this.form.reset();
     } catch (err: unknown) {
-      const e = err as { error?: { message?: string; details?: string } };
-      this.errorMessage =
-        e.error?.message || e.error?.details || 'Ocurrió un error. Intentá nuevamente.';
+      this.errorMessage = textoDeErrorHttp(
+        err,
+        'No pudimos enviar las instrucciones. Intentá de nuevo en unos minutos; si sigue, avisá a Soporte.',
+        { contexto: 'accion', solo: ['sin-conexion', 'servidor'] },
+      );
     } finally {
       this.loading = false;
       this.cdr.markForCheck();

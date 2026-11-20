@@ -16,7 +16,7 @@ import { PageActionsDirective } from '../../../shared/directives/page-actions.di
 import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
 import { FormConfig, TreeOption } from '../../../core/models/field.interface';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
-import { CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO } from '../organismo-save-error';
+import { FALLBACK_ORGANISMO, conflictosDeOrganismo, errorDeEliminarOrganismo } from '../organismo-save-error';
 import { OrigenEdicionOrganismo, PARAM_ORIGEN_EDICION, origenEdicionDesde } from '../organismo-origen';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
 import { OrganismoFormValue, OrganismoVM, OrganismosFacade } from '@features/organismos';
@@ -391,7 +391,9 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
         },
         error: (err: unknown) => {
           this.saving = false;
-          this.serverError = aplicarErrorDeGuardado(err, this.dynamicForm?.form, CONFLICTOS_ORGANISMO, FALLBACK_ORGANISMO);
+          this.serverError = aplicarErrorDeGuardado(
+            err, this.dynamicForm?.form, conflictosDeOrganismo({ esAlta, tieneSuperior: form.parentId !== null }), FALLBACK_ORGANISMO,
+          );
           this.dynamicForm?.refrescarErrores();
           this.cdr.markForCheck();
         },
@@ -420,6 +422,7 @@ export class OrganismoDetailComponent implements OnInit, PuedeTenerCambiosSinGua
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
         confirmAction: () => this.facade.delete(organismo.id),
+        errorDeAccion: errorDeEliminarOrganismo,
       },
       panelClass: 'custom-modal-panel',
     })

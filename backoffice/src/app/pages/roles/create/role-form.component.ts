@@ -18,7 +18,7 @@ import { getControlErrorMessage, resumenDeErrores } from '../../../shared/compon
 import { ListSearchComponent } from '../../../shared/components/list-search/list-search.component';
 import { FieldConfig } from '@core/models/field.interface';
 import { buildPermisoGroups, PermisoChipVM } from '@core/utils/permiso-groups.util';
-import { extractErrorMessage } from '@core/models/api-response.model';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { esPantallaDestruida, unaVez } from '@core/utils/one-shot.utils';
 import { PuedeTenerCambiosSinGuardar } from '@core/guards';
@@ -249,10 +249,13 @@ export class RoleFormComponent implements OnInit, PuedeTenerCambiosSinGuardar {
       }
     } catch (err: unknown) {
       if (esPantallaDestruida(err)) return;
-      this.loadError = extractErrorMessage((err as { error?: unknown })?.error)
-        || (this.isEdit
+      this.loadError = textoDeErrorHttp(
+        err,
+        this.isEdit
           ? 'No pudimos cargar el rol ni sus permisos. Intentá de nuevo.'
-          : 'No pudimos cargar el catálogo de permisos. Intentá de nuevo.');
+          : 'No pudimos cargar el catálogo de permisos. Intentá de nuevo.',
+        { contexto: 'accion' },
+      );
     }
     this.loading = false;
     this.cdr.markForCheck();

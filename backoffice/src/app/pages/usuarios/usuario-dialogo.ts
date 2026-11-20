@@ -1,13 +1,13 @@
 import { Observable, catchError, defaultIfEmpty, forkJoin, from, map, of, switchMap, throwError } from 'rxjs';
 import { FieldConfig } from '@core/models/field.interface';
-import { extractErrorMessage } from '@core/models/api-response.model';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { UserRole, ROLE_TO_SPANISH } from '@core/enums/user-role.enum';
 import { UsuariosFacade, UsuarioFormValue, UsuarioOrganismoFijo, UsuarioVM } from '@features/usuarios';
 import { OrganismoOption } from '@features/organismos';
 import { RolVM } from '@features/roles';
 import { FormDialogData, FormDialogErrorCarga } from '@shared/components/form-dialog';
-import { CONFLICTOS_ALTA_USUARIO, CONFLICTOS_EDICION_USUARIO, FALLBACK_USUARIO } from './usuario-save-error';
+import { CONFLICTOS_EDICION_USUARIO, FALLBACK_USUARIO, conflictosDeAltaUsuario } from './usuario-save-error';
 
 type Opcion = { id: string; name: string };
 
@@ -48,8 +48,7 @@ function errorDeCarga(err: unknown): FormDialogErrorCarga {
   return {
     titulo: 'No pudimos cargar el formulario',
     // Sin esto el formulario quedaría vacío y en silencio, indistinguible de un alta normal.
-    texto: extractErrorMessage((err as { error?: unknown })?.error)
-      || 'No pudimos cargar los datos del formulario. Revisá tu conexión e intentá de nuevo.',
+    texto: textoDeErrorHttp(err, 'No pudimos cargar los datos del formulario. Intentá de nuevo.', { contexto: 'accion' }),
     reintentable: true,
   };
 }
@@ -220,7 +219,7 @@ export function dialogoDeUsuario(
 
     // Alta y edición no comparten los textos del 403: el backend reusa el `details` "…para crear usuarios".
     errorDeGuardado: (err, form) => aplicarErrorDeGuardado(
-      err, form, esEdicion ? CONFLICTOS_EDICION_USUARIO : CONFLICTOS_ALTA_USUARIO, FALLBACK_USUARIO,
+      err, form, esEdicion ? CONFLICTOS_EDICION_USUARIO : conflictosDeAltaUsuario(organismoFijo !== null), FALLBACK_USUARIO,
     ),
   };
 }

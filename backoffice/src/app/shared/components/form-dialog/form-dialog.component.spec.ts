@@ -4,6 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { EMPTY, NEVER, Subject, of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { FieldConfig } from '@core/models/field.interface';
+import { TEXTOS_DE_ERROR_HTTP } from '@core/utils/http-error-text.utils';
 import { DynamicFormComponent } from '../dynamic-form/dynamic-form.component';
 import { FormDialogComponent, FormDialogData } from './form-dialog.component';
 
@@ -216,12 +217,12 @@ describe('FormDialogComponent', () => {
       expect(close).not.toHaveBeenCalled();
     });
 
-    it('sin `errorDeGuardado` muestra el mensaje del backend', async () => {
-      await abrir(config({ guardar: () => throwError(() => ({ error: { code: 5000, message: 'Roto' } })) }));
+    it('sin `errorDeGuardado` muestra un texto propio según el tipo de error, nunca el mensaje del backend', async () => {
+      await abrir(config({ guardar: () => throwError(() => ({ status: 500, error: { code: 5000, message: 'Roto' } })) }));
 
       await fixture.componentInstance.onSubmit({ nombre: 'Ana' });
 
-      expect(fixture.componentInstance.serverError).toBe('Roto');
+      expect(fixture.componentInstance.serverError).toBe(TEXTOS_DE_ERROR_HTTP.servidor.formulario);
     });
 
     it('si el guardado completa sin responder (stream vacío) con el diálogo vivo, el form no queda trabado', async () => {

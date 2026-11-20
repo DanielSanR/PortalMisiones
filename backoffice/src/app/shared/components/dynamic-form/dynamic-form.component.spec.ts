@@ -535,3 +535,90 @@ describe('DynamicFormComponent — campo de solo lectura (`readonly`)', () => {
     expect(input('alcance').value).toBe('Ninguno');
   });
 });
+
+/**
+ * B1: con un error de guardado a la vista, enviar el formulario inválido tiene que llevar el foco al RESUMEN de
+ * validación. Antes `@ViewChild(FormErrorBannerComponent)` tomaba el primer banner (el del servidor,
+ * `role="alert"` sin `tabindex`): `focus()` caía en un div no enfocable y el resumen no se leía.
+ */
+describe('DynamicFormComponent — resumen de validación con un error de guardado previo', () => {
+  let fixture: ComponentFixture<DynamicFormComponent>;
+  let component: DynamicFormComponent;
+  const ERROR_DE_GUARDADO = 'El servidor tuvo un error y no pudo completar la operación.';
+
+  const banners = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll('.form-error-banner'));
+  const enviar = (): void => {
+    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DynamicFormComponent, NoopAnimationsModule],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DynamicFormComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('fields', [
+      { name: 'nombre', label: 'Nombre', type: 'text', validations: { required: true } },
+    ] as FieldConfig[]);
+    fixture.componentRef.setInput('initialData', { nombre: 'Salud' });
+    fixture.detectChanges();
+  });
+
+  it('el error de guardado se muestra como alerta mientras el formulario no se reenvía', () => {
+    fixture.componentRef.setInput('serverError', ERROR_DE_GUARDADO);
+    fixture.detectChanges();
+
+    expect(banners().length).toBe(1);
+    expect(banners()[0].getAttribute('role')).toBe('alert');
+    expect(banners()[0].textContent).toContain(ERROR_DE_GUARDADO);
+  });
+
+  it('falla el guardado, se vacía un obligatorio y se envía: el foco va al resumen de validación, no al banner del servidor', () => {
+    fixture.componentRef.setInput('serverError', ERROR_DE_GUARDADO);
+    fixture.detectChanges();
+    const emitido = jasmine.createSpy('formSubmit');
+    component.formSubmit.subscribe(emitido);
+
+    component.form.get('nombre')?.setValue('');
+    fixture.detectChanges();
+    enviar();
+
+    expect(emitido).not.toHaveBeenCalled();
+    const resumen = banners().find((banner) => banner.getAttribute('role') === 'group');
+    expect(resumen).withContext('el resumen de validación está en pantalla').toBeDefined();
+    expect(resumen?.getAttribute('tabindex')).toBe('-1');
+    expect(resumen?.textContent).toContain('Revisá 1 campo para poder guardar');
+    expect(resumen?.textContent).toContain('Nombre');
+    expect(document.activeElement).withContext('el foco queda en el resumen').toBe(resumen ?? null);
+    // El error del guardado anterior ya no describe este intento: no queda una alerta vieja arriba del resumen.
+    expect(banners().some((banner) => banner.getAttribute('role') === 'alert')).toBeFalse();
+    expect(fixture.nativeElement.textContent).not.toContain(ERROR_DE_GUARDADO);
+  });
+
+  it('sin error de guardado previo el resumen también recibe el foco', () => {
+    component.form.get('nombre')?.setValue('');
+    enviar();
+
+    const resumen = banners()[0];
+    expect(banners().length).toBe(1);
+    expect(resumen.getAttribute('role')).toBe('group');
+    expect(document.activeElement).toBe(resumen);
+  });
+
+  it('al corregir y enviar de nuevo se emite el valor y el resumen se va', () => {
+    fixture.componentRef.setInput('serverError', ERROR_DE_GUARDADO);
+    component.form.get('nombre')?.setValue('');
+    enviar();
+    const emitido = jasmine.createSpy('formSubmit');
+    component.formSubmit.subscribe(emitido);
+
+    component.form.get('nombre')?.setValue('Educación');
+    enviar();
+
+    expect(emitido).toHaveBeenCalledOnceWith({ nombre: 'Educación' });
+    expect(banners().some((banner) => banner.getAttribute('role') === 'group')).toBeFalse();
+  });
+});

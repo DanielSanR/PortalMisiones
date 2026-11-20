@@ -1,13 +1,20 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, forkJoin, map, of, tap } from 'rxjs';
+import { AuthTokenService } from '@core/services/auth-token.service';
 import { TiposOrganismoRepository } from '@features/tipos-organismo';
 import { LocalidadesRepository } from '@features/localidades';
 import { OrganismosRepository } from '../repositories/organismos.repository';
 import { OrganismoFormData, OrganismoFormValue, OrganismoVM } from '../models/organismo.vm';
 
+/** Permiso que exige `GET /api/organism-type` (los tipos se leen solo para nombrar/elegir el tipo). */
+const LEER_TIPOS = 'READ_ORGANISM_TYPE';
+
 /**
  * Facade de Organismos. Expone Observables (async pipe; NO signals). Depende de su Repository y,
  * cross-feature, del `TiposOrganismoRepository` (nunca de su facade) para resolver el nombre del tipo.
+ * Sin `READ_ORGANISM_TYPE` no se pide `/api/organism-type` (respondería 403 y abriría el diálogo global):
+ * la columna "Tipo" queda sin nombre y el resto sigue (`AuthTokenService`: excepción de sesión documentada
+ * en `arquitectura-capas.md`, consultado en cada llamada).
  */
 @Injectable({ providedIn: 'root' })
 export class OrganismosFacade {
@@ -21,12 +28,13 @@ export class OrganismosFacade {
     private repo: OrganismosRepository,
     private tiposRepo: TiposOrganismoRepository,
     private localidadesRepo: LocalidadesRepository,
+    private auth: AuthTokenService,
   ) {}
 
   /** Orquesta los datos del formulario (tipos + localidades + organismos padre + organismo en edición). */
   getFormData(id?: string): Observable<OrganismoFormData> {
     return forkJoin({
-      tipos: this.tiposRepo.getOptions(),
+      tipos: this.tipos(),
       localidades: this.localidadesRepo.getLocalidades().pipe(
         map((ls) => ls.map((l) => ({ id: l.id, nombre: `${l.nombre} (${l.departamentoNombre})` })))
       ),
@@ -39,7 +47,7 @@ export class OrganismosFacade {
 
   /** Carga organismos + tipos y resuelve `tipoNombre` (el DTO solo trae `typeId`). */
   loadOrganismos(): Observable<OrganismoVM[]> {
-    return forkJoin({ orgs: this.repo.list(), tipos: this.tiposRepo.getOptions() }).pipe(
+    return forkJoin({ orgs: this.repo.list(), tipos: this.tipos() }).pipe(
       map(({ orgs, tipos }) => {
         this.tiposMap = new Map(tipos.map((t) => [t.id, t.nombre]));
         // El nombre del padre se resuelve contra la misma lista: el DTO solo trae `parentId`.
@@ -52,6 +60,11 @@ export class OrganismosFacade {
       }),
       tap((list) => this._organismos$.next(list)),
     );
+  }
+
+  /** Opciones de tipo, o vacío si la sesión no puede leerlas (no se pide: daría 403). */
+  private tipos(): ReturnType<TiposOrganismoRepository['getOptions']> {
+    return this.auth.can(LEER_TIPOS) ? this.tiposRepo.getOptions() : of([]);
   }
 
   getById(id: string): Observable<OrganismoVM> {

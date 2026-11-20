@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { AuthTokenService } from '@core/services/auth-token.service';
 import { BehaviorSubject, Observable, catchError, defer, forkJoin, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { ModalidadesRepository } from '@features/modalidades';
 import { CategoriasRepository, CategoriaVM } from '@features/categorias';
@@ -14,8 +15,17 @@ import {
 interface CatalogoLeido {
   nombre: string;
   ok: boolean;
+  /** Falló por red/servidor (vale reintentar), no por falta de permiso (reintentar no cambia nada). */
+  reintentable: boolean;
   items: PlantillaOpcion[];
 }
+
+/**
+ * Permiso que exige leer cada catálogo que no es público en el backend. Modalidades, categorías,
+ * destinatarios y eventos de vida (`GET /api/modality|category|recipient|life-event`) son públicos y
+ * no piden permiso; las etiquetas (`GET /api/tag`) exigen `READ_TAG`.
+ */
+const LEER_ETIQUETAS = 'READ_TAG';
 
 /** Separador de la ruta jerárquica de una categoría ("Salud › Carnet sanitario"). */
 const SEPARADOR_CATEGORIA = ' › ';
@@ -29,6 +39,10 @@ const SEPARADOR_CATEGORIA = ' › ';
  * Los catálogos se cachean con `shareReplay(1)`. El listado los refresca siempre (es el punto de
  * entrada natural de la sección); el detalle y el form reutilizan la caché. Una lectura degradada
  * (algún catálogo falló) no se cachea, para que el próximo uso lo reintente.
+ *
+ * Sin el permiso de un catálogo (hoy `READ_TAG` para las etiquetas) ni siquiera se lo pide: el 403 abriría
+ * el diálogo global de error. Queda "no disponible" y el resto de la pantalla sigue funcionando. La sesión
+ * se consulta en `AuthTokenService` en cada llamada (excepción documentada en `arquitectura-capas.md`).
  */
 @Injectable({ providedIn: 'root' })
 export class PlantillasFacade {
@@ -37,6 +51,8 @@ export class PlantillasFacade {
   readonly plantillas$ = this._plantillas$.asObservable();
 
   private catalogosCache$: Observable<PlantillaCatalogos> | null = null;
+  /** Permisos con los que se armó la caché: si la sesión cambia (otro rol), se rearma. */
+  private catalogosClave = '';
 
   constructor(
     private plantillas: PlantillasRepository,
@@ -45,6 +61,7 @@ export class PlantillasFacade {
     private etiquetas: EtiquetasRepository,
     private destinatarios: DestinatariosRepository,
     private eventosDeVida: EventosDeVidaRepository,
+    private auth: AuthTokenService,
   ) {}
 
   /**
@@ -121,22 +138,31 @@ export class PlantillasFacade {
   }
 
   private catalogos(refrescar = false): Observable<PlantillaCatalogos> {
+    const clave = String(this.auth.can(LEER_ETIQUETAS));
+    if (clave !== this.catalogosClave) {
+      this.catalogosClave = clave;
+      refrescar = true;
+    }
     if (!this.catalogosCache$ || refrescar) {
       const cache$: Observable<PlantillaCatalogos> = forkJoin([
-        this.leer('Modalidades', this.modalidades.list().pipe(
+        this.leer('Modalidades', null, () => this.modalidades.list().pipe(
           map((lista) => lista.map((m) => ({ id: m.id, nombre: m.activo ? m.nombre : `${m.nombre} (inactiva)` }))),
         )),
-        this.leer('Categorías', this.categorias.list().pipe(map(opcionesDeCategoria))),
-        this.leer('Etiquetas', this.etiquetas.list().pipe(
+        this.leer('Categorías', null, () => this.categorias.list().pipe(map(opcionesDeCategoria))),
+        this.leer('Etiquetas', LEER_ETIQUETAS, () => this.etiquetas.list().pipe(
           map((lista) => lista.map((e) => ({ id: e.id, nombre: e.local ? `${e.slug} (local)` : e.slug }))),
         )),
-        this.leer('Destinatarios', this.destinatarios.list().pipe(
+        this.leer('Destinatarios', null, () => this.destinatarios.list().pipe(
           map((lista) => lista.map((d) => ({ id: d.id, nombre: d.nombre }))),
         )),
-        this.leer('Eventos de vida', this.eventosDeVida.list().pipe(
+        this.leer('Eventos de vida', null, () => this.eventosDeVida.list().pipe(
           map((lista) => lista.map((e) => ({ id: e.id, nombre: e.nombre }))),
         )),
       ]).pipe(
+        tap((leidos) => {
+          // Solo se invalida a sí misma: una lectura vieja que termina tarde no borra una más nueva.
+          if (leidos.some((c) => !c.ok && c.reintentable) && this.catalogosCache$ === cache$) this.catalogosCache$ = null;
+        }),
         map(([modalidades, categorias, etiquetas, destinatarios, eventosDeVida]): PlantillaCatalogos => ({
           modalidades: modalidades.items,
           categorias: categorias.items,
@@ -147,10 +173,6 @@ export class PlantillasFacade {
             .filter((c) => !c.ok)
             .map((c) => c.nombre),
         })),
-        tap((catalogos) => {
-          // Solo se invalida a sí misma: una lectura vieja que termina tarde no borra una más nueva.
-          if (catalogos.noDisponibles.length && this.catalogosCache$ === cache$) this.catalogosCache$ = null;
-        }),
         shareReplay(1),
       );
       this.catalogosCache$ = cache$;
@@ -160,12 +182,13 @@ export class PlantillasFacade {
 
   /**
    * Un catálogo que falla (red, permisos) no tumba la pantalla: la plantilla se ve igual, con
-   * "No disponible" donde iba el nombre, y el form avisa qué catálogo falta.
+   * "No disponible" donde iba el nombre, y el form avisa qué catálogo falta. Sin `permiso` no se pide.
    */
-  private leer(nombre: string, fuente$: Observable<PlantillaOpcion[]>): Observable<CatalogoLeido> {
-    return fuente$.pipe(
-      map((items) => ({ nombre, ok: true, items })),
-      catchError(() => of({ nombre, ok: false, items: [] as PlantillaOpcion[] })),
+  private leer(nombre: string, permiso: string | null, fuente: () => Observable<PlantillaOpcion[]>): Observable<CatalogoLeido> {
+    if (permiso && !this.auth.can(permiso)) return of({ nombre, ok: false, reintentable: false, items: [] });
+    return fuente().pipe(
+      map((items): CatalogoLeido => ({ nombre, ok: true, reintentable: false, items })),
+      catchError(() => of<CatalogoLeido>({ nombre, ok: false, reintentable: true, items: [] })),
     );
   }
 }

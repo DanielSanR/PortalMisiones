@@ -1,7 +1,35 @@
 # Pedidos del backoffice al backend — Portal Provincial de Trámites (Misiones)
 
-**Fecha:** 2026-11-19 · **Backend relevado:** `origin/dev` @ `586b670` (código; migraciones hasta `V2.31`) y API de staging (`origin/staging` @ `0a555df`, merge de `dev` que contiene `586b670`, desplegado el 2026-11-19; `/api-docs` consultado ese día, antes y después del deploy) · **Contacto:** Daniel Romero (frontend backoffice)
+**Fecha:** 2026-11-20 · **Backend relevado:** `origin/dev` @ `586b670` (código; migraciones hasta `V2.31`) y API de staging (`origin/staging` @ `0a555df`, merge de `dev` que contiene `586b670`, desplegado el 2026-11-19; `/api-docs` consultado ese día, antes y después del deploy) · **Contacto:** Daniel Romero (frontend backoffice)
 
+> **E2E 2026-11-20 — primera ejecución de flujos contra staging (backend `586b670`).** Se corrieron los dos scripts
+> nuevos de `e2e/roles/`: `07_fichas_y_sesion.py` (fichas, puntos de atención, workflow y organismo de la sesión, con
+> SUPERADMIN más una cuenta ADMIN_ORGANIZATION y una AGENT) y `08_roles_fichas_y_sesion.py` (los seis roles: sesión,
+> menú, URL directa, fichas, trámites, etiquetas y usuarios; UI del front local contra la API de staging, más
+> llamadas directas a la API con el token de cada rol). **Totales: 114 casos OK, 3 FALLA y 4 sin cubrir** (script 07:
+> 29 / 1 / 3; script 08: 85 / 2 / 1). Resultados en `e2e/final_runs/fichas_2026-11-19/` (`07_fichas_y_sesion/` y
+> `08_roles_fichas_y_sesion/`: `resultados.json`, `log.txt` y `screenshots/`). **Los datos de muestra creados en staging
+> (adopciones, fichas, puntos de atención y cuentas) están listados en `e2e/roles/datos_muestra.json`.**
+> - **Las 3 FALLA:** `FS-DUP-03` (ficha duplicada → 500 `5000`, **G-9**), `AO-USR-02` (ADMIN_ORGANIZATION sin roles
+>   asignables, **G-23**) y `MG-TRA-03` (hallazgo **del front**, no del backend: "Plantillas provinciales" pide
+>   `GET /api/tag` sin chequear `READ_TAG` y a MANAGER le abre el diálogo global de "Acceso denegado").
+> - **Los 4 sin cubrir:** `FS-ORG-AO-05` (el alta de usuario de AO no ofrece ningún rol: G-23), `FS-ORG-AGENT-03` y
+>   `FS-ORG-AGENT-05` (AGENT no tiene `CREATE_ADOPTION` ni `CREATE_USER`: esperado) y `GEN-LOGIN-BLOQ` (bloqueo de login:
+>   exige más intentos fallidos de los que la prueba se permite en un staging compartido; ver G-33).
+> - **Pasan de "leído en el código" a "confirmado en ejecución":** el duplicado de ficha en 500 `5000` por las dos
+>   restricciones (G-9), ADMIN_ORGANIZATION con `CREATE_USER` y `GET /api/role/allowed` vacío (G-23), ADMIN_BACKOFFICE
+>   con `*_ATTENTION_POINT` y sin `READ_VARIANT` (G-5), `organismAcronym: null` en `/me` (G-2), el 403 `4029` de
+>   ADMIN_BACKOFFICE sobre cuentas SA/AB (G-26) y el filtro de puntos por ficha que devuelve solo activos (G-29).
+> - **Confirmados como funcionando:** contrato completo de la ficha y roundtrip `GET` → `PUT` sin pérdida (G-1), los dos
+>   filtros nuevos (G-7), `/me` con `scope` por rol (G-2), alcance por organismo (ficha ajena → 404 `4073`, G-4),
+>   ADMIN_ORGANIZATION lee plantillas (`V2.31`, G-3), duplicado de etiqueta → 409 `4072` (G-6) y `/api/role/allowed`
+>   de ADMIN_BACKOFFICE (G-22). Con esto **OPS-1 queda verificado también en flujos**, no solo en el esquema.
+> - **Pedidos nuevos (G-33 a G-35), leídos en el código de `586b670`, no ejecutados:** bloqueo de login por intentos
+>   fallidos (**G-33**: duración de un minuto con comentario de cinco, tiempo restante solo dentro del `message`, y —por
+>   el orden de los chequeos de Spring— una cuenta bloqueada respondería 500 y no se desbloquearía sola), enumeración de
+>   cuentas en el login (**G-34**, seguridad) y códigos reusados en el guardado de organismo (**G-35**). **Ampliados:**
+>   G-16 (borrar un permiso asignado a un rol también cae en 500) y G-25 (el `4018` del rol inexistente sigue igual).
+>
 > **Auditoría 2026-11-19:** se revisaron los 13 commits de `dev` entre `58d383a` y `586b670` (2026-11-16 a 2026-11-18;
 > lectura de código, migraciones, tests y `odd/tasks/*.md`; no se levantó el backend). **Resueltos en `dev` (5),
 > en staging desde el mismo 2026-11-19 (ver "Deploy a staging" más abajo):** **G-1** (`3797fe7`; cierra también el cabo de R-1), **G-2 / BO-20** (`d7aca1c`),
@@ -87,42 +115,47 @@ El backoffice (Angular) ya consume la API real de organismos, taxonomía, roles,
 
 Estado: ✅ resuelto en `dev` · 🟠 parcial · ⬜ pendiente. "En staging" indica si ya se puede probar online
 (staging = `origin/staging` @ `0a555df`, que contiene `dev` @ `586b670`; lo que llegó con ese deploy dice "en staging
-desde el 2026-11-19": verificado en el esquema de `/api-docs`, sin ejecutar flujos).
+desde el 2026-11-19": verificado ese día en el esquema de `/api-docs`). "Confirmado en ejecución el 2026-11-20" = lo
+ejercitó el e2e de los seis roles contra staging (ver el bloque "E2E 2026-11-20" de la cabecera); "leído en el código,
+no ejecutado" = todavía no se probó contra un backend levantado.
 
-| ID | Título | Prioridad | Tipo | Estado (2026-11-19, `dev` @ `586b670`) | Qué desbloquea en el front |
+| ID | Título | Prioridad | Tipo | Estado (2026-11-20, `dev` @ `586b670`) | Qué desbloquea en el front |
 |---|---|---|---|---|---|
-| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | ✅ **cumplido de nuevo el 2026-11-19** (`origin/staging` @ `0a555df`, contiene `586b670`; esquema de `/api-docs` verificado, flujos sin ejecutar). Historial: cumplido el 2026-11-16 para `58d383a` y reabierto el 2026-11-19 por los 13 commits hasta `586b670` y `V2.31` | Fichas y puntos de atención reales online; organismo en sesión; AO elige plantilla |
+| **OPS-1** | Desplegar `dev` en staging (merge `dev` → `staging`) | 🔴 bloquea | ops | ✅ **cumplido de nuevo el 2026-11-19** (`origin/staging` @ `0a555df`, contiene `586b670`; esquema de `/api-docs` verificado ese día; **flujos ejecutados el 2026-11-20**: e2e de los seis roles, 114 casos OK). Historial: cumplido el 2026-11-16 para `58d383a` y reabierto el 2026-11-19 por los 13 commits hasta `586b670` y `V2.31` | Fichas y puntos de atención reales online; organismo en sesión; AO elige plantilla |
 | **G-13** | Borrado definitivo de usuario siempre falla (500): FK `RESTRICT` de `user_role_assignments`; además el `UserResponseDTO` llega con `role` y `activeAssignments` en `null` | 🔴 bloquea | bug | ⬜ — `GET /api/user` y `GET /api/user/{id}` siguen mapeando con ModelMapper. Más visible desde PPDT-5.1 (G-26) | "Eliminar definitivamente" de usuarios (BO-3) y rol/organismo en el listado y el detalle |
 | **G-20** | No se puede cambiar el rol de un usuario existente: `role-assignments` siempre da 409 `4081` y no hay cómo cerrar una asignación | 🔴 bloquea | bug + feature | ⬜ (backend lo tiene en Taiga, refs 42 y 43) | Asignar o cambiar rol desde el detalle del usuario (BO-24) |
-| **G-23** | `assignable_by_org_admin` es `FALSE` para todos los roles: ADMIN_ORGANIZATION no puede crear usuarios ni asignar roles | 🟡 importante | bug (seed) | ⬜ | Alta de usuarios por el administrador del organismo |
-| **G-3** | Permisos de lectura para AO y AGENT (`READ_PROCEDURE`, `READ_ADOPTION`) y `READ_ORGANISM` para quien adopta | 🟡 importante | contrato (seed) | 🟠 AO tiene `READ_PROCEDURE` (`V2.31`, `fb13104` · en staging desde el 2026-11-19); falta `READ_PROCEDURE` para AGENT y `READ_ORGANISM` para AB | AB elige organismo; AGENT ve de qué trámite es cada ficha |
+| **G-23** | `assignable_by_org_admin` es `FALSE` para todos los roles: ADMIN_ORGANIZATION no puede crear usuarios ni asignar roles | 🟡 importante | bug (seed) | ⬜ — **confirmado en ejecución el 2026-11-20**: con AO, `GET /api/role/allowed` → 200 `[]` y el alta muestra "No hay roles que puedas asignar" | Alta de usuarios por el administrador del organismo |
+| **G-3** | Permisos de lectura para AO y AGENT (`READ_PROCEDURE`, `READ_ADOPTION`) y `READ_ORGANISM` para quien adopta | 🟡 importante | contrato (seed) | 🟠 AO tiene `READ_PROCEDURE` (`V2.31`, `fb13104` · en staging desde el 2026-11-19 · confirmado en ejecución el 2026-11-20); falta `READ_PROCEDURE` para AGENT y `READ_ORGANISM` para AB | AB elige organismo; AGENT ve de qué trámite es cada ficha |
 | **G-4** | Transiciones inválidas como 4xx + endpoints "rechazar" y "volver a borrador" | 🟡 importante | bug + feature | 🟠 sin cambios: 409 `4077` y 404 `4073`; faltan `reject` y `return-to-draft`; `BORRADOR → DESPUBLICADO` sigue permitido | Bandeja de revisión completa |
-| **G-5 / D-3** | Definir quién publica; AB sin `READ_VARIANT`/`PUBLISH_VARIANT` | 🟡 importante | contrato (seed + doc) | ⬜ sin cambios: AB gestiona puntos de atención pero no llega a la ficha de la que cuelgan | Bandeja de publicación para AB, puntos de atención para AB y textos de la UI |
-| **G-9** | Unicidad de ficha (adopción + localidad) y de slug; cascada de vigencia | 🟡 importante | bug | 🟠 constraints únicas (`V2.27`) y, desde `1888e1a` (en staging desde el 2026-11-19), el portal filtra por vigencia de la adopción; sin validación previa (500 `5000`, sin decir cuál de las dos restricciones falló), slug no único global y sin cascada | Evitar fichas duplicadas; que el estado del backoffice coincida con lo que ve el ciudadano |
+| **G-5 / D-3** | Definir quién publica; AB sin `READ_VARIANT`/`PUBLISH_VARIANT` | 🟡 importante | contrato (seed + doc) | ⬜ sin cambios: AB gestiona puntos de atención pero no llega a la ficha de la que cuelgan. **Confirmado en ejecución el 2026-11-20**: con AB, `GET /api/attention-point` → 200 y `GET /api/organism-procedure-location` → 403 | Bandeja de publicación para AB, puntos de atención para AB y textos de la UI |
+| **G-9** | Unicidad de ficha (adopción + localidad) y de slug; cascada de vigencia | 🟡 importante | bug | 🟠 constraints únicas (`V2.27`) y, desde `1888e1a` (en staging desde el 2026-11-19), el portal filtra por vigencia de la adopción; sin validación previa (500 `5000`, sin decir cuál de las dos restricciones falló; **confirmado en ejecución el 2026-11-20** para las dos), slug no único global y sin cascada | Evitar fichas duplicadas; que el estado del backoffice coincida con lo que ve el ciudadano |
 | **G-24** | AGENT conserva `UPDATE_ADOPTION` (un `PUT` con `enabled: false` equivale al `DELETE` que `V2.30` le quitó) y el `DELETE` de la ficha exige `UPDATE_VARIANT` | 🟡 importante | bug (autorización) | ⬜ | Que la UI y la API coincidan en qué puede hacer un AGENT |
-| **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | 🟠 filtros `?organismProcedureLocationId=` (puntos, `0db49a9`) y `?organismProcedureId=` (fichas, `3797fe7`) · en staging desde el 2026-11-19; sin paginación ni el resto de los filtros (ver G-29) | Listados con volumen real |
+| **G-7** | Paginación y filtros en los listados | 🟡 importante | feature | 🟠 filtros `?organismProcedureLocationId=` (puntos, `0db49a9`) y `?organismProcedureId=` (fichas, `3797fe7`) · en staging desde el 2026-11-19 · confirmados en ejecución el 2026-11-20; sin paginación ni el resto de los filtros (ver G-29) | Listados con volumen real |
 | **G-11** | Adopciones: editar con plantilla desactivada, cascada al desactivar plantilla, filtro por plantilla, `ownerOrganismId` | 🟡 importante | bug + contrato | ⬜ | Editar/deshabilitar adopciones de plantillas inactivas; vista "Organismos que la adoptaron" sin bajar todo |
 | **G-12** | Fichas y puntos de atención: workflow sobre inactivas, fichas sobre adopciones no vigentes, `DELETE` sin versión, puntos sobre fichas inactivas | 🟡 importante | bug | 🟠 §1 (404 `4073`) y §3 (adopción no vigente → 404 `4073`, `1888e1a` · en staging desde el 2026-11-19; ver G-27); §2, §4, §5 y §6 sin cambios | Mensajes de error precisos y datos consistentes en fichas y puntos |
-| **G-16** | Borrar una categoría, etiqueta o destinatario en uso responde 500 (FK) en vez de 409 | 🟡 importante | bug | ⬜ | Mensaje claro al borrar datos de catálogo en uso |
-| **G-26** 🆕 | Cuentas privilegiadas (PPDT-5.1): ADMIN_BACKOFFICE recibe 403 `4029` sobre cuentas SA/AB, pero el listado no dice qué rol tiene cada usuario | 🟡 importante | contrato | ⬜ — leído en el código, **no ejecutado** | Ofrecerle a AB solo las acciones de cuenta que el backend le va a aceptar |
+| **G-16** | Borrar una categoría, etiqueta o destinatario en uso responde 500 (FK) en vez de 409; lo mismo un permiso asignado a un rol (ampliado el 2026-11-20) | 🟡 importante | bug | ⬜ — leído en el código y en el esquema, **no ejecutado** | Mensaje claro al borrar datos de catálogo en uso |
+| **G-26** 🆕 | Cuentas privilegiadas (PPDT-5.1): ADMIN_BACKOFFICE recibe 403 `4029` sobre cuentas SA/AB, pero el listado no dice qué rol tiene cada usuario | 🟡 importante | contrato | ⬜ — el 403 `4029` quedó **confirmado en ejecución el 2026-11-20** (desactivar, cambiar email, baja lógica, baja definitiva y alta con rol SUPERADMIN); el pedido sigue abierto | Ofrecerle a AB solo las acciones de cuenta que el backend le va a aceptar |
 | **G-27** 🆕 | Ficha de una adopción no vigente: el `PUT` responde 404 `4073` ("no existe") y no se puede editar; tampoco preparar fichas antes del inicio de vigencia | 🟡 importante | contrato | ⬜ — leído en el código, **no ejecutado** | Mensaje preciso y saber cuándo ofrecer "Agregar localidad" y "Editar" |
-| **G-29** 🆕 | `GET /api/attention-point?organismProcedureLocationId=` devuelve solo activos (sin filtro, activos e inactivos) y no hay parámetro para pedir los inactivos | 🟡 importante | contrato | ⬜ — leído en el código, **no ejecutado** | Panel de puntos de atención con "Mostrar inactivos" usando el filtro del servidor |
+| **G-29** 🆕 | `GET /api/attention-point?organismProcedureLocationId=` devuelve solo activos (sin filtro, activos e inactivos) y no hay parámetro para pedir los inactivos | 🟡 importante | contrato | ⬜ — **confirmado en ejecución el 2026-11-20** (con filtro, solo el activo; sin filtro, también el desactivado) | Panel de puntos de atención con "Mostrar inactivos" usando el filtro del servidor |
 | **G-31** 🆕 | `PUT /api/user/{id}/change-password` no valida el alcance del actor: quien tenga `UPDATE_USER` cambia la contraseña de cualquier cuenta que no sea SA/AB, también de otro organismo | 🟡 importante | bug (autorización) | ⬜ — leído en el código, **no ejecutado**. Latente: en el seed solo SA y AB tienen `UPDATE_USER` | Poder ofrecer "Cambiar contraseña" por permiso sin abrir un hueco el día que AO reciba `UPDATE_USER` |
 | **G-32** 🆕 | Zona horaria de la vigencia: `effective_from/to` (`TIMESTAMPTZ`) viajan como `LocalDateTime` sin zona y se comparan con `LocalDateTime.now()` de la JVM; ni el `Dockerfile` ni la configuración fijan la zona | 🟡 importante | bug + ops | ⬜ — leído en el código, **no ejecutado**; no se sabe en qué zona corre la JVM de staging | Que "vigente" signifique lo mismo en el backoffice, en la API y en el portal |
+| **G-34** 🆕 | Enumeración de cuentas en el login: email inexistente → 404 `4023`, contraseña incorrecta → 401 `4016`, cuenta inactiva → 500 `5000` (con cualquier contraseña); `register` → 409 `4002` | 🟡 importante | bug (seguridad) | ⬜ — leído en el código, **no ejecutado** en la corrida del 2026-11-20 (el 404 `4023` y el 500 de la cuenta inactiva sí se vieron en corridas anteriores) | Que el login no le diga a un tercero qué emails tienen cuenta ni en qué estado está cada una |
+| **G-33** 🆕 | Bloqueo de login: `BLOCK_DURATION` de un minuto con comentario "5 MIN"; el tiempo restante del `4014` viaja solo dentro del `message`; el `4013` no inicia sesión; y por el orden de los chequeos de Spring una cuenta bloqueada respondería 500 `5000` sin desbloquearse nunca | 🟡 importante (a confirmar) | bug + contrato | ⬜ — leído en el código, **no ejecutado** (`GEN-LOGIN-BLOQ` sin cubrir) | Decirle a la persona cuánto tiene que esperar, y que el bloqueo termine |
 | **G-21** | `LocalDate.MAX` como parámetro de la consulta de solapamiento de asignaciones (posible 500 o solapamiento no detectado) | 🔵 a confirmar | bug | ⬜ — **no confirmado en ejecución** | Asignar un rol sin fecha de fin |
-| **G-25** | Textos de error engañosos: `4018` para rol inexistente, `4002` para usuario inactivo, contraseña "8 a 30" con máximo real 20 | 🔵 mejora | bug | ⬜ | Mostrar el mensaje del backend sin traducciones locales |
+| **G-25** | Textos de error engañosos: `4018` para rol inexistente, `4002` para usuario inactivo, contraseña "8 a 30" con máximo real 20 | 🔵 mejora | bug | ⬜ (el `4018` del rol inexistente sigue igual en `586b670`) | Mostrar el mensaje del backend sin traducciones locales |
 | **G-28** 🆕 | `slugBase`: el canónico puede quedar vacío (`"¡¡¡"` → `""`) y las plantillas anteriores a `130c180` no se recanonicalizan | 🔵 a confirmar | bug | ⬜ — leído en el código, **no ejecutado** | Slugs de plantilla siempre válidos y únicos |
 | **G-30** 🆕 | Usuarios: el 403 `4029` cubre al menos ocho motivos distintos y solo se distinguen por el texto de `details` (dos comparten texto y varios no traen ninguno) | 🔵 mejora | contrato | ⬜ — leído en el código, **no ejecutado** | Marcar el campo correcto del form y explicar el rechazo sin comparar textos |
+| **G-35** 🆕 | Guardado de organismo: 409 `4071` sirve para "tipo inactivo" y "superior inactivo", y 404 `4058` para "el organismo editado no existe" y "el superior no existe" | 🔵 mejora | contrato | ⬜ — leído en el código, **no ejecutado** | Marcar el campo correcto del form de organismo sin deducirlo del contexto |
 | **G-8** | Endpoint de versiones de la ficha (`otl_versions`) y control de concurrencia | 🔵 mejora | feature | 🟠 sin cambios: `@Version` y handler → 409 `4091`; `lockVersion` no viaja en el contrato (tampoco en el response nuevo de G-1) y falta el endpoint de versiones. El front lo mitiga con un `GET` extra antes de cada `PUT` | Historial de versiones (FR-BACKOFFICE-07) y aviso de edición concurrente |
 | **G-17** | ¿AO/AGENT deben ver las etiquetas globales? Hoy `GET /api/tag` les devuelve solo las locales de su organismo | 🔵 decisión | contrato | ⬜ (existe `GET /api/tag/public`, pero no resuelve la decisión) | Etiquetar plantillas/fichas desde un organismo con etiquetas provinciales |
 | **G-18** | Excepciones de Spring sin manejar responden 500: id no UUID (→ 400), método no soportado (→ 405), body ilegible (→ 400) | 🔵 mejora | bug | ⬜ (alcanza también a los dos filtros nuevos: un valor que no es UUID → 500) | Errores precisos; no confundir un request inválido con una caída |
 | **G-19** | Seed de ejemplo para el núcleo de trámites en `dev` (plantillas, adopción, fichas) | 🔵 mejora | ops | ⬜ | QA y demos sobre una base nueva sin cargar todo a mano |
 | **OPS-2** | Purgar en staging los registros de prueba `E2E-*` que la API no permite borrar | 🔵 mejora | ops | ⬜ (no verificable desde el código) | Staging limpio (entorno compartido) |
 | **DOC-1** | Corregir `docs/frontend_integration_guide.md` | 🔵 mejora | doc | ⬜ (los commits nuevos actualizaron `docs/architecture/*`, no la guía) | Evitar que otros equipos (portal) integren contra información vieja |
-| **G-1** | Response de la ficha (OTL) incompleto y sin filtro por adopción | 🔴 bloquea | contrato | ✅ `3797fe7` · en staging desde el 2026-11-19 (sin los nombres ni las fechas "deseables") | Pantallas de fichas por localidad y puntos de atención con datos reales |
-| **G-2 / BO-20** | Organismo del usuario en `/api/auth/me` | 🔴 bloquea | contrato | ✅ `d7aca1c` · en staging desde el 2026-11-19 | AO adopta trámites; AO/AGENT crean etiquetas locales; preselección de organismo |
-| **G-22** | ADMIN_BACKOFFICE tiene `CREATE_USER` pero `role-assignments` le respondía siempre 403 `4029` | 🟡 importante | contrato | ✅ `a69925e` · en staging desde el 2026-11-19 (en la práctica sigue tapado por G-20) | Saber a quién ofrecerle "Asignar rol" (BO-24) |
-| **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | ✅ `1f51bea` · en staging desde el 2026-11-19 (el mensaje del `4080` ya estaba en staging) | Mensajes de error consistentes sin traducciones locales |
+| **G-1** | Response de la ficha (OTL) incompleto y sin filtro por adopción | 🔴 bloquea | contrato | ✅ `3797fe7` · en staging desde el 2026-11-19 · **confirmado en ejecución el 2026-11-20** (sin los nombres ni las fechas "deseables") | Pantallas de fichas por localidad y puntos de atención con datos reales |
+| **G-2 / BO-20** | Organismo del usuario en `/api/auth/me` | 🔴 bloquea | contrato | ✅ `d7aca1c` · en staging desde el 2026-11-19 · **confirmado en ejecución el 2026-11-20** con los seis roles | AO adopta trámites; AO/AGENT crean etiquetas locales; preselección de organismo |
+| **G-22** | ADMIN_BACKOFFICE tiene `CREATE_USER` pero `role-assignments` le respondía siempre 403 `4029` | 🟡 importante | contrato | ✅ `a69925e` · en staging desde el 2026-11-19 (en la práctica sigue tapado por G-20). Confirmado en ejecución el 2026-11-20: `/api/role/allowed` de AB trae solo roles `assignableByBackoffice` | Saber a quién ofrecerle "Asignar rol" (BO-24) |
+| **G-6** | Código `4080` sin mensaje; `4072` responde 400 y no 409 | 🔵 mejora | bug | ✅ `1f51bea` · en staging desde el 2026-11-19 (el mensaje del `4080` ya estaba en staging) · confirmado en ejecución el 2026-11-20 para etiquetas (409 `4072`) | Mensajes de error consistentes sin traducciones locales |
 | **G-10** | Plantillas: canonicalizar `slugBase` y precisar el `4073` de catálogos | 🔵 mejora | bug | ✅ `130c180` · en staging desde el 2026-11-19 (casos borde en G-28) | Slugs consistentes entre clientes y errores de catálogo que nombran el id faltante |
 | **R-3** | Grants de `V2.20`/`V2.23`/`V2.24` filtran por `ROLE_*` y no matchean ningún rol | 🔴 bloquea | bug | ✅ `V2.28` (`bab0993`) + `V2.30` · en staging desde el 2026-11-16 | Etiquetas, Adopciones y Puntos de atención reales |
 | **R-1** | `PUT` de la ficha acepta `publicationStatus` y saltea el workflow | 🔴 bloquea | bug | ✅ `5186ab1` · en staging desde el 2026-11-16 · cabo suelto (`PUT` sin `active` → 500) cerrado en `3797fe7` · en staging desde el 2026-11-19 | Edición segura de fichas |
@@ -251,6 +284,15 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 
 ## G-1 · Response completo de la ficha por localidad + filtro por adopción
 
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging, backend `586b670`; `e2e/final_runs/fichas_2026-11-19/07_fichas_y_sesion/`).**
+> - **Contrato:** la lista y el `GET /{id}` traen `active`, `costs`, `currentVersionNumber`, `id`, `locationId`,
+>   `organismProcedureId`, `publicationStatus`, `requirements`, `slug` y `url` (`FS-CON-02`, 5 fichas).
+> - **Roundtrip sin pérdida:** editar solo los costos desde la UI (`GET` → `PUT`) deja intactos adopción, localidad,
+>   slug, URL, requisitos, `active` y estado; la versión pasa de 1 a 2 (`FS-EDI-01`).
+> - **Filtro:** `?organismProcedureId=` responde 200 y devuelve solo las fichas de esa adopción (`FS-CON-03`); con AO y
+>   AGENT el listado trae solo las de su organismo (`AO-FIC-01`, `AG-FIC-01`, script 08).
+> - **No ejercitado:** el 400 `4012` con `details` por campo (4.º criterio): el front valida antes de enviar.
+
 > **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`3797fe7`, PPDT-5.6), en staging desde el 2026-11-19
 > (OPS-1).**
 > - **Response:** `OrganismProcedureLocationResponseDTO` suma `organismProcedureId`, `locationId`, `url`, `requirements`
@@ -303,15 +345,35 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
   de filtros) y G-11 §3 (adopciones por plantilla): conviene resolverlos juntos.
 - `@NotNull` en `organismProcedureId`, `locationId`, `slug` y `active` → 400 `4012`.
 
-**Criterio de aceptación** *(tildado según el código y los tests de `586b670`; falta verificarlo en ejecución)*
-- [x] `GET /` y `GET /{id}` devuelven al menos los campos obligatorios.
-- [x] Un `GET /{id}` seguido de un `PUT` con ese mismo body no pierde contenido (si la adopción sigue vigente: G-27).
-- [x] `?organismProcedureId=` filtra, respetando el alcance del usuario.
-- [x] Un request sin campos obligatorios → 400 `4012` con `details` por campo.
+**Criterio de aceptación** *(los tres primeros, confirmados en ejecución el 2026-11-20; el cuarto, tildado según el código y los tests de `586b670`)*
+- [x] `GET /` y `GET /{id}` devuelven al menos los campos obligatorios. *(confirmado en ejecución, `FS-CON-02`)*
+- [x] Un `GET /{id}` seguido de un `PUT` con ese mismo body no pierde contenido (si la adopción sigue vigente: G-27). *(confirmado en ejecución, `FS-EDI-01`)*
+- [x] `?organismProcedureId=` filtra, respetando el alcance del usuario. *(confirmado en ejecución, `FS-CON-03`)*
+- [x] Un request sin campos obligatorios → 400 `4012` con `details` por campo. *(sin ejecutar)*
 
 ---
 
 ## G-2 / BO-20 · Organismo del usuario en `/api/auth/me`
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging, backend `586b670`; `*-SES-01` en `e2e/final_runs/fichas_2026-11-19/08_roles_fichas_y_sesion/` y
+> `FS-CON-01`, `FS-ORG-AO-01`, `FS-ORG-AGENT-01` en el script 07).** `GET /api/auth/me` con el token de cada rol:
+>
+> | Rol | `scope` | Organismo |
+> |---|---|---|
+> | SUPERADMIN | `global` | `organismId`, `organismName` y `organismAcronym` en `null` |
+> | ADMIN_BACKOFFICE | `global` | `null` |
+> | MANAGER | `global` | `null` |
+> | USER | `global` | `null` (sin permisos; el front no lo deja entrar al backoffice) |
+> | ADMIN_ORGANIZATION | `organismo` | "Silicon Misiones", **`organismAcronym: null`** |
+> | AGENT | `organismo` | organismo de muestra, con sigla |
+>
+> - **Dato confirmado: la sigla es opcional.** El organismo de la cuenta ADMIN_ORGANIZATION de prueba no tiene sigla
+>   y `/me` responde `organismAcronym: null` con `organismId` y `organismName` completos. Es el punto 2 de la ampliación
+>   de abajo, que deja de ser una lectura del código: el front lo tolera (muestra solo el nombre). Falta que quede
+>   escrito en el contrato (criterio abierto).
+> - El response trae exactamente `email`, `organismAcronym`, `organismId`, `organismName`, `permissions`, `roles`,
+>   `scope` y `userId`.
+> - **No ejercitado:** usuario sin asignación vigente (403 `4029`), organismo desactivado y organismo inexistente.
 
 > **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`d7aca1c`, PPDT-5.2), en staging desde el 2026-11-19
 > (OPS-1).** `AuthMeResponseDTO` suma `scope` (`"global"` | `"organismo"`), `organismId`, `organismName` y
@@ -391,12 +453,13 @@ Sugerencia: si se aprueban G-3 y G-5, sumar esos grants en la misma migración.
 - `scope`: `global` | `organismo`. Con `global`, `organismId` va en `null`.
 - Complementario (opcional): con alcance de organismo, si el request de adopción o de etiqueta local viene sin `organismId`, que el backend tome el del alcance en vez de responder 404.
 
-**Criterio de aceptación** *(tildado según el código y los tests de `586b670`; falta verificarlo en ejecución)*
-- [x] Con AO y AGENT, `/api/auth/me` devuelve `scope: "organismo"` y su `organismId`.
-- [x] Con SA, AB y MANAGER devuelve `scope: "global"` y `organismId: null`.
-- [x] Un usuario sin asignación vigente responde 403 `4029` (en `/me` es nuevo: antes respondía 200).
+**Criterio de aceptación** *(los dos primeros, confirmados en ejecución el 2026-11-20; el tercero, tildado según el código y los tests de `586b670`)*
+- [x] Con AO y AGENT, `/api/auth/me` devuelve `scope: "organismo"` y su `organismId`. *(confirmado en ejecución)*
+- [x] Con SA, AB y MANAGER devuelve `scope: "global"` y `organismId: null`. *(confirmado en ejecución; USER también responde `global`)*
+- [x] Un usuario sin asignación vigente responde 403 `4029` (en `/me` es nuevo: antes respondía 200). *(sin ejecutar)*
 - [ ] *(ampliación 2026-11-19)* Está documentado como invariante que `scope: "organismo"` trae siempre `organismId` y
-  `organismName`, y que `organismAcronym` puede ser `null`.
+  `organismName`, y que `organismAcronym` puede ser `null`. *(El comportamiento quedó confirmado en ejecución el
+  2026-11-20; el criterio sigue abierto porque pide que esté documentado.)*
 - [ ] *(ampliación 2026-11-19)* Está definido qué responde `/me` para un usuario cuyo organismo está desactivado.
 - [ ] *(ampliación 2026-11-19)* "Sin rol vigente" llega con un código que el front puede distinguir de "sin permiso"
   (en `/me` o en el login).
@@ -445,6 +508,12 @@ Más adelante se puede paginar (ver G-7).
 ---
 
 ## G-3 · Permisos de lectura para AO y AGENT
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging; `e2e/final_runs/fichas_2026-11-19/08_roles_fichas_y_sesion/`).** Con ADMIN_ORGANIZATION,
+> `GET /api/procedure-template` → 200 (5 plantillas, las mismas que ve SUPERADMIN: `AO-TRA-03`) y "Adoptar trámite"
+> le ofrece esas plantillas con su organismo fijo (`AO-TRA-02`). Con AGENT, `GET /api/organism-procedure` → 200 con
+> solo la adopción de su organismo (`AG-TRA-01`). Lo que sigue faltando no cambió: la cuenta AGENT de prueba no tiene
+> `READ_PROCEDURE` (sus 15 permisos figuran en `FS-ORG-AGENT-03`) y ADMIN_BACKOFFICE no tiene `READ_ORGANISM`.
 
 > **Estado 2026-11-19 (`dev` @ `586b670`):** 🟠 **Parcial, con avance (`fb13104`, PPDT-5.4; en staging desde el 2026-11-19).**
 > `V2.31__grant_organization_template_read.sql:1-6` otorga `READ_PROCEDURE` a `ADMIN_ORGANIZATION` (por el código con y
@@ -498,8 +567,8 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 - Pedido: `READ_ORGANISM` para AB (y para AO si G-2 no sale), o un endpoint acotado de organismos "seleccionables".
 
 **Criterio de aceptación**
-- [x] Con AO, `GET /api/procedure-template` → 200 (`V2.31`; verificar en ejecución).
-- [x] Con AGENT, `GET /api/organism-procedure` → 200, solo las de su organismo (`V2.28`; verificar en ejecución).
+- [x] Con AO, `GET /api/procedure-template` → 200 (`V2.31`; confirmado en ejecución el 2026-11-20, `AO-TRA-03`).
+- [x] Con AGENT, `GET /api/organism-procedure` → 200, solo las de su organismo (`V2.28`; confirmado en ejecución el 2026-11-20, `AG-TRA-01`).
 - [ ] Con AGENT, `GET /api/procedure-template/{id}` → 200 (para mostrar el título del trámite de cada ficha).
 - [ ] Con AB, `GET /api/organism` → 200 (o existe un endpoint equivalente para elegir organismo al adoptar).
 
@@ -535,7 +604,7 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 
 **Criterio de aceptación**
 - [x] `publish` sobre una ficha en `BORRADOR` → 409 `4077` con mensaje legible (el criterio original decía `4081`).
-- [x] `GET /{id}` de una ficha de otro organismo (con AO) → 404 `4073`, no 500.
+- [x] `GET /{id}` de una ficha de otro organismo (con AO) → 404 `4073`, no 500. *(confirmado en ejecución el 2026-11-20 con AO y con AGENT: `AO-FIC-01`, `AO-FIC-06`, `AG-FIC-01`, `AG-FIC-06`)*
 - [x] `GET`/`PUT /api/organism-procedure-location/<uuid-inexistente>`, y un `POST`/`PUT` con adopción o localidad inexistente → 404 `4073`.
 - [ ] `reject` y `return-to-draft` funcionan, generan versión y respetan el alcance.
 - [ ] Tests de workflow para cada transición inválida.
@@ -543,6 +612,13 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 ---
 
 ## G-5 / D-3 · Quién publica: definición y seed de AB
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging, backend `586b670`; `AB-FIC-01`, `AB-FIC-02` y `AB-NAV-01`
+> en `e2e/final_runs/fichas_2026-11-19/08_roles_fichas_y_sesion/`).** Con el token de ADMIN_BACKOFFICE, `GET /api/attention-point` → **200** (los 7 puntos de
+> staging) y `GET /api/organism-procedure-location` → **403**. Su menú no tiene "Fichas por localidad" (sí "Plantillas
+> provinciales" y "Trámites del organismo"), y los puntos de atención solo se gestionan desde el panel de la ficha:
+> **AB tiene `*_ATTENTION_POINT` sin ninguna pantalla donde usarlos.** Sigue pendiente la misma decisión: o AB recibe
+> `READ_VARIANT` (y se define si publica), o se le quitan los `*_ATTENTION_POINT`.
 
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** ⬜ **Pendiente, y más visible que antes.** `V2.28` le dio a AB los cuatro
 > `*_ATTENTION_POINT` y los cuatro `*_ADOPTION`, pero AB sigue sin `READ_VARIANT` (ninguna migración se lo otorga). Los
@@ -578,6 +654,19 @@ Las plantillas son globales, así que dar lectura no expone datos de otros organ
 ---
 
 ## G-9 · Unicidad de fichas y de slug; cascada de vigencia
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging, backend `586b670`; `e2e/final_runs/fichas_2026-11-19/07_fichas_y_sesion/`).** Lo que la
+> ampliación de abajo leyó en el código se reprodujo para las dos restricciones de `V2.27`:
+> - **(adopción, localidad)** — `FS-DUP-03`, por API: `POST /api/organism-procedure-location` con una adopción y una
+>   localidad que ya tienen ficha → **500**, body `{"code": 5000, "message": "Ocurrió un error inesperado. Contacte al
+>   administrador.", "details": null}`. Es una de las 3 FALLA de la corrida (se esperaba 409 `4072`).
+> - **(slug, adopción)** — `FS-DUP-02`, por la UI: un slug tomado después de abrir el alta → mismo `POST`, mismo
+>   **500 `5000`** con `details: null`. El caso figura OK porque el front lo absorbe con su texto ("Puede que esa
+>   localidad ya tenga una ficha de este trámite (activa o desactivada) o que el slug ya esté en uso…",
+>   `screenshots/005_FS-DUP-02_carrera_resultado.png`); el hallazgo de backend quedó registrado igual.
+> - Los dos bodies son idénticos: confirmado que el cliente no puede saber cuál de las dos restricciones falló.
+> - En la misma corrida, el duplicado de **etiqueta** respondió 409 `4072` (`FS-ETI-01`): las fichas siguen siendo el
+>   único recurso con este hueco.
 
 > **Ampliación 2026-11-19 — el duplicado sigue en 500 y el front no sabe cuál de las dos restricciones falló**
 > (surge de integrar el front contra `586b670`; **leído en el código, no ejecutado**).
@@ -667,8 +756,8 @@ CREATE UNIQUE INDEX uk_otl_slug_active
 - Agregar a las queries públicas `op.effectiveFrom <= :now and (op.effectiveTo is null or op.effectiveTo > :now)`. Esto cubre el vencimiento por paso del tiempo, que ningún evento dispara.
 
 **Criterio de aceptación**
-- [ ] Crear una segunda ficha activa para la misma adopción y localidad → 409.
-- [ ] Crear una ficha con un slug activo ya usado → 409.
+- [ ] Crear una segunda ficha activa para la misma adopción y localidad → 409. *(2026-11-20, en ejecución: hoy 500 `5000`, `FS-DUP-03`)*
+- [ ] Crear una ficha con un slug activo ya usado → 409. *(2026-11-20, en ejecución: hoy 500 `5000`, `FS-DUP-02`)*
 - [ ] *(ampliación 2026-11-19)* Los dos 409 se distinguen entre sí por el código o por un campo estructurado (no solo
   por el texto), y ninguno llega como 500 `5000`. Vale también para el `PUT` que cambia slug o localidad.
 - [ ] *(ampliación 2026-11-19)* Test de servicio o de integración que cubra las dos violaciones de `V2.27`.
@@ -719,13 +808,18 @@ Además:
 | `/api/user` (BO-17) | `q`, `organismId`, `roleCode` |
 
 **Criterio de aceptación**
-- [x] `GET /api/attention-point?organismProcedureLocationId=…` devuelve solo los puntos de esa ficha, respetando el alcance (`0db49a9`; solo los activos: G-29).
+- [x] `GET /api/attention-point?organismProcedureLocationId=…` devuelve solo los puntos de esa ficha, respetando el alcance (`0db49a9`; solo los activos: G-29). *(confirmado en ejecución el 2026-11-20 junto con `?organismProcedureId=`: `FS-CON-03`, `FS-PUN-04`)*
 - [x] Sin parámetros, los endpoints mantienen el comportamiento actual (compatibilidad), o el cambio de contrato se avisa con anticipación.
 - [ ] Paginación (`page`, `size`, `sort`, `direction`) y el resto de los filtros de la tabla.
 
 ---
 
 ## G-6 · Mensaje del `4080` y status del `4072`
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging; `FS-ETI-01` en `e2e/final_runs/fichas_2026-11-19/07_fichas_y_sesion/`).**
+> `POST /api/tag` con un slug repetido en el mismo alcance → **409 `4072`**; el front lo marca en el campo. Solo se
+> ejercitó el de etiquetas: los demás recursos (plantillas, categorías, modalidades, hechos de vida, destinatarios)
+> siguen verificados por lectura del código. El de fichas no responde `4072`: ver G-9.
 
 > **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`1f51bea`, PPDT-5.6), en staging desde el 2026-11-19
 > (OPS-1).** El `4072` responde **409** en todos los servicios que lo usan para duplicados:
@@ -757,7 +851,7 @@ Además:
 
 **Criterio de aceptación**
 - [x] El `4080` llega con un mensaje en español.
-- [x] El `4072` llega con 409 en todos los endpoints (`1f51bea`; en staging desde el 2026-11-19).
+- [x] El `4072` llega con 409 en todos los endpoints (`1f51bea`; en staging desde el 2026-11-19; confirmado en ejecución el 2026-11-20 para etiquetas).
 
 ---
 
@@ -942,6 +1036,14 @@ fichas inactivas y la creación de fichas/puntos sobre padres deshabilitados o v
 ---
 
 ## OPS-1 · Desplegar `dev` en staging
+
+> **Estado 2026-11-20:** ✅ **Cumplido y verificado en flujos.** El e2e de los seis roles corrió contra staging
+> (backend `586b670`): 114 casos OK, 3 FALLA y 4 sin cubrir (`e2e/final_runs/fichas_2026-11-19/`; detalle en el bloque
+> "E2E 2026-11-20" de la cabecera). Lo que el 2026-11-19 solo se había visto en el esquema de `/api-docs` quedó
+> ejercitado: alta, edición, workflow completo (`BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`) y puntos de
+> atención de una ficha, `/me` con `scope` y organismo para los seis roles, `READ_PROCEDURE` de ADMIN_ORGANIZATION
+> (`V2.31`), el `4072` como 409 y los dos filtros nuevos. Ninguna de las 3 FALLA es del deploy: dos son pedidos
+> abiertos (G-9, G-23) y una es del front.
 
 > **Estado 2026-11-19 (más tarde, el mismo día):** ✅ **Cumplido de nuevo** (para `586b670`). `origin/staging` del
 > backend = `0a555df` ("Merge branch 'dev' into 'staging'", contiene `586b670`). `/api-docs` de staging ya publica el
@@ -1196,6 +1298,23 @@ bug no aparece con H2.
 
 ## G-16 · Borrar categorías, etiquetas o destinatarios en uso responde 500
 
+> **Ampliación 2026-11-20 — mapa de borrados en uso (`dev` @ `586b670`; leído en el código y deducido del esquema,
+> no ejecutado).** Los tres casos de abajo siguen igual (`CategoryService.java:129`, `TagService.java:92`,
+> `RecipientService.java:83`: `delete` directo, sin consulta previa ni `catch`; el `GlobalExceptionHandler` no tiene
+> handler para `DataIntegrityViolationException`, así que cae en el genérico de `:100-110`). Se suma un caso y se deja
+> anotado cuáles sí responden con código:
+>
+> | Borrado | Qué lo frena | Respuesta |
+> |---|---|---|
+> | Categoría, etiqueta o destinatario usados por una plantilla | FK sin cascada (`V2.10:4, 18`, `V2.11:3, 15`) | **500 `5000`** (este pedido) |
+> | **Permiso asignado a un rol** (`DELETE /api/permission/{id}`, solo SUPERADMIN: `security/controller/PermissionController.java:80-85`) | `role_permissions_permission_id_fkey` es `ON DELETE RESTRICT` desde `V0.6__align_role_permissions_delete_rules.sql:13-17` (la `V0.0:45` original era `CASCADE`); `PermissionService.deletePermission` (`security/service/PermissionService.java:72-77`) hace `deleteById` sin `catch` | **500 `5000`** (nuevo en este pedido) |
+> | Usuario con asignaciones de rol (`DELETE /api/user/{id}/admin`) | FK `RESTRICT` de `user_role_assignments` | **500 `5000`** — ya está en **G-13** |
+> | Organismo con hijos activos | `OrganismService.java:164-167` | 409 `4067` ✔ |
+> | Tipo de organismo con organismos activos | `OrganismTypeService.java:135-137` | 409 `4066` ✔ |
+> | Categoría con subcategorías | `CategoryService.java:125-126` | **400** `4065` (tiene código; pedimos que pase a 409) |
+>
+> El borrado de rol no entra: es baja lógica (`RoleService.java:96-104`).
+
 > **Estado 2026-11-16 (`dev` @ `58d383a`):** ⬜ **Pendiente, sin cambios.**
 
 **Prioridad:** 🟡 importante · **Tipo:** bug.
@@ -1217,6 +1336,8 @@ plantillas", ídem etiqueta y destinatario). Sugerimos que el `4065` pase tambi�
 - [ ] Borrar una categoría (principal o secundaria), etiqueta o destinatario en uso → 409 con código y mensaje; el front
   lo muestra en el modal.
 - [ ] Ningún borrado de catálogo responde 500 por FK.
+- [ ] *(ampliación 2026-11-20)* `DELETE /api/permission/{id}` de un permiso asignado a algún rol → 409 con código y
+  mensaje (o se define que primero se desasigna), no 500.
 
 ---
 
@@ -1392,6 +1513,12 @@ error genérico en vez de "ya tiene un rol vigente".
 
 ## G-22 · ADMIN_BACKOFFICE tiene `CREATE_USER` pero `role-assignments` le responde siempre 403
 
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging; `AB-USR-02` y `AB-USR-06` en `e2e/final_runs/fichas_2026-11-19/08_roles_fichas_y_sesion/`).**
+> Con ADMIN_BACKOFFICE, `GET /api/role/allowed` → 200 con `USER`, `ADMIN_ORGANIZATION`, `AGENT` y un rol de muestra
+> creado por el e2e con el flag: solo roles `assignableByBackoffice`, sin `SUPERADMIN`, `ADMIN_BACKOFFICE` ni `MANAGER`
+> (SUPERADMIN recibe todos, `SA-USR-02`). `POST /api/user` con rol `SUPERADMIN` → **403 `4029`**. No se ejercitó
+> `role-assignments` (sigue tapado por G-20).
+
 > **Estado 2026-11-19 (`dev` @ `586b670`):** ✅ **Resuelto en `dev` (`a69925e`, PPDT-5.1), en staging desde el 2026-11-19
 > (OPS-1).** La definición quedó: **AB sí asigna**, con la misma regla que en el alta.
 > `validateRoleAssignmentPermissions` (`security/service/UserService.java:294-325`) suma la rama de ADMIN_BACKOFFICE
@@ -1442,6 +1569,16 @@ Hace falta saber si es intencional para ocultarle la acción (regla por rol, com
 
 ## G-23 · Ningún rol es asignable por ADMIN_ORGANIZATION
 
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging, backend `586b670`; `AO-USR-01` y `AO-USR-02` en
+> `e2e/final_runs/fichas_2026-11-19/08_roles_fichas_y_sesion/`, `FS-ORG-AO-05` en el script 07).** La cuenta ADMIN_ORGANIZATION de prueba tiene `CREATE_USER` (la
+> lista de usuarios, acotada a su organismo, le ofrece "Nuevo usuario") y `GET /api/role/allowed` le responde **200 con
+> `[]`**: ningún rol tiene `assignableByOrgAdmin`. El alta se abre y muestra "No hay roles que puedas asignar": no puede
+> dar de alta a nadie. Es una de las 3 FALLA de la corrida (`AO-USR-02`) y dejó sin cubrir `FS-ORG-AO-05` (el organismo
+> de solo lectura en ese form). **Cambió respecto del "Impacto en el front" de abajo:** desde que `/me` trae el
+> organismo (G-2), AO ya llega al form sin `READ_ORGANISM`; lo único que lo frena es este flag.
+> De paso, la lista de SUPERADMIN (`SA-USR-02`) incluye `TEST_1`, que el e2e anterior había registrado como rol
+> inactivo (`e2e/INFORME_E2E_ROLES.md`): coincide con la nota de abajo sobre `/allowed` y los roles inactivos.
+
 **Prioridad:** 🟡 importante · **Tipo:** bug (seed) · Detectado en la auditoría del 2026-11-16, en las migraciones; no ejecutado.
 
 **Problema**
@@ -1483,7 +1620,7 @@ administrador del organismo debe poder otorgar (como mínimo `AGENT`; definir si
 por el código sin prefijo.
 
 **Criterio de aceptación**
-- [ ] En una base nueva, con AO, `GET /api/role/allowed` devuelve al menos `AGENT`.
+- [ ] En una base nueva, con AO, `GET /api/role/allowed` devuelve al menos `AGENT`. *(2026-11-20, en ejecución contra staging: hoy devuelve `[]`)*
 - [ ] Con AO, `POST /api/user` con rol `AGENT` → 201, y el usuario queda en el organismo del AO.
 - [ ] Con AO, `POST /api/user` con rol `SUPERADMIN` o `ADMIN_BACKOFFICE` → 403 `4029`.
 
@@ -1534,6 +1671,11 @@ por rol, y aunque lo fuera no protege contra llamadas directas.
 
 ## G-25 · Textos de error que no corresponden al error
 
+> **Verificado el 2026-11-20 (`dev` @ `586b670`, leído en el código, no ejecutado): sigue igual.**
+> `UserService.createUser` (`security/service/UserService.java:226-228`) responde 404 `4018` cuando el rol no existe, y
+> `messages/messages.properties:57` sigue diciendo "Las contraseñas no coinciden." Lo mismo en `role-assignments`
+> (`:249-251`) y en `validateUserCreationPermissions` (`:576-578` en `586b670`; la tabla cita `:569-571`, de `58d383a`).
+
 **Prioridad:** 🔵 mejora · **Tipo:** bug · Detectado en la auditoría del 2026-11-16 (`dev` @ `58d383a`).
 
 **Problema** — el status y el `code` son razonables, pero el `message` que llega al cliente dice otra cosa:
@@ -1562,6 +1704,13 @@ estos casos tiene que mantener traducciones por endpoint (un `4018` significa co
 ---
 
 ## G-26 · Cuentas privilegiadas: el front no puede saber a quién no puede tocar ADMIN_BACKOFFICE
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging, backend `586b670`; `AB-USR-03` a `AB-USR-06` en
+> `e2e/final_runs/fichas_2026-11-19/08_roles_fichas_y_sesion/`).** Con ADMIN_BACKOFFICE sobre cuentas de muestra con rol SUPERADMIN y ADMIN_BACKOFFICE:
+> desactivar la cuenta → **403 `4029`**; cambiar el email → 403 `4029`; baja lógica (`PUT /api/user/{id}`) → 403 `4029`;
+> baja definitiva (`DELETE /api/user/{id}/admin`) → 403 `4029`; alta con rol `SUPERADMIN` → 403 `4029`. Ninguna cuenta
+> cambió. El contrato de PPDT-5.1 funciona; **el pedido sigue abierto**: el listado sigue sin decir qué rol tiene cada
+> usuario, así que el front le ofrece a AB las acciones y recién explica el rechazo después del 403 (con texto propio).
 
 **Prioridad:** 🟡 importante · **Tipo:** contrato · Detectado en la auditoría del 2026-11-19 (`dev` @ `586b670`, commit `a69925e`), leyendo el código; **no ejecutado**.
 
@@ -1710,6 +1859,11 @@ y una migración que canonicalice los `slug_base` existentes resolviendo colisio
 ---
 
 ## G-29 · El filtro de puntos de atención por ficha devuelve solo los activos
+
+> **Confirmado en ejecución 2026-11-20 (e2e contra staging; `FS-PUN-04` en `e2e/final_runs/fichas_2026-11-19/07_fichas_y_sesion/`).** Tras desactivar
+> un punto de atención: con `?organismProcedureLocationId=` la API devuelve solo el activo; sin filtro, devuelve también
+> el desactivado con `active: false`. El panel muestra el inactivo con "Mostrar inactivos" porque el front lo completa
+> con el listado sin filtro.
 
 **Prioridad:** 🟡 importante · **Tipo:** contrato · Detectado en la auditoría del 2026-11-19 (`dev` @ `586b670`, commit `0db49a9`), leyendo el código; **no ejecutado**.
 
@@ -1937,6 +2091,171 @@ consecuencias, para los `createdAt` / `updatedAt` que se llenan con `LocalDateTi
 
 ---
 
+## G-33 · Bloqueo de login por intentos fallidos: duración, tiempo restante y desbloqueo
+
+**Prioridad:** 🟡 importante (a confirmar en ejecución) · **Tipo:** bug + contrato · Detectado el 2026-11-20 (`dev` @ `586b670`), leyendo el código; **no ejecutado**: el e2e dejó `GEN-LOGIN-BLOQ` sin cubrir porque bloquear una cuenta exige más intentos fallidos de los que la prueba se permite en un staging compartido.
+
+**Cómo funciona según el código**
+- Contraseña incorrecta sobre una cuenta activa y no bloqueada (`security/service/SecurityUserDetailsService.java:54-66`):
+  mientras `failedAttempts < MAX_FAILED_ATTEMPTS` (`utils/AppConstants.java:15`, **5**) suma un intento y responde
+  **401 `4016`**; con el contador ya en 5 bloquea la cuenta y responde **401 `4015`**. Es decir: cinco intentos
+  fallidos dan `4016` y **el sexto bloquea**.
+- Un login correcto con intentos acumulados los pone en cero (`security/service/AuthService.java:77-79`).
+- Sobre una cuenta bloqueada, `verifyIsBlocked` (`SecurityUserDetailsService.java:73-89`) responde **401 `4014`**
+  mientras dure el bloqueo y **401 `4013`** ("Su cuenta ha sido desbloqueada. Inicie sesión nuevamente",
+  `messages/messages.properties:51`) en el primer intento posterior, que es el que la desbloquea (`unlockUser`,
+  `:119-134`).
+
+**Problemas**
+1. **La duración no coincide con su comentario.** `AppConstants.java:16`:
+   `public static final int BLOCK_DURATION = 60 * 1000; // 5 MIN` → es **un minuto**, no cinco. (`LOCK_TIME_DURATION`,
+   `:17`, de 24 horas, no se usa en el login.) Falta saber cuál es la decisión de producto.
+2. **El tiempo restante viaja solo dentro del `message`.** `SecurityUserDetailsService.java:84-86` arma
+   `String.format("%s Tiempo restante: %d minutos.", …)` y lo manda como `message` del `4014`; no hay campo
+   estructurado. Además se calcula en minutos enteros más uno (`:80-83`): con un bloqueo de un minuto dice siempre
+   "1 minutos". El front no interpreta textos del backend, así que no puede decir cuánto falta.
+3. **El `4013` no inicia sesión aunque la contraseña sea correcta.** `CustomAuthenticationProvider.java:38-42` llama a
+   `verifyIsBlocked` también cuando la contraseña coincide, y este lanza `4013` al desbloquear: la persona que esperó y
+   escribió bien su contraseña recibe un 401 y tiene que enviar el formulario otra vez.
+4. **A confirmar — una cuenta bloqueada respondería 500 y no se desbloquearía nunca.** `CustomAuthenticationProvider`
+   extiende `AbstractUserDetailsAuthenticationProvider` (`security/configuration/CustomAuthenticationProvider.java:20`)
+   sin reemplazar sus chequeos previos, y en Spring Security 6.5.3 (Spring Boot 3.5.5, `pom.xml:8`) `authenticate`
+   corre `preAuthenticationChecks` **antes** de `additionalAuthenticationChecks`. El chequeo por defecto lanza
+   `LockedException` si `UserDetails.isAccountNonLocked()` es `false`, y `CustomeUserDetails.isAccountNonLocked()`
+   devuelve el flag del usuario (`security/entity/CustomeUserDetails.java:95-97`). Consecuencias, si es así:
+   - desde el intento siguiente al bloqueo, el login responde **500 `5000`** (`LockedException` no es
+     `GlobalAppException` y cae en el handler genérico, `exception/GlobalExceptionHandler.java:100-110`), con cualquier
+     contraseña;
+   - `verifyIsBlocked` no se alcanza: el `4014` y el `4013` no se emiten nunca, y `unlockUser` —el único lugar que
+     vuelve a poner `accountNonLocked` en `true`, además del alta (`security/service/UserService.java:171, 201`)— no
+     se ejecuta. **La cuenta quedaría bloqueada hasta que alguien la corrija en la base**, y cualquiera que conozca un
+     email puede bloquear esa cuenta con seis intentos.
+   - El mismo mecanismo ya se vio en ejecución para las cuentas **inactivas** (`DisabledException` → 500 `5000`,
+     e2e de la corrida `1113a`: `e2e/INFORME_E2E_ROLES.md`, "El login de una cuenta inactiva responde 500"; ver G-34).
+     Para las bloqueadas es una lectura del código y del orden de Spring: **hay que confirmarlo levantando el backend**.
+
+**Impacto en el front:** el login tiene textos propios para `4015`/`4014` ("Tu cuenta está bloqueada… esperá un
+momento") y `4013` ("Tu cuenta se desbloqueó. Volvé a intentar"), sin tiempo de espera (`auth/login/login-error.ts`).
+Si el punto 4 se confirma, la persona bloqueada vería "El servidor no está disponible en este momento" (el texto de
+cualquier 5xx del login) y nunca los textos de bloqueo.
+
+**Propuesta concreta**
+- Definir la duración (producto) y que la constante y su comentario digan lo mismo; idealmente configurable por
+  propiedad.
+- Un campo estructurado en el `4014` y el `4015` con el tiempo restante, por ejemplo `details: { "retryAfterSeconds": 240 }`
+  (o `lockedUntil` en ISO 8601 con zona), y el header `Retry-After`.
+- Si el bloqueo ya venció y la contraseña es correcta: desbloquear e **iniciar sesión** en ese mismo pedido; dejar el
+  `4013` solo para la contraseña incorrecta (o eliminarlo).
+- Confirmar el punto 4 y, si se reproduce, manejar `LockedException` (o hacer el chequeo y el desbloqueo antes del
+  chequeo previo de Spring) para que el bloqueo responda 401 `4014` y venza solo.
+- Test de integración del ciclo completo (hoy no hay ninguno que pase por el `AuthenticationManager` real).
+
+**Criterio de aceptación**
+- [ ] Está definida y documentada la duración del bloqueo y la cantidad de intentos; `BLOCK_DURATION` y su comentario
+  coinciden.
+- [ ] Seis intentos fallidos seguidos → el sexto responde 401 `4015`; el siguiente, dentro del bloqueo, 401 `4014`
+  (no 500), con el tiempo restante en un campo estructurado.
+- [ ] Vencido el bloqueo, un login con la contraseña correcta → 200 con tokens, en un solo pedido.
+- [ ] Vencido el bloqueo, la cuenta vuelve a aceptar intentos sin intervención en la base.
+- [ ] Test de integración que cubra bloqueo, espera y desbloqueo.
+
+---
+
+## G-34 · El login permite enumerar cuentas y su estado
+
+**Prioridad:** 🟡 importante · **Tipo:** bug (seguridad) · Detectado el 2026-11-20 (`dev` @ `586b670`), leyendo el código; **no ejecutado** en la corrida del 2026-11-20 (el 404 `4023` y el 500 de la cuenta inactiva sí se observaron en corridas anteriores contra staging: `e2e/INFORME_E2E_ROLES.md`).
+
+**Problema** — `POST /api/auth/login` es público y responde distinto según exista o no la cuenta y según su estado, sin
+que haga falta conocer la contraseña:
+
+| Caso | Respuesta | Dónde |
+|---|---|---|
+| El email no tiene cuenta | **404 `4023`** "El usuario no se encuentra registrado." | `security/service/SecurityUserDetailsService.java:41-46`; `messages/messages.properties:64` |
+| La cuenta existe y la contraseña es incorrecta | **401 `4016`** "La contraseña ingresada es incorrecta." | `SecurityUserDetailsService.java:56-58`; `messages.properties:54` |
+| La cuenta existe y este intento la bloquea | **401 `4015`** | `SecurityUserDetailsService.java:60-61` |
+| La cuenta existe y está **inactiva**, con cualquier contraseña | **500 `5000`** (ver abajo) | chequeo previo de Spring + `exception/GlobalExceptionHandler.java:100-110` |
+| La cuenta existe y está bloqueada | 401 `4014`/`4013` según el código; 500 `5000` si se confirma G-33 §4 | `SecurityUserDetailsService.java:73-89` |
+
+Con eso un tercero arma la lista de emails con cuenta (404 contra 401) y, de cada una, si está activa, inactiva o
+bloqueada. `POST /api/auth/register`, también público, lo permite igual: **409 `4002`** si el email ya existe
+(`security/service/AuthService.java:209-211`).
+
+**Cuenta inactiva: el camino real no es el que parece en el servicio.** Leyendo solo `CustomAuthenticationProvider` y
+`AuthService` se llega a esta conclusión: con contraseña incorrecta y cuenta inactiva,
+`additionalAuthenticationChecks` (`security/configuration/CustomAuthenticationProvider.java:38-39`) llama a
+`verifyFailedAttempts`; como la cuenta no está activa, este cae en la rama de `verifyIsBlocked`
+(`SecurityUserDetailsService.java:55, 63-65`), que no lanza nada si la cuenta no está bloqueada (`:73-89`); la
+autenticación sigue **con la contraseña incorrecta dada por buena**, y `AuthService.login` responde 401 `4001` (con
+token de activación pendiente) o 401 `4030` (sin él) (`AuthService.java:81-85`), después de poner en cero los intentos
+fallidos (`:77-79`). Ese camino está en el código, pero **no se alcanza**: `AbstractUserDetailsAuthenticationProvider`
+corre antes sus chequeos previos, que lanzan `DisabledException` cuando `UserDetails.isEnabled()` es `false`, y
+`CustomeUserDetails.isEnabled()` devuelve `accountActive` (`security/entity/CustomeUserDetails.java:105-107`).
+`DisabledException` no tiene handler y termina en el genérico: **500 `5000`**. Coincide con lo que se observó contra
+staging en la corrida `1113a` (`e2e/INFORME_E2E_ROLES.md`: el login de las cuentas recién creadas, todavía inactivas,
+respondió 500 `5000`). Dos consecuencias:
+- El `4001` y el `4030` del login son código muerto: el front los traduce (`auth/login/login-error.ts`) pero no llegan.
+- **Cuidado al arreglar el 500:** si se desactiva o se reemplaza el chequeo previo para que respondan `4001`/`4030`,
+  el camino de arriba pasa a ser real, y cualquiera sabría que una cuenta está inactiva sin conocer la contraseña
+  (además de resetearle los intentos fallidos). La rama de `verifyFailedAttempts` para cuentas inactivas tiene que
+  lanzar el mismo error que una contraseña incorrecta.
+
+**Impacto en el front:** el login ya muestra el mismo texto para `4023` y `4016` ("El email o la contraseña no son
+correctos"), justamente para no revelar qué emails tienen cuenta; pero el status y el `code` viajan igual en la
+respuesta, así que la protección tiene que estar en la API. Una cuenta inactiva hoy ve "El servidor no está disponible
+en este momento".
+
+**Propuesta concreta**
+- Email inexistente y contraseña incorrecta → la **misma** respuesta (401, un único código, un único mensaje), con un
+  tiempo de respuesta parejo (comparar contra un hash aunque el usuario no exista).
+- Cuenta inactiva, eliminada o bloqueada → responder su código específico **solo si la contraseña es correcta**; con
+  contraseña incorrecta, la respuesta genérica. Nunca 500.
+- `register` y `forgot-password`: revisar con el mismo criterio (hoy `register` responde 409 `4002`).
+- Límite de intentos por IP además del bloqueo por cuenta (ver G-33: el bloqueo por cuenta también sirve para dejar
+  afuera a un tercero).
+
+**Criterio de aceptación**
+- [ ] `POST /api/auth/login` con un email inexistente y con un email existente y contraseña incorrecta devuelve el
+  mismo status, `code` y `message`.
+- [ ] Con contraseña incorrecta, una cuenta inactiva responde igual que una activa.
+- [ ] Con contraseña correcta, una cuenta inactiva responde 401 `4001` o `4030` (no 500 `5000`).
+- [ ] Ningún estado de cuenta hace que el login responda 500.
+- [ ] Tests de integración sobre el `AuthenticationManager` real para estos casos.
+
+---
+
+## G-35 · Guardado de organismo: códigos reusados sin decir a qué campo se refieren
+
+**Prioridad:** 🔵 mejora · **Tipo:** contrato · Detectado el 2026-11-20 (`dev` @ `586b670`), leyendo el código; **no ejecutado**.
+
+**Problema** — `POST` y `PUT /api/organism` (`service/OrganismService.java:49-50, 71-78`) usan el mismo código para dos
+campos distintos, con un mensaje genérico y sin `details`:
+
+| Código | Mensaje | Caso 1 | Caso 2 |
+|---|---|---|---|
+| 409 `4071` | "La entidad relacionada no se encuentra activa." (`messages/messages.properties:103`) | El **tipo** elegido está inactivo (`resolveActiveType`, `OrganismService.java:110-112`) | El **organismo superior** elegido está inactivo (`resolveParent`, `:122-124`) |
+| 404 `4058` | "Organización no encontrada." (`messages.properties:90`) | El organismo que se **edita** no existe (`findByIdOrThrow`, `:102-105`) | El **organismo superior** elegido no existe (`resolveParent`, `:120-121`) |
+
+(El tipo inexistente sí tiene código propio: 404 `4053`, `:108-109`.)
+
+**Impacto en el front:** para marcar el campo correcto, el front lo deduce del contexto
+(`pages/organismos/organismo-save-error.ts`): en un alta, el `4058` solo puede ser el superior; sin superior elegido, el
+`4071` solo puede ser el tipo. Cuando se edita un organismo que tiene superior no hay forma de saberlo, y el mensaje va
+a un banner que nombra las dos posibilidades.
+
+**Propuesta concreta** (cualquiera de las dos):
+- Códigos distintos por caso (tipo inactivo / superior inactivo / superior inexistente), o
+- un campo estructurado que nombre el campo del request, en el formato que ya usa el 400 `4012`:
+  `details: { "typeId": "…" }` o `details: { "parentId": "…" }`. Serviría también para el resto de los errores de
+  referencia (`4073`).
+
+**Criterio de aceptación**
+- [ ] Un `PUT /api/organism/{id}` con tipo inactivo y otro con superior inactivo se distinguen por el `code` o por un
+  campo estructurado, no por el texto.
+- [ ] Lo mismo para "el organismo no existe" y "el superior no existe".
+- [ ] Documentado en Swagger o en `docs/architecture/`.
+
+---
+
 ## DOC-1 · Corregir `docs/frontend_integration_guide.md`
 
 **Prioridad:** 🔵 · **Tipo:** doc
@@ -1961,22 +2280,23 @@ consecuencias, para los `createdAt` / `updatedAt` que se llenan con `LocalDateTi
 
 ## Orden sugerido de atención
 
-Actualizado el 2026-11-19 (`dev` @ `586b670`). Ya resueltos en `dev`: R-3, R-1, G-14, G-15, BO-17 (en staging) y
+Actualizado el 2026-11-20 (`dev` @ `586b670`; e2e de los seis roles ejecutado contra staging ese día). Ya resueltos en `dev`: R-3, R-1, G-14, G-15, BO-17 (en staging) y
 G-1, G-2 / BO-20, G-6, G-10 y G-22 (en staging desde el 2026-11-19).
 
-1. ~~**OPS-1:** desplegar `dev` @ `586b670` (13 commits y `V2.31`) en staging.~~ ✅ **Cumplido el 2026-11-19** (`origin/staging` @ `0a555df`). Era lo único que separaba a fichas y puntos de atención de funcionar en real online; con el deploy llegan también `/me` con organismo, `READ_PROCEDURE` para AO y el `4072` como 409. Verificado solo el esquema de `/api-docs`: falta ejecutar los flujos (e2e de staging). Sigue en pie acordar la cadencia (propuesta 3 de OPS-1): fue la segunda vez que staging quedó atrás.
+1. ~~**OPS-1:** desplegar `dev` @ `586b670` (13 commits y `V2.31`) en staging.~~ ✅ **Cumplido el 2026-11-19** (`origin/staging` @ `0a555df`). Era lo único que separaba a fichas y puntos de atención de funcionar en real online; con el deploy llegan también `/me` con organismo, `READ_PROCEDURE` para AO y el `4072` como 409. El 2026-11-19 se verificó solo el esquema de `/api-docs`; **los flujos se ejecutaron el 2026-11-20** (e2e de los seis roles contra staging: 114 OK, 3 FALLA, 4 sin cubrir). Sigue en pie acordar la cadencia (propuesta 3 de OPS-1): fue la segunda vez que staging quedó atrás.
 2. **G-13 + G-20:** que `UserResponseDTO` traiga rol, organismo, vigencia y `activeAssignments`, y que se pueda cambiar el rol de un usuario (hoy `role-assignments` da siempre 409 `4081`, también para AB después de G-22). G-13 destraba además **G-26** (cuentas privilegiadas). De paso, confirmar **G-21** (`LocalDate.MAX`).
 3. **G-27 + G-9 + G-12 §2:** una sola definición sobre fichas y vigencia de la adopción: código propio para "adopción no vigente", si se editan o preparan fichas fuera de vigencia, cascada al deshabilitar o vencer, y que `publish` respete la misma regla. De G-9 quedan además la validación previa de duplicados (hoy 500 `5000`, sin decir cuál de las dos restricciones falló; ampliado el 2026-11-19) y el slug único global. Va junto **G-32** (zona horaria): mientras no esté fijada, "vigente" puede diferir 3 horas entre el backend y lo que ve quien carga la adopción; fijar `TZ` es un cambio de una línea.
 4. **G-29:** que el filtro de puntos de atención por ficha no esconda los inactivos (o exponer `active`). Es chico y condiciona el panel de la ficha.
 5. **G-31:** que `change-password` valide el alcance del actor como el resto de las mutaciones de usuario. Es chico y hoy no es explotable con los permisos del seed, pero **tiene que entrar antes de darle `UPDATE_USER` a un rol de organismo** (lo que pide la documentación del backend para AO). De paso, confirmar la regla para roles que no son SA/AB/AO.
-6. **G-23:** `assignable_by_org_admin` (AO no puede crear usuarios ni asignar roles). Es seed.
-7. **G-3 / G-5:** `READ_PROCEDURE` para AGENT, `READ_ORGANISM` y `READ_VARIANT` para AB, y la definición de quién publica (decisiones de producto; conviene una sola migración).
-8. **G-24:** que AGENT no pueda deshabilitar adopciones ni despublicar fichas por la vía del `PUT`/`DELETE`.
-9. **G-4:** endpoints `reject` y `return-to-draft` (los 4xx ya están).
-10. **G-11:** editar adopciones de plantillas desactivadas y cascada al desactivar una plantilla (backend lo anunció como próximo: `odd/tasks/claudinio-slugbase-catalog-errors.md`, "E2E11").
-11. **G-12:** resto de las validaciones (§4 `DELETE` sin versión, §5 inactivas en el listado, §6 puntos sobre fichas inactivas y escala de coordenadas).
-12. **G-7:** paginación y los filtros que faltan (incluye G-11 §3).
-13. Mejoras y resto: **G-8** (aceptar la versión en el `PUT` → 409 `4091`; hoy el front paga un `GET` extra por guardado y un formulario viejo igual puede pisar cambios; además la excepción de Spring y el endpoint de versiones), **G-16**, **G-25** + **G-30** (textos de error y un código por motivo del `4029` de usuarios; suma el detalle de G-26), **G-2** (confirmar el contrato de `/me`: organismo desactivado y código para "sin rol vigente"), **G-28** (a confirmar), **G-17** (decisión), **G-18**, **G-19**, **DOC-1** y **OPS-2**.
+6. **G-34 + G-33:** login. Que no se puedan enumerar cuentas (misma respuesta para email inexistente y contraseña incorrecta; hoy 404 `4023` contra 401 `4016`) y que ningún estado de cuenta responda 500. De G-33, **confirmar primero en ejecución** si una cuenta bloqueada queda respondiendo 500 sin desbloquearse: si se reproduce, sube a bloqueante. Después, la duración del bloqueo y el tiempo restante en un campo estructurado. Conviene un solo cambio, con tests sobre el `AuthenticationManager` real.
+7. **G-23:** `assignable_by_org_admin` (AO no puede crear usuarios ni asignar roles). Es seed. **Confirmado en ejecución el 2026-11-20**: con el front ya desplegable, AO ve "Nuevo usuario" y el alta no le ofrece ningún rol.
+8. **G-3 / G-5:** `READ_PROCEDURE` para AGENT, `READ_ORGANISM` y `READ_VARIANT` para AB, y la definición de quién publica (decisiones de producto; conviene una sola migración).
+9. **G-24:** que AGENT no pueda deshabilitar adopciones ni despublicar fichas por la vía del `PUT`/`DELETE`.
+10. **G-4:** endpoints `reject` y `return-to-draft` (los 4xx ya están).
+11. **G-11:** editar adopciones de plantillas desactivadas y cascada al desactivar una plantilla (backend lo anunció como próximo: `odd/tasks/claudinio-slugbase-catalog-errors.md`, "E2E11").
+12. **G-12:** resto de las validaciones (§4 `DELETE` sin versión, §5 inactivas en el listado, §6 puntos sobre fichas inactivas y escala de coordenadas).
+13. **G-7:** paginación y los filtros que faltan (incluye G-11 §3).
+14. Mejoras y resto: **G-8** (aceptar la versión en el `PUT` → 409 `4091`; hoy el front paga un `GET` extra por guardado y un formulario viejo igual puede pisar cambios; además la excepción de Spring y el endpoint de versiones), **G-16**, **G-25** + **G-30** (textos de error y un código por motivo del `4029` de usuarios; suma el detalle de G-26), **G-2** (confirmar el contrato de `/me`: organismo desactivado y código para "sin rol vigente"), **G-28** (a confirmar), **G-17** (decisión), **G-18**, **G-19**, **DOC-1** y **OPS-2**. Sumados el 2026-11-20: **G-35** (códigos reusados en el guardado de organismo) y la ampliación de **G-16** (borrar un permiso asignado a un rol).
 
 ## Qué hace el front mientras tanto
 
@@ -2000,19 +2320,22 @@ G-1, G-2 / BO-20, G-6, G-10 y G-22 (en staging desde el 2026-11-19).
 - **G-13:** con la fuente real, "Eliminar definitivamente" no se ofrece; queda la baja lógica (desactivar). La columna Rol muestra "Sin dato".
 - **G-14:** resuelto; el paso de crear el tipo `publication_status` antes de arrancar el backend local ya no hace falta.
 - **G-15:** resuelto (en staging desde el 2026-11-16); falta verificarlo con el e2e local (CP16) y sacar el seed SQL (`E2E_SEED_SQL`).
-- **G-16:** el error de borrado en uso se muestra con el mensaje genérico de 500.
+- **G-16:** el error de borrado en uso se muestra con el mensaje genérico de 500 (también el de un permiso asignado a un rol).
 - **G-17:** el front muestra lo que devuelve `GET /api/tag`, sin cambios de código: si se amplía el alcance, AO/AGENT las ven solas.
 - **G-18:** los 500 se muestran con el mensaje genérico prudente; el front envía fechas completas (`yyyy-MM-ddTHH:mm:ss`) y nunca ids de mock contra el backend (por eso la cadena de trámites va con una sola fuente).
 - **G-19:** el e2e local siembra por SQL lo que no se puede crear por API; QA y demos usan el mock.
 - **G-22:** resuelto (en staging desde el 2026-11-19): AB ya puede asignar roles `assignableByBackoffice`. No cambia lo de abajo.
 - **G-26 (PPDT-5.1):** el listado no trae el rol (G-13), así que el front no puede ocultarle a AB las acciones sobre cuentas SA/AB; el 403 `4029` se muestra con texto propio (`pages/usuarios/usuario-accion-error.ts`), no con el `message` del backend.
 - **G-20 / G-21:** "Asignar rol" (BO-24) queda limitada: contra el backend real, cualquier usuario con rol vigente responde 409 `4081`. El front traduce ese código con texto propio (`pages/usuarios/usuario-rol-save-error.ts`) y no puede ofrecer "cambiar rol" hasta que exista el cierre de la asignación.
-- **G-23:** el form de usuario consume `GET /api/role/allowed`, así que AO verá los roles en cuanto el flag esté en `TRUE`, sin cambios de código.
+- **G-23:** el form de usuario consume `GET /api/role/allowed`, así que AO verá los roles en cuanto el flag esté en `TRUE`, sin cambios de código. Mientras tanto (confirmado en ejecución el 2026-11-20) el alta se abre y muestra "No hay roles que puedas asignar".
 - **G-24:** el front gatea por permiso, tal como hoy autoriza el backend; no agrega reglas por rol para AGENT.
 - **G-30:** el alta de usuarios distingue los motivos del 403 `4029` comparando `details` con los textos de `messages.properties` y con sus claves (`pages/usuarios/usuario-save-error.ts`); solo "rol no asignable" se marca en el campo Rol, y lo que no reconoce cae en un texto neutro.
 - **G-31:** "Cambiar contraseña" se ofrece por permiso (`UPDATE_USER`), que en el seed solo tienen SA y AB. El front no agrega una regla por rol ni por organismo: si un rol de organismo recibe `UPDATE_USER` antes del fix, la UI no ofrecería la acción sobre usuarios ajenos (el listado viene filtrado), pero la API la aceptaría.
 - **G-2 (contrato de `/me`):** un 403 `4029` o un 404 `4073` de `/me` deja la sesión abierta y sin organismo (`auth.service.ts`); `organismAcronym` nulo se tolera. No hay tratamiento para un organismo desactivado: el response no lo informa.
 - **G-25:** el front no muestra el `message` del backend para `4018` ni `4002` en usuarios (usa texto propio por contexto) y valida la contraseña con el límite real (8 a 20).
 - **OPS-1:** cumplido el 2026-11-16 para `58d383a` (Etiquetas, Plantillas y Adopciones en real en staging y prod), reabierto el 2026-11-19 para `586b670` y **cumplido de nuevo ese mismo día** (`origin/staging` @ `0a555df`). En esta rama `environment.staging.ts` y `environment.prod.ts` ya apuntan fichas y puntos de atención a la API real: el front requiere backend >= `586b670`, que staging ya tiene, así que se puede desplegar. Falta ejecutar los flujos contra staging (solo se verificó el esquema de `/api-docs`); mientras tanto lo nuevo está probado con el backend local en Docker (`npm run start:local`).
+- **G-33:** el login muestra un texto propio para el bloqueo (`4015`/`4014`) y otro para el desbloqueo (`4013`), sin tiempo de espera, porque no interpreta el `message` del backend (`auth/login/login-error.ts`). Si la cuenta bloqueada responde 500 (G-33 §4, a confirmar), se ve el texto de servidor no disponible.
+- **G-34:** el login muestra el mismo texto para `4023` y `4016` ("El email o la contraseña no son correctos"); el status y el `code` de la respuesta siguen siendo distintos. Una cuenta inactiva recibe 500 y ve el texto de servidor no disponible; los textos de `4001` y `4030` están listos para cuando lleguen.
+- **G-35:** el front deduce del contexto a qué campo se refiere un `4071` o un `4058` del guardado de organismo (`pages/organismos/organismo-save-error.ts`); cuando no se puede saber (edición con superior elegido) muestra un banner que nombra las dos posibilidades.
 - **OPS-2:** el e2e ya no deja registros nuevos en staging; los existentes quedan inactivos.
 - **DOC-1:** el front se integra contra el código de `dev` y este documento, no contra la guía.

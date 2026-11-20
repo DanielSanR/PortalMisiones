@@ -36,6 +36,21 @@ ofrece depende a la vez del **estado del dominio y de los permisos** (p. ej. las
 el facade del feature puede exponerlo como Observable derivado de la sesión (`FichasLocalesFacade.puedePublicar$` /
 `accionesWorkflow$`), para que el componente no inyecte `AuthTokenService`. El backend vuelve a exigir el permiso.
 
+También puede leer el **organismo de la sesión** (`AuthTokenService.getUserOrganismo()`, que viene de
+`GET /api/auth/me`) para armar el **organismo fijo** de un formulario: cuando la cuenta pertenece a un organismo,
+el facade entrega esa única opción (`organismoFijo: { id, nombre, motivo }`, con `etiquetaDeOrganismo` y
+`hintDeOrganismoPropio` de `@core/utils/session.utils`) en vez de pedir el catálogo `/api/organism`, y el componente
+la muestra como dato de solo lectura (`FieldConfig.readonly`). Ejemplos: `AdopcionesFacade.getOpcionesAdoptar`,
+`EtiquetasFacade.getFormData`, `UsuariosFacade.getFormData`. Por lo mismo puede exponer como Observable un **hecho
+del listado que la fuente entrega para esa sesión** (p. ej. `EtiquetasFacade.soloEtiquetasLocales$`), para que la
+pantalla no inyecte `AuthTokenService`. Sigue sin ser una regla de negocio: el backend impone el organismo igual, y
+el facade (que es singleton) no captura el valor de la sesión al construirse: la lee en cada llamada o la deriva de
+`getCurrentUser$()`.
+
+Un **MockDataSource** puede leer la sesión cuando el endpoint real responde distinto según quién consulta y la
+pantalla depende de eso (p. ej. `RolesMockDataSource.listAllowed`, que imita a `GET /api/role/allowed`). Es la única
+forma de que el simulado se comporte como el backend; el HttpDataSource no lo necesita.
+
 Del mismo modo, una **capacidad de la fuente** (qué operaciones puede ejecutar de verdad el datasource activo) se
 expone como propiedad del datasource → repository → facade (p. ej. `UsuariosFacade.accionesDeCuentaDisponibles`), sin
 que nadie arriba sepa si la fuente es mock o real.

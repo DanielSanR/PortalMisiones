@@ -36,6 +36,16 @@ con `organismProcedureId`, `locationId`, `url`, `requirements`, `costs`). **OPS-
 el esquema publicado; todavía no se ejecutó ningún flujo contra staging. El front de `feat/alinear-backend-586b670`
 requiere backend >= `586b670` y ya se puede desplegar. Los pedidos abiertos no cambian.
 
+**E2E de los seis roles contra staging, 2026-11-20:** primera ejecución de flujos contra el backend `586b670`, con los
+scripts `e2e/roles/07_fichas_y_sesion.py` y `e2e/roles/08_roles_fichas_y_sesion.py`. **114 casos OK, 3 FALLA y 4 sin
+cubrir**; resultados en `e2e/final_runs/fichas_2026-11-19/` y datos de muestra creados en `e2e/roles/datos_muestra.json`.
+Las FALLA: ficha duplicada → 500 `5000` (G-9), ADMIN_ORGANIZATION sin roles asignables (G-23) y una **del front**
+(`MG-TRA-03`: "Plantillas provinciales" pide `GET /api/tag` sin chequear `READ_TAG` y a MANAGER le abre el diálogo
+global de "Acceso denegado"; `core/features/plantillas/facades/plantillas.facade.ts`, con corrección en el árbol de
+trabajo pendiente de volver a correr). Confirmados en ejecución G-1,
+G-2, G-6 (etiquetas), G-22, los dos filtros nuevos y el contrato de PPDT-5.1; pedidos nuevos al backend G-33 a G-35
+(login y códigos del guardado de organismo, leídos en el código). Detalle en `PEDIDOS_BACKEND.md` (bloque "E2E 2026-11-20").
+
 Leyenda: `[ ]` pendiente · `[~]` en curso · `[x]` hecho · `[-]` descartado (con motivo)
 
 ## Implementable ahora
@@ -222,8 +232,9 @@ Plan y decisiones en `PLAN_TRAMITES_API.md` (§5 fases, §8 decisiones, §9 esta
   `core/utils/session.utils.ts`) y los formularios de "Adoptar", "Nueva etiqueta" y usuarios lo fijan como único
   organismo (`AdopcionesFacade`, `EtiquetasFacade`, `UsuariosFacade`); el gating lo acepta como alternativa a
   `READ_ORGANISM` (`ORGANISMO_ELEGIBLE`).
-- [ ] Verificar con AO y AGENT contra staging (backend `586b670` desde el 2026-11-19; hasta ahora solo se verificó el
-  esquema de `/api-docs`).
+- [x] Verificar con AO y AGENT contra staging (backend `586b670` desde el 2026-11-19). Hecho el 2026-11-20 con el e2e
+  de los seis roles: `/me` con `scope: "organismo"` y el organismo en el menú de perfil, "Adoptar trámite" y "Nueva
+  etiqueta" con el organismo de solo lectura. Sin cubrir: "Nuevo usuario" de AO (no tiene roles para asignar, G-23).
 - Contra un backend anterior a `586b670` `/me` no trae esos campos: la sesión queda sin organismo y todo sigue como antes.
 - Contexto original: `/api/auth/me` no traía el organismo; las opciones eran pedirlo en `/me` o leerlo de
   `GET /api/user/{id}` (requiere `READ_USER`, que AGENT no tiene).
@@ -314,7 +325,12 @@ de backend / 5 no cubiertos, `e2e/final_runs/run_7`). Lo que falta depende del b
   AGENT (G-2), `4072` como 409 (G-6), filtros de fichas y puntos, y G-26 a G-29.
 - [x] Coordinar el orden de deploy: backend `586b670` a staging **antes** que el front de `feat/alinear-backend-586b670`.
   El backend se desplegó el 2026-11-19 (`origin/staging` @ `0a555df`); el front ya puede ir.
-- [ ] Correr el e2e de staging contra el backend nuevo (hasta ahora solo se verificó el esquema de `/api-docs`).
+- [x] Correr el e2e de staging contra el backend nuevo. Hecho el 2026-11-20: e2e de los seis roles
+  (`e2e/roles/07_fichas_y_sesion.py` y `08_roles_fichas_y_sesion.py`), 114 OK / 3 FALLA / 4 sin cubrir
+  (`e2e/final_runs/fichas_2026-11-19/`).
+- [ ] Volver a correr `MG-TRA-03` (hallazgo de front del e2e): "Plantillas provinciales" con `READ_PROCEDURE` y sin
+  `READ_TAG` abría el diálogo global de "Acceso denegado" por el `GET /api/tag` del facade de plantillas. En el árbol
+  de trabajo `plantillas.facade.ts` ya chequea `READ_TAG` antes de pedir las etiquetas; falta confirmarlo con el e2e.
 
 ### Cuando el backend entregue (en este orden; detalle en `PEDIDOS_BACKEND.md`)
 | Pedido backend | Qué destraba en el front | Trabajo front estimado |

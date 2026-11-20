@@ -1,5 +1,6 @@
 import { FormGroup } from '@angular/forms';
-import { extractErrorCode, extractErrorMessage } from '../models/api-response.model';
+import { extractErrorCode } from '../models/api-response.model';
+import { textoDeErrorHttp } from './http-error-text.utils';
 
 /**
  * Un error de negocio con texto propio: se cuenta en un campo concreto del form (ej. unicidad) o,
@@ -23,8 +24,9 @@ export interface ConflictoDeCampo {
 /**
  * Traduce un error de guardado al form. Si el código de negocio coincide con algún conflicto
  * declarado (y con su `cuando`, si lo tiene), lo marca en su campo (`setErrors({ server })`, que `form-error-messages.util` muestra
- * y que se limpia solo al editar el valor) y devuelve el texto del banner. Si no, devuelve el
- * mensaje del backend o el `fallback`.
+ * y que se limpia solo al editar el valor) y devuelve el texto del banner. Si no, devuelve un texto propio
+ * según el tipo de error (`textoDeErrorHttp`: sin conexión, 401, 403, 404, 409, 400/422, 5xx) o el `fallback`.
+ * El `message` del backend NO se muestra nunca.
  *
  * El banner del form ya se titula "No se pudo guardar": el texto devuelto no lo repite.
  */
@@ -46,5 +48,5 @@ export function aplicarErrorDeGuardado(
     return 'Revisá el campo marcado.';
   }
 
-  return extractErrorMessage(body) || fallback;
+  return textoDeErrorHttp(err, fallback);
 }

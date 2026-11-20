@@ -22,6 +22,7 @@ import { CategoriasFacade, CategoriaNode, CategoriaVM } from '@features/categori
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 import { CategoriaDialogComponent, CategoriaDialogData } from '../dialog/categoria-dialog.component';
 import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
+import { errorDeEliminarCategoria } from '../categoria-save-error';
 
 /** Fila del árbol (div con role=row): el selector por defecto de `foco-lista` es el de mat-table. */
 const FILA_ARBOL = '.cat-table__row';
@@ -351,6 +352,7 @@ export class CategoriasListComponent implements OnInit {
             finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
           );
         },
+        errorDeAccion: errorDeEliminarCategoria,
       },
       panelClass: 'custom-modal-panel',
     })

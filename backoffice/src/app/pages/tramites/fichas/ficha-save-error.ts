@@ -1,7 +1,7 @@
 import { FormGroup } from '@angular/forms';
-import { Observable, catchError, throwError } from 'rxjs';
 import { API_CODES } from '@core/constants/api-codes.constants';
 import { extractErrorCode, extractErrorMessage } from '@core/models/api-response.model';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 import { ConflictoDeCampo, aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { FichaSinContenidoError } from '@features/fichas-locales';
 
@@ -121,7 +121,8 @@ export function entidadInexistente(err: unknown): EntidadInexistente | null {
  * - 404 de la adopción → "ya no está vigente…" (nunca el `message` crudo del backend).
  * - 404 de la localidad o de la ficha → su texto.
  * - 403 → sin permiso.
- * - El resto, por código (`CONFLICTOS_FICHA`); sin código conocido, el texto genérico propio.
+ * - El resto, por código (`CONFLICTOS_FICHA`); sin código conocido, el texto propio compartido según el tipo
+ *   de error (`textoDeErrorHttp`, vía `aplicarErrorDeGuardado`) o `FALLBACK_FICHA`.
  */
 export function mensajeErrorGuardado(err: unknown, form: FormGroup | undefined): string {
   if (err instanceof FichaSinContenidoError) return TEXTO_FICHA_SIN_CONTENIDO;
@@ -134,8 +135,6 @@ export function mensajeErrorGuardado(err: unknown, form: FormGroup | undefined):
     case 'ficha': return TEXTO_FICHA_INEXISTENTE;
     default:
   }
-  // Sin código de negocio conocido no se muestra el `message` del backend (viene en otro registro, a veces en inglés).
-  if (!CONFLICTOS_FICHA.some((c) => c.code === code)) return FALLBACK_FICHA;
   return aplicarErrorDeGuardado(err, form, CONFLICTOS_FICHA, FALLBACK_FICHA);
 }
 
@@ -144,7 +143,7 @@ export const FALLBACK_ACCION = 'No se pudo completar la acción. Intentá de nue
 /**
  * Texto del error de una acción sobre la ficha (workflow o desactivar), ya traducido. SIEMPRE un texto propio:
  * el `message` del backend no se muestra nunca (viene en otro registro, a veces en inglés o como clave cruda).
- * Se decide primero por código de negocio y después por status.
+ * Se decide primero por código de negocio y después por status. Es el `errorDeAccion` de los confirm de la ficha.
  */
 export function mensajeErrorAccion(err: unknown): string {
   const status = (err as { status?: number } | null)?.status;
@@ -164,16 +163,8 @@ export function mensajeErrorAccion(err: unknown): string {
   if (code === API_CODES.UNEXPECTED || (typeof status === 'number' && status >= 500)) {
     return `No se pudo completar la acción. ${TEXTO_5000_FICHA}`;
   }
-  if (status === 0) return 'No se pudo completar la acción: no hay conexión con el servidor. Revisá tu conexión e intentá de nuevo.';
-  return FALLBACK_ACCION;
-}
-
-/**
- * Envuelve una acción para el `ConfirmDialogComponent`, que muestra `error.message` tal cual: así ve
- * el texto prudente y no "Ocurrió un error inesperado. Contacte al administrador.".
- */
-export function conMensajeDeAccion<T>(accion$: Observable<T>): Observable<T> {
-  return accion$.pipe(catchError((err: unknown) => throwError(() => ({ error: { message: mensajeErrorAccion(err) } }))));
+  // Lo no previsto (sin conexión, sesión vencida, 409/400 sin código conocido): el texto propio compartido.
+  return textoDeErrorHttp(err, FALLBACK_ACCION, { contexto: 'accion' });
 }
 
 /**

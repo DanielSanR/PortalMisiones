@@ -7,6 +7,7 @@ import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { DynamicFormComponent } from '@shared/components/dynamic-form/dynamic-form.component';
 import { FormDialogComponent, FormDialogData } from '@shared/components/form-dialog';
 import { UserRole } from '@core/enums/user-role.enum';
+import { TEXTOS_DE_ERROR_HTTP } from '@core/utils/http-error-text.utils';
 import { CredencialDeUsuario, dialogoDeCredencial } from './usuario-credencial-dialogo';
 
 function credencial(extra: Partial<CredencialDeUsuario> = {}): CredencialDeUsuario & { guardar: jasmine.Spy } {
@@ -93,13 +94,32 @@ describe('dialogoDeCredencial', () => {
       expect(c.guardar).toHaveBeenCalledOnceWith('Clave1234');
     });
 
-    it('un rechazo del backend va al banner con su mensaje, o con el genérico', () => {
+    it('un rechazo no previsto va al banner con texto propio, nunca con el mensaje del backend', () => {
       const data = dialogoDeCredencial(credencial({ modo: 'password', guardar: () => throwError(() => new Error()) }));
 
       expect(data.errorDeGuardado!({ error: { code: 4000, message: 'La contraseña es débil' } }, form()))
-        .toBe('La contraseña es débil');
+        .toBe('No se pudo guardar el cambio. Intentá de nuevo.');
+      expect(data.errorDeGuardado!({ status: 500, error: { code: 5000, message: 'NullPointerException' } }, form()))
+        .toBe(TEXTOS_DE_ERROR_HTTP.servidor.formulario);
       expect(data.errorDeGuardado!({}, form())).toBe('No se pudo guardar el cambio. Intentá de nuevo.');
     });
+
+    it('4034 (contraseña débil): se marca en "Nueva contraseña" con la política', () => {
+      const data = dialogoDeCredencial(credencial({ modo: 'password' }));
+      const f = form();
+
+      expect(data.errorDeGuardado!({ status: 400, error: { code: 4034, message: 'Weak password' } }, f)).toBe('Revisá el campo marcado.');
+      expect(f.controls.nueva.getError('server')).toBe('Tiene que tener entre 8 y 20 caracteres, con mayúscula, minúscula y número');
+    });
+  });
+
+  it('email repetido (409 4002): se marca en el campo con texto propio', () => {
+    const data = dialogoDeCredencial(credencial());
+    const f = new FormGroup({ email: new FormControl('otra@misiones.gob.ar') });
+
+    expect(data.errorDeGuardado!({ status: 409, error: { code: 4002, message: 'El usuario ya está registrado. Por favor, intente con otro email/cuit.' } }, f))
+      .toBe('Revisá el campo marcado.');
+    expect(f.controls.email.getError('server')).toBe('Ya existe un usuario con ese email');
   });
 
   describe('403 4029: cuenta privilegiada (PPDT-5.1)', () => {

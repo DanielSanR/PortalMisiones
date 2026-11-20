@@ -1,8 +1,16 @@
 import { API_CODES } from '@core/constants/api-codes.constants';
+import { extractErrorCode } from '@core/models/api-response.model';
 import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 import { TiposOrganismoFacade, TipoOrganismoVM } from '@features/tipos-organismo';
 import { FormDialogData } from '@shared/components/form-dialog';
 import { formDialogEstatico } from '@shared/components/form-dialog/form-dialog-estatico';
+
+/** 409 `4066` al ELIMINAR un tipo desde el listado (el `errorDeAccion` del confirm); `null` para el resto. */
+export function errorDeEliminarTipo(err: unknown): string | null {
+  return extractErrorCode((err as { error?: unknown } | null)?.error) === API_CODES.ORGANISM_TYPE_IN_USE
+    ? 'No se puede eliminar: hay organismos activos de este tipo. Cambiales el tipo o dalos de baja primero.'
+    : null;
+}
 
 /** Rechazos del backend con texto propio. */
 const CONFLICTOS: ConflictoDeCampo[] = [

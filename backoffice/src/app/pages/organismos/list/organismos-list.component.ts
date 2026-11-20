@@ -22,6 +22,7 @@ import { OrganismosFacade, OrganismoVM } from '@features/organismos';
 import { PARAM_ORIGEN_EDICION } from '../organismo-origen';
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 import { tinteDeAvatar } from '@shared/utils/avatar-tinte';
+import { errorDeEliminarOrganismo } from '../organismo-save-error';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -292,6 +293,7 @@ export class OrganismosListComponent implements OnInit {
             finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
           );
         },
+        errorDeAccion: errorDeEliminarOrganismo,
       },
       panelClass: 'custom-modal-panel',
     })

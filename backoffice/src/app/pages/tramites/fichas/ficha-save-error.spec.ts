@@ -25,6 +25,9 @@ describe('errores de guardado de la ficha', () => {
   it('el 5000 del alta/edición sugiere el duplicado posible, no el texto genérico del backend', () => {
     const texto = mensajeErrorGuardado(error(5000, 500), form);
     expect(texto).toBe(TEXTO_5000_GUARDADO);
+    expect(texto).toBe('Puede que esa localidad ya tenga una ficha de este trámite (activa o desactivada) o que el slug ya esté en uso: '
+      + 'revisalo en Fichas por localidad. Si no es eso, recargá e intentá de nuevo.');
+    expect(texto).not.toContain('Contacte al administrador');
     expect(texto).toContain('ya tenga una ficha');
     expect(texto).toContain('desactivada');
     expect(texto).toContain('slug');
@@ -36,8 +39,8 @@ describe('errores de guardado de la ficha', () => {
 
   it('un 409 4072 (duplicado, si el backend lo llega a mandar para fichas) nombra los dos duplicados posibles', () => {
     const texto = mensajeErrorGuardado(error(4072, 409, 'El objeto OrganismProcedureLocation con el identificador x existe.'), form);
-    expect(texto).toContain('ya tiene una ficha');
-    expect(texto).toContain('slug');
+    expect(texto).toBe('Esa localidad ya tiene una ficha de este trámite (activa o desactivada) o el slug ya está en uso. '
+      + 'Revisalo en Fichas por localidad.');
     expect(texto).not.toContain('OrganismProcedureLocation');
     // No se sabe cuál de los dos UNIQUE fue: no se marca el slug.
     expect(form.controls['slug'].errors).toBeNull();
@@ -46,14 +49,24 @@ describe('errores de guardado de la ficha', () => {
   it('el 404 de la adopción (no vigente, deshabilitada o inexistente) tiene mensaje propio, nunca el del backend', () => {
     const texto = mensajeErrorGuardado(noExiste('OrganismProcedure'), form);
     expect(texto).toBe(TEXTO_ADOPCION_NO_VIGENTE);
+    expect(texto).toBe('El trámite del organismo ya no está vigente (lo deshabilitaron, todavía no empezó a regir o ya venció), '
+      + 'así que no se le pueden crear ni editar fichas. Revisá su vigencia en Trámites del organismo.');
     expect(texto).toContain('El trámite del organismo ya no está vigente');
     expect(texto).not.toContain('OrganismProcedure');
     expect(texto).not.toContain('identificador');
   });
 
   it('el 404 de la localidad y el de la ficha se distinguen del de la adopción', () => {
-    expect(mensajeErrorGuardado(noExiste('Location'), form)).toBe(TEXTO_LOCALIDAD_INEXISTENTE);
-    expect(mensajeErrorGuardado(noExiste('OrganismProcedureLocation'), form)).toBe(TEXTO_FICHA_INEXISTENTE);
+    const localidad = mensajeErrorGuardado(noExiste('Location'), form);
+    const ficha = mensajeErrorGuardado(noExiste('OrganismProcedureLocation'), form);
+    expect(localidad).toBe('La localidad elegida ya no existe. Recargá y elegí otra.');
+    expect(localidad).toBe(TEXTO_LOCALIDAD_INEXISTENTE);
+    expect(ficha).toBe('La ficha ya no existe o quedó fuera de tu alcance. Volvé al listado.');
+    expect(ficha).toBe(TEXTO_FICHA_INEXISTENTE);
+    [localidad, ficha].forEach((texto) => {
+      expect(texto).not.toContain('identificador');
+      expect(texto).not.toContain('Location');
+    });
   });
 
   it('entidadInexistente no confunde OrganismProcedureLocation con OrganismProcedure ni con Location', () => {
@@ -66,19 +79,25 @@ describe('errores de guardado de la ficha', () => {
 
   it('un 404 sin etiqueta reconocible usa el texto genérico de "ya no existe"', () => {
     const texto = mensajeErrorGuardado(error(4073, 404, 'Not found'), form);
-    expect(texto).toContain('ya no existe o quedó fuera de tu alcance');
+    expect(texto).toBe('La ficha, el trámite del organismo o la localidad ya no existe o quedó fuera de tu alcance. Recargá e intentá de nuevo.');
     expect(texto).not.toContain('Not found');
   });
 
   it('el 400 4012 remite a los campos obligatorios', () => {
     expect(mensajeErrorGuardado(error(4012, 400, 'Verifique los campos de los elementos enviados.'), form))
-      .toContain('trámite del organismo, localidad y slug');
+      .toBe('Revisá los campos obligatorios: trámite del organismo, localidad y slug.');
   });
 
   it('un 403 dice que no hay permiso, y un error sin código conocido no muestra el mensaje del backend', () => {
-    expect(mensajeErrorGuardado({ status: 403, error: { code: 403, message: 'Access Denied' } }, form)).toContain('No tenés permiso');
-    expect(mensajeErrorGuardado({ status: 502, error: { message: 'Bad Gateway' } }, form)).toBe(FALLBACK_FICHA);
-    expect(mensajeErrorGuardado({ status: 0, error: null }, form)).toBe(FALLBACK_FICHA);
+    expect(mensajeErrorGuardado({ status: 403, error: { code: 403, message: 'Access Denied' } }, form)).toBe('No tenés permiso para guardar esta ficha.');
+    expect(mensajeErrorGuardado({ status: 502, error: { message: 'Bad Gateway' } }, form))
+      .toBe('El servidor tuvo un error y no pudo completar la operación. Esperá un momento e intentá de nuevo; si sigue, avisá a Soporte.');
+    expect(mensajeErrorGuardado({ status: 0, error: null }, form))
+      .toBe('No hay conexión con el servidor. Revisá tu conexión a internet e intentá de nuevo.');
+    const conflicto = mensajeErrorGuardado({ status: 409, error: { code: 4999, message: 'Conflict' } }, form);
+    expect(conflicto).toContain('choca con el estado actual del registro');
+    expect(conflicto).not.toContain('Conflict');
+    expect(mensajeErrorGuardado({ status: 418, error: { message: 'I am a teapot' } }, form)).toBe(FALLBACK_FICHA);
   });
 
   it('el 5000 de una acción (workflow, desactivar) no habla de duplicados', () => {
@@ -89,6 +108,8 @@ describe('errores de guardado de la ficha', () => {
 
   it('el 4091 no promete más de lo que hace el backend: habla de un guardado simultáneo, no de "mientras la editabas"', () => {
     expect(mensajeErrorGuardado(error(4091, 409), form)).toBe(TEXTO_EDICION_CONCURRENTE);
+    expect(TEXTO_EDICION_CONCURRENTE)
+      .toBe('Otra persona guardó la ficha en el mismo momento y tu cambio no se aplicó. Recargá para ver cómo quedó y volvé a intentar.');
     expect(TEXTO_EDICION_CONCURRENTE).toContain('en el mismo momento');
     expect(TEXTO_EDICION_CONCURRENTE).not.toContain('mientras la editabas');
   });
@@ -101,17 +122,18 @@ describe('errores de guardado de la ficha', () => {
 describe('mensajeErrorAccion: siempre un texto propio, nunca el message del backend', () => {
   const CRUDO = 'response.code.4080 / Unexpected error: org.hibernate.StaleObjectStateException';
   const casos: Array<[string, unknown, string]> = [
-    ['403', { status: 403, error: { code: 403, message: CRUDO } }, 'No tenés permiso'],
+    ['403', { status: 403, error: { code: 403, message: CRUDO } }, 'No tenés permiso para hacer esto con la ficha.'],
     ['4029', error(4029, 403, CRUDO), 'No tenés permiso'],
-    ['4077', error(4077, 409, CRUDO), 'cambió de estado'],
+    ['4077', error(4077, 409, CRUDO), 'La ficha cambió de estado y esta acción ya no corresponde. Recargá para ver su estado actual.'],
     ['4091', error(4091, 409, CRUDO), 'en el mismo momento'],
-    ['4073', error(4073, 404, CRUDO), 'ya no existe'],
+    ['4073', error(4073, 404, CRUDO), 'La ficha ya no existe o quedó fuera de tu alcance.'],
     ['404 sin código', { status: 404, error: { message: CRUDO } }, 'ya no existe'],
     ['4012', error(4012, 400, CRUDO), 'no aceptó la acción'],
     ['4072', error(4072, 409, CRUDO), 'choca con otra ficha'],
     ['5000', error(5000, 500, CRUDO), 'No se pudo completar la acción'],
     ['502 sin código', { status: 502, error: { message: CRUDO } }, 'No se pudo completar la acción'],
-    ['sin conexión', { status: 0, error: null }, 'no hay conexión'],
+    ['sin conexión', { status: 0, error: null }, 'No hay conexión'],
+    ['401', { status: 401, error: { message: CRUDO } }, 'Tu sesión venció'],
   ];
 
   for (const [nombre, err, esperado] of casos) {
@@ -125,7 +147,15 @@ describe('mensajeErrorAccion: siempre un texto propio, nunca el message del back
 
   it('un código que no se conoce cae en el texto genérico propio, no en el message', () => {
     expect(mensajeErrorAccion(error(4999, 418, CRUDO))).toBe(FALLBACK_ACCION);
-    expect(mensajeErrorAccion({ status: 400, error: { message: CRUDO } })).toBe(FALLBACK_ACCION);
+    const rechazada = mensajeErrorAccion({ status: 400, error: { message: CRUDO } });
+    expect(rechazada).toContain('El servidor rechazó la acción');
+    expect(rechazada).not.toContain('formulario');
+    const conflicto = mensajeErrorAccion({ status: 409, error: { code: 4999, message: CRUDO } });
+    expect(conflicto).toContain('No se pudo completar la acción en el estado actual del registro');
+    [rechazada, conflicto].forEach((texto) => {
+      expect(texto).not.toContain('response.code');
+      expect(texto).not.toContain('hibernate');
+    });
     expect(mensajeErrorAccion(new Error(CRUDO))).toBe(FALLBACK_ACCION);
   });
 });

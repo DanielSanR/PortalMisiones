@@ -86,7 +86,38 @@ export const CONFLICTOS_ALTA_USUARIO: ConflictoDeCampo[] = [
     code: API_CODES.NO_PERMISSION,
     mensaje: MENSAJE_ALTA_DENEGADA,
   },
+  {
+    // 404 `4058` (`UserService.resolveOrganism`): el organismo elegido ya no existe. Con un rol global no hay
+    // control y el texto va al banner. Con el organismo FIJO de la sesión el campo es de solo lectura: ahí se usa
+    // `conflictosDeAltaUsuario(true)`, que lo manda al banner (marcar un campo que no se puede cambiar dejaba el
+    // formulario inválido sin salida).
+    code: API_CODES.ORGANISM_NOT_FOUND,
+    control: 'organismoId',
+    mensaje: 'Ese organismo ya no existe. Elegí otro.',
+  },
+  {
+    // 404 `4018` (`UserService.createUser`): el rol elegido ya no existe (el alta no mira `active`) o no tiene
+    // código. El `message` real es "Las contraseñas no coinciden".
+    code: API_CODES.PASSWORD_MISMATCH_OR_ROLE,
+    control: 'rol',
+    mensaje: 'Ese rol ya no existe o no se puede asignar. Elegí otro.',
+  },
 ];
+
+/** Texto del 404 `4058` cuando el organismo es el de la sesión (campo de solo lectura): no hay nada que elegir. */
+export const MENSAJE_ORGANISMO_PROPIO_INEXISTENTE =
+  'El organismo de tu cuenta ya no existe, así que no se puede crear el usuario. Consultá con un Super Administrador.';
+
+/**
+ * Conflictos del alta según cómo se muestra "Organismo". Con el organismo fijo de la sesión el campo es de solo
+ * lectura: el `4058` va al banner con su propio texto en vez de marcar un control que la persona no puede cambiar.
+ */
+export function conflictosDeAltaUsuario(organismoFijo: boolean): ConflictoDeCampo[] {
+  if (!organismoFijo) return CONFLICTOS_ALTA_USUARIO;
+  return CONFLICTOS_ALTA_USUARIO.map((c) => c.code === API_CODES.ORGANISM_NOT_FOUND
+    ? { code: c.code, mensaje: MENSAJE_ORGANISMO_PROPIO_INEXISTENTE }
+    : c);
+}
 
 /**
  * Conflictos de la EDICIÓN de usuario. Cualquier 403 `4029` va al banner con un texto que habla de modificar,

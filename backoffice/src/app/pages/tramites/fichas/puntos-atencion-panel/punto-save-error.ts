@@ -1,7 +1,7 @@
 import { FormGroup } from '@angular/forms';
-import { Observable, catchError, throwError } from 'rxjs';
 import { API_CODES } from '@core/constants/api-codes.constants';
 import { extractErrorCode } from '@core/models/api-response.model';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 import { ConflictoDeCampo, aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 
 /** Errores de guardado de un punto de atención con texto propio (`AttentionPointService`). Van al banner. */
@@ -29,12 +29,12 @@ export const TEXTO_PUNTO_ERROR_SERVIDOR =
 
 /**
  * Texto del error de GUARDAR un punto de atención (alta o edición), ya traducido. SIEMPRE un texto propio: el
- * `message` del backend no se muestra nunca (`aplicarErrorDeGuardado` solo, sin esto, cae en él cuando el
- * código no está en `CONFLICTOS_PUNTO`).
+ * `message` del backend no se muestra nunca.
  * - 403 / `4029` → sin permiso.
  * - `4012` y 404 / `4073` → `CONFLICTOS_PUNTO`.
  * - 5xx / `5000` → error del servidor.
- * - El resto (sin conexión, código desconocido) → `FALLBACK_PUNTO`.
+ * - El resto → el texto propio compartido según el tipo de error (`textoDeErrorHttp`: sin conexión, sesión
+ *   vencida, 409/400 sin código conocido) o `FALLBACK_PUNTO`.
  */
 export function puntoErrorGuardado(err: unknown, form: FormGroup | undefined): string {
   const status = (err as { status?: number } | null)?.status;
@@ -46,22 +46,19 @@ export function puntoErrorGuardado(err: unknown, form: FormGroup | undefined): s
   if (code === API_CODES.UNEXPECTED || code === API_CODES.DB_ERROR || (typeof status === 'number' && status >= 500)) {
     return TEXTO_PUNTO_ERROR_SERVIDOR;
   }
-  return FALLBACK_PUNTO;
+  return textoDeErrorHttp(err, FALLBACK_PUNTO);
 }
 
+export const FALLBACK_DESACTIVAR_PUNTO = 'No se pudo desactivar el punto de atención. Intentá de nuevo.';
+
 /**
- * Para el confirm "Desactivar": el `ConfirmDialogComponent` muestra `error.message` tal cual, y el
- * `4073` del backend dice "El objeto AttentionPoint con el identificador … no existe.".
+ * Texto del error de DESACTIVAR un punto (el `errorDeAccion` del confirm). SIEMPRE un texto propio: el `4073`
+ * del backend dice "El objeto AttentionPoint con el identificador … no existe.".
  */
-export function conMensajeDePunto<T>(accion$: Observable<T>): Observable<T> {
-  return accion$.pipe(catchError((err: unknown) => {
-    const status = (err as { status?: number } | null)?.status;
-    const code = extractErrorCode((err as { error?: unknown } | null)?.error);
-    const message = status === 403 || code === API_CODES.NO_PERMISSION
-      ? 'No tenés permiso para desactivar puntos de atención.'
-      : status === 404 || code === API_CODES.ENTITY_NOT_FOUND
-        ? 'El punto de atención ya no existe o quedó fuera de tu alcance.'
-        : 'No se pudo desactivar el punto de atención. Intentá de nuevo.';
-    return throwError(() => ({ error: { message } }));
-  }));
+export function puntoErrorDesactivar(err: unknown): string {
+  const status = (err as { status?: number } | null)?.status;
+  const code = extractErrorCode((err as { error?: unknown } | null)?.error);
+  if (status === 403 || code === API_CODES.NO_PERMISSION) return 'No tenés permiso para desactivar puntos de atención.';
+  if (status === 404 || code === API_CODES.ENTITY_NOT_FOUND) return 'El punto de atención ya no existe o quedó fuera de tu alcance.';
+  return textoDeErrorHttp(err, FALLBACK_DESACTIVAR_PUNTO, { contexto: 'accion' });
 }

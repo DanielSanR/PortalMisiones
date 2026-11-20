@@ -1,12 +1,13 @@
 <form class="dynamic-form" [class.dynamic-form--compacto]="compacto" [attr.id]="formId || null"
       [formGroup]="form" (ngSubmit)="submit()" *ngIf="form">
   <!-- El error del servidor queda a la vista hasta el próximo intento: el diálogo global
-       se cierra y el usuario se queda sin el motivo del fallo. -->
-  <app-form-error-banner *ngIf="serverError" [errors]="[serverError]"
+       se cierra y el usuario se queda sin el motivo del fallo. Un envío inválido ES el próximo intento:
+       el error del guardado anterior ya no describe lo que pasa y le cede el lugar al resumen. -->
+  <app-form-error-banner *ngIf="serverError && !submitted" [errors]="[serverError]"
                          titulo="No se pudo guardar"></app-form-error-banner>
   <!-- Resumen de validación: sin role=alert (los mat-error de cada campo ya se anuncian) y con
        foco al enviar, para no duplicar anuncios. -->
-  <app-form-error-banner *ngIf="submitted" [live]="false" [errors]="invalidFieldMessages()"></app-form-error-banner>
+  <app-form-error-banner #resumen *ngIf="submitted" [live]="false" [errors]="invalidFieldMessages()"></app-form-error-banner>
 
   <div class="form-fields">
     <ng-container *ngFor="let field of fields; trackBy: trackByName">

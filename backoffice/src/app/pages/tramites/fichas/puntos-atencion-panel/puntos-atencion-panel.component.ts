@@ -17,7 +17,7 @@ import { HasPermissionDirective } from '../../../../shared/directives/has-permis
 import { PuntoAtencionVM, PuntosAtencionFacade } from '@features/puntos-atencion';
 import { PuntoDialogComponent, PuntoDialogData } from './punto-dialog/punto-dialog.component';
 import { formatearCoordenada, urlMapa } from './coordenadas';
-import { conMensajeDePunto } from './punto-save-error';
+import { puntoErrorDesactivar } from './punto-save-error';
 import { TEXTO_PUNTOS_SIMULADOS, textoExito } from '../ficha-textos';
 
 /** Intentos (cada 50 ms) para esperar el re-render de la lista antes de devolver el foco. */
@@ -267,7 +267,8 @@ export class PuntosAtencionPanelComponent {
       danger: true,
       confirmText: 'Sí, desactivar',
       busyText: 'Desactivando…',
-      confirmAction: () => conMensajeDePunto(this.facade.desactivar(punto.id)),
+      confirmAction: () => this.facade.desactivar(punto.id),
+      errorDeAccion: puntoErrorDesactivar,
     };
     abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
       .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))

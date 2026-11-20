@@ -759,8 +759,9 @@ mat-select,
 
 // ===== shell2 =====
 // Panel del menú de perfil (shared/layouts/user-menu). Vive en el overlay del CDK, fuera de la
-// encapsulación del componente: se engancha por `panelClass` del <mat-menu>. El contenido interno
-// (header, rol, ítems) se estiliza en el SCSS del propio componente.
+// encapsulación del componente: se engancha con `class="user-menu-panel"` del <mat-menu> (con
+// `panelClass` el overlay no recibía la clase: se ignoraba en silencio y nada de abajo aplicaba).
+// El contenido interno (header, rol, ítems) se estiliza en el SCSS del propio componente.
 // Medidas del diseño: 272 de ancho, radio 12, elevation-3.
 .user-menu-panel.mat-mdc-menu-panel {
   min-width: 272px !important;
@@ -774,12 +775,21 @@ mat-select,
     padding: 0 !important;
   }
 
-  // Texto del ítem (template de MatMenuItem): ícono + label (+ valor) en fila.
-  .mat-mdc-menu-item-text {
+  // Texto del ítem (template de MatMenuItem, `<span class="mat-mdc-menu-item-text">`, que NO lleva el
+  // atributo de encapsulación del componente): ícono + label (+ valor) en fila, en una sola línea.
+  // Material le fija su propia tipografía (token del tema), más grande que la del cuerpo: se hereda
+  // la del ítem (`.user-menu__item`, tamaño de cuerpo). Material la declara con
+  // `.mat-mdc-menu-content .mat-mdc-menu-item .mat-mdc-menu-item-text` (3 clases) y sus estilos se inyectan
+  // después de los globales: con 3 clases empataba y ganaba el de Material; con `.mat-mdc-menu-item` acá, gana este.
+  .mat-mdc-menu-item .mat-mdc-menu-item-text {
     display: flex;
     align-items: center;
     flex: 1;
     gap: 11px;
+    min-width: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    white-space: nowrap;
   }
 }
 

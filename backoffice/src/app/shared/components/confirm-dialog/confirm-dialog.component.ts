@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, filter, finalize, merge, timer } from 'rxjs';
-import { extractErrorMessage } from '../../../core/models/api-response.model';
+import { textoDeErrorHttp } from '../../../core/utils/http-error-text.utils';
 
 export interface ConfirmDialogData {
   title: string;
@@ -37,8 +37,9 @@ export interface ConfirmDialogData {
   /** Texto del botón mientras `confirmAction` corre (ej. "Eliminando…"). */
   busyText?: string;
   /**
-   * Texto propio para un fallo de `confirmAction` (p. ej. un código de negocio cuyo `message` del backend
-   * no explica nada). Si devuelve `null`/vacío se usa el mensaje del backend y, sin él, el genérico.
+   * Texto propio para un fallo de `confirmAction` (p. ej. un código de negocio con un motivo preciso). Si
+   * devuelve `null`/vacío se usa el texto compartido según el tipo de error (`textoDeErrorHttp`) y, si no es
+   * un error HTTP reconocible, el genérico. El `message` del backend no se muestra nunca.
    */
   errorDeAccion?: (err: unknown) => string | null;
 }
@@ -158,8 +159,7 @@ export class ConfirmDialogComponent {
           this.ejecutando = false;
           this.dialogRef.disableClose = false;
           this.errorMensaje = this.data.errorDeAccion?.(err)
-            || extractErrorMessage((err as { error?: unknown })?.error)
-            || 'No se pudo completar la acción. Intentá de nuevo.';
+            || textoDeErrorHttp(err, 'No se pudo completar la acción. Intentá de nuevo.', { contexto: 'accion' });
           // El foco sigue en "Confirmar" (nunca se deshabilitó) y el motivo se anuncia solo: el `<p>` del
           // error es `role="alert"` y se monta recién ahora (se desmonta al reintentar, así vuelve a anunciarse).
           this.cdr.markForCheck();

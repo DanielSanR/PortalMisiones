@@ -21,7 +21,7 @@ import { TiposOrganismoFacade, TipoOrganismoVM } from '@features/tipos-organismo
 import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
 import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
-import { dialogoDeTipoOrganismo } from '../tipo-organismo-dialogo';
+import { dialogoDeTipoOrganismo, errorDeEliminarTipo } from '../tipo-organismo-dialogo';
 
 /** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
 interface EstadoVacio {
@@ -248,6 +248,7 @@ export class TiposOrganismoListComponent implements OnInit {
             finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
           );
         },
+        errorDeAccion: errorDeEliminarTipo,
       },
       panelClass: 'custom-modal-panel',
     })

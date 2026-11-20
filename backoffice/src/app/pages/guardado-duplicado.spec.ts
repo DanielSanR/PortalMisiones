@@ -1,6 +1,7 @@
 import { FormControl, FormGroup } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { API_CODES } from '@core/constants/api-codes.constants';
+import { TEXTOS_DE_ERROR_HTTP } from '@core/utils/http-error-text.utils';
 import { ConflictoDeCampo, aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { CONFLICTOS_CATEGORIA } from './categorias/categoria-save-error';
 import { CONFLICTOS_ETIQUETA, FALLBACK_ETIQUETA } from './etiquetas/etiqueta-save-error';
@@ -45,16 +46,16 @@ describe('aplicarErrorDeGuardado — duplicado 4072 con 409 (antes 400)', () => 
     });
   });
 
-  it('un 409 con otro código no se confunde con un duplicado: muestra el mensaje del backend', () => {
+  it('un 409 con otro código no se confunde con un duplicado: texto propio de conflicto, nunca el mensaje del backend', () => {
     const form = new FormGroup({ slug: new FormControl('x') });
 
     expect(aplicarErrorDeGuardado(respuesta(409, 4091, 'Otro usuario guardó antes.'), form, CONFLICTOS_PLANTILLA, FALLBACK_PLANTILLA))
-      .toBe('Otro usuario guardó antes.');
+      .toBe(TEXTOS_DE_ERROR_HTTP.conflicto.formulario);
     expect(form.controls.slug.errors).toBeNull();
   });
 
-  it('un 409 sin cuerpo cae en el fallback', () => {
+  it('un 409 sin cuerpo también es un conflicto no declarado', () => {
     expect(aplicarErrorDeGuardado(new HttpErrorResponse({ status: 409 }), undefined, CONFLICTOS_ETIQUETA, FALLBACK_ETIQUETA))
-      .toBe(FALLBACK_ETIQUETA);
+      .toBe(TEXTOS_DE_ERROR_HTTP.conflicto.formulario);
   });
 });

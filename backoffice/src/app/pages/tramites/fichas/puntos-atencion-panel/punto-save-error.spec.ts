@@ -1,7 +1,8 @@
-import { firstValueFrom, throwError } from 'rxjs';
 import { FormControl, FormGroup } from '@angular/forms';
+import { TEXTOS_DE_ERROR_HTTP } from '@core/utils/http-error-text.utils';
 import {
-  CONFLICTOS_PUNTO, FALLBACK_PUNTO, TEXTO_PUNTO_ERROR_SERVIDOR, TEXTO_PUNTO_SIN_PERMISO, conMensajeDePunto, puntoErrorGuardado,
+  CONFLICTOS_PUNTO, FALLBACK_DESACTIVAR_PUNTO, FALLBACK_PUNTO, TEXTO_PUNTO_ERROR_SERVIDOR, TEXTO_PUNTO_SIN_PERMISO,
+  puntoErrorDesactivar, puntoErrorGuardado,
 } from './punto-save-error';
 
 /** Lo que el backend manda en `message`: nunca tiene que llegar a la pantalla. */
@@ -40,9 +41,11 @@ describe('puntoErrorGuardado: siempre un texto propio, nunca el message del back
     expect(puntoErrorGuardado(error(404), form)).toBe(textoDe(4073));
   });
 
-  it('cualquier otra cosa (código desconocido, sin conexión, error raro): el texto genérico propio', () => {
-    expect(puntoErrorGuardado(error(409, 4999), form)).toBe(FALLBACK_PUNTO);
-    expect(puntoErrorGuardado({ status: 0, error: null }, form)).toBe(FALLBACK_PUNTO);
+  it('lo no previsto usa el texto compartido según el tipo de error; lo irreconocible, el genérico del punto', () => {
+    expect(puntoErrorGuardado(error(409, 4999), form)).toBe(TEXTOS_DE_ERROR_HTTP.conflicto.formulario);
+    expect(puntoErrorGuardado({ status: 0, error: null }, form)).toBe(TEXTOS_DE_ERROR_HTTP['sin-conexion'].formulario);
+    expect(puntoErrorGuardado(error(401), form)).toBe(TEXTOS_DE_ERROR_HTTP['sesion-vencida'].formulario);
+    expect(puntoErrorGuardado(error(418, 4999), form)).toBe(FALLBACK_PUNTO);
     expect(puntoErrorGuardado(new Error(CRUDO), form)).toBe(FALLBACK_PUNTO);
   });
 
@@ -53,9 +56,21 @@ describe('puntoErrorGuardado: siempre un texto propio, nunca el message del back
   });
 });
 
-describe('conMensajeDePunto (confirmación de "Desactivar")', () => {
-  it('traduce el error a un texto propio para el diálogo de confirmación', async () => {
-    const err = await firstValueFrom(conMensajeDePunto(throwError(() => error(404, 4073)))).catch((e: unknown) => e);
-    expect((err as { error: { message: string } }).error.message).toBe('El punto de atención ya no existe o quedó fuera de tu alcance.');
+describe('puntoErrorDesactivar (confirmación de "Desactivar")', () => {
+  it('404 / 4073 y 403 / 4029 tienen su texto', () => {
+    expect(puntoErrorDesactivar(error(404, 4073))).toBe('El punto de atención ya no existe o quedó fuera de tu alcance.');
+    expect(puntoErrorDesactivar(error(403, 4029))).toBe('No tenés permiso para desactivar puntos de atención.');
+  });
+
+  it('lo no previsto usa el texto compartido de una acción; lo irreconocible, el genérico', () => {
+    expect(puntoErrorDesactivar(error(500, 5000))).toBe(TEXTOS_DE_ERROR_HTTP.servidor.accion);
+    expect(puntoErrorDesactivar({ status: 0, error: null })).toBe(TEXTOS_DE_ERROR_HTTP['sin-conexion'].accion);
+    expect(puntoErrorDesactivar(new Error(CRUDO))).toBe(FALLBACK_DESACTIVAR_PUNTO);
+  });
+
+  it('en ningún caso devuelve el message del backend', () => {
+    for (const err of [error(403, 403), error(500, 5000), error(400, 4012), error(404, 4073), error(409, 4999), error(undefined)]) {
+      expect(puntoErrorDesactivar(err)).not.toContain('AttentionPoint');
+    }
   });
 });

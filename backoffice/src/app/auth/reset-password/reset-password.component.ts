@@ -23,6 +23,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom, timer } from 'rxjs';
 import { CuentaFacade } from '@features/cuenta';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
+import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
+import { API_CODES } from '../../core/constants/api-codes.constants';
+import { extractErrorCode } from '../../core/models/api-response.model';
 
 /** Valida que `password` y `confirmPassword` sean idénticos (nivel de grupo). */
 const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
@@ -122,9 +125,15 @@ export class ResetPasswordComponent implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(() => this.router.navigateByUrl('/auth/login'));
     } catch (err: unknown) {
-      const e = err as { error?: { message?: string; details?: string } };
-      this.errorMessage =
-        e.error?.message || e.error?.details || 'El enlace expiró o ya fue utilizado. Solicitá uno nuevo.';
+      this.errorMessage = extractErrorCode((err as { error?: unknown } | null)?.error) === API_CODES.WEAK_PASSWORD
+        // La política del backend (`UtilsCommons.validPassword`) pide más que el mínimo que valida este form.
+        ? 'La contraseña no cumple los requisitos: tiene que tener entre 8 y 20 caracteres, con al menos una mayúscula, una minúscula y un número.'
+        // Cualquier otro 4xx acá es el enlace (vencido o usado): solo la conexión y el 5xx llevan otro texto.
+        : textoDeErrorHttp(
+            err,
+            'El enlace expiró o ya fue utilizado. Solicitá uno nuevo.',
+            { contexto: 'accion', solo: ['sin-conexion', 'servidor'] },
+          );
       this.loading = false;
       this.cdr.markForCheck();
     }

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { EMPTY, NEVER, Subject, of, throwError } from 'rxjs';
+import { TEXTOS_DE_ERROR_HTTP } from '../../../core/utils/http-error-text.utils';
 import { ConfirmDialogComponent, ConfirmDialogData } from './confirm-dialog.component';
 
 /**
@@ -34,19 +35,35 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
 
   beforeEach(() => dialogRef.close.calls.reset());
 
-  it('muestra el error de la acción y deja el diálogo abierto', () => {
+  it('muestra el error de la acción con texto propio (nunca el mensaje del backend) y deja el diálogo abierto', () => {
     crear({
       title: 'Eliminar',
       message: 'Se eliminará el organismo.',
       confirmText: 'Eliminar',
-      confirmAction: () => throwError(() => ({ error: { message: 'No se puede eliminar: tiene trámites.' } })),
+      confirmAction: () => throwError(() => ({ status: 409, error: { code: 4999, message: 'ConstraintViolationException: fk_organism' } })),
     });
 
     fixture.componentInstance.confirmar();
     fixture.detectChanges();
 
-    expect(texto()).toContain('No se puede eliminar: tiene trámites.');
+    expect(texto()).toContain(TEXTOS_DE_ERROR_HTTP.conflicto.accion);
+    expect(texto()).not.toContain('ConstraintViolationException');
     expect(dialogRef.close).not.toHaveBeenCalled();
+  });
+
+  it('un error que no es HTTP reconocible muestra el genérico', () => {
+    crear({
+      title: 'Eliminar',
+      message: 'Se eliminará el organismo.',
+      confirmText: 'Eliminar',
+      confirmAction: () => throwError(() => ({ error: { message: 'Texto del backend.' } })),
+    });
+
+    fixture.componentInstance.confirmar();
+    fixture.detectChanges();
+
+    expect(texto()).toContain('No se pudo completar la acción. Intentá de nuevo.');
+    expect(texto()).not.toContain('Texto del backend.');
   });
 
   it('`errorDeAccion` pone un texto propio en lugar del mensaje del backend', () => {
@@ -66,19 +83,20 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
-  it('si `errorDeAccion` no reconoce el error, se muestra el mensaje del backend como siempre', () => {
+  it('si `errorDeAccion` no reconoce el error, se muestra el texto compartido según el tipo, no el mensaje del backend', () => {
     crear({
       title: 'Desactivar',
       message: 'Se desactivará la cuenta.',
       confirmText: 'Desactivar',
-      confirmAction: () => throwError(() => ({ error: { code: 5000, message: 'Error interno.' } })),
+      confirmAction: () => throwError(() => ({ status: 500, error: { code: 5000, message: 'Error interno.' } })),
       errorDeAccion: () => null,
     });
 
     fixture.componentInstance.confirmar();
     fixture.detectChanges();
 
-    expect(texto()).toContain('Error interno.');
+    expect(texto()).toContain(TEXTOS_DE_ERROR_HTTP.servidor.accion);
+    expect(texto()).not.toContain('Error interno.');
   });
 
   it('si la acción completa SIN emitir (EMPTY), cuenta como éxito: cierra con `true` y no queda en "Procesando…"', () => {
@@ -125,7 +143,15 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
     function crearEnDocumento(extra: Partial<ConfirmDialogData> = {}): void {
       accion$ = new Subject<unknown>();
       confirmAction = jasmine.createSpy('confirmAction').and.callFake(() => accion$);
-      crear({ title: 'Eliminar', message: 'Se eliminará el organismo.', confirmText: 'Eliminar', confirmAction, ...extra });
+      crear({
+        title: 'Eliminar',
+        message: 'Se eliminará el organismo.',
+        confirmText: 'Eliminar',
+        confirmAction,
+        // El texto que se muestra es siempre propio: acá lo pone la pantalla, a partir del error.
+        errorDeAccion: (err) => (err as { motivo: string }).motivo,
+        ...extra,
+      });
       document.body.appendChild(fixture.nativeElement);
     }
 
@@ -164,7 +190,7 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
       fixture.detectChanges();
       expect(botonConfirmar().classList).toContain('is-unavailable');
 
-      accion$.error({ error: { message: 'Falló.' } });
+      accion$.error({ motivo: 'Falló.' });
       fixture.detectChanges();
       expect(botonConfirmar().classList).not.toContain('is-unavailable');
     });
@@ -192,7 +218,7 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
       expect(dialogRef.close).not.toHaveBeenCalled();
 
       // Al terminar la acción (acá, con error) el aviso se va.
-      accion$.error({ error: { message: 'Falló.' } });
+      accion$.error({ motivo: 'Falló.' });
       fixture.detectChanges();
       expect(aviso()).toBeNull();
 
@@ -221,7 +247,7 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
       botonConfirmar().click();
       fixture.detectChanges();
 
-      accion$.error({ error: { message: 'No se puede eliminar: tiene trámites.' } });
+      accion$.error({ motivo: 'No se puede eliminar: tiene trámites.' });
       fixture.detectChanges();
 
       expect(document.activeElement).toBe(botonConfirmar());
@@ -241,7 +267,7 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
 
-      accion$.error({ error: { message: 'No se puede eliminar: tiene trámites.' } });
+      accion$.error({ motivo: 'No se puede eliminar: tiene trámites.' });
       fixture.detectChanges();
 
       const alerta = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
@@ -251,7 +277,7 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
     it('al reintentar el aviso se desmonta, así un segundo fallo se vuelve a anunciar', () => {
       crearEnDocumento();
       botonConfirmar().click();
-      accion$.error({ error: { message: 'Primer fallo.' } });
+      accion$.error({ motivo: 'Primer fallo.' });
       fixture.detectChanges();
       const primera = fixture.nativeElement.querySelector('[role="alert"]');
 
@@ -261,7 +287,7 @@ describe('ConfirmDialogComponent — acción async con OnPush', () => {
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
 
-      accion$.error({ error: { message: 'Segundo fallo.' } });
+      accion$.error({ motivo: 'Segundo fallo.' });
       fixture.detectChanges();
 
       const segunda = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
