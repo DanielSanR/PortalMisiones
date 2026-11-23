@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
+import { API_CODES } from '@core/constants/api-codes.constants';
+import { errorDeNegocio } from '@core/mocks/mock-errors';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { UserRole } from '@core/enums/user-role.enum';
 import { RolesDataSource } from './roles.datasource';
@@ -50,7 +52,8 @@ export class RolesMockDataSource extends RolesDataSource {
 
   getById(id: string): Observable<RolVM> {
     const r = this.data.find((x) => x.id === id);
-    return r ? of({ ...r }).pipe(delay(DELAY)) : throwError(() => new Error('Rol no encontrado'));
+    // Mismo rechazo que `GET /api/role/{id}`: 404 `4059`.
+    return r ? of({ ...r }).pipe(delay(DELAY)) : errorDeNegocio(API_CODES.ROLE_NOT_FOUND, 'Rol no encontrado.');
   }
 
   create(form: RolFormValue): Observable<RolVM> {
@@ -90,5 +93,17 @@ export class RolesMockDataSource extends RolesDataSource {
     if (!this.data.some((x) => x.id === id)) return throwError(() => new Error('Rol no encontrado'));
     this.data = this.data.map((x) => (x.id === id ? { ...x, activo: false } : x));
     return of(void 0).pipe(delay(DELAY));
+  }
+
+  /**
+   * Como el real (`PUT` con `active: true`): reemplaza el rol con lo que llega, permisos incluidos. Un rol que
+   * no existe falla igual que `RoleService.updateRole`: 404 `4059`.
+   */
+  activate(rol: RolVM): Observable<RolVM> {
+    const idx = this.data.findIndex((x) => x.id === rol.id);
+    if (idx < 0) return errorDeNegocio(API_CODES.ROLE_NOT_FOUND, 'Rol no encontrado.');
+    const activo: RolVM = { ...rol, activo: true, permisos: rol.permisos.map((p) => ({ ...p })) };
+    this.data = this.data.map((x) => (x.id === rol.id ? activo : x));
+    return of({ ...activo }).pipe(delay(DELAY));
   }
 }

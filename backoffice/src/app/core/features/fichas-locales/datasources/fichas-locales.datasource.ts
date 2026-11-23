@@ -2,7 +2,7 @@ import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FichasLocalesFiltro } from '../models/ficha-local.dto';
 import { FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
-import { TransicionBackend } from '../models/workflow';
+import { TransicionBackend } from '../domain/workflow';
 
 /**
  * Fuente de datos de las fichas por localidad (`/api/organism-procedure-location`, "OTL"): HTTP real

@@ -1,0 +1,49 @@
+// Hoja del mapa de ubicación (`shared/components/mapa-ubicacion`): el CSS de Leaflet y lo que se dibuja sobre
+// los nodos que crea Leaflet (el marcador propio y sus controles), que no llevan el atributo de encapsulación
+// del componente. NO va en los estilos globales: es un bundle aparte (`angular.json` → `styles` →
+// `bundleName: "mapa", inject: false`) que el componente agrega con un `<link>` recién al mostrar un mapa.
+
+@use 'leaflet/dist/leaflet';
+@use 'shared-styles/mixins' as *;
+
+// Pin propio (divIcon): relleno primario con borde claro, legible sobre calles y sobre verde (≥ 3:1).
+.mapa-ubicacion__marcador {
+  border-radius: var(--theme-radius-sm);
+  cursor: grab;
+
+  &:focus-visible {
+    @include focus-ring-inset;
+  }
+
+  &.is-fijo {
+    cursor: default;
+  }
+}
+
+.mapa-ubicacion__pin {
+  display: block;
+}
+
+.mapa-ubicacion__pin-borde {
+  fill: var(--theme-primary);
+  stroke: var(--theme-surface-card);
+  stroke-width: 2;
+}
+
+.mapa-ubicacion__pin-centro {
+  fill: var(--theme-surface-card);
+}
+
+// Controles de Leaflet dentro del mapa: foco visible del sistema (targets de 30 px, los de Leaflet).
+.mapa-ubicacion__lienzo {
+  font: inherit;
+
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    @include focus-ring;
+  }
+
+  .leaflet-control-attribution {
+    font-size: var(--theme-font-small-size);
+  }
+}

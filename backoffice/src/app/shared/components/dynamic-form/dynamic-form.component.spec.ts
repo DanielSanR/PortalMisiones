@@ -1,9 +1,29 @@
 import { Component, ViewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BrowserAnimationsModule, NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig, FormConfig } from '@core/models/field.interface';
 import { DynamicFormComponent } from './dynamic-form.component';
-import { getFormConfig, updateFormConfigOptions } from './dynamic-form.config';
+import { updateFormConfigOptions } from './dynamic-form.config';
+
+/** Config de prueba local: dos textos y un select cuyas opciones llegan después del primer render. */
+function configDePrueba(): FormConfig {
+  return {
+    fields: [
+      { name: '_section_datos', label: 'Datos', type: 'section-header' },
+      { name: 'nombre', label: 'Nombre', type: 'text', cssClass: 'colspan-half', validations: { required: true, minLength: 3, maxLength: 100 } },
+      {
+        name: 'slug',
+        label: 'Slug',
+        type: 'text',
+        cssClass: 'colspan-half',
+        validations: { required: true, minLength: 3, maxLength: 100, pattern: '^[a-z0-9-]+$', patternErrorMessage: 'Solo minúsculas, números y guiones' },
+      },
+      { name: 'parentId', label: 'Padre', type: 'select', placeholder: 'Seleccioná un padre', cssClass: 'colspan-half', options: [] },
+    ],
+    submitButtonText: 'Guardar',
+    cancelButtonText: 'Cancelar',
+  };
+}
 
 /**
  * B-2: las pantallas cargan los catálogos de los selects después del primer render
@@ -12,7 +32,7 @@ import { getFormConfig, updateFormConfigOptions } from './dynamic-form.config';
 describe('DynamicFormComponent — cambio de fields después del primer render', () => {
   let fixture: ComponentFixture<DynamicFormComponent>;
   let component: DynamicFormComponent;
-  let config = getFormConfig('CATEGORIA');
+  let config = configDePrueba();
 
   function tipear(nombre: string, valor: string): void {
     const input: HTMLInputElement = fixture.nativeElement.querySelector(`input#${nombre}`);
@@ -32,7 +52,7 @@ describe('DynamicFormComponent — cambio de fields después del primer render',
   }
 
   beforeEach(async () => {
-    config = getFormConfig('CATEGORIA');
+    config = configDePrueba();
     await TestBed.configureTestingModule({
       imports: [DynamicFormComponent, NoopAnimationsModule],
     }).compileComponents();
@@ -326,12 +346,13 @@ describe('DynamicFormComponent — campo custom con widget proyectado', () => {
   });
 
   it('un cambio hecho por el widget habilita "Guardar" (requireChanges) y viaja en el submit', () => {
-    expect(submit().disabled).toBeTrue();
+    expect(submit().getAttribute('aria-disabled')).toBe('true');
 
     (fixture.nativeElement.querySelector('.widget') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(form.form.dirty).toBeTrue();
+    expect(submit().getAttribute('aria-disabled')).toBeNull();
     expect(submit().disabled).toBeFalse();
 
     let enviado: Record<string, unknown> | undefined;
@@ -352,7 +373,6 @@ describe('DynamicFormComponent — hint por tipo de campo', () => {
     { name: 'correo', label: 'Email', type: 'email', hint: 'Ayuda de email' },
     { name: 'clave', label: 'Contraseña', type: 'password', hint: 'Ayuda de contraseña' },
     { name: 'sitio', label: 'Sitio', type: 'url', hint: 'Ayuda de url' },
-    { name: 'orden', label: 'Orden', type: 'number', hint: 'Ayuda de número' },
     {
       name: 'tipo', label: 'Tipo', type: 'select', hint: 'Ayuda de select',
       options: [{ id: 'a', name: 'A' }], optionsLoaded: true,
@@ -379,11 +399,10 @@ describe('DynamicFormComponent — hint por tipo de campo', () => {
     fixture.detectChanges();
   });
 
-  it('pinta el hint en email, password, url, number, select y datepicker', () => {
+  it('pinta el hint en email, password, url, select y datepicker', () => {
     expect(hintDe('correo')).toBe('Ayuda de email');
     expect(hintDe('clave')).toBe('Ayuda de contraseña');
     expect(hintDe('sitio')).toBe('Ayuda de url');
-    expect(hintDe('orden')).toBe('Ayuda de número');
     expect(hintDe('tipo')).toBe('Ayuda de select');
     expect(hintDe('desde')).toBe('Ayuda de fecha');
   });

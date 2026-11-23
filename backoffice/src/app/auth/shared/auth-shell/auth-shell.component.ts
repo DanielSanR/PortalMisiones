@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 
 /**
  * Layout split compartido por todas las pantallas de auth (login, recuperar, restablecer, activar):

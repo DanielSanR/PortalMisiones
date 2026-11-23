@@ -34,10 +34,10 @@ const CHECK = process.argv.includes('--check');
 const ICON_ALLOWLIST = {
   // shared/components/row-actions: `'ph ph-' + (busy ? 'spinner-gap' : accion.icon)` (accion.icon sale de `icon: '…'` en cada lista).
   'spinner-gap': 'row-actions (estado busy)',
-  // pages/feedback/feedback.component.html: `ph-{{ row.esUtil ? 'thumbs-up' : 'thumbs-down' }}`.
+  // pages/feedback/list/feedback-list.component.html: `ph-{{ row.esUtil ? 'thumbs-up' : 'thumbs-down' }}`.
   'thumbs-up': 'feedback (voto útil)',
   'thumbs-down': 'feedback (voto no útil)',
-  // pages/auditoria/accion-label.pipe.ts: fallback de ACCION_ICONS (`|| 'info'`).
+  // pages/auditoria/components/accion-label/accion-label.pipe.ts: fallback de ACCION_ICONS (`|| 'info'`).
   info: 'auditoria accionLabel (fallback)',
   // shared/layouts/admin-layout: FALLBACK_SECTION_ICON + `item.icon` de NAV_ITEMS (role-mapping.constants).
   'file-text': 'admin-layout (ícono de sección por defecto)',
@@ -97,7 +97,7 @@ function collectUsed() {
     } else {
       // Propiedades/constantes TS: icon: 'x', icono: 'x', emptyIcon = 'x', FALLBACK_SECTION_ICON = 'x' …
       for (const m of src.matchAll(new RegExp(`\\b\\w*icono?\\w*\\??\\s*[:=]\\s*'(${NAME})'`, 'gi'))) add(m[1], file);
-      // Mapas `XXX_ICONS = { clave: 'x', … }` (ej. ACCION_ICONS en pages/auditoria/accion-label.pipe.ts).
+      // Mapas `XXX_ICONS = { clave: 'x', … }` (ej. ACCION_ICONS en pages/auditoria/components/accion-label/accion-label.pipe.ts).
       for (const m of src.matchAll(/\b\w*_ICONS\b[^=]*=\s*\{([^}]*)\}/g)) {
         for (const v of m[1].matchAll(new RegExp(`:\\s*'(${NAME})'`, 'g'))) add(v[1], file);
       }

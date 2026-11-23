@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { UnavailableDirective } from '../../directives/unavailable.directive';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 
 /**
  * Perfil del usuario en el pie de la sidebar: botón (avatar + nombre + rol) que abre el menú de cuenta.
@@ -11,7 +12,7 @@ import { UnavailableDirective } from '../../directives/unavailable.directive';
 @Component({
   selector: 'app-user-menu',
   standalone: true,
-  imports: [MatMenuModule, MatDividerModule, UnavailableDirective],
+  imports: [MatMenuModule, MatDividerModule, MatTooltipModule, UnavailableDirective],
   templateUrl: './user-menu.component.html',
   styleUrl: './user-menu.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,15 +21,21 @@ export class UserMenuComponent {
   @Input() name = '';
   @Input() email = '';
   @Input() initials = '';
+  /** Rol legible: se muestra en el disparador, debajo del nombre (el desplegable no lo repite). */
   @Input() role = '';
   /** Organismo al que pertenece la cuenta; vacío (sesión global o dato no informado) = no se muestra. */
   @Input() organismo = '';
-  /** Sidebar colapsada: solo se ve el avatar (nombre y rol quedan para lectores de pantalla). */
+  /** Sidebar colapsada: solo se ve el avatar; nombre y rol quedan en el nombre accesible y en un tooltip. */
   @Input() compact = false;
   /** Preferencia "Atajos de teclado" (WCAG 2.1.4: se pueden apagar). */
   @Input() atajosHabilitados = true;
   @Output() readonly atajosChange = new EventEmitter<boolean>();
   @Output() readonly logout = new EventEmitter<void>();
+
+  /** Nombre accesible del disparador (y su tooltip contraído): "Menú de perfil: <nombre>, <rol>[, <organismo>]". */
+  get nombreAccesible(): string {
+    return `Menú de perfil: ${[this.name, this.role, this.organismo].filter((parte) => !!parte).join(', ')}`;
+  }
 
   /** `stopPropagation`: el panel del menú se cierra con cualquier click que le llegue; acá conviene que quede abierto. */
   alternarAtajos(event: Event): void {

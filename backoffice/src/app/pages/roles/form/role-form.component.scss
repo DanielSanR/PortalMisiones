@@ -1,0 +1,24 @@
+// ==========================================================================
+// Form de Rol (alta y edición). La tarjeta de dos paneles (`.ficha-paneles`, con sus `__opciones`), el
+// membrete, la pill, `.form-field` y `.form-toggle` son globales y los dibujan `<app-dynamic-form [paneles]>`
+// y `<app-membrete>`; la grilla de permisos tiene sus estilos en `components/permisos-grilla/`. Acá solo
+// queda la fila informativa del alta ("El rol se crea activo").
+// ==========================================================================
+
+// Fila informativa (sin toggle): mismo alto que la fila de un interruptor en `.ficha-paneles__opcion`.
+.rolform-opcion {
+  &__titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    min-height: var(--theme-space-lg);
+    font-size: var(--theme-font-body-size);
+    color: var(--theme-text-primary);
+
+    i.ph {
+      font-size: var(--theme-icon-size-md);
+      color: var(--theme-text-tertiary);
+    }
+  }
+}

@@ -11,18 +11,15 @@
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
     <app-list-search [atajoFoco]="true"
-      [control]="searchCtrl"
+      [control]="lista.searchCtrl"
       placeholder="Buscar por código o descripción…"
       ariaLabel="Buscar roles por código, descripción o alcance">
     </app-list-search>
 
     <div class="list-toolbar__actions">
-      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} roles</span>
-      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
-      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
-              aria-label="Exportar a CSV">
-        <i class="ph ph-download-simple" aria-hidden="true"></i>
-      </button>
+      <span class="list-toolbar__count" aria-live="polite">{{ vista.total }} roles</span>
+      <!-- Sin funcionalidad todavía: visibles con su motivo (`appListaPendiente`), no ocultos. -->
+      <button type="button" appListaPendiente="exportar"></button>
     </div>
   </div>
 
@@ -32,17 +29,15 @@
       [active]="(filtro$ | async)!"
       (activeChange)="filtro$.next($any($event))">
     </app-filter-tabs>
-    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
-      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
-    </button>
+    <button type="button" appListaPendiente="mas-filtros"></button>
   </div>
 </div>
 
 @if (vista.filtrosActivos.length) {
   <app-active-filters
     [filtros]="vista.filtrosActivos"
-    (quitar)="quitarFiltro($event)"
-    (limpiar)="limpiarFiltros()">
+    (quitar)="lista.quitar($event)"
+    (limpiar)="lista.limpiar()">
   </app-active-filters>
 }
 
@@ -56,13 +51,13 @@
     <app-shared-table
         [data]="vista.rows"
         [columns]="columns"
-        [loading]="loading"
-        [error]="error"
+        [loading]="vista.cargando"
+        [error]="vista.error"
         errorTitle="No pudimos cargar los roles"
         errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
-        (retry)="load()"
+        (retry)="lista.cargar()"
         [sortable]="true"
-        (sortChange)="onSortChange($event)"
+        (sortChange)="lista.ordenar($event)"
         [isRowSelected]="isRowSelected"
         (rowClick)="seleccionar($event)"
         [emptyTitle]="vista.emptyTitle"
@@ -119,8 +114,8 @@
           <app-row-actions
               [primary]="accionEditar(row)"
               [actions]="accionesDe(row)"
-              [busy]="deletingId === row.id"
-              busyLabel="Eliminando rol...">
+              [busy]="vista.ocupadaId === row.id"
+              [busyLabel]="row.activo ? 'Desactivando rol…' : 'Activando rol…'">
           </app-row-actions>
         </div>
       </ng-template>
@@ -180,12 +175,12 @@
           </div>
         }
       </div>
-    } @else if (loading) {
+    } @else if (vista.cargando) {
       <div class="rol-detail rol-detail--empty">
         <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
         <p>Cargando los permisos…</p>
       </div>
-    } @else if (!error) {
+    } @else if (!vista.error) {
       <!-- Con la carga fallida no se dibuja nada acá: el error ya lo cuenta la tabla, al lado. -->
       <div class="rol-detail rol-detail--empty">
         <i class="ph ph-shield-star" aria-hidden="true"></i>

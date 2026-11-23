@@ -1,24 +1,21 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import {
+  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChildren, DestroyRef, ElementRef, EventEmitter, Input,
+  OnChanges, OnInit, Output, QueryList, SimpleChanges, TemplateRef, ViewChild, inject, isDevMode,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators, ReactiveFormsModule } from '@angular/forms';
-import { FieldConfig } from '../../../core/models/field.interface';
-import { CommonModule } from '@angular/common';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Subject, merge, takeUntil } from 'rxjs';
+import { FieldConfig, PanelDeFormulario } from '@core/models/field.interface';
+import { CampoPropioDirective, ContextoDeCampoPropio } from '@shared/directives/campo-propio.directive';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { DynamicFormFieldComponent } from '../dynamic-form-field/dynamic-form-field.component';
 import { FormActionsComponent } from '../form-actions/form-actions.component';
 import { FormErrorBannerComponent } from '../form-error-banner/form-error-banner.component';
 import { getControlErrorMessage, resumenDeErrores } from '../dynamic-form-field/form-error-messages.util';
-
-/** Tipos de campo sin label overline externo (y que por eso no entran al resumen de validación). */
-const NO_EXTERNAL_LABEL_TYPES = ['tip', 'section-header', 'checkbox', 'custom'];
-
-/**
- * Tipos de texto libre: "obligatorio" y el mínimo se miden sobre el valor recortado, que es lo que
- * valida el backend (`@NotBlank`, `@Size(min)`): solo espacios no cuenta como completado.
- */
-const TIPOS_DE_TEXTO_LIBRE = ['text', 'textarea'];
-
-/** Tipos de campo puramente visuales: no tienen control en el `FormGroup`. */
-const NO_CONTROL_TYPES = ['tip', 'section-header'];
+import {
+  NO_CONTROL_TYPES, PanelVista, claseDeCelda, entraAlResumen, esGrupoCorrido, idsRepetidos, llevaEtiquetaExterna, mismoValor, resolverPaneles,
+} from './dynamic-form.estructura';
+import { RechazoDelServidor, reglaDeRechazo, validadoresDe } from './dynamic-form.validadores';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -31,16 +28,18 @@ const NO_CONTROL_TYPES = ['tip', 'section-header'];
     FormErrorBannerComponent,
   ],
   templateUrl: './dynamic-form.component.html',
-  styleUrls: ['./dynamic-form.component.scss'],
+  styleUrl: './dynamic-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DynamicFormComponent implements OnInit, OnChanges {
+export class DynamicFormComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() fields: FieldConfig[] = [];
+  /** Para `escribir` de una `vista`: un campo `readonly` de los `fields` actuales no se escribe. Referencia estable. */
+  readonly esCampoFijo = (name: string): boolean => this.fields.some((f) => f.name === name && !!f.readonly);
   @Input() submitButtonText = 'Guardar';
   /** Texto del botón mientras `saving` (se conserva junto al spinner). */
   @Input() savingButtonText = 'Guardando…';
   @Input() cancelButtonText = 'Cancelar';
-  @Input() initialData?: any;
+  @Input() initialData?: Record<string, unknown> | null;
   @Input() hideButtons = false;
   @Input() saving = false;
   /**
@@ -69,8 +68,15 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    * con `hideButtons`) lo dispare con `form="…"` y Enter siga enviando.
    */
   @Input() formId = '';
+  /**
+   * Layout de dos paneles (formulario de página): la tarjeta `.ficha-paneles` con una sección por panel y el
+   * pie de guardar integrado. Sin esto, la grilla de siempre. Ver `PanelDeFormulario`.
+   */
+  @Input() paneles: PanelDeFormulario[] | null = null;
+  /** Los dos paneles pesan lo mismo (datos | permisos) en vez de principal ancho + lateral. */
+  @Input() panelesIguales = false;
 
-  @Output() formSubmit = new EventEmitter<any>();
+  @Output() formSubmit = new EventEmitter<Record<string, unknown>>();
   @Output() formCancel = new EventEmitter<void>();
   /**
    * Valor completo del formulario (`getRawValue()`, incluye deshabilitados) cada vez que cambia un
@@ -85,6 +91,13 @@ export class DynamicFormComponent implements OnInit, OnChanges {
   @Output() valueChanges = new EventEmitter<Record<string, unknown>>();
 
   form!: FormGroup;
+  /** `paneles` con sus campos resueltos; `null` sin layout de paneles. */
+  panelesVista: PanelVista[] | null = null;
+  /** `name` del `select-multiple` con la lista abierta: uno solo a la vez. */
+  seleccionAbierta: string | null = null;
+
+  /** Templates `appCampoPropio` que proyecta la página, por `name` de campo. */
+  @ContentChildren(CampoPropioDirective) private propios?: QueryList<CampoPropioDirective>;
   /** true luego del primer intento de envío inválido: habilita el banner resumen. */
   submitted = false;
   /**
@@ -100,13 +113,23 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    */
   @ViewChild('resumen') private resumen?: FormErrorBannerComponent;
 
+  private readonly fb = inject(FormBuilder);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly document = inject(DOCUMENT);
   /** true mientras se aplica `initialData`: ese `patchValue` no se reemite por `valueChanges`. */
   private aplicandoInitialData = false;
   /** Último valor conocido del formulario: `valueChanges` solo emite si difiere de este. */
   private ultimoValor: Record<string, unknown> = {};
-
-  constructor(private fb: FormBuilder, private cdr: ChangeDetectorRef) {}
+  /** Corta las suscripciones entre campos (`derivado`, `validarCon`) cada vez que se rearman con `fields`. */
+  private readonly recableado$ = new Subject<void>();
+  /**
+   * Valores que el backend rechazó, por campo (`setErrors({ server })` + `refrescarErrores`). El error `server`
+   * es un validador más del control (`reglaDeRechazo`): sobrevive a cualquier revalidación mientras el valor no
+   * cambie, y se va al editarlo.
+   */
+  private readonly rechazos = new Map<string, RechazoDelServidor>();
 
   /** "Guardar" bloqueado porque es edición sin cambios (`requireChanges`). */
   get sinCambios(): boolean {
@@ -115,6 +138,7 @@ export class DynamicFormComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     this.initForm();
+    this.panelesVista = resolverPaneles(this.paneles, this.fields);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -124,9 +148,36 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     if (changes['fields']) {
       this.syncControls();
     }
+    if (changes['fields'] || changes['paneles']) this.panelesVista = resolverPaneles(this.paneles, this.fields);
     if (changes['initialData'] && changes['initialData'].currentValue) {
       this.applyInitialData(changes['initialData'].currentValue);
     }
+  }
+
+  ngAfterViewInit(): void {
+    if (isDevMode()) this.advertirIdsRepetidos();
+  }
+
+  /** En desarrollo avisa si un id de este formulario ya existe afuera (ver `idsRepetidos`). */
+  private advertirIdsRepetidos(): void {
+    const repetidos = idsRepetidos(this.document, this.host, this.fields);
+    if (!repetidos.length) return;
+    console.warn(
+      `[app-dynamic-form] Ids repetidos en el documento: ${repetidos.join(', ')}. Ya hay otro elemento con ese id fuera de `
+      + 'este formulario (¿un diálogo de formulario sobre una página con formulario embebido que comparte nombres de '
+      + 'campo?). Las etiquetas quedan asociadas al campo equivocado: cambiá el `name` de uno de los dos.',
+    );
+  }
+
+  /** Template `appCampoPropio` de un campo `custom` o `vista`, si la página lo proyectó. */
+  plantillaDe(field: FieldConfig): TemplateRef<ContextoDeCampoPropio> | null {
+    if (field.type !== 'custom' && field.type !== 'vista') return null;
+    return this.propios?.find((propio) => propio.appCampoPropio === field.name)?.template ?? null;
+  }
+
+  /** Abre la lista de un `select-multiple` (cerrando la que estuviera abierta) o cierra la suya. */
+  alternarSeleccion(nombre: string, abrir: boolean): void {
+    this.seleccionAbierta = abrir ? nombre : this.seleccionAbierta === nombre ? null : this.seleccionAbierta;
   }
 
   /** `trackBy` del `*ngFor`: sin esto, cada `fields` nuevo recrea el DOM y se pierde el foco. */
@@ -158,11 +209,72 @@ export class DynamicFormComponent implements OnInit, OnChanges {
         this.ultimoValor = valor;
         if (cambio && !this.aplicandoInitialData) this.valueChanges.emit(valor);
       });
+    this.cablearDependencias();
+  }
+
+  /**
+   * Lo que un campo le debe a otro: el valor `derivado` que sigue a su origen y la revalidación de una
+   * regla `validarCon`. Se rearma con cada `fields` (los controles pueden haber cambiado).
+   */
+  private cablearDependencias(): void {
+    this.recableado$.next();
+    const hasta = <T>() => takeUntil<T>(this.recableado$);
+    for (const field of this.fields) {
+      const control = this.form.get(field.name);
+      if (!control) continue;
+
+      const derivado = field.derivado;
+      const origen = derivado?.seguir ? this.form.get(derivado.de) : null;
+      if (derivado && origen) {
+        origen.valueChanges.pipe(hasta(), takeUntilDestroyed(this.destroyRef)).subscribe((valor) => {
+          // `setValue` no marca dirty: el campo sigue "sin tocar" y continúa acompañando al origen.
+          if (control.pristine) control.setValue(derivado.transform(String(valor ?? '')));
+        });
+        // Vaciarlo a mano es pedir el derivado de nuevo: vuelve a quedar "sin tocar" y a acompañar al origen.
+        control.valueChanges.pipe(hasta(), takeUntilDestroyed(this.destroyRef)).subscribe((valor) => {
+          if (control.dirty && !String(valor ?? '').trim()) control.markAsPristine();
+        });
+      }
+
+      const cruzada = field.readonly ? undefined : field.validations?.validarCon;
+      const otros = (cruzada?.campos ?? []).map((nombre) => this.form.get(nombre)).filter((otro): otro is AbstractControl => !!otro);
+      if (otros.length) {
+        merge(...otros.map((otro) => otro.valueChanges)).pipe(hasta(), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+          // Recalcula los errores desde los validadores: el rechazo del servidor (`setErrors({ server })`) se olvida,
+          // porque dependía de este otro campo (documentado en `FieldValidations.validarCon`).
+          this.rechazos.delete(field.name);
+          control.updateValueAndValidity({ emitEvent: false });
+          // Con valor cargado, el error se muestra ya: lo provocó mover el otro campo, no hay que tocar este.
+          if (control.value !== null && control.value !== '') control.markAsTouched();
+          this.refrescarErrores();
+        });
+      }
+    }
   }
 
   private createControl(field: FieldConfig) {
     const initialValue = this.initialData?.[field.name] ?? field.value ?? '';
-    return this.fb.control({ value: initialValue, disabled: !!field.disabled }, this.getValidators(field));
+    return this.fb.control({ value: initialValue, disabled: !!field.disabled }, this.validadoresDelControl(field));
+  }
+
+  /**
+   * Los del campo y el del rechazo del servidor. Un campo `readonly` no lleva ninguno (la persona no podría
+   * corregirlo y el formulario quedaría inválido sin salida: el rechazo lo cuenta el banner).
+   */
+  private validadoresDelControl(field: FieldConfig) {
+    if (field.readonly) {
+      this.rechazos.delete(field.name);
+      return [];
+    }
+    return [...validadoresDe(field), reglaDeRechazo(this.rechazos, field.name)];
+  }
+
+  /** Anota el error `server` que el host puso en cada control, con el valor rechazado (ver `rechazos`). */
+  private anotarRechazos(): void {
+    for (const [nombre, control] of Object.entries(this.form.controls)) {
+      const mensaje: unknown = control.errors?.['server'];
+      if (mensaje !== undefined) this.rechazos.set(nombre, { valor: control.value, mensaje });
+    }
   }
 
   /**
@@ -172,14 +284,24 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    * Ahora se conserva el mismo grupo y los mismos controles: solo se agregan los de campos
    * nuevos, se quitan los que ya no están y se actualizan validadores y `disabled`. Nada de
    * esto cambia el valor ni marca dirty, así que `requireChanges` y el guard no se ven afectados.
+   *
+   * Revalidar recalcula los errores desde los validadores: el `server` que marcó `aplicarErrorDeGuardado` sigue
+   * porque es un validador más (`reglaDeRechazo`), atado al valor rechazado. La página re-entrega `fields` por un
+   * cambio en OTRO campo (el alcance de un rol, las categorías de una plantilla, el rol de un usuario) y ese valor
+   * sigue ahí. Se limpia al editar el campo y cuando un `validarCon` lo revalida porque cambió el campo del que
+   * depende; no rige si el campo pasó a `readonly` o `disabled`.
    */
   private syncControls() {
+    this.anotarRechazos();
     const conControl = this.fields.filter((field) => !NO_CONTROL_TYPES.includes(field.type));
     const nombres = new Set(conControl.map((field) => field.name));
 
     Object.keys(this.form.controls)
       .filter((nombre) => !nombres.has(nombre))
-      .forEach((nombre) => this.form.removeControl(nombre, { emitEvent: false }));
+      .forEach((nombre) => {
+        this.rechazos.delete(nombre);
+        this.form.removeControl(nombre, { emitEvent: false });
+      });
 
     conControl.forEach((field) => {
       const control = this.form.get(field.name);
@@ -187,7 +309,7 @@ export class DynamicFormComponent implements OnInit, OnChanges {
         this.form.addControl(field.name, this.createControl(field), { emitEvent: false });
         return;
       }
-      control.setValidators(this.getValidators(field));
+      control.setValidators(this.validadoresDelControl(field));
       if (field.disabled && control.enabled) control.disable({ emitEvent: false });
       if (!field.disabled && control.disabled) control.enable({ emitEvent: false });
       control.updateValueAndValidity({ emitEvent: false });
@@ -195,6 +317,7 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     this.form.updateValueAndValidity({ emitEvent: false });
     // Controles agregados o quitados cambian el valor crudo sin que nadie haya editado nada.
     this.ultimoValor = this.form.getRawValue();
+    this.cablearDependencias();
   }
 
   /**
@@ -212,33 +335,6 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     Object.keys(data).forEach((nombre) => this.form.get(nombre)?.markAsPristine());
   }
 
-  /**
-   * Validadores de lo que la persona escribe o elige. Un campo `readonly` no lleva ninguno: no se puede editar,
-   * así que un `required` (o un `pattern`…) sobre un valor que llegó vacío o inválido bloquearía el envío sin
-   * forma de corregirlo ni de verlo (la vista de solo lectura no tiene `mat-error` ni marca de obligatorio).
-   * Lo que viaja lo valida el backend. Ver `FieldConfig.readonly`.
-   */
-  private getValidators(field: FieldConfig) {
-    const validators: ValidatorFn[] = [];
-    if (field.readonly) return validators;
-    const textoLibre = TIPOS_DE_TEXTO_LIBRE.includes(field.type);
-
-    if (field.validations) {
-      if (field.validations.required) validators.push(textoLibre ? requeridoConContenido : Validators.required);
-      if (field.validations.maxLength) validators.push(Validators.maxLength(field.validations.maxLength));
-      if (field.validations.minLength) {
-        validators.push(textoLibre ? minimoRecortado(field.validations.minLength) : Validators.minLength(field.validations.minLength));
-      }
-      if (field.validations.min != null) validators.push(Validators.min(field.validations.min));
-      if (field.validations.max != null) validators.push(Validators.max(field.validations.max));
-      if (field.validations.pattern) validators.push(Validators.pattern(field.validations.pattern));
-      if (field.validations.email) validators.push(Validators.email);
-      if (field.validations.validar) validators.push(reglaPropia(field.validations.validar));
-    }
-
-    return validators;
-  }
-
   /** El campo ocupa una celda de la grilla (todos salvo `custom`, que lo dibuja la página). */
   seDibuja(field: FieldConfig): boolean {
     return field.type !== 'custom';
@@ -246,7 +342,7 @@ export class DynamicFormComponent implements OnInit, OnChanges {
 
   /** El campo lleva label overline externo (todos salvo tip/section-header/checkbox/custom). */
   showExternalLabel(field: FieldConfig): boolean {
-    return !NO_EXTERNAL_LABEL_TYPES.includes(field.type);
+    return llevaEtiquetaExterna(field);
   }
 
   /** Mensajes "Label (motivo)" de los campos inválidos y tocados — banner resumen. */
@@ -254,29 +350,18 @@ export class DynamicFormComponent implements OnInit, OnChanges {
     if (!this.form) return [];
     return resumenDeErrores(
       this.form,
-      this.fields.filter((field) => this.showExternalLabel(field)),
+      this.fields.filter(entraAlResumen),
       (control, field) => getControlErrorMessage(control, field),
     );
   }
 
+  /** Grupo de un panel `'grupos'` de borde a borde (ver `esGrupoCorrido`). */
+  grupoCorrido(grupo: FieldConfig[]): boolean {
+    return esGrupoCorrido(grupo);
+  }
+
   getFieldCssClass(field: FieldConfig): string {
-    if (field.cssClass) {
-      switch (field.cssClass) {
-        case 'colspan-wide': return 'dynamic-form-field-wide';
-        case 'colspan-third': return 'dynamic-form-field-third';
-        case 'colspan-half': return 'dynamic-form-field-half';
-        case 'colspan-full': return 'dynamic-form-field-full';
-        default: return 'dynamic-form-field-full';
-      }
-    }
-
-    const fullWidthTypes = ['textarea', 'select', 'select-multiple', 'checkbox', 'tip', 'section-header'];
-    if (fullWidthTypes.includes(field.type)) return 'dynamic-form-field-full';
-
-    const halfWidthTypes = ['datepicker', 'number'];
-    if (halfWidthTypes.includes(field.type)) return 'dynamic-form-field-half';
-
-    return 'dynamic-form-field-full';
+    return claseDeCelda(field);
   }
 
   /**
@@ -284,6 +369,7 @@ export class DynamicFormComponent implements OnInit, OnChanges {
    * tras un rechazo del backend): eso no cambia ningún input, así que los campos OnPush no se revisarían.
    */
   refrescarErrores(): void {
+    this.anotarRechazos();
     this.revision++;
     this.cdr.markForCheck();
   }
@@ -301,39 +387,4 @@ export class DynamicFormComponent implements OnInit, OnChanges {
       this.resumen?.focus();
     }
   }
-}
-
-/** `required` que no se conforma con espacios. */
-function requeridoConContenido(control: AbstractControl): ValidationErrors | null {
-  return String(control.value ?? '').trim() ? null : { required: true };
-}
-
-/** `minlength` sobre el valor recortado ("a  " no son tres caracteres). Vacío: lo informa `required`. */
-function minimoRecortado(min: number): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const largo = String(control.value ?? '').trim().length;
-    return largo > 0 && largo < min ? { minlength: { requiredLength: min, actualLength: largo } } : null;
-  };
-}
-
-/** `FieldValidations.validar` como validador: el error `personalizado` lleva el mensaje. */
-function reglaPropia(validar: (valor: string) => string | null): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const mensaje = validar(String(control.value ?? ''));
-    return mensaje ? { personalizado: mensaje } : null;
-  };
-}
-
-/** Igualdad superficial de dos valores crudos del form (los arrays de un multi-select, por elemento). */
-function mismoValor(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
-  const claves = Object.keys(a);
-  if (claves.length !== Object.keys(b).length) return false;
-  return claves.every((clave) => {
-    const x = a[clave];
-    const y = b[clave];
-    if (Array.isArray(x) && Array.isArray(y)) {
-      return x.length === y.length && x.every((item, i) => item === y[i]);
-    }
-    return clave in b && x === y;
-  });
 }

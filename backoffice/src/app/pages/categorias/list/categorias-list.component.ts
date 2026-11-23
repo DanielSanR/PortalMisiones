@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyR
 import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
-  BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize,
+  BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged,
   firstValueFrom, map, startWith, withLatestFrom,
 } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,17 +10,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
-import { LoadingComponent } from '../../../shared/components/loading/loading.component';
-import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
-import { ListSearchComponent } from '../../../shared/components/list-search';
-import { AtajoDirective } from '../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
+import { avisarExito } from '@shared/utils/avisos';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
+import { LoadingComponent } from '@shared/components/loading/loading.component';
+import { FilterTabsComponent, FilterTabOption } from '@shared/components/filter-tabs';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent, FiltroActivo } from '@shared/components/active-filters';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { CategoriasFacade, CategoriaNode, CategoriaVM } from '@features/categorias';
-import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
-import { CategoriaDialogComponent, CategoriaDialogData } from '../dialog/categoria-dialog.component';
+import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
+import { dialogoDeCategoria } from '../categoria-dialogo';
 import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 import { errorDeEliminarCategoria } from '../categoria-save-error';
 
@@ -43,8 +44,18 @@ function idsExpandibles(nodes: CategoriaNode[], acc: string[] = []): string[] {
   return acc;
 }
 
-/** Filtro "Todas/Solo raíces/Con subcategorías", sobre las raíces del árbol (campo real `children.length`). */
+/**
+ * Filtro "Todas / Sin subcategorías / Con subcategorías", sobre las raíces del árbol (campo real
+ * `children.length`). Las dos últimas parten las raíces en dos: las que no tienen hijas y las que sí. La clave
+ * `raices` es histórica: nunca fue "todas las raíces" (por eso el rótulo dejó de ser "Solo raíces").
+ */
 type ArbolFiltro = 'todas' | 'raices' | 'con-sub';
+
+/** Rótulo de cada filtro de jerarquía: el mismo en la tab y en su chip de "Filtros activos". */
+const ETIQUETA_DE_FILTRO: Record<Exclude<ArbolFiltro, 'todas'>, string> = {
+  raices: 'Sin subcategorías',
+  'con-sub': 'Con subcategorías',
+};
 
 function filtrarRaices(roots: CategoriaNode[], filtro: ArbolFiltro): CategoriaNode[] {
   if (filtro === 'raices') return roots.filter((r) => r.children.length === 0);
@@ -145,7 +156,7 @@ interface CategoriasVista extends EstadoVacio {
     AtajoDirective,
   ],
   templateUrl: './categorias-list.component.html',
-  styleUrls: ['./categorias-list.component.scss'],
+  styleUrl: './categorias-list.component.scss',
 })
 export class CategoriasListComponent implements OnInit {
   private readonly facade = inject(CategoriasFacade);
@@ -164,7 +175,7 @@ export class CategoriasListComponent implements OnInit {
     startWith(this.searchCtrl.value),
   );
 
-  /** Filtro "Todas/Solo raíces/Con subcategorías" sobre las categorías raíz (client-side). */
+  /** Filtro "Todas / Sin subcategorías / Con subcategorías" sobre las categorías raíz (client-side). */
   readonly filtro$ = new BehaviorSubject<ArbolFiltro>('todas');
 
   /** Ramas abiertas. Por defecto todo COLAPSADO (solo raíces visibles). */
@@ -177,8 +188,8 @@ export class CategoriasListComponent implements OnInit {
       const relevantes = q ? roots.filter((r) => ramaCoincide(r, q)) : roots;
       return [
         { value: 'todas', label: 'Todas', count: contarNodos(podar(relevantes, q)) },
-        { value: 'raices', label: 'Solo raíces', count: relevantes.filter((r) => r.children.length === 0).length },
-        { value: 'con-sub', label: 'Con subcategorías', count: relevantes.filter((r) => r.children.length > 0).length },
+        { value: 'raices', label: ETIQUETA_DE_FILTRO.raices, count: relevantes.filter((r) => r.children.length === 0).length },
+        { value: 'con-sub', label: ETIQUETA_DE_FILTRO['con-sub'], count: relevantes.filter((r) => r.children.length > 0).length },
       ];
     }),
   );
@@ -195,7 +206,7 @@ export class CategoriasListComponent implements OnInit {
     map(([roots, filtro, search, expandidos]): CategoriasVista => {
       const q = normalizar(search);
       // El chip filtra sobre las raíces reales (children.length del árbol completo) y recién
-      // después se poda por búsqueda: al revés, "Solo raíces" contaría hijas escondidas por la poda.
+      // después se poda por búsqueda: al revés, "Sin subcategorías" contaría hijas escondidas por la poda.
       const visibles = podar(filtrarRaices(roots, filtro), q);
       const total = contarNodos(visibles);
       const filtrosActivos = this.filtrosActivos(search, filtro);
@@ -224,11 +235,7 @@ export class CategoriasListComponent implements OnInit {
   private readonly dialogo = new DialogoEnLista<CategoriaVM, CategoriaVM>({
     abrir: async (categoria, parentId) => {
       const categorias = await firstValueFrom(this.facade.categorias$);
-      return this.dialog.open<CategoriaDialogComponent, CategoriaDialogData, CategoriaVM>(CategoriaDialogComponent, {
-        data: { categorias, categoria, parentId },
-        panelClass: 'custom-modal-panel',
-        autoFocus: '#categoria-nombre',
-      });
+      return abrirFormDialog(this.dialog, dialogoDeCategoria(this.facade, categorias, categoria, parentId));
     },
     buscar: async (id) => (await firstValueFrom(this.facade.categorias$)).find((c) => c.id === id),
     alGuardar: (guardada, categoria) => {
@@ -236,11 +243,7 @@ export class CategoriasListComponent implements OnInit {
       if (guardada.parentId) {
         this.expandidos$.next(new Set(this.expandidos$.value).add(guardada.parentId));
       }
-      this.snackBar.open(categoria ? 'Categoría actualizada' : 'Categoría creada', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      });
+      avisarExito(this.snackBar, categoria ? 'Categoría actualizada' : 'Categoría creada');
     },
     noEncontrada: 'No encontramos esa categoría. Puede que la hayan eliminado.',
   });
@@ -327,11 +330,12 @@ export class CategoriasListComponent implements OnInit {
   }
 
   onDelete(node: CategoriaNode): void {
-    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
-    const indice = indiceDeFilaActiva(this.host, FILA_ARBOL);
     const hijas = node.children.length;
-    abrirConfirmacion(this.dialog, {
-      data: {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: {
         title: '¿Eliminar la categoría?',
         // El copy cambia según la rama porque la consecuencia es distinta: el backend
         // rechaza el borrado de una categoría con subcategorías (4065), así que decirlo
@@ -343,28 +347,18 @@ export class CategoriasListComponent implements OnInit {
         danger: true,
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
-        // El diálogo se queda abierto con el botón en spinner hasta que el backend responde,
-        // en vez de cerrar optimistamente y dejar al usuario sin señal de qué pasó.
-        confirmAction: () => {
-          this.deletingId = node.id;
-          this.cdr.markForCheck();
-          return this.facade.delete(node.id).pipe(
-            finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
-          );
-        },
+        confirmAction: () => this.facade.delete(node.id),
         errorDeAccion: errorDeEliminarCategoria,
       },
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        enfocarTrasEliminar(this.host, indice, this.destroyRef, FILA_ARBOL);
-        this.snackBar.open(  'Categoría eliminada', 'OK', {
-          duration: 3000,
-          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-          panelClass: 'snackbar-success',
-        });
-      });
+      aviso: 'Categoría eliminada',
+      // Bloquea la fila mientras dura el borrado.
+      ocupado: (ocupado) => {
+        this.deletingId = ocupado ? node.id : null;
+        this.cdr.markForCheck();
+      },
+      // Foco tras borrar: la fila (y su botón) desaparece; va a la que ocupa su lugar en el árbol.
+      foco: { host: this.host, selectorFila: FILA_ARBOL },
+    });
   }
 
   private filtrosActivos(search: string, filtro: ArbolFiltro): FiltroActivo[] {
@@ -372,7 +366,7 @@ export class CategoriasListComponent implements OnInit {
     const termino = (search ?? '').trim();
     if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
     if (filtro !== 'todas') {
-      activos.push({ clave: 'jerarquia', etiqueta: `Jerarquía: ${filtro === 'raices' ? 'Solo raíces' : 'Con subcategorías'}` });
+      activos.push({ clave: 'jerarquia', etiqueta: `Jerarquía: ${ETIQUETA_DE_FILTRO[filtro]}` });
     }
     return activos;
   }

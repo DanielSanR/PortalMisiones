@@ -24,6 +24,7 @@ import { provideOrganismosFeature } from './core/features/organismos/organismos.
 import { provideRolesFeature } from './core/features/roles/roles.providers';
 import { providePermisosFeature } from './core/features/permisos/permisos.providers';
 import { provideLocalidadesFeature } from './core/features/localidades/localidades.providers';
+import { provideGeocodificacionFeature } from './core/features/geocodificacion/geocodificacion.providers';
 import { provideCuentaFeature } from './core/features/cuenta/cuenta.providers';
 import { provideEtiquetasFeature } from './core/features/etiquetas/etiquetas.providers';
 import { provideModalidadesFeature } from './core/features/modalidades/modalidades.providers';
@@ -61,6 +62,7 @@ export const appConfig: ApplicationConfig = {
     ...provideRolesFeature(),
     ...providePermisosFeature(),
     ...provideLocalidadesFeature(),
+    ...provideGeocodificacionFeature(),
     ...provideCuentaFeature(),
     ...provideEtiquetasFeature(),
     ...provideModalidadesFeature(),

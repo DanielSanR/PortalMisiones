@@ -1,0 +1,140 @@
+<ng-template appPageActions>
+  @if (hasFilters()) {
+    <button mat-stroked-button (click)="clearFilters()">
+      <i class="ph ph-x-circle" aria-hidden="true"></i> Limpiar filtros
+    </button>
+  }
+</ng-template>
+
+<!-- ── Stats Cards ── -->
+@if (stats) {
+  <div class="stats-grid" role="group" aria-label="Resumen de las opiniones">
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--total"><i class="ph ph-chats-circle" aria-hidden="true"></i></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.total }}</span>
+        <span class="stat-card__label">Respuestas totales</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--util"><i class="ph ph-thumbs-up" aria-hidden="true"></i></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.porcentajeUtil }}%</span>
+        <span class="stat-card__label">Consideraron útil el trámite</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--noUtil"><i class="ph ph-thumbs-down" aria-hidden="true"></i></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.totalNoUtil }}</span>
+        <span class="stat-card__label">Opiniones negativas</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--comentario"><i class="ph ph-chat-text" aria-hidden="true"></i></div>
+      <div class="stat-card__info">
+        <span class="stat-card__value">{{ stats.totalConComentario }}</span>
+        <span class="stat-card__label">Con comentario escrito</span>
+      </div>
+    </div>
+  </div>
+} @else if (statsError) {
+  <div class="stats-aviso" role="alert">
+    <i class="ph ph-warning-circle stats-aviso__icon" aria-hidden="true"></i>
+    <span class="stats-aviso__text">No pudimos cargar el resumen.</span>
+    <button mat-button color="primary" type="button" class="stats-aviso__cta"
+        [disabled]="statsCargando" (click)="cargarStats()">
+      <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>
+      {{ statsCargando ? 'Reintentando…' : 'Reintentar' }}
+    </button>
+  </div>
+}
+
+<!-- Toolbar de lista (well): fila A = búsqueda/fechas reales + contador · fila B = filter-tabs de valoración. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <form [formGroup]="filterForm" class="list-toolbar__row">
+    <app-list-search [atajoFoco]="true"
+      [control]="filterForm.controls.search"
+      placeholder="Buscar trámite u organismo…"
+      ariaLabel="Buscar opiniones por trámite o por organismo">
+    </app-list-search>
+
+    <mat-form-field appearance="outline" class="filter-date" subscriptSizing="dynamic">
+      <mat-label>Desde</mat-label>
+      <input matInput [matDatepicker]="pickerDesde" formControlName="fechaDesde" placeholder="DD/MM/AAAA" autocomplete="off">
+      <mat-datepicker-toggle matSuffix [for]="pickerDesde" aria-label="Elegir la fecha desde"></mat-datepicker-toggle>
+      <mat-datepicker #pickerDesde></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-date" subscriptSizing="dynamic">
+      <mat-label>Hasta</mat-label>
+      <input matInput [matDatepicker]="pickerHasta" formControlName="fechaHasta" placeholder="DD/MM/AAAA" autocomplete="off">
+      <mat-datepicker-toggle matSuffix [for]="pickerHasta" aria-label="Elegir la fecha hasta"></mat-datepicker-toggle>
+      <mat-datepicker #pickerHasta></mat-datepicker>
+    </mat-form-field>
+
+    <span class="list-toolbar__count list-toolbar__count--end">{{ totalItems }} opiniones</span>
+  </form>
+
+  <div class="list-toolbar__row">
+    <app-filter-tabs [tabs]="valoracionTabs" [active]="valoracionActiva" (activeChange)="filtrarValoracion($event)"></app-filter-tabs>
+  </div>
+</div>
+
+<!-- ── Tabla ── -->
+<app-shared-table
+    [data]="registros"
+    [columns]="columns"
+    [loading]="loading"
+    [error]="error"
+    errorTitle="No pudimos cargar el feedback"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="loadData()"
+    [paginated]="true"
+    [totalItems]="totalItems"
+    [pageSize]="pageSize"
+    [pageIndex]="currentPage"
+
+    emptyMessage="No se encontraron registros de feedback"
+    emptyIcon="chats-circle"
+    (pageChange)="onPageChange($event)">
+
+    <ng-template appTableCell="util" let-row>
+        <span class="pill" [class.pill--publicado]="row.esUtil" [class.pill--despublicado]="!row.esUtil">
+            <i class="ph ph-{{ row.esUtil ? 'thumbs-up' : 'thumbs-down' }} pill__icon" aria-hidden="true"></i>
+            <span class="pill__label">{{ row.esUtil ? 'Útil' : 'No útil' }}</span>
+        </span>
+    </ng-template>
+
+    <ng-template appTableCell="tramite" let-row>
+        <div class="tramite-info">
+            <strong>{{ row.tramiteTitulo }}</strong>
+            <span class="organismo-label">{{ row.organismoNombre }}</span>
+        </div>
+    </ng-template>
+
+    <ng-template appTableCell="comentario" let-row>
+        @if (row.comentario) {
+          <div class="comentario">
+            <span class="comentario-text" [class.is-expandido]="estaExpandido(row)">{{ row.comentario }}</span>
+            @if (esLargo(row.comentario)) {
+              <button type="button" class="comentario-toggle"
+                      [attr.aria-expanded]="estaExpandido(row)"
+                      (click)="alternarComentario(row)">
+                {{ estaExpandido(row) ? 'Ver menos' : 'Ver comentario completo' }}
+              </button>
+            }
+          </div>
+        } @else {
+          <span class="sin-comentario">—</span>
+        }
+    </ng-template>
+
+    <ng-template appTableCell="fecha" let-row>
+        {{ row.fechaFeedback | date:'dd/MM/yyyy HH:mm' }}
+    </ng-template>
+
+</app-shared-table>

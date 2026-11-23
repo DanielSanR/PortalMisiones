@@ -1,11 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AdminLayoutComponent } from '../shared/layouts/admin-layout/admin-layout.component';
-import { accessGuard, redirigirAlDialogo, unsavedChangesGuard, validarDialogoDeLista } from '../core/guards';
+import { AdminLayoutComponent } from '@shared/layouts/admin-layout/admin-layout.component';
+import { accessGuard, redirigirAlDialogo, validarDialogoDeLista } from '@core/guards';
+import { unsavedChangesGuard } from '@shared/guards/unsaved-changes.guard';
 import {
   CREAR_ETIQUETA_ACCESS, CREAR_FICHA_ACCESS, EDITAR_USUARIO_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS, LEER_ROLES_PERMISOS_ACCESS,
-} from '../core/constants/policy-overrides.constants';
-import { UserRole } from '../core/enums/user-role.enum';
+} from '@core/constants/policy-overrides.constants';
+import { UserRole } from '@core/enums/user-role.enum';
 
 const HOME = '/dashboard/home';
 
@@ -13,7 +14,6 @@ const HOME = '/dashboard/home';
 // `/api/role` y `/api/permission` (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5) y las secciones
 // sin backend real (Auditoría, Feedback). El resto va por permiso, igual que el nav.
 const SUPER = [UserRole.SUPERADMIN];
-const SUPER_AB = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE];
 const SUPER_AB_AO = [UserRole.SUPERADMIN, UserRole.ADMIN_BACKOFFICE, UserRole.ADMIN_ORGANIZATION];
 
 /**
@@ -32,7 +32,7 @@ const routes: Routes = [
     path: '',
     component: AdminLayoutComponent,
     children: [
-      { path: 'home', loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent) }, // Home sin trail: el breadcrumb queda solo "Inicio".
+      { path: 'home', loadComponent: () => import('./dashboard/home/dashboard.component').then(m => m.DashboardComponent) }, // Home sin trail: el breadcrumb queda solo "Inicio".
 
       // Rutas del Trámites viejo (mock, retirado en la fase 5): quien las tenga guardadas cae en Plantillas
       // provinciales (si no tiene READ_PROCEDURE, el accessGuard de esa ruta lo manda a home).
@@ -74,7 +74,7 @@ const routes: Routes = [
       { path: 'tipos-organismo/editar/:id', canActivate: [accessGuard, redirigirAlDialogo('/dashboard/tipos-organismo/lista', 'editar')], children: [], data: { access: { permissions: ['UPDATE_ORGANISM_TYPE'] }, redirectTo: HOME, breadcrumb: ['Tipos de Organismo', 'Editar tipo'] } },
 
       // Auditoría → sin backend real → escape por rol
-      { path: 'auditoria', loadComponent: () => import('./auditoria/auditoria-list.component').then(m => m.AuditoriaListComponent), canActivate: [accessGuard], data: { access: { requireRoles: SUPER }, redirectTo: HOME, breadcrumb: ['Auditoría'] } },
+      { path: 'auditoria', loadComponent: () => import('./auditoria/list/auditoria-list.component').then(m => m.AuditoriaListComponent), canActivate: [accessGuard], data: { access: { requireRoles: SUPER }, redirectTo: HOME, breadcrumb: ['Auditoría'] } },
 
       // Taxonomía → escrituras por permiso del catálogo (reads públicos; lista visible si tiene alguna escritura)
       { path: 'modalidades/lista', loadComponent: () => import('./modalidades/list/modalidades-list.component').then(m => m.ModalidadesListComponent), canActivate: [accessGuard, validarDialogoDeLista({ nuevo: 'CREATE_MODALITY', editar: 'UPDATE_MODALITY' })], runGuardsAndResolvers: 'paramsOrQueryParamsChange', data: { access: { permissions: ['CREATE_MODALITY', 'UPDATE_MODALITY', 'DELETE_MODALITY'] }, redirectTo: HOME, breadcrumb: ['Modalidades'] } },
@@ -96,7 +96,7 @@ const routes: Routes = [
       { path: 'eventos-de-vida/editar/:id', canActivate: [accessGuard, redirigirAlDialogo('/dashboard/eventos-de-vida/lista', 'editar')], children: [], data: { access: { permissions: ['UPDATE_LIFE_EVENT'] }, redirectTo: HOME, breadcrumb: ['Eventos de Vida', 'Editar evento'] } },
 
       // Feedback Ciudadano → sin backend real → escape por rol
-      { path: 'feedback', loadComponent: () => import('./feedback/feedback.component').then(m => m.FeedbackComponent), canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME, breadcrumb: ['Feedback Ciudadano'] } },
+      { path: 'feedback', loadComponent: () => import('./feedback/list/feedback-list.component').then(m => m.FeedbackListComponent), canActivate: [accessGuard], data: { access: { requireRoles: SUPER_AB_AO }, redirectTo: HOME, breadcrumb: ['Feedback Ciudadano'] } },
 
       // Usuarios: listar = READ_USER (SA/AB/AO). Crear = CREATE_USER + prerrequisitos del form; editar =
       // EDITAR_USUARIO_ACCESS (UPDATE_USER + rol admin + (READ_ORGANISM u organismo propio en la sesión)). Ver policy-overrides.constants.ts.
@@ -107,8 +107,8 @@ const routes: Routes = [
 
       // Roles y Permisos → backend autoriza por ROL (hasAnyRole SUPERADMIN/ADMIN_BACKOFFICE, §4.4/§4.5)
       { path: 'roles/lista', loadComponent: () => import('./roles/list/roles-list.component').then(m => m.RolesListComponent), canActivate: [accessGuard], data: { access: LEER_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles'] } },
-      { path: 'roles/nuevo', loadComponent: () => import('./roles/create/role-form.component').then(m => m.RoleFormComponent), canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
-      { path: 'roles/editar/:id', loadComponent: () => import('./roles/create/role-form.component').then(m => m.RoleFormComponent), canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
+      { path: 'roles/nuevo', loadComponent: () => import('./roles/form/role-form.component').then(m => m.RoleFormComponent), canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles', 'Nuevo rol'] } },
+      { path: 'roles/editar/:id', loadComponent: () => import('./roles/form/role-form.component').then(m => m.RoleFormComponent), canActivate: [accessGuard], canDeactivate: [unsavedChangesGuard], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Roles', 'Editar rol'] } },
       { path: 'permisos/lista', loadComponent: () => import('./permisos/list/permisos-list.component').then(m => m.PermisosListComponent), canActivate: [accessGuard, validarDialogoDeLista({ nuevo: ESCRIBIR_ROLES_PERMISOS_ACCESS, editar: ESCRIBIR_ROLES_PERMISOS_ACCESS })], runGuardsAndResolvers: 'paramsOrQueryParamsChange', data: { access: LEER_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Permisos'] } },
       { path: 'permisos/nuevo', canActivate: [accessGuard, redirigirAlDialogo('/dashboard/permisos/lista', 'nuevo')], children: [], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Permisos', 'Nuevo permiso'] } },
       { path: 'permisos/editar/:id', canActivate: [accessGuard, redirigirAlDialogo('/dashboard/permisos/lista', 'editar')], children: [], data: { access: ESCRIBIR_ROLES_PERMISOS_ACCESS, redirectTo: HOME, breadcrumb: ['Permisos', 'Editar permiso'] } },

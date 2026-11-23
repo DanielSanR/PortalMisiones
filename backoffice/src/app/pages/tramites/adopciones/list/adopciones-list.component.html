@@ -4,11 +4,11 @@
   </button>
 </ng-template>
 
-@if (vista$ | async; as vista) {
+@if (lista.vista$ | async; as vista) {
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
     <app-list-search [atajoFoco]="true"
-      [control]="searchCtrl"
+      [control]="lista.searchCtrl"
       placeholder="Buscar por trámite u organismo…"
       ariaLabel="Buscar trámites del organismo por nombre del trámite o del organismo">
     </app-list-search>
@@ -35,33 +35,33 @@
       }
     }
 
-    <span class="list-toolbar-count">{{ vista.total }} trámites</span>
+    <span class="list-toolbar__count">{{ vista.total }} trámites</span>
   </div>
 </div>
 
 @if (vista.filtrosActivos.length) {
   <app-active-filters
     [filtros]="vista.filtrosActivos"
-    (quitar)="quitarFiltro($event)"
-    (limpiar)="limpiarFiltros()">
+    (quitar)="lista.quitar($event)"
+    (limpiar)="lista.limpiar()">
   </app-active-filters>
 }
 
 <app-shared-table
     [data]="vista.rows"
     [columns]="columns"
-    [loading]="loading"
-    [error]="error"
+    [loading]="vista.cargando"
+    [error]="vista.error"
     errorTitle="No pudimos cargar los trámites del organismo"
     errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
-    (retry)="load()"
+    (retry)="lista.cargar()"
     [sortable]="true"
-    (sortChange)="onSortChange($event)"
+    (sortChange)="lista.ordenar($event)"
     [paginated]="true"
     [totalItems]="vista.total"
     [pageIndex]="vista.pageIndex"
-    [pageSize]="(pageSize$ | async)!"
-    (pageChange)="onPageChange($event)"
+    [pageSize]="vista.pageSize"
+    (pageChange)="lista.paginar($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
     [emptyActionPermission]="vista.hayFiltros ? '' : adoptarAccess"
@@ -109,7 +109,7 @@
       <app-row-actions
           [primary]="accionVer(row)"
           [actions]="accionesDe(row)"
-          [busy]="deshabilitandoId === row.id"
+          [busy]="vista.ocupadaId === row.id"
           busyLabel="Deshabilitando…">
       </app-row-actions>
     </ng-template>

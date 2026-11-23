@@ -20,6 +20,20 @@ export const environment = {
   // Same-origin: lo resuelve el proxy del dev server.
   apiBaseUrl: '',
 
+  // Mapa del punto de atención (`shared/components/mapa-ubicacion`) y geocodificación de direcciones
+  // (`@features/geocodificacion`). Servicios de OpenStreetMap: respetar su política de uso (atribución visible,
+  // sin descargas masivas; Nominatim: una búsqueda por acción explícita, sin autocompletar). En staging/prod la CSP
+  // del nginx tiene que permitir estos orígenes (`img-src` para los tiles, `connect-src` para Nominatim); sin eso
+  // el mapa avisa que no cargó y quedan las coordenadas a mano. `geocodificacion: null` = sin proveedor ("Ubicar en
+  // el mapa" se ve como no disponible).
+  mapa: {
+    tiles: {
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      atribucion: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
+    },
+    geocodificacion: 'https://nominatim.openstreetmap.org/search' as string | null,
+  },
+
   bypassAuthGuards: false,
 
   dataSource: 'local' as 'mock' | 'local' | 'prod',
@@ -29,6 +43,7 @@ export const environment = {
     usuarios: 'local',
     // etiquetas, plantillas, adopciones, fichas-locales y puntos-atencion: reales (heredan el default).
     // Sin backend en ningún entorno:
+    // geocodificacion: Nominatim real (externo). La CSP de staging lo bloquea hasta sumar su origen a `connect-src`.
     dashboard: 'mock',
     auditoria: 'mock',
     feedback: 'mock',

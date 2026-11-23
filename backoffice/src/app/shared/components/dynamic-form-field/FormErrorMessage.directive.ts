@@ -1,6 +1,6 @@
 import { Directive, DoCheck, ElementRef, Input, Renderer2 } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig } from '@core/models/field.interface';
 import { getControlErrorMessage } from './form-error-messages.util';
 
 /**

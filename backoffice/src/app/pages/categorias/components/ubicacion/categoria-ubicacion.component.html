@@ -1,0 +1,19 @@
+@if (ubicacion$ | async; as u) {
+  <!-- Sin `aria-live`: cambia con cada tecla y repetiría ruta, nombre y slug a cada pulsación.
+       Quien usa lector de pantalla tiene los mismos datos en los campos de abajo. -->
+  <div class="categoria-ubicacion">
+    <p class="categoria-ubicacion__ruta">
+      <i class="ph ph-folders" aria-hidden="true"></i>
+      <span class="cdk-visually-hidden">Ubicación:</span>
+      @for (ancestro of u.ruta; track $index) {
+        <span>{{ ancestro }}</span>
+        <i class="ph ph-caret-right categoria-ubicacion__separador" aria-hidden="true"></i>
+        <span class="cdk-visually-hidden">, dentro:</span>
+      }
+      <strong class="categoria-ubicacion__nombre" [class.categoria-ubicacion__sin-nombre]="!u.nombre">
+        {{ u.nombre || (datos?.esEdicion ? 'Categoría sin nombre' : 'Nueva categoría') }}
+      </strong>
+    </p>
+    <p class="categoria-ubicacion__slug">{{ u.slug ? '/' + u.slug : 'El slug se arma con el nombre' }}</p>
+  </div>
+}

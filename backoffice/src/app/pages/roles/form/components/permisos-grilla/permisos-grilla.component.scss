@@ -1,0 +1,70 @@
+// ==========================================================================
+// Grilla de permisos del form de Rol. Pieza de `components/`: su bloque es el nombre del componente
+// (`permisos-grilla__…`). La etiqueta, el
+// contador y los chips son de `.perm-group` / `.perm-chip` (globales); el aire y el divisor de cada grupo,
+// de `.ficha-paneles__grupo`; la zona que se desplaza, de `.ficha-paneles__desplazable`.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+// Sin caja propia: el buscador y la zona desplazable son hijos directos (flex) del panel acotado.
+:host {
+  display: contents;
+}
+
+// Bloque `permisos-grilla`: el host es `display: contents`, así que la clase va en cada hijo como elemento.
+.permisos-grilla {
+  // Buscador de permisos, entre el encabezado del panel y los grupos.
+  &__buscador {
+    padding: var(--theme-space-gap) var(--theme-space-card);
+    border-bottom: 1px solid var(--theme-border-subtle);
+  }
+
+  // Un grupo de permisos: etiqueta + contador + "Marcar todos" arriba, chips abajo.
+  &__grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+  }
+
+  &__cabecera {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    min-width: 0;
+  }
+
+  // Acción de texto del grupo, al final de la fila. Alto mínimo 24px = `--theme-space-lg` (WCAG 2.2 AA,
+  // tamaño del objetivo).
+  &__todos {
+    flex: none;
+    min-height: var(--theme-space-lg);
+    margin-left: auto;
+    padding: 0 var(--theme-space-xs);
+    border: 0;
+    border-radius: var(--theme-radius-sm);
+    background: transparent;
+    color: var(--theme-primary);
+    font-family: inherit;
+    font-size: var(--theme-font-size-xs);
+    font-weight: var(--theme-font-weight-semibold);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    @include focus-ring;
+  }
+
+  // Región de estado siempre montada (así el lector anuncia el texto cuando aparece): sin texto no ocupa lugar.
+  &__vacio {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+
+    &:not(:empty) {
+      padding: var(--theme-space-card);
+    }
+  }
+}

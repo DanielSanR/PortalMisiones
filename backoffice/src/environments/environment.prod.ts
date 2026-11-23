@@ -5,6 +5,20 @@ export const environment = {
   apiBaseUrl: 'https://tramitesmisiones.api.dev.stagemnes.net.ar',
 
   // En prod los guards SIEMPRE validan (sin bypass).
+  // Mapa del punto de atención (`shared/components/mapa-ubicacion`) y geocodificación de direcciones
+  // (`@features/geocodificacion`). Servicios de OpenStreetMap: respetar su política de uso (atribución visible,
+  // sin descargas masivas; Nominatim: una búsqueda por acción explícita, sin autocompletar). En staging/prod la CSP
+  // del nginx tiene que permitir estos orígenes (`img-src` para los tiles, `connect-src` para Nominatim); sin eso
+  // el mapa avisa que no cargó y quedan las coordenadas a mano. `geocodificacion: null` = sin proveedor ("Ubicar en
+  // el mapa" se ve como no disponible).
+  mapa: {
+    tiles: {
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      atribucion: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
+    },
+    geocodificacion: 'https://nominatim.openstreetmap.org/search' as string | null,
+  },
+
   bypassAuthGuards: false,
 
   // ── Adaptador de fuente de datos (ver migracion_arquitectura.md §3.1) ──
@@ -38,6 +52,7 @@ export const environment = {
     // modalidades: /api/modality real → hereda default real.
     // eventos-de-vida: /api/life-event real → hereda default real.
     // localidades: endpoints públicos reales (/api/department, /api/location) → hereda default real.
+    // geocodificacion: Nominatim de OpenStreetMap (externo, `environment.mapa.geocodificacion`) → hereda default real.
     dashboard: 'mock',
     auditoria: 'mock',
     feedback: 'mock',

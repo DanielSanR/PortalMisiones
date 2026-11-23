@@ -1,7 +1,7 @@
 import { DestroyRef, Directive, ElementRef, HostListener, Input, OnChanges, OnDestroy, OnInit, inject } from '@angular/core';
 import { MatTooltip } from '@angular/material/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AtajosService } from '../../core/services/atajos.service';
+import { AtajosService } from '@core/services/atajos.service';
 
 /** Alias que se suman a la tecla principal sin repetirlos en cada pantalla (`N` → también `+`). */
 const ALIAS_POR_DEFECTO: Readonly<Record<string, readonly string[]>> = { n: ['+'] };

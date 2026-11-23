@@ -10,7 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   standalone: true,
   imports: [CommonModule, MatProgressSpinnerModule],
   templateUrl: './loading.component.html',
-  styleUrls: ['./loading.component.scss'],
+  styleUrl: './loading.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoadingComponent {

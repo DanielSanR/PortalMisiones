@@ -1,25 +1,21 @@
 <!-- Grupo propio: @Host del `formControlName` no ve el `formGroup` del componente padre. -->
 <ng-container [formGroup]="group">
-  @if (field.type === 'checkbox') {
-    <!-- Booleano — slide-toggle pill, patrón FORM -->
-    <div class="slide-toggle-field">
-      <mat-slide-toggle [formControlName]="field.name" color="primary"
-                        [attr.aria-describedby]="field.hint ? field.name + '-ayuda' : null">
-        {{ field.label }}
-      </mat-slide-toggle>
-    </div>
-    @if (field.hint) {
-      <div class="form-toggle__ayuda" [id]="field.name + '-ayuda'"><p>{{ field.hint }}</p></div>
-    }
-  } @else {
-    <!-- Radio — opciones en línea (ver "Jurisdicción" en el diseño del form) -->
-    <mat-radio-group class="radio-field"
-                     [formControlName]="field.name"
-                     [attr.aria-labelledby]="field.name + '-label'"
-                     [attr.aria-required]="field.validations?.required ? 'true' : null">
-      <mat-radio-button *ngFor="let option of field.options" [value]="option.id" color="primary">
-        {{ option.name }}
-      </mat-radio-button>
-    </mat-radio-group>
+  <!-- Booleano — slide-toggle pill, patrón FORM -->
+  <div class="slide-toggle-field">
+    <!-- `[aria-describedby]` (input de Material), no `[attr.…]`: el atributo tiene que llegar al botón
+         `role="switch"`, no quedar en el host, o la ayuda no se anuncia. -->
+    <mat-slide-toggle [formControlName]="field.name" color="primary"
+                      [aria-describedby]="field.hint || field.aviso ? field.name + '-ayuda' : ''">
+      {{ field.label }}
+    </mat-slide-toggle>
+  </div>
+  @if (field.hint || field.aviso) {
+    <!-- Montado siempre: es el destino de `aria-describedby` del toggle (vacío no ocupa lugar) y la región
+         viva que anuncia el `aviso` cuando aparece (si se creara junto con el texto, el lector diría
+         "desactivado" y no la consecuencia). Solo se anuncia lo que cambia: el `hint` fijo no se relee. -->
+    <div class="form-toggle__ayuda" [id]="field.name + '-ayuda'" aria-live="polite">@if (field.hint) {<p>{{ field.hint }}</p>}@if (aviso$ | async; as aviso) {<p class="form-toggle__aviso" [class.form-toggle__aviso--alerta]="aviso.tono === 'alerta'">
+            <i class="ph" [class.ph-warning]="aviso.tono === 'alerta'" [class.ph-info]="aviso.tono !== 'alerta'" aria-hidden="true"></i>
+            {{ aviso.texto }}
+          </p>}</div>
   }
 </ng-container>

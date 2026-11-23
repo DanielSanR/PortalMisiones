@@ -9,7 +9,7 @@ import {
 } from '../models/ficha-local.dto';
 import { toFichaLocal, toOrganismProcedureLocationRequest } from '../mappers/fichas-locales.mapper';
 import { EstadoFicha, FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
-import { DESTINO_DE_TRANSICION, TransicionBackend, transicionPermitida } from '../models/workflow';
+import { DESTINO_DE_TRANSICION, TransicionBackend, transicionPermitida } from '../domain/workflow';
 
 const DELAY = 200;
 

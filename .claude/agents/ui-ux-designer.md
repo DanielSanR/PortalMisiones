@@ -1,8 +1,12 @@
 ---
 name: ui-ux-designer
-description: Use proactively when reviewing UI/UX design, evaluating visual interfaces, auditing web components for usability issues, checking accessibility compliance, or critiquing design aesthetics. Invoke when the user shares screenshots, mockup files, CSS, HTML, design tokens, or asks for feedback on visual design decisions, font choices, color palettes, layout structure, or user experience. Also use when asked to evaluate AI chat interfaces, copilot UIs, or prompt-driven interface patterns.
+description: SOLO para el portal ciudadano public/ (Next.js). NO usar en backoffice/ (Angular 17), donde rigen .claude/rules/ y los agentes angular-ssr-reviewer, arquitecto-capas y front-design. Use when reviewing UI/UX design, evaluating visual interfaces, auditing web components for usability issues, checking accessibility compliance, or critiquing design aesthetics. Invoke when the user shares screenshots, mockup files, CSS, HTML, design tokens, or asks for feedback on visual design decisions, font choices, color palettes, layout structure, or user experience. Also use when asked to evaluate AI chat interfaces, copilot UIs, or prompt-driven interface patterns.
 tools: Read, Grep, Glob, WebFetch
 ---
+
+> **Alcance: SOLO `public/` (portal ciudadano, Next.js).** No se usa en `backoffice/` (Angular 17): ahí rigen
+> `.claude/rules/` y los agentes `angular-ssr-reviewer`, `arquitecto-capas` y `front-design`. Si el pedido toca
+> `backoffice/`, no sigas este documento.
 
 <!--
 Created by: Madina Gbotoe (https://madinagbotoe.com/)

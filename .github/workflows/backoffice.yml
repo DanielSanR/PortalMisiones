@@ -1,0 +1,47 @@
+name: backoffice
+
+# Gate del backoffice: lo mismo que corre un desarrollador con `npm run check`.
+# Para que sea obligatorio hay que marcar el job `check` como "required status check" en la protección
+# de la rama `main` (Settings → Branches); el workflow solo no impide mergear.
+
+on:
+  pull_request:
+    paths:
+      - 'backoffice/**'
+      - '.github/workflows/backoffice.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backoffice/**'
+      - '.github/workflows/backoffice.yml'
+
+concurrency:
+  group: backoffice-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backoffice
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backoffice/.nvmrc
+          cache: npm
+          cache-dependency-path: backoffice/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # typecheck (ngc + tsc) · lint · lint:styles · estructura · estilos · madge · icons · prod-mocks ·
+      # tests headless · build de producción con stats · guardia de bundle
+      - name: npm run check
+        run: npm run check

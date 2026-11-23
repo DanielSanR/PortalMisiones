@@ -2,68 +2,54 @@
 paths:
   - "backoffice/src/app/core/features/**"
   - "backoffice/src/app/pages/**"
+  - "backoffice/src/app/app.config.ts"
+  - "backoffice/src/environments/**"
 ---
 
 # Arquitectura de capas (backoffice)
 
-Flujo unidireccional descendente. Cada capa solo conoce la inmediatamente inferior vía interface:
-
 ```
-Componente → Facade → Repository → DataSource(interface) → {HttpDataSource | MockDataSource}
-mappers + models = HOJAS (no dependen de capas superiores)
+Componente → Facade → Repository → DataSource (abstract + token) → { HttpDataSource | MockDataSource }
+mappers, models y domain = hojas · index.ts = superficie pública · <f>.providers.ts = wiring
 ```
 
-## Reglas
-- **Componentes** consumen SOLO el facade del feature (importado desde su barrel `@features/<x>`).
-  Prohibido inyectar `HttpClient`, Services, Repositories o DataSources en un componente.
-- **Facade** depende solo de Repositories. Para coordinar con otro feature, depende del **Repository**
-  de ese feature (importado de su barrel), NUNCA de su Facade. Prohibido `facade → facade`.
-- **Repository** inyecta el `DataSource` vía `InjectionToken` (`@Inject(XXX_DS)`), nunca una clase concreta.
-  Prohibido `repository → repository` y `repository → facade`.
-- **DataSource** es el adaptador: interface abstracta + impl `*.http.datasource.ts` (real) y
-  `*.mock.datasource.ts` (mock). El `*.http` desenvuelve `ResponseDTO`. Prohibido `datasource → datasource`.
-- **Mappers** son funciones puras DTO↔ViewModel; solo dependen de models.
-- Cero dependencias circulares (verificar con `npm run check:circular`).
+## Árbol de `core/features/<f>/` (nada más en la raíz ni subcarpetas dentro de una capa)
+`index.ts` · `<f>.providers.ts` · `models/` (`*.dto.ts`, `*.vm.ts`) · `mappers/<f>.mapper.ts` · `domain/` (opcional: reglas
+puras como workflow, vigencia, errores propios) · `datasources/` (`<f>.datasource.ts`, `.http.datasource.ts`,
+`.mock.datasource.ts`, `.mock-data.ts` opcional) · `repositories/<f>.repository.ts` · `facades/<f>.facade.ts`.
 
-## Excepción documentada: sesión en facades
-Un facade puede consultar `AuthTokenService` (estado de sesión, `can*`) **solo para decidir si pide un catálogo
-cross-feature** que el usuario no tiene permiso de leer (p. ej. no llamar a `/api/organism` sin `READ_ORGANISM`, que
-abriría el diálogo global con un 403). Es dependencia de infraestructura de sesión, no `facade → facade`. Ejemplo:
-`AdopcionesFacade`. También puede escuchar `getCurrentUser$()` para **invalidar su caché** cuando cambia la sesión
-(otro usuario u otros permisos), como `AdopcionesFacade` y `PuntosAtencionFacade`. No se usa para decidir reglas de
-negocio ni para gatear UI (eso es de guards, directiva y `RowAction`), con una salvedad acotada: cuando lo que se
-ofrece depende a la vez del **estado del dominio y de los permisos** (p. ej. las acciones del workflow de una ficha),
-el facade del feature puede exponerlo como Observable derivado de la sesión (`FichasLocalesFacade.puedePublicar$` /
-`accionesWorkflow$`), para que el componente no inyecte `AuthTokenService`. El backend vuelve a exigir el permiso.
+## Hacé
+- **Componente**: inyecta solo el Facade, importado del barrel `@features/<f>`. Trabaja con ViewModels.
+- **Facade** (`providedIn: 'root'`): `BehaviorSubject` privado + `xxx$` público; comandos devuelven `Observable`. Depende de
+  Repositories: el propio y, para coordinar con otro feature, el **Repository** de ese feature vía su barrel.
+- **Repository**: inyecta el DataSource por token (`@Inject(<F>_DS)`). **DataSource**: único que conoce la fuente y usa `HttpClient`;
+  el `.http` desenvuelve `ResponseDTO` y devuelve VMs con el mapper. **Mapper**: funciones puras DTO↔VM.
+- **Barrel**: exporta Facade, tipos y `provide<F>Feature`. El Repository se exporta **solo si otro feature lo consume**
+  (comentá cuál); nunca datasources ni mappers.
 
-También puede leer el **organismo de la sesión** (`AuthTokenService.getUserOrganismo()`, que viene de
-`GET /api/auth/me`) para armar el **organismo fijo** de un formulario: cuando la cuenta pertenece a un organismo,
-el facade entrega esa única opción (`organismoFijo: { id, nombre, motivo }`, con `etiquetaDeOrganismo` y
-`hintDeOrganismoPropio` de `@core/utils/session.utils`) en vez de pedir el catálogo `/api/organism`, y el componente
-la muestra como dato de solo lectura (`FieldConfig.readonly`). Ejemplos: `AdopcionesFacade.getOpcionesAdoptar`,
-`EtiquetasFacade.getFormData`, `UsuariosFacade.getFormData`. Por lo mismo puede exponer como Observable un **hecho
-del listado que la fuente entrega para esa sesión** (p. ej. `EtiquetasFacade.soloEtiquetasLocales$`), para que la
-pantalla no inyecte `AuthTokenService`. Sigue sin ser una regla de negocio: el backend impone el organismo igual, y
-el facade (que es singleton) no captura el valor de la sesión al construirse: la lee en cada llamada o la deriva de
-`getCurrentUser$()`.
+## No hagas
+- `facade→facade`, `repository→repository`, imports hacia arriba, ni rutas internas de otro feature (`@features/x/…`).
+- `HttpClient`, Repository o DataSource en `pages/`, `shared/` o `auth/`. Reglas de dominio en `models/` (van a `domain/`).
+- Saber arriba del DataSource si la fuente es mock o real. Una **capacidad de la fuente** se expone como propiedad
+  datasource → repository → facade (`UsuariosFacade.accionesDeCuentaDisponibles`).
 
-Un **MockDataSource** puede leer la sesión cuando el endpoint real responde distinto según quién consulta y la
-pantalla depende de eso (p. ej. `RolesMockDataSource.listAllowed`, que imita a `GET /api/role/allowed`). Es la única
-forma de que el simulado se comporte como el backend; el HttpDataSource no lo necesita.
+## Excepción: sesión (`AuthTokenService`) en facades y mocks
+- Un facade puede leerla **solo** para: (1) no pedir un catálogo cross-feature sin permiso (evita el 403 con diálogo global);
+  (2) invalidar su caché con `getCurrentUser$()`; (3) armar el **organismo fijo** de un form con `getUserOrganismo()` +
+  `etiquetaDeOrganismo` / `hintDeOrganismoPropio` (`@core/utils/session.utils`): entrega `organismoFijo: { id, nombre, motivo }`
+  y la UI lo muestra `readonly`; (4) exponer como Observable un hecho que depende de sesión + dominio
+  (`FichasLocalesFacade.accionesWorkflow$`, `EtiquetasFacade.soloEtiquetasLocales$`, `RolesFacade.puedeEscribir$`,
+  `DashboardFacade.rolDeSesion$`) para que la pantalla no inyecte la sesión (`pages/` no puede importarla: error de lint).
+- Nunca para reglas de negocio ni gating general (eso es guard, `*appHasPermission`, `RowAction`); el backend valida igual.
+  El facade es singleton: lee la sesión en cada llamada o la deriva de `getCurrentUser$()`, no la captura al construirse.
+- Un **MockDataSource** puede leerla solo si el endpoint real responde según quién consulta (`RolesMockDataSource.listAllowed`).
 
-Del mismo modo, una **capacidad de la fuente** (qué operaciones puede ejecutar de verdad el datasource activo) se
-expone como propiedad del datasource → repository → facade (p. ej. `UsuariosFacade.accionesDeCuentaDisponibles`), sin
-que nadie arriba sepa si la fuente es mock o real.
+## Alta de un feature (checklist; paso a paso en la skill `nueva-feature`)
+1. Clave en `FeatureKey` (`core/config/data-source.config.ts`) y fuente en `featureOverrides` de los 4 `src/environments/*.ts`.
+2. `...provide<F>Feature()` en `app.config.ts`, importado de `<f>.providers.ts` (no del barrel: única excepción, por bundle).
+3. Si va por HTTP en prod: entrada en `angular.json` → `production.fileReplacements` + export en `core/mocks/excluded-mock.datasource.ts`.
+4. Escrituras cuyo error muestra el formulario o la confirmación: `sinDialogoGlobal()` en el `.http.datasource.ts`.
 
-## Foldering por feature
-Todo el feature vive en `core/features/<feature>/` con subcarpetas por capa:
-`models/`, `mappers/`, `datasources/`, `repositories/`, `facades/`, más `<feature>.providers.ts` e `index.ts` (barrel).
-El barrel expone SOLO la superficie pública (facade, VM types, `provide<Feature>Feature`); datasources y repos quedan internos.
-
-## Mock vs. real
-La fuente la decide el adaptador vía `environment.dataSource` + `featureOverrides` (`provideDataSource`).
-Ningún componente/facade/repo debe saber si los datos son mock o reales.
-
-## Imports
-Usar path aliases `@core/*`, `@features/*`, `@shared/*`, `@env/*`. Prohibido importar internals de otro
-feature por ruta profunda: siempre vía su barrel `@features/<x>`.
+Ejemplo canónico: `core/features/etiquetas/**`.
+Lo verifica: `npm run lint` (`boundaries/element-types`, `no-restricted-imports`), `npm run check:structure`,
+`npm run check:circular`, `npm run check:prod-mocks`.

@@ -21,66 +21,38 @@
   }
 </ng-template>
 
-@if (loading) {
-  <div class="loading-inline" role="status">
-    <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-    <span>{{ modo === 'nuevo' ? 'Cargando formulario…' : 'Cargando organismo…' }}</span>
-  </div>
-} @else if (error) {
-  <div class="load-state" role="alert">
-    <span class="load-state__icono" aria-hidden="true"><i class="ph ph-cloud-slash"></i></span>
-    <h2 class="load-state__titulo">{{ modo === 'nuevo' ? 'No pudimos cargar el formulario' : 'No pudimos cargar el organismo' }}</h2>
-    <p class="load-state__texto">Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.</p>
-    <div class="load-state__acciones">
-      <button type="button" mat-flat-button color="primary" (click)="cargar()">
-        <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
-      </button>
-    </div>
-  </div>
+@if (loading || error) {
+  <!-- "No existe" (404): texto propio y la única salida es el listado; cualquier otro error se reintenta. -->
+  <app-estado-carga [tipo]="loading ? 'cargando' : 'error'" [noExiste]="noExiste"
+      [cargandoTexto]="modo === 'nuevo' ? 'Cargando formulario…' : 'Cargando organismo…'"
+      [titulo]="noExiste ? textosInexistente.titulo : modo === 'nuevo' ? 'No pudimos cargar el formulario' : 'No pudimos cargar el organismo'"
+      [texto]="noExiste ? textosInexistente.texto : 'Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.'"
+      [volverTexto]="noExiste ? 'Ir al listado' : ''"
+      (reintentar)="cargar()" (volver)="volver()">
+  </app-estado-carga>
 } @else if (organismo || modo === 'nuevo') {
 
 <div class="orgdet">
 
   <!-- Membrete: el mismo en los tres modos. Editando o dando de alta refleja el formulario. -->
   @if (membrete$ | async; as m) {
-    <header class="detail-header detail-header--flush">
-      <div class="detail-header__body">
-        <span class="orgdet-avatar" aria-hidden="true">
+    <!-- Variante sin `--ficha` (avatar con iniciales y pestañas). `vivo` (`aria-live`) solo con el formulario
+         abierto: en lectura el contenido no cambia. -->
+    <app-membrete [ficha]="false" [vivo]="editando" [titulo]="m.nombre" tituloVacio="Organismo sin nombre" [datos]="m.datos">
+        <span membreteTile class="orgdet-avatar" aria-hidden="true">
           @if (m.iniciales) {
             {{ m.iniciales }}
           } @else {
             <i class="ph ph-buildings"></i>
           }
         </span>
+        <span membretePill class="pill pill--bordered"
+              [class.pill--active]="m.activo"
+              [class.pill--inactive]="!m.activo">
+          <span class="pill__dot" aria-hidden="true"></span>
+          <span class="pill__label">{{ m.activo ? 'Activo' : 'Inactivo' }}</span>
+        </span>
 
-        <!-- `aria-live` solo con el formulario abierto: en lectura el contenido no cambia. -->
-        <div class="detail-header__identity" [attr.aria-live]="editando ? 'polite' : null">
-          <div class="detail-header__row">
-            <h2 class="detail-header__title" [class.detail-header__title--muted]="!m.nombre">
-              {{ m.nombre || 'Organismo sin nombre' }}
-            </h2>
-            <span class="pill pill--bordered"
-                  [class.pill--active]="m.activo"
-                  [class.pill--inactive]="!m.activo">
-              <span class="pill__dot" aria-hidden="true"></span>
-              <span class="pill__label">{{ m.activo ? 'Activo' : 'Inactivo' }}</span>
-            </span>
-          </div>
-
-          <p class="detail-header__meta">
-            @if (m.tipo) {
-              <span><i class="ph ph-buildings" aria-hidden="true"></i>{{ m.tipo }}</span>
-              <span class="detail-header__sep" aria-hidden="true"></span>
-            }
-            <span><i class="ph ph-tree-structure" aria-hidden="true"></i>{{ m.depende }}</span>
-            @if (m.localidad) {
-              <span class="detail-header__sep" aria-hidden="true"></span>
-              <span><i class="ph ph-map-pin" aria-hidden="true"></i>{{ m.localidad }}</span>
-            }
-          </p>
-        </div>
-
-        <div class="detail-header__actions">
           @if (modo === 'ver') {
             <button type="button" class="list-iconbtn" appUnavailable="Se habilita cuando el portal publique la ficha del organismo"
                     aria-label="Ver en el portal ciudadano">
@@ -104,9 +76,8 @@
               <span class="pill__label">{{ modo === 'nuevo' ? 'Nuevo' : 'Editando' }}</span>
             </span>
           }
-        </div>
-      </div>
 
+      <ng-container ngProjectAs="[membretePie]">
       <!-- Pestañas (patrón APG): una sola en tabulación, flechas/Inicio/Fin para moverse.
            El alta no tiene: todavía no hay trámites, responsables ni historial que mostrar. -->
       @if (modo !== 'nuevo') {
@@ -129,7 +100,8 @@
           </div>
         }
       }
-    </header>
+      </ng-container>
+    </app-membrete>
   }
 
   @if (tab$ | async; as actual) {
@@ -141,15 +113,15 @@
            y actividad en la lateral. Editando, la grilla se OCULTA al cambiar de pestaña en vez de
            destruirse, para no perder lo que el usuario venía escribiendo en el formulario. -->
       @if (editando || actual === 'datos') {
-        <!-- Clase y no solo `hidden`: `.detail-grid` declara `display: grid`, que le gana al atributo. -->
-        <div class="detail-grid detail-grid--main" [class.orgdet-oculto]="actual !== 'datos'" [hidden]="actual !== 'datos'">
-          <div class="detail-col">
+        <div class="ficha-paneles ficha-paneles--separados" [class.orgdet-oculto]="actual !== 'datos'" [hidden]="actual !== 'datos'">
+        <div class="ficha-paneles__grid">
+          <div class="ficha-paneles__columna">
             @if (editando) {
-              <section class="detail-card detail-card--flush orgdet-form" aria-labelledby="orgdet-datos">
+              <section class="ficha-paneles__panel ficha-paneles__panel--corrido orgdet-form" aria-labelledby="orgdet-datos">
                 <div class="orgdet-form__cuerpo">
                   <header class="orgdet-encabezado">
-                    <h3 class="detail-card__title" id="orgdet-datos">Datos institucionales</h3>
-                    <p class="detail-card__subtitle">
+                    <h3 class="ficha-paneles__titulo" id="orgdet-datos">Datos institucionales</h3>
+                    <p class="ficha-paneles__subtitulo">
                       {{ modo === 'nuevo' ? 'Completá los datos para crear el organismo' : 'Los cambios se aplican al guardar' }}
                     </p>
                   </header>
@@ -160,8 +132,8 @@
                                     cancelButtonText="Cancelar"
                                     [helpText]="ayudaDelForm"
                                     [initialData]="initialData"
-                                    [saving]="saving"
-                                    [serverError]="serverError"
+                                    [saving]="marco.guardando"
+                                    [serverError]="marco.errorDeGuardado"
                                     (valueChanges)="onFormValue($event)"
                                     (formSubmit)="onSubmit($event)"
                                     (formCancel)="salirDelFormulario()">
@@ -169,10 +141,10 @@
                 </div>
               </section>
             } @else {
-              <section class="detail-card" aria-labelledby="orgdet-datos">
+              <section class="ficha-paneles__panel" aria-labelledby="orgdet-datos">
                 <header class="orgdet-encabezado">
-                  <h3 class="detail-card__title" id="orgdet-datos">Datos institucionales</h3>
-                  <p class="detail-card__subtitle">Identificación del organismo y lugar en la estructura</p>
+                  <h3 class="ficha-paneles__titulo" id="orgdet-datos">Datos institucionales</h3>
+                  <p class="ficha-paneles__subtitulo">Identificación del organismo y lugar en la estructura</p>
                 </header>
 
                 <dl class="detail-fields detail-fields--grid">
@@ -192,10 +164,10 @@
           </div>
 
           @if (modo === 'nuevo') {
-            <aside class="detail-col" aria-label="Qué sigue después de crear el organismo">
-              <section class="detail-card detail-card--flush" aria-labelledby="orgdet-despues">
-                <div class="detail-card__bar">
-                  <h3 class="detail-card__title" id="orgdet-despues">Después de crearlo</h3>
+            <aside class="ficha-paneles__columna" aria-label="Qué sigue después de crear el organismo">
+              <section class="ficha-paneles__panel ficha-paneles__panel--corrido" aria-labelledby="orgdet-despues">
+                <div class="ficha-paneles__barra">
+                  <h3 class="ficha-paneles__titulo" id="orgdet-despues">Después de crearlo</h3>
                 </div>
                 <ul class="pasos-lista">
                   <li class="pasos-lista__item">
@@ -223,9 +195,9 @@
               </section>
             </aside>
           } @else if (actual === 'datos') {
-            <aside class="detail-col" aria-label="Resumen, responsables y actividad">
-              <section class="detail-card" aria-labelledby="orgdet-resumen">
-                <h3 class="detail-card__title" id="orgdet-resumen">Resumen</h3>
+            <aside class="ficha-paneles__columna" aria-label="Resumen, responsables y actividad">
+              <section class="ficha-paneles__panel" aria-labelledby="orgdet-resumen">
+                <h3 class="ficha-paneles__titulo" id="orgdet-resumen">Resumen</h3>
                 <p class="orgdet-nota">
                   Las métricas del organismo (trámites publicados, en revisión, categorías vinculadas y
                   consultas) todavía no están disponibles.
@@ -237,16 +209,19 @@
             </aside>
           }
         </div>
+        </div>
       }
 
       <!-- Las demás pestañas muestran su bloque solo. -->
       @if (actual !== 'datos') {
-        <div class="detail-col">
-          @switch (actual) {
-            @case ('tramites') { <ng-container *ngTemplateOutlet="cardTramites"></ng-container> }
-            @case ('responsables') { <ng-container *ngTemplateOutlet="cardResponsables"></ng-container> }
-            @case ('historial') { <ng-container *ngTemplateOutlet="cardActividad"></ng-container> }
-          }
+        <div class="ficha-paneles ficha-paneles--separados">
+          <div class="ficha-paneles__columna">
+            @switch (actual) {
+              @case ('tramites') { <ng-container *ngTemplateOutlet="cardTramites"></ng-container> }
+              @case ('responsables') { <ng-container *ngTemplateOutlet="cardResponsables"></ng-container> }
+              @case ('historial') { <ng-container *ngTemplateOutlet="cardActividad"></ng-container> }
+            }
+          </div>
         </div>
       }
     </div>
@@ -254,9 +229,9 @@
 
   <!-- Bloques sin fuente en el backend: se ven, con copy para el usuario en vez de un dato inventado. -->
   <ng-template #cardTramites>
-    <section class="detail-card detail-card--flush" aria-labelledby="orgdet-tramites">
-      <div class="detail-card__bar">
-        <h3 class="detail-card__title" id="orgdet-tramites">Trámites del organismo</h3>
+    <section class="ficha-paneles__panel ficha-paneles__panel--corrido" aria-labelledby="orgdet-tramites">
+      <div class="ficha-paneles__barra">
+        <h3 class="ficha-paneles__titulo" id="orgdet-tramites">Trámites del organismo</h3>
       </div>
       <div class="state-panel">
         <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-file-text"></i></span>
@@ -267,9 +242,9 @@
   </ng-template>
 
   <ng-template #cardResponsables>
-    <section class="detail-card detail-card--flush" aria-labelledby="orgdet-responsables">
-      <div class="detail-card__bar">
-        <h3 class="detail-card__title" id="orgdet-responsables">Responsables</h3>
+    <section class="ficha-paneles__panel ficha-paneles__panel--corrido" aria-labelledby="orgdet-responsables">
+      <div class="ficha-paneles__barra">
+        <h3 class="ficha-paneles__titulo" id="orgdet-responsables">Responsables</h3>
       </div>
       <div class="state-panel">
         <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-users"></i></span>
@@ -280,9 +255,9 @@
   </ng-template>
 
   <ng-template #cardActividad>
-    <section class="detail-card detail-card--flush" aria-labelledby="orgdet-actividad">
-      <div class="detail-card__bar">
-        <h3 class="detail-card__title" id="orgdet-actividad">Actividad reciente</h3>
+    <section class="ficha-paneles__panel ficha-paneles__panel--corrido" aria-labelledby="orgdet-actividad">
+      <div class="ficha-paneles__barra">
+        <h3 class="ficha-paneles__titulo" id="orgdet-actividad">Actividad reciente</h3>
       </div>
       <div class="state-panel">
         <span class="state-panel__icon" aria-hidden="true"><i class="ph ph-clock-counter-clockwise"></i></span>

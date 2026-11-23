@@ -1,5 +1,5 @@
 import { MatDialog } from '@angular/material/dialog';
-import { AtajoVisible } from '../../core/services/atajos.service';
+import { AtajoVisible } from '@core/services/atajos.service';
 import { AtajosAyudaDialogComponent, AtajosAyudaDialogData } from '../components/atajos-ayuda-dialog/atajos-ayuda-dialog.component';
 
 /** Abre el diálogo con los atajos vigentes. No abre otro si ya hay uno (doble pulsación). */

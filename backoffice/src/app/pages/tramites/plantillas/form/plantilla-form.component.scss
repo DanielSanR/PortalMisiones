@@ -1,22 +1,12 @@
 // ==========================================================================
-// Form de Plantilla provincial (alta y edición) — una sola tarjeta con dos paneles (datos |
-// clasificación) y el pie de guardar compartido. Membrete, pill, `.form-field` (con `__fila` y `__mono`),
-// `.form-aviso`, `.field-preview`, `.form-toggle`, `.pasos-lista` y la tarjeta de dos paneles
-// (`.ficha-paneles`) son clases globales; la selección múltiple es `app-seleccion-multiple`.
-// Acá solo lo propio: los grupos de Clasificación.
+// Form de Plantilla provincial (alta y edición). La tarjeta de dos paneles la dibuja `app-dynamic-form`
+// con las clases globales `.ficha-paneles*`; el membrete es `app-membrete`; `.form-aviso`, `.pill` y
+// `.pasos-lista` también son globales. Acá solo lo propio: el bloque "Después de crearla" del alta.
 // ==========================================================================
 
-// Un grupo de Clasificación (`.ficha-paneles__grupo` pone el aire y el divisor): el componente trae su propio `gap`.
-.plantform-grupo {
-  display: block;
-}
-
-.plantform-principal {
-  padding-top: var(--theme-space-xs);
-}
-
-// Alta: "Después de crearla". Los ítems de `.pasos-lista` traen su propio padding lateral; el título,
-// el mismo, para que todo quede alineado con los grupos de arriba.
+// El motor lo dibuja en un grupo de Clasificación de borde a borde (`.ficha-paneles__grupo--corrido`: sin aire
+// ni divisor), así que el bloque pone su propio padding: los ítems de `.pasos-lista` traen el suyo y el título,
+// el mismo lateral, para quedar alineado con los grupos de arriba.
 .plantform-despues {
   &__titulo {
     padding: var(--theme-space-gap) var(--theme-space-card) 0;

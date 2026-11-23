@@ -15,6 +15,14 @@
   }
 }
 
+// Grupo de un panel `cuerpo: 'grupos'` (`.ficha-paneles__grupo` pone el aire y el divisor): los campos que
+// reúne van apilados, con el mismo aire que hay dentro de `app-seleccion-multiple`.
+.dynamic-form__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-gap);
+}
+
 // Diseño "Editar organismo": grilla de 4 columnas iguales; `wide + third + third` = 2fr / 1fr / 1fr,
 // gap 18 (--theme-space-card). `half` = 2 columnas, `full` = las 4. En mobile, una sola columna.
 .form-fields {
@@ -26,25 +34,6 @@
 
   @include responsive(mobile) {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-// Campo presente en el diseño que el backend todavía no persiste. Va deshabilitado
-// (ver `pendiente` en FieldConfig) y con esta marca, deliberadamente distinta de un
-// hint normal: tiene que leerse como "esto no se guarda", no como una ayuda.
-.form-field__pendiente {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 5px;
-  font-size: var(--theme-font-size-xs);
-  font-style: italic;
-  color: var(--theme-text-secondary);
-  line-height: 1.4;
-
-  i.ph {
-    font-size: 14px;
-    font-style: normal;
   }
 }
 

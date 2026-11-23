@@ -15,7 +15,7 @@ mat-form-field {
 .section-header-field {
   position: relative;
   width: 100%;
-  padding: var(--theme-space-lg) 0 var(--theme-space-sm) 13px;
+  padding: var(--theme-space-lg) 0 var(--theme-space-sm) var(--theme-space-13);
 
   @include accent-bar();
 
@@ -36,13 +36,13 @@ mat-form-field {
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-primary);
     margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--theme-tracking-tight);
   }
 
   .section-header-description {
     font-size: var(--theme-font-small-size);
     color: var(--theme-text-secondary);
-    margin: 2px 0 0;
+    margin: var(--theme-space-2xs) 0 0;
   }
 }
 
@@ -82,6 +82,7 @@ mat-form-field {
     .section-header-title {
       font-size: var(--theme-font-size-2xs);
       text-transform: uppercase;
+      // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- tracking de 0.06em del encabezado de sección compacto, un solo uso
       letter-spacing: 0.06em;
       color: var(--theme-text-tertiary);
     }
@@ -96,7 +97,7 @@ mat-form-field {
 }
 
 // `.slide-toggle-field` (booleanos) vive en shared-styles/_components.scss
-// (DRY: la usan también los formularios custom de usuarios/roles). Radio, select y fecha
+// (DRY: la usan también los formularios custom de usuarios/roles). Select y fecha
 // tienen su propio componente (`dynamic-form-*-field`), cargado en diferido.
 
 // Reserva el alto de un input mientras llega el chunk diferido del campo.
@@ -112,7 +113,7 @@ i.ph.dynamic-form-field__icon {
   font-size: var(--theme-icon-size-md);
   width: var(--theme-icon-size-md);
   height: var(--theme-icon-size-md);
-  line-height: 1;
+  line-height: var(--theme-line-height-none);
   color: var(--theme-text-tertiary);
 }
 
@@ -126,7 +127,7 @@ i.ph.dynamic-form-field__icon {
   .tip-content {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: var(--theme-space-gap);
     padding: var(--theme-space-md);
     background-color: var(--theme-info-bg);
     border: 1px solid var(--theme-accent-100);
@@ -136,8 +137,9 @@ i.ph.dynamic-form-field__icon {
     // acá recortaban el glifo.
     .tip-icon {
       color: var(--theme-info);
+      // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- ícono de 22px del tip-field, un solo uso
       font-size: 22px;
-      line-height: 1;
+      line-height: var(--theme-line-height-none);
       flex-shrink: 0;
       align-self: center;
     }
@@ -146,7 +148,7 @@ i.ph.dynamic-form-field__icon {
       flex: 1;
 
       .tip-title {
-        margin: 0 0 4px;
+        margin: 0 0 var(--theme-space-xs);
         font-size: var(--theme-font-size-sm);
         font-weight: var(--theme-font-weight-semibold);
         color: var(--theme-text-primary);

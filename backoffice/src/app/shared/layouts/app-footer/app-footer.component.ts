@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { UnavailableDirective } from '../../directives/unavailable.directive';
-import { APP_VERSION } from '../../../core/constants/app-info.constants';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
+import { APP_VERSION } from '@core/constants/app-info.constants';
 
 /** Pie del shell: © · Sugerencias · Soporte ········· versión · Digital Factory. */
 @Component({

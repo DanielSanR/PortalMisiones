@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig } from '@core/models/field.interface';
 import { getControlErrorMessage } from '../dynamic-form-field/form-error-messages.util';
 import { TreeSelectComponent } from '../tree-select/tree-select.component';
 

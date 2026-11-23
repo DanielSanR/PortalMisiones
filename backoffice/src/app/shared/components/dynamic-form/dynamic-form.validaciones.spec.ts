@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig } from '@core/models/field.interface';
 import { DynamicFormComponent } from './dynamic-form.component';
 
 const CAMPOS: FieldConfig[] = [

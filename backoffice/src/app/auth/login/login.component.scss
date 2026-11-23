@@ -6,7 +6,7 @@
   // Ingreso con Ciudadan@ Misiones (sin backend: appUnavailable → .is-unavailable lo muestra apagado).
   &__ciudadano {
     @include flex-center;
-    gap: 10px;
+    gap: var(--theme-space-10);
     height: var(--theme-input-height);
     padding: 0 var(--theme-space-md);
     border: 1px solid var(--theme-border-input);
@@ -21,7 +21,7 @@
     @include focus-ring;
 
     i.ph {
-      font-size: 19px;
+      font-size: var(--theme-icon-size-19);
       color: var(--theme-primary);
     }
 
@@ -72,13 +72,13 @@
   &__pie {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: var(--theme-space-22);
   }
 
   &__aviso {
     margin: 0;
     font-size: var(--theme-font-caption-size);
-    line-height: 1.6;
+    line-height: var(--theme-line-height-160);
     color: var(--theme-text-tertiary);
     text-wrap: pretty;
   }
@@ -89,7 +89,7 @@
     justify-content: center;
     flex-wrap: wrap;
     gap: var(--theme-space-lg);
-    padding-top: 22px;
+    padding-top: var(--theme-space-22);
     border-top: 1px solid var(--theme-border-subtle);
   }
 

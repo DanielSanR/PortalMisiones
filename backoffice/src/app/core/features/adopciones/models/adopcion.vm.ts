@@ -1,6 +1,6 @@
-import { EstadoVigencia } from './vigencia';
+import { EstadoVigencia } from '../domain/vigencia';
 
-export type { EstadoVigencia } from './vigencia';
+export type { EstadoVigencia } from '../domain/vigencia';
 
 /**
  * Adopción tal como la devuelve la fuente (`OrganismProcedure`): solo ids, sin nombres y sin el

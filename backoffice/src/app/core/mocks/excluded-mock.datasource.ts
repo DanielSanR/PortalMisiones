@@ -33,6 +33,7 @@ export const DestinatariosMockDataSource = excluido;
 export const EtiquetasMockDataSource = excluido;
 export const EventosDeVidaMockDataSource = excluido;
 export const FichasLocalesMockDataSource = excluido;
+export const GeocodificacionMockDataSource = excluido;
 export const LocalidadesMockDataSource = excluido;
 export const ModalidadesMockDataSource = excluido;
 export const OrganismosMockDataSource = excluido;

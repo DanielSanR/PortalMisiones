@@ -1,0 +1,239 @@
+{
+  "customSyntax": "postcss-scss",
+  "plugins": [
+    "stylelint-scss",
+    "stylelint-declaration-strict-value"
+  ],
+  "reportDescriptionlessDisables": true,
+  "reportInvalidScopeDisables": true,
+  "reportNeedlessDisables": true,
+  "rules": {
+    "color-no-hex": [
+      true,
+      {
+        "message": "Color hex suelto: usá un token var(--theme-*) (los colores se definen solo en shared-styles/_themes.scss)."
+      }
+    ],
+    "color-named": [
+      "never",
+      {
+        "message": "Color nombrado: usá un token var(--theme-*)."
+      }
+    ],
+    "function-disallowed-list": [
+      [
+        "rgb",
+        "rgba",
+        "hsl",
+        "hsla"
+      ],
+      {
+        "message": "rgb()/hsl() suelto: usá un token var(--theme-*) (o color-mix() sobre tokens)."
+      }
+    ],
+    "selector-max-id": [
+      0,
+      {
+        "message": "Sin selectores por #id: usá una clase BEM."
+      }
+    ],
+    "selector-nested-pattern": [
+      "^(?!&-[a-zA-Z0-9])",
+      {
+        "splitList": true,
+        "message": "BEM: elemento con `&__elem` y modificador con `&--mod` (no `&-elem`)."
+      }
+    ],
+    "max-nesting-depth": [
+      3,
+      {
+        "ignore": [
+          "pseudo-classes"
+        ],
+        "ignoreAtRules": [
+          "include",
+          "media",
+          "supports",
+          "container",
+          "if",
+          "else",
+          "each"
+        ],
+        "message": "Anidamiento > 3 niveles: aplaná con BEM (`bloque__elemento`)."
+      }
+    ],
+    "scale-unlimited/declaration-strict-value": [
+      [
+        "font-size",
+        "z-index",
+        "/^border(-.+)?-radius$/",
+        "box-shadow",
+        "letter-spacing",
+        "line-height",
+        "/^(margin|padding)(-(top|right|bottom|left|block|inline)(-(start|end))?)?$/",
+        "/^(row-|column-)?gap$/"
+      ],
+      {
+        "ignoreValues": [
+          "0",
+          "auto",
+          "inherit",
+          "initial",
+          "unset",
+          "none",
+          "normal",
+          "50%",
+          "100%",
+          "1px",
+          "-1px",
+          "/^0( 0)*$/",
+          "/^(0 )*auto( 0)*$/"
+        ],
+        "expandShorthand": true,
+        "disableFix": true,
+        "message": "Valor suelto en ${property}: usá un token var(--theme-*) (font-size / z / radius / shadow / space / tracking / line-height)."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/shared-styles/_themes.scss",
+        "src/shared-styles/_material-theme.scss"
+      ],
+      "rules": {
+        "color-no-hex": null,
+        "color-named": null,
+        "function-disallowed-list": null,
+        "scale-unlimited/declaration-strict-value": null
+      }
+    },
+    {
+      "files": [
+        "src/app/**/*.scss"
+      ],
+      "rules": {
+        "at-rule-disallowed-list": [
+          [
+            "media"
+          ],
+          {
+            "message": "@media crudo en un componente: usá `@include responsive(...)` (o container-below) de shared-styles/_mixins.scss."
+          }
+        ],
+        "declaration-no-important": [
+          true,
+          {
+            "message": "!important en un componente: subí la especificidad o movelo a shared-styles/_material.scss."
+          }
+        ],
+        "selector-pseudo-element-disallowed-list": [
+          [
+            "ng-deep"
+          ],
+          {
+            "message": "::ng-deep prohibido: el override de Material va en shared-styles/_material.scss."
+          }
+        ],
+        "selector-disallowed-list": [
+          [
+            "/\\.mat-mdc-/",
+            "/\\.mdc-/",
+            "/\\.cdk-/",
+            "/\\.mat-(?!mdc-)/"
+          ],
+          {
+            "message": "Clase interna de Material/CDK en un componente: el override va en shared-styles/_material.scss."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/app/shared/layouts/admin-layout/admin-layout.component.scss"
+      ],
+      "rules": {
+        "selector-pseudo-element-disallowed-list": [
+          [
+            "ng-deep"
+          ],
+          {
+            "message": "::ng-deep prohibido: el override de Material va en shared-styles/_material.scss.",
+            "severity": "warning"
+          }
+        ],
+        "selector-disallowed-list": [
+          [
+            "/\\.mat-mdc-/",
+            "/\\.mdc-/",
+            "/\\.cdk-/",
+            "/\\.mat-(?!mdc-)/"
+          ],
+          {
+            "message": "Clase interna de Material/CDK en un componente: el override va en shared-styles/_material.scss.",
+            "severity": "warning"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/app/shared/components/table/table.component.scss"
+      ],
+      "rules": {
+        "declaration-no-important": [
+          true,
+          {
+            "message": "!important en un componente: subí la especificidad o movelo a shared-styles/_material.scss.",
+            "severity": "warning"
+          }
+        ],
+        "selector-disallowed-list": [
+          [
+            "/\\.mat-mdc-/",
+            "/\\.mdc-/",
+            "/\\.cdk-/",
+            "/\\.mat-(?!mdc-)/"
+          ],
+          {
+            "message": "Clase interna de Material/CDK en un componente: el override va en shared-styles/_material.scss.",
+            "severity": "warning"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/app/auth/shared/auth-shell/auth-shell.component.scss"
+      ],
+      "rules": {
+        "declaration-no-important": [
+          true,
+          {
+            "message": "!important en un componente: subí la especificidad o movelo a shared-styles/_material.scss.",
+            "severity": "warning"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/app/pages/auditoria/**/auditoria-detail-dialog.component.scss"
+      ],
+      "rules": {
+        "selector-disallowed-list": [
+          [
+            "/\\.mat-mdc-/",
+            "/\\.mdc-/",
+            "/\\.cdk-/",
+            "/\\.mat-(?!mdc-)/"
+          ],
+          {
+            "message": "Clase interna de Material/CDK en un componente: el override va en shared-styles/_material.scss.",
+            "severity": "warning"
+          }
+        ]
+      }
+    }
+  ]
+}

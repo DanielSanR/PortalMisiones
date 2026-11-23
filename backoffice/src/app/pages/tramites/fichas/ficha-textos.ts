@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { PUBLICACION_POLICY } from '@core/constants/policy-overrides.constants';
 import { AccionWorkflow, FichaAdopcionResumen, FichaLocalVM, MotivoNoVigente } from '@features/fichas-locales';
-import { ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { mensajeErrorAccion } from './ficha-save-error';
 
 /** Cómo se muestra cada acción del workflow (botón, menú de fila, confirmación y aviso de éxito). */

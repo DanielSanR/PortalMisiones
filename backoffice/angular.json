@@ -58,7 +58,12 @@
             ],
             "styles": [
               "src/styles.scss",
-              "src/assets/icons/phosphor-subset.css"
+              "src/assets/icons/phosphor-subset.css",
+              {
+                "input": "src/shared-styles/mapa-leaflet.scss",
+                "bundleName": "mapa",
+                "inject": false
+              }
             ],
             "scripts": [],
             "stylePreprocessorOptions": {
@@ -131,6 +136,10 @@
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
                 {
+                  "replace": "src/app/core/features/geocodificacion/datasources/geocodificacion.mock.datasource.ts",
+                  "with": "src/app/core/mocks/excluded-mock.datasource.ts"
+                },
+                {
                   "replace": "src/app/core/features/roles/datasources/roles.mock.datasource.ts",
                   "with": "src/app/core/mocks/excluded-mock.datasource.ts"
                 },
@@ -146,13 +155,24 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "900kb",
-                  "maximumError": "1.2mb"
+                  "maximumWarning": "540kb",
+                  "maximumError": "600kb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "16kb",
-                  "maximumError": "24kb"
+                  "maximumWarning": "15kb",
+                  "maximumError": "20kb"
+                },
+                {
+                  "type": "bundle",
+                  "name": "styles",
+                  "maximumWarning": "130kb",
+                  "maximumError": "150kb"
+                },
+                {
+                  "type": "anyScript",
+                  "maximumWarning": "200kb",
+                  "maximumError": "250kb"
                 }
               ],
               "optimization": {

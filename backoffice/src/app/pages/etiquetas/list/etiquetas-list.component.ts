@@ -1,36 +1,27 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, firstValueFrom, map, startWith } from 'rxjs';
+import { BehaviorSubject, combineLatest, filter, firstValueFrom, map } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
-import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
-import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
-import { ListSearchComponent } from '../../../shared/components/list-search';
-import { AtajoDirective } from '../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
-import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { buscarEn } from '@core/utils/list-filter.utils';
-import { FilterTabOption } from '../../../shared/components/filter-tabs';
-import { CREAR_ETIQUETA_ACCESS } from '@core/constants/policy-overrides.constants';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '@shared/components/table';
+import { FilterTabsComponent, FilterTabOption } from '@shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '@shared/components/row-actions';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { ListaPendienteComponent } from '@shared/components/lista-pendiente';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent } from '@shared/components/active-filters';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { EtiquetasFacade, EtiquetaVM } from '@features/etiquetas';
-import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { CREAR_ETIQUETA_ACCESS } from '@core/constants/policy-overrides.constants';
+import { ListaCliente, TextosDeVacio, compararPorTexto, textosDeVacio } from '@shared/utils/lista-cliente';
+import { avisarExito } from '@shared/utils/avisos';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
 import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
 import { dialogoDeEtiqueta } from '../etiqueta-dialogo';
-
-/** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
-interface EstadoVacio {
-  emptyTitle: string;
-  emptyMessage: string;
-  emptyActionLabel: string;
-}
 
 /** Filtro por alcance del `Tag` real: global (sin organismo) o local (con organismo). */
 type AlcanceFiltro = 'todas' | 'globales' | 'locales';
@@ -55,15 +46,14 @@ function alcanceTabs(etiquetas: EtiquetaVM[]): FilterTabOption[] {
   ];
 }
 
-/** ViewModel de la pantalla: filas ya buscadas/filtradas/ordenadas + los textos que corresponden. */
-interface EtiquetasVista extends EstadoVacio {
-  /** Solo la página visible. */
-  rows: EtiquetaVM[];
-  /** Total tras filtrar (lo que cuenta el toolbar y alimenta al paginador). */
-  total: number;
-  pageIndex: number;
-  hayFiltros: boolean;
-  filtrosActivos: FiltroActivo[];
+/** Lo que filtra la lista: el alcance elegido y si la sesión solo ve etiquetas locales. */
+interface FiltrosDeEtiquetas {
+  alcance: AlcanceFiltro;
+  soloLocales: boolean;
+}
+
+/** Textos del vacío + si se ofrece el filtro por alcance. */
+interface ExtrasDeEtiquetas extends TextosDeVacio {
   /**
    * Se ofrece el filtro "Todas / Globales / Locales". No para una sesión con organismo: solo ve las
    * etiquetas locales del suyo, así que los tres chips darían siempre lo mismo (o cero).
@@ -71,13 +61,25 @@ interface EtiquetasVista extends EstadoVacio {
   filtraPorAlcance: boolean;
 }
 
+const TEXTOS_DE_VACIO = textosDeVacio(
+  {
+    emptyTitle: 'Todavía no hay etiquetas',
+    emptyMessage: 'Creá la primera para poder etiquetar los trámites del portal.',
+    emptyActionLabel: 'Nueva etiqueta',
+  },
+  {
+    emptyTitle: 'Sin resultados',
+    emptyMessage: 'Ninguna etiqueta coincide con la búsqueda o el filtro aplicado.',
+    emptyActionLabel: 'Limpiar filtros',
+  },
+);
+
 @Component({
   selector: 'app-etiquetas-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe,
-    ReactiveFormsModule,
     MatButtonModule,
     MatSnackBarModule,
     SharedTableComponent,
@@ -85,101 +87,67 @@ interface EtiquetasVista extends EstadoVacio {
     FilterTabsComponent,
     RowActionsComponent,
     ListSearchComponent,
+    ListaPendienteComponent,
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
     AtajoDirective,
-    UnavailableDirective,
   ],
   templateUrl: './etiquetas-list.component.html',
-  styleUrls: ['./etiquetas-list.component.scss'],
+  styleUrl: './etiquetas-list.component.scss',
 })
 export class EtiquetasListComponent implements OnInit {
   private readonly facade = inject(EtiquetasFacade);
-  readonly etiquetas$ = this.facade.etiquetas$;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+
   /** "Nueva etiqueta" (botón y CTA del vacío): solo quien puede elegir un alcance válido (BO-20). */
   readonly crearAccess = CREAR_ETIQUETA_ACCESS;
 
-  loading = true;
-  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
-  error = false;
-  /** Id de la etiqueta con un borrado en vuelo, para bloquear su fila mientras dura. */
-  deletingId: string | null = null;
-
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
   /**
    * Filtro "Todas/Globales/Locales" (campo real `local`), client-side sobre el stream ya cargado. Solo se
-   * ofrece y se aplica si la sesión ve etiquetas de más de un alcance (`EtiquetasVista.filtraPorAlcance`).
+   * ofrece y se aplica si la sesión ve etiquetas de más de un alcance (`filtraPorAlcance`).
    */
   readonly filtro$ = new BehaviorSubject<AlcanceFiltro>('todas');
-  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
-
-  private readonly search$ = this.searchCtrl.valueChanges.pipe(
-    debounceTime(200),
-    distinctUntilChanged(),
-    startWith(this.searchCtrl.value),
-  );
-
-  /** Los contadores de los chips se calculan sobre lo ya buscado, para que no mientan. */
-  readonly filterTabs$ = combineLatest([this.etiquetas$, this.search$]).pipe(
-    map(([etiquetas, search]) => alcanceTabs(this.buscar(etiquetas, search))),
-  );
-
-  readonly pageIndex$ = new BehaviorSubject<number>(0);
-  readonly pageSize$ = new BehaviorSubject<number>(10);
-
-  readonly vista$ = combineLatest([
-    this.etiquetas$, this.filtro$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
-    this.facade.soloEtiquetasLocales$,
-  ]).pipe(
-    map(([etiquetas, filtro, search, sort, pageIndex, pageSize, soloLocales]): EtiquetasVista => {
-      const filtradas = this.ordenar(filtrarPorAlcance(this.buscar(etiquetas, search), filtro), sort);
-      // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de
-      // mostrar una tabla vacía con resultados que sí existen.
-      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
-      const pagina = Math.min(pageIndex, ultimaPagina);
-      const desde = pagina * pageSize;
-
-      const filtrosActivos = this.filtrosActivos(search, filtro);
-      const hayFiltros = filtrosActivos.length > 0;
-      return {
-        rows: filtradas.slice(desde, desde + pageSize),
-        total: filtradas.length,
-        pageIndex: pagina,
-        hayFiltros,
-        filtrosActivos,
-        filtraPorAlcance: !soloLocales,
-        ...this.estadoVacio(hayFiltros),
-      };
-    }),
-  );
-
-  columns: TableColumn<EtiquetaVM>[] = [
-    { key: 'slug',          label: 'Etiqueta',  sortable: true },
-    { key: 'organismo',     label: 'Organismo', sortable: true, hideOnMobile: true },
-    { key: 'acciones',      label: 'Acciones',  width: '140px' },
-  ];
-
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly cdr = inject(ChangeDetectorRef);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-
-  private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
 
   /** Alta y edición van en diálogo sobre la lista; el diálogo guarda y acá solo se avisa. */
   private readonly dialogo = new DialogoEnLista<EtiquetaVM, EtiquetaVM>({
     abrir: (etiqueta) => abrirFormDialog(this.dialog, dialogoDeEtiqueta(this.facade, etiqueta)),
     buscar: async (id) => (await firstValueFrom(this.facade.etiquetas$)).find((fila) => fila.id === id),
-    alGuardar: (_guardada, etiqueta) => {
-      this.snackBar.open(etiqueta ? 'Etiqueta actualizada' : 'Etiqueta creada', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      });
-    },
+    alGuardar: (_guardada, etiqueta) => avisarExito(this.snackBar, etiqueta ? 'Etiqueta actualizada' : 'Etiqueta creada'),
     noEncontrada: 'No encontramos esa etiqueta. Puede que la hayan eliminado.',
   });
+
+  /** Búsqueda, filtro por alcance, orden, paginado y estado de carga en cliente sobre `etiquetas$`. */
+  readonly lista = new ListaCliente<EtiquetaVM, FiltrosDeEtiquetas, ExtrasDeEtiquetas>({
+    fuente$: this.facade.etiquetas$,
+    cargar: () => this.facade.loadEtiquetas(),
+    buscarEn: (e) => [e.slug, e.organismoNombre],
+    // Por organismo, las globales (sin organismo) quedan juntas en un extremo en vez de mezclarse.
+    comparar: compararPorTexto((etiqueta, columna) =>
+      (columna === 'slug' ? etiqueta.slug : columna === 'organismo' ? etiqueta.organismoNombre : '')),
+    filtros$: combineLatest([this.filtro$, this.facade.soloEtiquetasLocales$]).pipe(
+      map(([alcance, soloLocales]): FiltrosDeEtiquetas => ({ alcance, soloLocales })),
+    ),
+    filtrar: (buscadas, filtros) => filtrarPorAlcance(buscadas, filtros.alcance),
+    filtrosActivos: ({ alcance }) => (alcance === 'todas'
+      ? []
+      : [{ clave: 'alcance', etiqueta: `Alcance: ${ALCANCE_LABELS[alcance]}` }]),
+    limpiarFiltros: () => this.filtro$.next('todas'),
+    extras: (contexto) => ({ ...TEXTOS_DE_VACIO(contexto), filtraPorAlcance: !contexto.filtros.soloLocales }),
+    alCargar: (lista) => this.dialogo.listaLista(lista),
+  });
+
+  /** Los contadores de los chips se calculan sobre lo ya buscado, para que no mientan. */
+  readonly filterTabs$ = this.lista.buscadas$.pipe(map(alcanceTabs));
+
+  readonly columns: TableColumn<EtiquetaVM>[] = [
+    { key: 'slug',          label: 'Etiqueta',  sortable: true },
+    { key: 'organismo',     label: 'Organismo', sortable: true, hideOnMobile: true },
+    { key: 'acciones',      label: 'Acciones',  width: '140px' },
+  ];
 
   constructor() {
     // Sin el filtro a la vista tampoco puede quedar aplicado: uno elegido antes (la sesión cambió con la
@@ -190,54 +158,12 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading = true;
-    this.error = false;
-    this.dialogo.listaLista(false);
-    this.facade.loadEtiquetas()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); this.dialogo.listaLista(true); },
-        // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
-        // etiquetas, indistinguible de una carga fallida.
-        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
-      });
-  }
-
-  limpiarFiltros(): void {
-    this.searchCtrl.setValue('');
-    this.filtro$.next('todas');
-  }
-
-  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: string): void {
-    if (clave === 'search') this.searchCtrl.setValue('');
-    else this.filtro$.next('todas');
-  }
-
-  hayFiltrosActivos(): boolean {
-    return this.filtro$.value !== 'todas' || this.searchCtrl.value.trim().length > 0;
+    this.lista.cargar();
   }
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
   onEmptyAction(): void {
-    if (this.hayFiltrosActivos()) {
-      this.limpiarFiltros();
-      return;
-    }
-    this.onCreate();
-  }
-
-  onSortChange(sort: TableSortEvent): void {
-    this.sort$.next(sort);
-  }
-
-  onPageChange(evento: TablePageEvent): void {
-    this.pageIndex$.next(evento.pageIndex);
-    this.pageSize$.next(evento.pageSize);
+    this.lista.accionDeVacio(() => this.onCreate());
   }
 
   onCreate(): void {
@@ -270,86 +196,22 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   onDelete(etiqueta: EtiquetaVM): void {
-    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
-    const indice = indiceDeFilaActiva(this.host);
-    abrirConfirmacion(this.dialog, {
-      data: {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: {
         title: '¿Eliminar la etiqueta?',
         message: `Se eliminará la etiqueta ${etiqueta.slug} y dejará de estar disponible para clasificar trámites. Esta acción no se puede deshacer.`,
         highlight: etiqueta.slug,
         danger: true,
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
-        // El diálogo se queda abierto con el botón en spinner hasta que el backend
-        // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
-        confirmAction: () => {
-          this.deletingId = etiqueta.id;
-          this.cdr.markForCheck();
-          return this.facade.delete(etiqueta.id).pipe(
-            finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
-          );
-        },
+        confirmAction: () => this.facade.delete(etiqueta.id),
       },
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        enfocarTrasEliminar(this.host, indice, this.destroyRef);
-        this.snackBar.open('Etiqueta eliminada', 'OK', {
-          duration: 3000,
-          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-          panelClass: 'snackbar-success',
-        });
-      });
-  }
-
-  private buscar(etiquetas: EtiquetaVM[], termino: string): EtiquetaVM[] {
-    return buscarEn(etiquetas, termino, (e) => [e.slug, e.organismoNombre]);
-  }
-
-  private ordenar(etiquetas: EtiquetaVM[], sort: TableSortEvent | null): EtiquetaVM[] {
-    if (!sort?.direction) return etiquetas;
-    const factor = sort.direction === 'asc' ? 1 : -1;
-    return [...etiquetas].sort((a, b) => this.comparar(a, b, sort.active) * factor);
-  }
-
-  private comparar(a: EtiquetaVM, b: EtiquetaVM, key: string): number {
-    return this.valorDeOrden(a, key)
-      .localeCompare(this.valorDeOrden(b, key), 'es-AR', { sensitivity: 'base' });
-  }
-
-  private valorDeOrden(etiqueta: EtiquetaVM, key: string): string {
-    switch (key) {
-      case 'slug':      return etiqueta.slug ?? '';
-      // Las globales (sin organismo) quedan juntas en un extremo en vez de mezclarse.
-      case 'organismo': return etiqueta.organismoNombre ?? '';
-      default:          return '';
-    }
-  }
-
-  private filtrosActivos(search: string, filtro: AlcanceFiltro): FiltroActivo[] {
-    const activos: FiltroActivo[] = [];
-    const termino = search.trim();
-    if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
-    if (filtro !== 'todas') {
-      activos.push({ clave: 'alcance', etiqueta: `Alcance: ${ALCANCE_LABELS[filtro]}` });
-    }
-    return activos;
-  }
-
-  private estadoVacio(hayFiltros: boolean): EstadoVacio {
-    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
-    if (hayFiltros) {
-      return {
-        emptyTitle: 'Sin resultados',
-        emptyMessage: 'Ninguna etiqueta coincide con la búsqueda o el filtro aplicado.',
-        emptyActionLabel: 'Limpiar filtros',
-      };
-    }
-    return {
-      emptyTitle: 'Todavía no hay etiquetas',
-      emptyMessage: 'Creá la primera para poder etiquetar los trámites del portal.',
-      emptyActionLabel: 'Nueva etiqueta',
-    };
+      aviso: 'Etiqueta eliminada',
+      ocupado: this.lista.ocupar(etiqueta.id),
+      foco: { host: this.host },
+    });
   }
 }

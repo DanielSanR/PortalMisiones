@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { AtajoVisible } from '../../../core/services/atajos.service';
+import { AtajoVisible } from '@core/services/atajos.service';
 
 export interface AtajosAyudaDialogData {
   /** Atajos vigentes en la pantalla al abrir el diálogo (`AtajosService.listar()`). */
@@ -18,5 +18,5 @@ export interface AtajosAyudaDialogData {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AtajosAyudaDialogComponent {
-  constructor(@Inject(MAT_DIALOG_DATA) public data: AtajosAyudaDialogData) {}
+  readonly data = inject<AtajosAyudaDialogData>(MAT_DIALOG_DATA);
 }

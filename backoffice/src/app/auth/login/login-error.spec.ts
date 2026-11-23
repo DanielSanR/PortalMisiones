@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { NoBackofficeAccessError } from '../../core/errors/no-backoffice-access.error';
+import { NoBackofficeAccessError } from '@core/errors/no-backoffice-access.error';
 import {
   LOGIN_CREDENCIALES, LOGIN_CUENTA_BLOQUEADA, LOGIN_CUENTA_DESBLOQUEADA, LOGIN_CUENTA_ELIMINADA, LOGIN_CUENTA_INACTIVA, LOGIN_INESPERADO, LOGIN_SERVIDOR_CAIDO, LOGIN_SIN_CONEXION, mensajeErrorLogin,
 } from './login-error';

@@ -5,6 +5,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { PARAM_DIALOGO, PARAMS_DEL_DIALOGO } from '@core/guards';
+import { avisar } from './avisos';
 
 /** Lo que cada lista le dice al controlador sobre SU diálogo. `F` = fila de la lista, `R` = lo que devuelve el diálogo al guardar. */
 export interface DialogoEnListaConfig<F, R> {
@@ -109,7 +110,7 @@ export class DialogoEnLista<F, R> {
   }
 
   private avisar(mensaje: string): void {
-    this.snackBar.open(mensaje, 'OK', { duration: 5000 });
+    avisar(this.snackBar, mensaje);
   }
 
   private limpiarUrl(): void {

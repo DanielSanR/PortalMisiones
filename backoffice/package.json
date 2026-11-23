@@ -1,22 +1,37 @@
 {
   "name": "backoffice",
   "version": "0.0.0",
+  "engines": {
+    "node": ">=20.11.0"
+  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:staging": "ng serve --configuration staging",
+    "start:local": "ng serve --configuration local",
     "production": "ng serve --configuration production",
-    "prebuild": "npm run icons:check && npm run check:prod-mocks",
+    "watch": "ng build --watch --configuration development",
+    "prebuild": "npm run check:static",
     "build": "ng build",
+    "build:stats": "ng build --stats-json",
+    "build:ci": "npm run build -- --stats-json && npm run check:bundle",
+    "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
+    "typecheck": "ngc -p tsconfig.app.json --noEmit && tsc --noEmit -p tsconfig.json",
+    "lint": "eslint \"src/app/**/*.{ts,html}\" --cache --cache-location node_modules/.cache/eslint/ --max-warnings 96",
+    "lint:styles": "stylelint \"src/**/*.scss\" --cache --cache-location node_modules/.cache/stylelint/ --max-warnings 22",
     "icons": "node scripts/phosphor-subset.mjs",
     "icons:check": "node scripts/phosphor-subset.mjs --check",
     "check:prod-mocks": "node scripts/check-prod-mocks.mjs",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "check:circular": "npx --yes madge --circular --ts-config tsconfig.json --extensions ts src/app",
-    "lint": "eslint \"src/app/core/features/**/*.ts\"",
-    "lint:all": "eslint \"src/app/**/*.ts\"",
-    "start:staging": "ng serve --configuration staging",
-    "start:local": "ng serve --configuration local"
+    "check:structure": "node scripts/check-structure.mjs",
+    "check:styles": "node scripts/check-styles.mjs",
+    "check:circular": "madge --circular --ts-config tsconfig.json --extensions ts src/app",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "check:static": "npm run lint && npm run lint:styles && npm run check:structure && npm run check:styles && npm run check:circular && npm run icons:check && npm run check:prod-mocks",
+    "check:fast": "npm run typecheck && npm run check:static",
+    "check:stop": "npm run check:fast && ng build",
+    "check": "npm run check:fast && npm run test:ci && ng build --stats-json && npm run check:bundle",
+    "hooks:install": "node scripts/install-hooks.cjs"
   },
   "private": true,
   "dependencies": {
@@ -31,8 +46,7 @@
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
     "@phosphor-icons/web": "^2.1.2",
-    "chart.js": "^4.5.1",
-    "ng2-charts": "^6.0.1",
+    "leaflet": "1.9.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"
@@ -45,6 +59,7 @@
     "@angular/cli": "^17.3.17",
     "@angular/compiler-cli": "^17.3.0",
     "@types/jasmine": "~5.1.0",
+    "@types/leaflet": "1.9.12",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
@@ -56,6 +71,11 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "madge": "^8.0.0",
+    "postcss-scss": "^4.0.9",
+    "stylelint": "^16.26.1",
+    "stylelint-declaration-strict-value": "^1.13.0",
+    "stylelint-scss": "^7.5.0",
     "typescript": "~5.4.2"
   }
 }

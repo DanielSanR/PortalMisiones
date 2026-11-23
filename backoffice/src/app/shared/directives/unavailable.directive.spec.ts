@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks } from '@angular/
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
-import { UnavailableDirective } from './unavailable.directive';
+import { MOTIVO_NO_DISPONIBLE, UnavailableDirective } from './unavailable.directive';
 
 @Component({
   standalone: true,
@@ -13,9 +13,14 @@ import { UnavailableDirective } from './unavailable.directive';
     <button id="visible" appUnavailable="Motivo propio" appUnavailableMotivoVisible
             aria-describedby="ayuda">Visible</button>
     <p id="ayuda">Motivo propio</p>
+    <button id="alterna" [appUnavailable]="motivo" (click)="clics = clics + 1">Alterna</button>
+    <button id="suelto" appUnavailable>Suelto</button>
   `,
 })
-class HostComponent {}
+class HostComponent {
+  motivo: string | false | null | undefined = false;
+  clics = 0;
+}
 
 describe('UnavailableDirective', () => {
   let fixture: ComponentFixture<HostComponent>;
@@ -48,5 +53,65 @@ describe('UnavailableDirective', () => {
     boton('visible').dispatchEvent(evento);
 
     expect(evento.defaultPrevented).toBeTrue();
+  });
+
+  it('el atributo suelto (o un motivo vacío) sigue siendo "no disponible" con el motivo por defecto', () => {
+    expect(tooltipDe('suelto').message).toBe(MOTIVO_NO_DISPONIBLE);
+    expect(boton('suelto').getAttribute('aria-disabled')).toBe('true');
+
+    for (const vacio of ['', '  ', undefined]) {
+      fixture.componentInstance.motivo = vacio;
+      fixture.detectChanges();
+      expect(tooltipDe('alterna').message).toBe(MOTIVO_NO_DISPONIBLE);
+      expect(boton('alterna').getAttribute('aria-disabled')).toBe('true');
+    }
+  });
+
+  describe('alternar sobre el mismo elemento', () => {
+    const fijar = (motivo: string | false | null): void => {
+      fixture.componentInstance.motivo = motivo;
+      fixture.detectChanges();
+    };
+
+    it('con `false` o `null` el control está disponible: sin `aria-disabled`, sin clase, sin tooltip, y el clic pasa', () => {
+      for (const disponible of [false, null] as const) {
+        fijar('Motivo');
+        fijar(disponible);
+        fixture.componentInstance.clics = 0;
+
+        expect(boton('alterna').getAttribute('aria-disabled')).toBeNull();
+        expect(boton('alterna').classList).not.toContain('is-unavailable');
+        expect(tooltipDe('alterna').message).toBe('');
+        const evento = new MouseEvent('click', { bubbles: true, cancelable: true });
+        boton('alterna').dispatchEvent(evento);
+        expect(evento.defaultPrevented).toBeFalse();
+        expect(fixture.componentInstance.clics).toBe(1);
+      }
+    });
+
+    it('al llegar un motivo vuelve a bloquear el clic y a explicarlo', () => {
+      fijar('Sin cambios');
+
+      expect(boton('alterna').getAttribute('aria-disabled')).toBe('true');
+      expect(boton('alterna').classList).toContain('is-unavailable');
+      expect(tooltipDe('alterna').message).toBe('Sin cambios');
+      // Ni el `(click)` del propio control en su template llega a correr.
+      boton('alterna').click();
+      expect(fixture.componentInstance.clics).toBe(0);
+    });
+
+    it('el elemento es siempre el mismo y conserva el foco al cambiar de estado', () => {
+      document.body.append(fixture.nativeElement);
+      const nodo = boton('alterna');
+      nodo.focus();
+
+      fijar('Sin cambios');
+      expect(boton('alterna')).toBe(nodo);
+      expect(document.activeElement).toBe(nodo);
+
+      fijar(false);
+      expect(document.activeElement).toBe(nodo);
+      fixture.nativeElement.remove();
+    });
   });
 });

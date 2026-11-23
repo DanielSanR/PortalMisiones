@@ -15,6 +15,12 @@ export abstract class RolesDataSource {
   abstract update(id: string, form: RolFormValue): Observable<RolVM>;
   /** Baja lógica: el rol queda desactivado (`active = false`) y se sigue listando. */
   abstract delete(id: string): Observable<void>;
+  /**
+   * Reactiva un rol dado de baja. El backend no tiene un endpoint propio: es el `PUT /api/role/{id}` con
+   * `active: true` y el resto del rol tal como está (código, alcance, flags y permisos: el PUT los pisa todos).
+   * `rol` es el que acaba de devolver `getById` (sin versión en el backend: una fila vieja pisaría cambios ajenos).
+   */
+  abstract activate(rol: RolVM): Observable<RolVM>;
 }
 
 export const ROLES_DS = new InjectionToken<RolesDataSource>('ROLES_DS');

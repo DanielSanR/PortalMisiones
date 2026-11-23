@@ -1,0 +1,39 @@
+<div class="mapa-ubicacion" [class.mapa-ubicacion--lectura]="soloLectura">
+  <!-- Cómo se usa: describe al mapa (`aria-describedby` del contenedor que arma Leaflet). -->
+  <!-- Sin mapa no hay nada que explicar: el aviso de abajo dice qué hacer. -->
+  <p class="mapa-ubicacion__ayuda" [id]="idAyuda" [hidden]="estado === 'sin-mapa'">
+    @if (soloLectura) {
+      Ubicación guardada del punto. Con el mapa enfocado, las flechas lo desplazan y + / − acercan o alejan.
+    } @else {
+      <span>Hacé clic en el mapa para marcar el punto o arrastrá el marcador para ajustarlo.</span>
+      <span class="mapa-ubicacion__teclado">
+        Con teclado: en el mapa, las flechas lo desplazan y Enter marca el centro; en el marcador, las flechas lo
+        mueven (con Mayúscula, más rápido).
+      </span>
+    }
+  </p>
+
+  <div class="mapa-ubicacion__marco">
+    <div #lienzo class="mapa-ubicacion__lienzo" [hidden]="estado === 'sin-mapa'"></div>
+    @if (estado === 'listo' && !ubicacion && !soloLectura) {
+      <!-- Invitación sobre el mapa vacío (decorativa: lo mismo lo dice la ayuda que describe al mapa). -->
+      <p class="mapa-ubicacion__invitacion" aria-hidden="true">
+        <i class="ph ph-map-pin" aria-hidden="true"></i> Todavía no marcaste el punto
+      </p>
+    }
+    @if (estado === 'cargando') {
+      <p class="mapa-ubicacion__estado" role="status">
+        <i class="ph ph-spinner-gap spin" aria-hidden="true"></i> Cargando el mapa…
+      </p>
+    }
+    @if (estado === 'sin-mapa') {
+      <div class="mapa-ubicacion__aviso" role="alert">
+        <i class="ph ph-cloud-slash" aria-hidden="true"></i>
+        <p class="mapa-ubicacion__aviso-texto">No pudimos cargar el mapa. {{ textoSinMapa }}</p>
+      </div>
+    }
+  </div>
+
+  <!-- Región viva montada desde el principio: anuncia cada punto que marca la persona. -->
+  <p class="cdk-visually-hidden" aria-live="polite">{{ anuncio }}</p>
+</div>

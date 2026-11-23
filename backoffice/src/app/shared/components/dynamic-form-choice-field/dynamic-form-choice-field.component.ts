@@ -1,24 +1,23 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { NgFor } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Input, OnChanges } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { Observable, map, of, startWith } from 'rxjs';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatRadioModule } from '@angular/material/radio';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldAviso, FieldConfig } from '@core/models/field.interface';
 
 /**
- * Campos `checkbox` (slide-toggle) y `radio` de `DynamicFormFieldComponent`.
- * Aislados para que `MatSlideToggle` y `MatRadio` se descarguen en diferido (`@defer`) solo
- * en los formularios que los usan.
+ * Campo `checkbox` (slide-toggle) de `DynamicFormFieldComponent`.
+ * Aislado para que `MatSlideToggle` se descargue en diferido (`@defer`) solo en los formularios que lo usan.
  */
 @Component({
   selector: 'app-dynamic-form-choice-field',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgFor, ReactiveFormsModule, MatSlideToggleModule, MatRadioModule],
+  imports: [AsyncPipe, ReactiveFormsModule, MatSlideToggleModule],
   templateUrl: './dynamic-form-choice-field.component.html',
   styleUrl: './dynamic-form-choice-field.component.scss',
 })
-export class DynamicFormChoiceFieldComponent {
+export class DynamicFormChoiceFieldComponent implements OnChanges {
   @Input({ required: true }) field!: FieldConfig;
   @Input({ required: true }) group!: FormGroup;
   /**
@@ -26,4 +25,15 @@ export class DynamicFormChoiceFieldComponent {
    * (`markAllAsTouched()` al enviar). Es un input solo para que los campos OnPush se revisen.
    */
   @Input() revision = 0;
+
+  /** `field.aviso` evaluado con el valor del control (también cuando lo cambia la página, no solo un clic). */
+  aviso$: Observable<FieldAviso | null> = of(null);
+
+  ngOnChanges(): void {
+    const aviso = this.field.aviso;
+    const control = this.group.get(this.field.name);
+    this.aviso$ = aviso && control
+      ? control.valueChanges.pipe(startWith(null), map(() => aviso(control.value)))
+      : of(null);
+  }
 }

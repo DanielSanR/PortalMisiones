@@ -12,7 +12,7 @@ import { AdopcionesRepository } from '../repositories/adopciones.repository';
 import {
   Adopcion, AdopcionFormValue, AdopcionOpcion, AdopcionOpcionFija, AdopcionOpciones, AdopcionVM,
 } from '../models/adopcion.vm';
-import { estadoDeVigencia } from '../models/vigencia';
+import { estadoDeVigencia } from '../domain/vigencia';
 
 /** Permisos que exige leer cada catálogo de nombres en el backend. */
 const LEER_PLANTILLAS = 'READ_PROCEDURE';

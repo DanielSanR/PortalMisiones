@@ -1,0 +1,58 @@
+@if (marco.pendiente; as tipo) {
+  <!-- Sin los datos leídos no se dibuja el formulario: guardar pisaría el rol con una pantalla vacía. -->
+  <!-- "No existe" (404): texto propio y sin "Reintentar" (volver a pedirlo no sirve). -->
+  <app-estado-carga [tipo]="tipo" [noExiste]="!!marco.errorDeCarga?.noExiste"
+      [cargandoTexto]="esEdicion ? 'Cargando el rol…' : 'Cargando el formulario…'"
+      [titulo]="marco.errorDeCarga?.titulo ?? ''" [texto]="marco.errorDeCarga?.texto ?? ''"
+      [textoExtra]="marco.errorDeCarga?.textoExtra ?? ''"
+      volverTexto="Ir al listado" (reintentar)="cargar()" (volver)="volver()">
+  </app-estado-carga>
+} @else if (marco.datos) {
+
+  <!-- Membrete en vivo: se arma con lo que se escribe. Sin región viva: anunciaría descripción y código
+       en cada tecla; el lector ya lee el campo que se está editando. -->
+  <app-membrete class="ficha-membrete" icono="shield-star" [titulo]="vista.titulo" tituloVacio="Rol sin descripción"
+                [datos]="vista.datos">
+    <span membretePill class="pill pill--bordered" [class.pill--active]="vista.activo" [class.pill--inactive]="!vista.activo">
+      <span class="pill__dot" aria-hidden="true"></span>
+      <span class="pill__label">{{ vista.activo ? 'Activo' : 'Inactivo' }}</span>
+    </span>
+    <span class="pill pill--revision pill--bordered">
+      <i class="ph pill__icon" [class.ph-plus]="!esEdicion" [class.ph-pencil-simple]="esEdicion" aria-hidden="true"></i>
+      <span class="pill__label">{{ esEdicion ? 'Editando' : 'Nuevo' }}</span>
+    </span>
+  </app-membrete>
+
+  <!-- Una sola tarjeta: dos paneles (datos | permisos) y el pie de guardar compartido. Ver `rol-campos.ts`. -->
+  <app-dynamic-form [fields]="campos" [paneles]="paneles" [panelesIguales]="true" [initialData]="inicial"
+                    [requireChanges]="esEdicion" [saving]="marco.guardando" [serverError]="marco.errorDeGuardado"
+                    [helpText]="esEdicion ? '' : 'Los campos con * son obligatorios.'"
+                    [submitButtonText]="esEdicion ? 'Guardar cambios' : 'Crear rol'"
+                    (formSubmit)="guardar($event)" (formCancel)="volver()" (valueChanges)="alCambiar($event)">
+
+    <!-- El alta siempre crea el rol activo (el backend ignora `active` en el POST): en vez de un control que
+         no hace nada, la misma fila lo explica. Así el panel mide igual en alta y en edición. -->
+    <ng-template appCampoPropio="activoAlCrear">
+      <div class="form-toggle">
+        <p class="rolform-opcion__titulo">
+          <i class="ph ph-info" aria-hidden="true"></i> El rol se crea activo
+        </p>
+        <div class="form-toggle__ayuda"><p>Después podés desactivarlo desde Editar.</p></div>
+      </div>
+    </ng-template>
+
+    <!-- Panel de permisos (`acotado`): el alto de la tarjeta lo pone el panel de datos; lo que no entra se
+         desplaza dentro de la grilla, con el encabezado y el buscador siempre a la vista. -->
+    <ng-template appCampoPropio="permissionsIds" let-grupo>
+      <app-permisos-grilla [permisos]="permisos" [control]="grupo.get('permissionsIds')"></app-permisos-grilla>
+    </ng-template>
+
+    <!-- Indicador del pie: informativo, no bloquea el guardado. Sin `aria-live`: el total del panel de
+         permisos ya anuncia cada cambio. -->
+    <span formActionsInfo class="pill ficha-paneles__indicador"
+          [class.pill--info]="vista.otorgados > 0" [class.pill--warning]="vista.otorgados === 0">
+      <i class="ph pill__icon" [class.ph-key]="vista.otorgados > 0" [class.ph-warning]="vista.otorgados === 0" aria-hidden="true"></i>
+      <span>{{ vista.indicador }}</span>
+    </span>
+  </app-dynamic-form>
+}

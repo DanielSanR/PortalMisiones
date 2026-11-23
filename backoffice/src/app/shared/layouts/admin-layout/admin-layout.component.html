@@ -31,93 +31,12 @@
                 </button>
             </div>
 
-            <div class="admin-layout__search">
-                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
-                <input type="search"
-                    #searchInput
-                    class="admin-layout__search-input"
-                    placeholder="Buscar o ejecutar…"
-                    aria-label="Buscar secciones y acciones"
-                    role="combobox"
-                    aria-autocomplete="list"
-                    aria-haspopup="listbox"
-                    [attr.aria-controls]="resultados.length > 0 ? 'nav-resultados' : null"
-                    [attr.aria-expanded]="searchQuery.length > 0"
-                    [attr.aria-activedescendant]="indiceActivo >= 0 ? 'resultado-' + indiceActivo : null"
-                    [value]="searchQuery"
-                    (input)="onSearchInput($any($event.target).value)"
-                    (keydown)="onSearchKeydown($event)" />
-                <kbd class="admin-layout__search-kbd" aria-hidden="true">/</kbd>
-            </div>
-
-            <nav class="admin-layout__nav" #navScroll aria-label="Secciones del backoffice">
-                <!-- Con búsqueda activa el nav SE CONVIERTE en los resultados, en vez de
-                     filtrarse y quedar tapado por un panel flotante encima. Las opciones no son
-                     focusables: el foco queda en el input y el cursor se anuncia con aria-activedescendant. -->
-                <ng-container *ngIf="searchQuery; else navEnReposo">
-                    <div class="admin-layout__nav-resultados" id="nav-resultados" role="listbox"
-                        aria-label="Resultados de la búsqueda" *ngIf="resultados.length > 0">
-                        <div class="admin-layout__nav-group"
-                            *ngFor="let grupo of gruposResultado"
-                            role="group"
-                            [attr.aria-label]="grupo.titulo">
-                            <span class="admin-layout__nav-group-title" aria-hidden="true">{{ grupo.titulo }}</span>
-
-                            <div class="admin-layout__nav-group-items">
-                                <div class="admin-layout__nav-item"
-                                    *ngFor="let r of grupo.items"
-                                    [id]="'resultado-' + r.indice"
-                                    role="option"
-                                    [attr.aria-selected]="r.indice === indiceActivo"
-                                    [class.is-cursor]="r.indice === indiceActivo"
-                                    (mousedown)="$event.preventDefault()"
-                                    (mouseenter)="indiceActivo = r.indice"
-                                    (click)="ejecutar(r)">
-                                    <i class="ph ph-{{ r.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
-                                    <span class="admin-layout__nav-label">{{ r.label }}</span>
-                                    <i class="ph ph-arrow-elbow-down-left admin-layout__nav-enter" aria-hidden="true"
-                                       *ngIf="r.indice === indiceActivo"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="admin-layout__nav-empty" role="status" *ngIf="resultados.length === 0">
-                        Sin resultados para "{{ searchQuery }}".
-                    </p>
-                    <p class="cdk-visually-hidden" role="status" *ngIf="resultados.length > 0">
-                        {{ resultados.length }} {{ resultados.length === 1 ? 'resultado' : 'resultados' }}
-                    </p>
-                </ng-container>
-
-                <ng-template #navEnReposo>
-                    <div class="admin-layout__nav-group" *ngFor="let group of navGroups; trackBy: trackByGroup">
-                        <button type="button"
-                            class="admin-layout__nav-group-header"
-                            (click)="toggleGroup(group.label)"
-                            [attr.aria-expanded]="group.isOpen"
-                            [attr.aria-label]="'Sección ' + group.label">
-                            <span class="admin-layout__nav-group-label">{{ group.label }}</span>
-                            <i class="ph admin-layout__nav-group-chev" [class.ph-caret-up]="group.isOpen" [class.ph-caret-down]="!group.isOpen" aria-hidden="true"></i>
-                        </button>
-
-                        <div class="admin-layout__nav-group-items" *ngIf="group.isOpen">
-                            <a class="admin-layout__nav-item"
-                                *ngFor="let item of group.items; trackBy: trackByRoute"
-                                [routerLink]="item.route"
-                                routerLinkActive="is-active"
-                                #rla="routerLinkActive"
-                                [attr.aria-current]="rla.isActive ? 'page' : null"
-                                [matTooltip]="isCollapsed ? item.label : ''"
-                                matTooltipPosition="right"
-                                (click)="isMobile && sidenav.close()">
-                                <i class="ph ph-{{ item.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
-                                <span class="admin-layout__nav-label">{{ item.label }}</span>
-                            </a>
-                        </div>
-                    </div>
-                </ng-template>
-            </nav>
+            <app-sidebar-nav
+                [grupos]="accessibleGroups"
+                [authz]="authz"
+                [colapsado]="isCollapsed"
+                (ejecutar)="ejecutar($event)"
+                (navegado)="cerrarMenuEnMobile()" />
 
             <div class="admin-layout__footer">
                 <button type="button" class="admin-layout__footer-item" appUnavailable="Preferencias: todavía no está disponible">
@@ -155,25 +74,7 @@
                     <i class="ph" [class.ph-x]="sidenav.opened" [class.ph-list]="!sidenav.opened" aria-hidden="true"></i>
                 </button>
 
-                <i class="ph ph-{{ sectionIcon }} admin-layout__title-icon" aria-hidden="true"></i>
-
-                <!-- Tramos previos = links a la lista de su sección (se ocultan en mobile). El último
-                     tramo es el título de la página: el único h1 de la vista. -->
-                <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación" *ngIf="breadcrumbPrevios.length > 0">
-                    <ol class="admin-layout__breadcrumb-list">
-                        @for (crumb of breadcrumbPrevios; track $index) {
-                            <li class="admin-layout__breadcrumb-item">
-                                @if (crumb.link) {
-                                    <a [routerLink]="crumb.link" class="admin-layout__breadcrumb-link">{{ crumb.label }}</a>
-                                } @else {
-                                    <span class="admin-layout__breadcrumb-crumb">{{ crumb.label }}</span>
-                                }
-                                <span class="admin-layout__breadcrumb-sep" aria-hidden="true">/</span>
-                            </li>
-                        }
-                    </ol>
-                </nav>
-                <h1 class="admin-layout__title">{{ tituloPagina }}</h1>
+                <app-breadcrumb [secciones]="seccionesVisibles" />
 
                 <span class="admin-layout__header-spacer"></span>
 

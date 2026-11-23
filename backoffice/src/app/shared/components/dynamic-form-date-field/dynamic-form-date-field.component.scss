@@ -1,3 +1,5 @@
+@use 'shared-styles/mixins' as *;
+
 :host {
   display: block;
   width: 100%;
@@ -5,4 +7,29 @@
 
 mat-form-field {
   width: 100%;
+}
+
+// Link que vacía una fecha opcional (`field.fecha.quitar`).
+.date-field {
+  &__quitar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    // Target táctil mínimo de 24px (WCAG 2.5.8): sin esto el link medía lo que su texto (~15px).
+    min-height: var(--theme-space-lg);
+    margin-top: var(--theme-space-xs);
+    padding: 0;
+    border: 0;
+    border-radius: var(--theme-radius-sm);
+    background: none;
+    color: var(--theme-primary);
+    font: inherit;
+    font-size: var(--theme-font-small-size);
+    cursor: pointer;
+    @include focus-ring;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }

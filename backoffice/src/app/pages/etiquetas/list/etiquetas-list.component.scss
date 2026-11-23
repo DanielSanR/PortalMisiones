@@ -6,7 +6,7 @@
 @use 'shared-styles/mixins' as *;
 
 .etiqlist {
-  &-fila {
+  &__fila {
     display: flex;
     align-items: center;
     gap: var(--theme-space-sm);
@@ -15,7 +15,7 @@
 
   // Global vs. local: la global (catálogo compartido) se destaca en tono info;
   // la local queda neutra porque el organismo ya la acota en la columna de al lado.
-  &-alcance {
+  &__alcance {
     flex: none;
 
     &--global {

@@ -1,30 +1,32 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, inject } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, merge, startWith } from 'rxjs';
+import { combineLatest, filter, map, startWith } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../../shared/components/table';
-import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
-import { ListSearchComponent } from '../../../../shared/components/list-search';
-import { AtajoDirective } from '../../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../../shared/components/active-filters';
-import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
-import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '@shared/components/table';
+import { RowAction, RowActionsComponent } from '@shared/components/row-actions';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent, FiltroActivo } from '@shared/components/active-filters';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { ADOPTAR_ACCESS } from '@core/constants/policy-overrides.constants';
-import { buscarEn } from '@core/utils/list-filter.utils';
+import { ListaCliente, compararTexto, textosDeVacio } from '@shared/utils/lista-cliente';
+import { avisarError, avisarExito } from '@shared/utils/avisos';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
 import { AdopcionOpcion, AdopcionVM, AdopcionesFacade, EstadoVigencia } from '@features/adopciones';
-import { AdoptarDialogComponent } from '../adoptar-dialog/adoptar-dialog.component';
-import { VigenciaBadgeComponent } from '../vigencia-badge/vigencia-badge.component';
-import { NO_DISPONIBLE } from '../adopcion-save-error';
+import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
+import { dialogoDeAdoptar } from '../adoptar-dialogo';
+import { VigenciaBadgeComponent } from '../components/vigencia-badge/vigencia-badge.component';
 import { RUTA_DETALLE_ADOPCION } from '../adopciones.rutas';
 import { confirmDeshabilitar } from '../adopcion-textos';
+import { NO_DISPONIBLE } from '@core/constants/textos.constants';
 
 /** Opciones del select "Estado", en el orden en que se leen. */
 const ESTADOS: { valor: EstadoVigencia; etiqueta: string }[] = [
@@ -36,17 +38,11 @@ const ESTADOS: { valor: EstadoVigencia; etiqueta: string }[] = [
 /** Orden del estado al ordenar la columna: lo vigente primero. */
 const ORDEN_ESTADO: Record<EstadoVigencia, number> = { vigente: 0, programada: 1, vencida: 2 };
 
-interface AdopcionesVista {
-  /** Solo la página visible. */
-  rows: AdopcionVM[];
-  /** Total tras filtrar (lo que cuenta el toolbar y alimenta al paginador). */
-  total: number;
-  pageIndex: number;
-  hayFiltros: boolean;
-  filtrosActivos: FiltroActivo[];
-  emptyTitle: string;
-  emptyMessage: string;
-  emptyActionLabel: string;
+/** Filtros propios de la lista, con los organismos de los que sale el nombre del chip. */
+interface FiltrosDeAdopciones {
+  estado: EstadoVigencia | '';
+  organismoId: string;
+  organismos: AdopcionOpcion[];
 }
 
 /**
@@ -87,7 +83,7 @@ export class AdopcionesListComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   readonly adopciones$ = this.facade.adopciones$;
   readonly rutaDetalle = RUTA_DETALLE_ADOPCION;
@@ -95,70 +91,50 @@ export class AdopcionesListComponent implements OnInit {
   readonly adoptarAccess = ADOPTAR_ACCESS;
   readonly estados = ESTADOS;
 
-  loading = true;
-  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
-  error = false;
-  /** Adopción con una deshabilitación en vuelo, para bloquear su fila mientras dura. */
-  deshabilitandoId: string | null = null;
-
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
   /** '' = todos. */
   readonly estadoCtrl = new FormControl<EstadoVigencia | ''>('', { nonNullable: true });
   readonly organismoCtrl = new FormControl('', { nonNullable: true });
-  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
-  readonly pageIndex$ = new BehaviorSubject<number>(0);
-  readonly pageSize$ = new BehaviorSubject<number>(10);
-
-  private readonly search$ = this.searchCtrl.valueChanges.pipe(
-    debounceTime(200),
-    distinctUntilChanged(),
-    startWith(this.searchCtrl.value),
-  );
   private readonly estado$ = this.estadoCtrl.valueChanges.pipe(startWith(this.estadoCtrl.value));
   private readonly organismo$ = this.organismoCtrl.valueChanges.pipe(startWith(this.organismoCtrl.value));
 
   /** Organismos que aparecen en la lista (sin nombre = sin `READ_ORGANISM`: no hay filtro que ofrecer). */
   readonly organismos$ = this.adopciones$.pipe(map(organismosDeFiltro));
 
-  readonly vista$ = combineLatest([
-    this.adopciones$, this.organismos$, this.search$, this.estado$, this.organismo$,
-    this.sort$, this.pageIndex$, this.pageSize$,
-  ]).pipe(
-    map(([adopciones, organismos, search, estado, organismoId, sort, pageIndex, pageSize]): AdopcionesVista => {
-      const filtradas = this.ordenar(
-        buscarEn(adopciones, search, (x) => [x.plantillaTitulo, x.organismoNombre])
-          .filter((a) => (!estado || a.estadoVigencia === estado) && (!organismoId || a.organismoId === organismoId)),
-        sort,
-      );
-      // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de mostrar
-      // una tabla vacía con resultados que sí existen.
-      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
-      const pagina = Math.min(pageIndex, ultimaPagina);
-      const desde = pagina * pageSize;
-
-      const filtrosActivos = this.filtrosActivos(search, estado, organismoId, organismos);
-      const hayFiltros = filtrosActivos.length > 0;
-      return {
-        rows: filtradas.slice(desde, desde + pageSize),
-        total: filtradas.length,
-        pageIndex: pagina,
-        hayFiltros,
-        filtrosActivos,
-        // Con filtros activos el CTA siempre limpia (aunque no haya adopciones); "Adoptar" solo sin filtros.
-        ...(hayFiltros
-          ? {
-            emptyTitle: 'Sin resultados',
-            emptyMessage: 'Ningún trámite coincide con la búsqueda o los filtros aplicados.',
-            emptyActionLabel: 'Limpiar filtros',
-          }
-          : {
-            emptyTitle: 'Todavía no hay trámites del organismo',
-            emptyMessage: 'Un trámite del organismo es una plantilla provincial que un organismo ofrece durante un período.',
-            emptyActionLabel: 'Adoptar trámite',
-          }),
-      };
-    }),
-  );
+  /**
+   * Búsqueda, filtros, orden, paginado y estado de carga en cliente sobre `adopciones$`.
+   */
+  readonly lista = new ListaCliente<AdopcionVM, FiltrosDeAdopciones>({
+    fuente$: this.adopciones$,
+    cargar: () => this.facade.loadAdopciones(),
+    buscarEn: (a) => [a.plantillaTitulo, a.organismoNombre],
+    comparar: (a, b, columna) => this.comparar(a, b, columna),
+    filtros$: combineLatest([this.estado$, this.organismo$, this.organismos$]).pipe(
+      map(([estado, organismoId, organismos]): FiltrosDeAdopciones => ({ estado, organismoId, organismos })),
+    ),
+    filtrar: (buscadas, { estado, organismoId }) => buscadas.filter((a) =>
+      (!estado || a.estadoVigencia === estado) && (!organismoId || a.organismoId === organismoId)),
+    filtrosActivos: (filtros) => this.filtrosActivos(filtros),
+    limpiarFiltros: () => {
+      this.estadoCtrl.setValue('');
+      this.organismoCtrl.setValue('');
+    },
+    quitarFiltro: (clave) => {
+      if (clave === 'estado') this.estadoCtrl.setValue('');
+      if (clave === 'organismo') this.organismoCtrl.setValue('');
+    },
+    extras: textosDeVacio(
+      {
+        emptyTitle: 'Todavía no hay trámites del organismo',
+        emptyMessage: 'Un trámite del organismo es una plantilla provincial que un organismo ofrece durante un período.',
+        emptyActionLabel: 'Adoptar trámite',
+      },
+      {
+        emptyTitle: 'Sin resultados',
+        emptyMessage: 'Ningún trámite coincide con la búsqueda o los filtros aplicados.',
+        emptyActionLabel: 'Limpiar filtros',
+      },
+    ),
+  });
 
   readonly columns: TableColumn<AdopcionVM>[] = [
     { key: 'plantilla', label: 'Trámite', sortable: true },
@@ -169,7 +145,7 @@ export class AdopcionesListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.load();
+    this.lista.cargar();
     // El buscador de comandos ("Adoptar trámite") llega con `?adoptar=1`: abre el diálogo y limpia
     // la URL, para que volver atrás o recargar no lo reabra. Se escucha el stream (no el snapshot):
     // si el listado ya está montado, el router reutiliza el componente y solo cambia la query.
@@ -180,11 +156,6 @@ export class AdopcionesListComponent implements OnInit {
         if (this.facade.puedeAdoptar()) this.onAdoptar();
       });
 
-    // Cambiar un filtro vuelve a la primera página (si no, al limpiarlo la tabla salta a una página vieja).
-    merge(this.searchCtrl.valueChanges, this.estadoCtrl.valueChanges, this.organismoCtrl.valueChanges)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.pageIndex$.next(0));
-
     // Un organismo elegido que ya no está en la lista (se deshabilitó su última adopción) deja de filtrar.
     this.organismos$
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -192,72 +163,45 @@ export class AdopcionesListComponent implements OnInit {
         const elegido = this.organismoCtrl.value;
         // Mientras recarga la lista está vacía (`loadAdopciones` la vacía al empezar): no es que el
         // organismo haya desaparecido. Igual que en `fichas-list`.
-        if (this.loading || !organismos.length) return;
+        if (this.lista.cargando || !organismos.length) return;
         if (elegido && !organismos.some((o) => o.id === elegido)) this.organismoCtrl.setValue('');
       });
-  }
-
-  load(): void {
-    this.loading = true;
-    this.error = false;
-    this.facade.loadAdopciones()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
-        // Sin esto la lista quedaría en el estado vacío, indistinguible de una carga fallida.
-        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
-      });
-  }
-
-  limpiarFiltros(): void {
-    this.searchCtrl.setValue('');
-    this.estadoCtrl.setValue('');
-    this.organismoCtrl.setValue('');
-  }
-
-  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: string): void {
-    if (clave === 'search') this.searchCtrl.setValue('');
-    if (clave === 'estado') this.estadoCtrl.setValue('');
-    if (clave === 'organismo') this.organismoCtrl.setValue('');
   }
 
   /** El CTA del estado vacío adopta o limpia según por qué está vacío. */
   onEmptyAction(hayFiltros: boolean): void {
     if (hayFiltros) {
-      this.limpiarFiltros();
+      this.lista.limpiar();
       return;
     }
     this.onAdoptar();
   }
 
-  onSortChange(sort: TableSortEvent): void {
-    this.sort$.next(sort);
-  }
+  /** El formulario se está abriendo (su código se baja en diferido): un segundo clic no abre otro. */
+  private abriendo = false;
 
-  onPageChange(evento: TablePageEvent): void {
-    this.pageIndex$.next(evento.pageIndex);
-    this.pageSize$.next(evento.pageSize);
-  }
-
-  onAdoptar(): void {
+  async onAdoptar(): Promise<void> {
     // Con un diálogo ya abierto no se abre otro encima (doble clic): cada uno podría adoptar el trámite.
-    if (this.dialog.openDialogs.length) return;
-    this.dialog.open<AdoptarDialogComponent, void, AdopcionVM>(AdoptarDialogComponent, {
-      panelClass: 'custom-modal-panel',
-      autoFocus: 'dialog',
-    })
-      .afterClosed()
-      .pipe(filter((creada): creada is AdopcionVM => !!creada), takeUntilDestroyed(this.destroyRef))
-      .subscribe((creada) => {
-        const texto = creada.estadoVigencia === 'programada'
-          ? 'Trámite adoptado. Va a estar vigente desde la fecha de inicio'
-          : 'Trámite adoptado';
-        this.snackBar.open(texto, 'Ver', { duration: 5000, panelClass: 'snackbar-success' })
-          .onAction()
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe(() => this.router.navigate([RUTA_DETALLE_ADOPCION, creada.id]));
-      });
+    if (this.abriendo || this.dialog.openDialogs.length) return;
+    this.abriendo = true;
+    try {
+      const ref = await abrirFormDialog(this.dialog, dialogoDeAdoptar(this.facade));
+      ref.afterClosed()
+        .pipe(filter((creada): creada is AdopcionVM => !!creada), takeUntilDestroyed(this.destroyRef))
+        .subscribe((creada) => {
+          const texto = creada.estadoVigencia === 'programada'
+            ? 'Trámite adoptado. Va a estar vigente desde la fecha de inicio'
+            : 'Trámite adoptado';
+          avisarExito(this.snackBar, texto, { accion: 'Ver', duracion: 5000 })
+            .onAction()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.router.navigate([RUTA_DETALLE_ADOPCION, creada.id]));
+        });
+    } catch {
+      avisarError(this.snackBar, 'No pudimos abrir el formulario. Intentá de nuevo.');
+    } finally {
+      this.abriendo = false;
+    }
   }
 
   accionVer(adopcion: AdopcionVM): RowAction {
@@ -284,44 +228,30 @@ export class AdopcionesListComponent implements OnInit {
   }
 
   onDeshabilitar(adopcion: AdopcionVM): void {
-    abrirConfirmacion(this.dialog, {
-      data: confirmDeshabilitar(adopcion, () => {
-        this.deshabilitandoId = adopcion.id;
-        this.cdr.markForCheck();
-        return this.facade.deshabilitar(adopcion.id).pipe(
-          finalize(() => { this.deshabilitandoId = null; this.cdr.markForCheck(); }),
-        );
-      }),
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Trámite del organismo deshabilitado', 'OK', {
-        duration: 3000,
-        panelClass: 'snackbar-success',
-      }));
-  }
-
-  private ordenar(adopciones: AdopcionVM[], sort: TableSortEvent | null): AdopcionVM[] {
-    if (!sort?.direction) return adopciones;
-    const factor = sort.direction === 'asc' ? 1 : -1;
-    return [...adopciones].sort((a, b) => this.comparar(a, b, sort.active) * factor);
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: confirmDeshabilitar(adopcion, () => this.facade.deshabilitar(adopcion.id)),
+      aviso: 'Trámite del organismo deshabilitado',
+      ocupado: this.lista.ocupar(adopcion.id),
+      // La fila deshabilitada sale de la lista: el foco va a la que ocupa su lugar.
+      foco: { host: this.host },
+    });
   }
 
   private comparar(a: AdopcionVM, b: AdopcionVM, key: string): number {
-    const texto = (x: string | null, y: string | null) => (x ?? '').localeCompare(y ?? '', 'es-AR', { sensitivity: 'base' });
     switch (key) {
-      case 'plantilla': return texto(a.plantillaTitulo, b.plantillaTitulo);
-      case 'organismo': return texto(a.organismoNombre, b.organismoNombre);
+      case 'plantilla': return compararTexto(a.plantillaTitulo, b.plantillaTitulo);
+      case 'organismo': return compararTexto(a.organismoNombre, b.organismoNombre);
       case 'vigencia': return a.vigenteDesde.getTime() - b.vigenteDesde.getTime();
       case 'estado': return ORDEN_ESTADO[a.estadoVigencia] - ORDEN_ESTADO[b.estadoVigencia];
       default: return 0;
     }
   }
 
-  private filtrosActivos(search: string, estado: EstadoVigencia | '', organismoId: string, organismos: AdopcionOpcion[]): FiltroActivo[] {
+  private filtrosActivos({ estado, organismoId, organismos }: FiltrosDeAdopciones): FiltroActivo[] {
     const activos: FiltroActivo[] = [];
-    const termino = search.trim();
-    if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
     if (estado) {
       activos.push({ clave: 'estado', etiqueta: `Estado: ${ESTADOS.find((e) => e.valor === estado)?.etiqueta ?? estado}` });
     }

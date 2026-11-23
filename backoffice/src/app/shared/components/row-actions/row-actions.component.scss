@@ -5,8 +5,6 @@
 // así que acá solo va lo propio de este componente.
 // ==========================================================================
 
-@use 'shared-styles/mixins' as *;
-
 :host {
   display: block;
 }
@@ -15,7 +13,7 @@
 
   // Separa el grupo destructivo del resto dentro del menú (Kitchen Sink §07).
   &__divisor {
-    margin: 5px 4px;
+    margin: var(--theme-space-5) var(--theme-space-xs);
     border: 0;
     border-top: 1px solid var(--theme-border-subtle);
   }

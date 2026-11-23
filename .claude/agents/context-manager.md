@@ -1,6 +1,6 @@
 ---
 name: context-manager
-description: Context management specialist for multi-agent workflows and long-running tasks. Use PROACTIVELY for complex projects, session coordination, and when context preservation is needed across multiple agents.
+description: Context management specialist for multi-agent workflows and long-running tasks. Use on request for complex projects, session coordination, and when context preservation is needed across multiple agents. Generic helper - not proactive in backoffice/ work, where .claude/rules/ and CLAUDE.md are the source of truth.
 tools: Read, Write, Edit, TodoWrite
 ---
 

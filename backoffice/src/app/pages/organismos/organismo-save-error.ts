@@ -1,4 +1,5 @@
 import { API_CODES } from '@core/constants/api-codes.constants';
+import { extractErrorCode } from '@core/models/api-response.model';
 import { errorDeAccionPorCodigo } from '@core/utils/http-error-text.utils';
 import { ConflictoDeCampo } from '@core/utils/save-error.utils';
 
@@ -83,6 +84,22 @@ export function conflictosDeOrganismo({ esAlta, tieneSuperior }: ContextoDeGuard
 }
 
 export const FALLBACK_ORGANISMO = 'No se pudo guardar el organismo. Intentá de nuevo.';
+
+/**
+ * ¿El error de la lectura de la ficha dice que el organismo no existe? (404 / `4058`, o el `4073` genérico).
+ * Se mira por forma y no por `HttpErrorResponse`: el mock tira `{ status, error: { code } }`.
+ */
+export function esOrganismoInexistente(err: unknown): boolean {
+  const status = (err as { status?: number } | null)?.status;
+  const code = extractErrorCode((err as { error?: unknown } | null)?.error);
+  return status === 404 || code === API_CODES.ORGANISM_NOT_FOUND || code === API_CODES.ENTITY_NOT_FOUND;
+}
+
+/** Textos del panel "no existe" de la ficha (ver y editar). */
+export const TEXTOS_ORGANISMO_INEXISTENTE = {
+  titulo: 'Ese organismo no existe',
+  texto: 'Puede que el enlace esté mal escrito o que lo hayan eliminado. Buscalo en el listado.',
+} as const;
 
 /**
  * `errorDeAccion` del confirm de ELIMINAR un organismo (listado y ficha). 409 `4067`: tiene organismos hijos

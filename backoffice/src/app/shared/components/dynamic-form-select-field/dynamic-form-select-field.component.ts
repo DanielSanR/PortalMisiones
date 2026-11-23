@@ -3,7 +3,7 @@ import { NgFor, NgIf } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig } from '@core/models/field.interface';
 import { FormErrorMessageDirective } from '../dynamic-form-field/FormErrorMessage.directive';
 
 /**
@@ -27,5 +27,4 @@ export class DynamicFormSelectFieldComponent {
    * (`markAllAsTouched()` al enviar). Es un input solo para que los campos OnPush se revisen.
    */
   @Input() revision = 0;
-  @Input() multiple = false;
 }

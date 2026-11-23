@@ -1,0 +1,92 @@
+// Mapa de ubicación: ayuda, marco, estados de carga y aviso sin mapa. Lo que se dibuja sobre los nodos que crea
+// Leaflet (marcador, controles) y el CSS de Leaflet van en `shared-styles/mapa-leaflet.scss`, un bundle aparte que
+// el componente agrega al mostrarse (esos nodos no llevan el atributo de encapsulación).
+
+@use 'shared-styles/mixins' as *;
+
+.mapa-ubicacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  min-width: 0;
+
+  &__ayuda {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-2xs);
+    margin: 0;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+  }
+
+  &__teclado {
+    color: var(--theme-text-tertiary);
+  }
+
+  // Contexto de apilado propio: las capas de Leaflet (z-index 400…1000) no se suben al pie del diálogo.
+  &__marco {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid var(--theme-border-strong);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-sunken);
+  }
+
+  &__lienzo {
+    height: 280px;
+    background: var(--theme-surface-sunken);
+
+    &:focus-visible {
+      @include focus-ring-inset;
+    }
+
+    @include responsive(mobile) {
+      height: 220px;
+    }
+  }
+
+  &__estado,
+  &__aviso {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--theme-space-sm);
+    min-height: 120px;
+    margin: 0;
+    padding: var(--theme-space-md);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+    text-align: center;
+  }
+
+  &__estado {
+    position: absolute;
+    inset: 0;
+  }
+
+  // Sobre el mapa, abajo al centro, sin tapar los controles ni recibir clics (el clic marca el punto).
+  &__invitacion {
+    position: absolute;
+    bottom: var(--theme-space-lg);
+    left: 50%;
+    z-index: var(--theme-z-header);
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-xs);
+    margin: 0;
+    padding: var(--theme-space-xs) var(--theme-space-sm);
+    border-radius: var(--theme-radius-sm);
+    background: var(--theme-surface-card);
+    box-shadow: var(--theme-shadow-md);
+    color: var(--theme-text-primary);
+    font-size: var(--theme-font-small-size);
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  &__aviso-texto {
+    margin: 0;
+  }
+}

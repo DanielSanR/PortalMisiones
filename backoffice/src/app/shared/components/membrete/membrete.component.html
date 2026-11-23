@@ -1,0 +1,46 @@
+<header class="detail-header detail-header--flush" [class.detail-header--ficha]="ficha">
+  <div class="detail-header__body">
+    <ng-content select="[membreteTile]"></ng-content>
+    @if (icono) {
+      <span class="detail-header__tile" aria-hidden="true"><i [class]="'ph ph-' + icono"></i></span>
+    }
+
+    <div class="detail-header__identity" [attr.aria-live]="vivo ? 'polite' : null">
+      <div class="detail-header__row">
+        <!-- `tabindex="-1"` (con `tituloEnfocable`): destino de foco por código; no entra en el orden de tabulación. -->
+        <h2 #tituloRef class="detail-header__title membrete__titulo" [attr.tabindex]="tituloEnfocable ? -1 : null"
+            [class.detail-header__title--muted]="!titulo">
+          {{ titulo || tituloVacio }}
+        </h2>
+        <ng-content select="[membretePill]"></ng-content>
+      </div>
+
+      @if (datos.length) {
+        <p class="detail-header__meta">
+          @for (dato of datos; track $index) {
+            @if ($index > 0) {
+              <span class="detail-header__sep" aria-hidden="true"></span>
+            }
+            @if (dato.codigo) {
+              <code class="detail-header__code">{{ dato.texto }}</code>
+            } @else {
+              <span>@if (dato.icono) {<i [class]="'ph ph-' + dato.icono" aria-hidden="true"></i>}{{ dato.texto }}</span>
+            }
+          }
+        </p>
+      }
+
+      @if (aviso) {
+        <p class="detail-header__notice">
+          <i class="ph ph-info" aria-hidden="true"></i>
+          {{ aviso }}
+        </p>
+      }
+    </div>
+
+    <div class="detail-header__actions">
+      <ng-content></ng-content>
+    </div>
+  </div>
+  <ng-content select="[membretePie]"></ng-content>
+</header>

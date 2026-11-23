@@ -4,62 +4,54 @@
   </button>
 </ng-template>
 
-@if (vista$ | async; as vista) {
+@if (lista.vista$ | async; as vista) {
 <!-- Toolbar según el diseño "Pantallas · Backoffice Misiones", pantalla LISTA:
      fila A = buscador + contador + acciones · fila B = chips de filtro. -->
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
     <app-list-search [atajoFoco]="true"
-      [control]="searchCtrl"
+      [control]="lista.searchCtrl"
       placeholder="Buscar por nombre, email o rol…"
       ariaLabel="Buscar usuarios por nombre, email, rol u organismo">
     </app-list-search>
 
     <div class="list-toolbar__actions">
-      <span class="list-toolbar-count" aria-live="polite">{{ vista.total }} usuarios</span>
-      <!-- Sin funcionalidad todavía: visibles con `appUnavailable` (motivo en tooltip), no ocultos. -->
-      <button type="button" class="list-iconbtn" appUnavailable="Usá los encabezados de la tabla para ordenar; el orden avanzado todavía no está disponible"
-              aria-label="Ordenar">
-        <i class="ph ph-arrows-down-up" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="list-iconbtn" appUnavailable="La exportación a CSV se habilita cuando el backend ofrezca el endpoint"
-              aria-label="Exportar a CSV">
-        <i class="ph ph-download-simple" aria-hidden="true"></i>
-      </button>
+      <span class="list-toolbar__count" aria-live="polite">{{ vista.total }} usuarios</span>
+      <!-- Sin funcionalidad todavía: visibles con su motivo (`appListaPendiente`), no ocultos. -->
+      <button type="button" appListaPendiente="ordenar"></button>
+      <button type="button" appListaPendiente="exportar"></button>
     </div>
   </div>
 
   <div class="list-toolbar__row list-toolbar__row--chips">
     <app-filter-tabs [tabs]="(filterTabs$ | async) ?? []" [active]="(filtro$ | async)!" (activeChange)="filtro$.next($any($event))"></app-filter-tabs>
-    <button type="button" class="list-ghost-button" appUnavailable="Se habilita cuando haya más campos por los que filtrar">
-      <i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Más filtros
-    </button>
+    <button type="button" appListaPendiente="mas-filtros"></button>
   </div>
 </div>
 
 @if (vista.filtrosActivos.length) {
   <app-active-filters
     [filtros]="vista.filtrosActivos"
-    (quitar)="quitarFiltro($event)"
-    (limpiar)="limpiarFiltros()">
+    (quitar)="lista.quitar($event)"
+    (limpiar)="lista.limpiar()">
   </app-active-filters>
 }
 
 <app-shared-table
     [data]="vista.rows"
     [columns]="columns"
-    [loading]="loading"
-    [error]="error"
+    [loading]="vista.cargando"
+    [error]="vista.error"
     errorTitle="No pudimos cargar los usuarios"
     errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
-    (retry)="load()"
+    (retry)="lista.cargar()"
     [sortable]="true"
-    (sortChange)="onSortChange($event)"
+    (sortChange)="lista.ordenar($event)"
     [paginated]="true"
     [totalItems]="vista.total"
     [pageIndex]="vista.pageIndex"
-    [pageSize]="(pageSize$ | async)!"
-    (pageChange)="onPageChange($event)"
+    [pageSize]="vista.pageSize"
+    (pageChange)="lista.paginar($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
     [emptyActionPermission]="vista.hayFiltros ? '' : 'CREATE_USER'"
@@ -119,7 +111,7 @@
         <app-row-actions
             [primary]="accionEditar(row)"
             [actions]="accionesDe(row)"
-            [busy]="trabajandoId === row.id"
+            [busy]="vista.ocupadaId === row.id"
             busyLabel="Procesando…">
         </app-row-actions>
     </ng-template>

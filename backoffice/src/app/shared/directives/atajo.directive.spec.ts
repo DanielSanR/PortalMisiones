@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
-import { ATAJOS_STORAGE_KEY, AtajosService } from '../../core/services/atajos.service';
+import { ATAJOS_STORAGE_KEY, AtajosService } from '@core/services/atajos.service';
 import { AtajoDirective } from './atajo.directive';
 
 @Component({

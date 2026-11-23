@@ -1,38 +1,36 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  BehaviorSubject, Observable, catchError, combineLatest, filter, finalize, map, of, shareReplay, startWith, switchMap, tap,
-} from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, map, of, shareReplay, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
-import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
-import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
-import { PuedeTenerCambiosSinGuardar } from '@core/guards';
-import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
+import { Carga, cargaLista, conCarga } from '@shared/utils/carga';
+import { formularioDePagina } from '@shared/utils/formulario-de-pagina';
+import { EstadoCargaComponent } from '@shared/components/estado-carga/estado-carga.component';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { PuedeTenerCambiosSinGuardar } from '@shared/guards/unsaved-changes.guard';
 import { inicioDelDia } from '@core/utils/fecha.utils';
 import { AdopcionFormValue, AdopcionVM, AdopcionesFacade } from '@features/adopciones';
-import { FormErrorBannerComponent } from '@shared/components/form-error-banner/form-error-banner.component';
-import { RUTA_DETALLE_PLANTILLA } from '../../plantillas/plantillas.rutas';
+import { FieldConfig } from '@core/models/field.interface';
+import { DynamicFormComponent } from '@shared/components/dynamic-form/dynamic-form.component';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
+import { RUTA_DETALLE_PLANTILLA } from '@pages/tramites/plantillas/plantillas.rutas';
 import { RUTA_LISTA_ADOPCIONES } from '../adopciones.rutas';
 import {
-  CONFLICTOS_ADOPCION, FALLBACK_ADOPCION, NO_DISPONIBLE, TEXTOS_ADOPCION_INEXISTENTE, esAdopcionInexistente,
+  CONFLICTOS_ADOPCION, FALLBACK_ADOPCION, TEXTOS_ADOPCION_INEXISTENTE, esAdopcionInexistente,
 } from '../adopcion-save-error';
 import { confirmDeshabilitar } from '../adopcion-textos';
-import { VigenciaBadgeComponent } from '../vigencia-badge/vigencia-badge.component';
-import { FichasDeAdopcionComponent } from '../../fichas/de-adopcion/fichas-de-adopcion.component';
-import { VigenciaCamposComponent } from '../vigencia-campos/vigencia-campos.component';
-import { crearVigenciaForm, rangoDeVigencia } from '../vigencia-campos/vigencia-form';
+import { MembreteComponent } from '@shared/components/membrete/membrete.component';
+import { VigenciaBadgeComponent } from '../components/vigencia-badge/vigencia-badge.component';
+import { FichasDeAdopcionComponent } from '@pages/tramites/fichas/components/de-adopcion/fichas-de-adopcion.component';
+import { camposDeVigencia, rangoDeVigencia } from '../adoptar-dialogo';
+import { NO_DISPONIBLE } from '@core/constants/textos.constants';
 
-type EstadoDetalle =
-  | { tipo: 'cargando' }
-  | { tipo: 'error'; noExiste: boolean }
-  | { tipo: 'ok'; adopcion: AdopcionVM };
+type EstadoDetalle = Carga<AdopcionVM>;
 
 /**
  * Detalle de un trámite del organismo (adopción, habilitada o no: `GET /{id}` devuelve las dos).
@@ -45,13 +43,13 @@ type EstadoDetalle =
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AsyncPipe, DatePipe, RouterLink, ReactiveFormsModule, MatButtonModule, MatSlideToggleModule, MatSnackBarModule,
-    FormErrorBannerComponent, HasPermissionDirective, PageActionsDirective, VigenciaBadgeComponent, VigenciaCamposComponent, FichasDeAdopcionComponent,
+    AsyncPipe, DatePipe, RouterLink, MatButtonModule, MatSnackBarModule,
+    EstadoCargaComponent, MembreteComponent, DynamicFormComponent, HasPermissionDirective, PageActionsDirective, UnavailableDirective, VigenciaBadgeComponent, FichasDeAdopcionComponent,
   ],
   templateUrl: './adopcion-detail.component.html',
   styleUrl: './adopcion-detail.component.scss',
 })
-export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
+export class AdopcionDetailComponent implements OnInit, PuedeTenerCambiosSinGuardar {
   private readonly facade = inject(AdopcionesFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -64,16 +62,29 @@ export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
   readonly textosInexistente = TEXTOS_ADOPCION_INEXISTENTE;
   readonly rutaPlantilla = RUTA_DETALLE_PLANTILLA;
 
-  readonly form = new FormGroup({
-    vigencia: crearVigenciaForm(),
-    habilitada: new FormControl(true, { nonNullable: true }),
-  });
+  /** "Vigencia y estado": las dos fechas y "Habilitado", con el aviso de lo que implica apagarlo. */
+  readonly campos: FieldConfig[] = [
+    ...camposDeVigencia(),
+    {
+      name: 'habilitada',
+      label: 'Habilitado',
+      type: 'checkbox',
+      aviso: (valor) => (valor
+        ? null
+        : { tono: 'alerta', texto: 'Al guardar deja de listarse en Trámites del organismo y el trámite deja de verse en el portal.' }),
+    },
+  ];
+  /** Valores guardados: con cada objeto nuevo el formulario vuelve a ellos y queda sin cambios. */
+  inicial: Record<string, unknown> | null = null;
 
-  guardando = false;
-  /** Intentos de envío inválidos: le avisan a `app-vigencia-campos` (OnPush) que repinte errores. */
-  intentos = 0;
-  /** Motivo del último rechazo del backend al guardar (o `''`). */
-  errorMensaje = '';
+  /** Solo existe con `UPDATE_ADOPTION` y la adopción cargada. */
+  @ViewChild(DynamicFormComponent) private dynamicForm?: DynamicFormComponent;
+
+  /**
+   * Guardado en el lugar (sin `destino`) y cambios sin guardar: el marco común de formulario de página. La carga
+   * NO va por el marco: `estado$` sigue a `:id`, lo comparten dos `async` y muestra lo guardado sin volver a pedirlo.
+   */
+  readonly marco = formularioDePagina<never>();
 
   /** Adopción mostrada (la última que resolvió `estado$`): la base del PUT total. */
   private actual: AdopcionVM | null = null;
@@ -92,17 +103,20 @@ export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
     this.fuente$,
   ]).pipe(
     switchMap(([id, guardada]) => guardada?.id === id
-      ? of<EstadoDetalle>({ tipo: 'ok', adopcion: guardada })
-      : this.facade.getDetalle(id).pipe(
-        map((adopcion): EstadoDetalle => ({ tipo: 'ok', adopcion })),
-        catchError((err: unknown) => of<EstadoDetalle>({ tipo: 'error', noExiste: esAdopcionInexistente(err) })),
-        startWith<EstadoDetalle>({ tipo: 'cargando' }),
-      )),
-    tap((estado) => {
-      if (estado.tipo === 'ok') this.cargarEnForm(estado.adopcion);
-    }),
+      ? of(cargaLista(guardada))
+      : this.facade.getDetalle(id).pipe(conCarga(esAdopcionInexistente))),
     shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  ngOnInit(): void {
+    // El form sigue a la adopción mostrada (la leída o la que devolvió el último guardado). Es la primera
+    // suscripción a `estado$`: el form queda cargado antes de que el template dibuje ese mismo estado.
+    this.estado$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((estado) => {
+        if (estado.tipo === 'ok') this.cargarEnForm(estado.valor);
+      });
+  }
 
   reintentar(): void {
     this.fuente$.next(null);
@@ -117,15 +131,15 @@ export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
     if (this.actual) this.cargarEnForm(this.actual);
   }
 
-  guardar(): void {
-    if (this.guardando || !this.actual) return;
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.intentos++;
-      return;
-    }
+  /** Nada que guardar ni que descartar. */
+  get sinCambios(): boolean {
+    return this.dynamicForm?.form?.pristine ?? true;
+  }
 
-    const valor = this.form.getRawValue();
+  /** `(formSubmit)` del formulario: llega solo si es válido (si no, el propio formulario lo cuenta). */
+  async guardar(valor: Record<string, unknown>): Promise<void> {
+    const form = this.dynamicForm?.form;
+    if (this.marco.guardando || !this.actual || !form) return;
     const actual = this.actual;
     // PUT total: plantilla, organismo y titular viajan tal cual; solo cambian vigencia y habilitada.
     // Una fecha sin tocar reenvía su hora original (`rangoDeVigencia`).
@@ -133,43 +147,41 @@ export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
       plantillaId: actual.plantillaId,
       organismoId: actual.organismoId,
       organismoTitularId: actual.organismoTitularId,
-      habilitada: valor.habilitada,
-      ...rangoDeVigencia(this.form.controls.vigencia, actual),
+      habilitada: valor['habilitada'] !== false,
+      ...rangoDeVigencia(valor, actual, {
+        desde: !!form.get('vigenteDesde')?.pristine,
+        hasta: !!form.get('vigenteHasta')?.pristine,
+      }),
     };
 
-    this.guardando = true;
-    this.errorMensaje = '';
-    this.facade.update(actual.id, cambios)
-      .pipe(
-        finalize(() => { this.guardando = false; this.cdr.markForCheck(); }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (guardada) => {
-          const texto = guardada.habilitada === actual.habilitada
-            ? 'Cambios guardados'
-            : guardada.habilitada ? 'Trámite del organismo habilitado' : 'Trámite del organismo deshabilitado';
-          this.snackBar.open(texto, 'OK', { duration: 3000, panelClass: 'snackbar-success' });
-          this.fuente$.next(guardada);
-        },
-        error: (err: unknown) => {
-          this.errorMensaje = aplicarErrorDeGuardado(err, this.form, CONFLICTOS_ADOPCION, FALLBACK_ADOPCION);
-        },
-      });
+    await this.marco.guardar({
+      peticion$: this.facade.update(actual.id, cambios),
+      form,
+      motor: this.dynamicForm,
+      conflictos: CONFLICTOS_ADOPCION,
+      fallback: FALLBACK_ADOPCION,
+      aviso: (guardada) => guardada.habilitada === actual.habilitada
+        ? 'Cambios guardados'
+        : guardada.habilitada ? 'Trámite del organismo habilitado' : 'Trámite del organismo deshabilitado',
+      esAlta: false,
+      // El guardado no navega: muestra lo guardado (y recarga el form con eso) sin volver a pedirlo.
+      alQuedarse: (guardada) => this.fuente$.next(guardada),
+    });
   }
 
   deshabilitar(adopcion: AdopcionVM): void {
-    abrirConfirmacion(this.dialog, {
-      data: confirmDeshabilitar(adopcion, () => this.facade.deshabilitar(adopcion.id)),
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.snackBar.open('Trámite del organismo deshabilitado', 'OK', { duration: 3000, panelClass: 'snackbar-success' });
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: confirmDeshabilitar(adopcion, () => this.facade.deshabilitar(adopcion.id)),
+      aviso: 'Trámite del organismo deshabilitado',
+      alConfirmar: () => {
         // El form queda limpio: salir no tiene que preguntar por cambios sin guardar.
-        this.form.markAsPristine();
+        this.dynamicForm?.form?.markAsPristine();
         this.volverAlListado();
-      });
+      },
+    });
   }
 
   /**
@@ -177,18 +189,17 @@ export class AdopcionDetailComponent implements PuedeTenerCambiosSinGuardar {
    * pregunta: el guardado no navega, y al terminar el form queda limpio.
    */
   tieneCambiosSinGuardar(): boolean {
-    return !this.guardando && this.form.dirty;
+    return this.marco.tieneCambiosSinGuardar(this.dynamicForm?.form);
   }
 
   private cargarEnForm(adopcion: AdopcionVM): void {
     this.actual = adopcion;
-    this.errorMensaje = '';
-    this.form.reset({
-      vigencia: {
-        vigenteDesde: inicioDelDia(adopcion.vigenteDesde),
-        vigenteHasta: adopcion.vigenteHasta ? inicioDelDia(adopcion.vigenteHasta) : null,
-      },
+    this.marco.limpiarErrorDeGuardado();
+    this.inicial = {
+      vigenteDesde: inicioDelDia(adopcion.vigenteDesde),
+      vigenteHasta: adopcion.vigenteHasta ? inicioDelDia(adopcion.vigenteHasta) : null,
       habilitada: adopcion.habilitada,
-    });
+    };
+    this.cdr.markForCheck();
   }
 }

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { AtajoDirective } from '../../directives/atajo.directive';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
 
 /**
  * Caja de búsqueda de los listados, según la fila A del toolbar del diseño
@@ -19,7 +19,7 @@ import { AtajoDirective } from '../../directives/atajo.directive';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, AtajoDirective],
   templateUrl: './list-search.component.html',
-  styleUrls: ['./list-search.component.scss'],
+  styleUrl: './list-search.component.scss',
 })
 export class ListSearchComponent {
   @Input({ required: true }) control!: FormControl<string>;

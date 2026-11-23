@@ -1,28 +1,26 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, firstValueFrom, map, shareReplay, startWith } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BehaviorSubject, combineLatest, distinctUntilChanged, firstValueFrom, map, shareReplay, startWith } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
-import { FilterTabsComponent, FilterTabOption } from '../../../shared/components/filter-tabs';
-import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
-import { ListSearchComponent } from '../../../shared/components/list-search';
-import { AtajoDirective } from '../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
-import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { buscarEn } from '@core/utils/list-filter.utils';
-import { buildPermisoGroups, PERMISO_ACTION_LABELS } from '@core/utils/permiso-groups.util';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '@shared/components/table';
+import { FilterTabsComponent, FilterTabOption } from '@shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '@shared/components/row-actions';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent, FiltroActivo } from '@shared/components/active-filters';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { buildPermisoGroups, PERMISO_ACTION_LABELS } from '@shared/utils/permiso-groups.util';
 import { PermisosFacade, PermisoVM } from '@features/permisos';
 import { ESCRIBIR_ROLES_PERMISOS_ACCESS } from '@core/constants/policy-overrides.constants';
-import { AuthTokenService } from '@core/services/auth-token.service';
 import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
-import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { ListaCliente, TextosDeVacio, compararPorTexto, textosDeVacio } from '@shared/utils/lista-cliente';
+import { avisarExito } from '@shared/utils/avisos';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
 import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
 import { dialogoDePermiso } from '../permiso-dialogo';
@@ -48,27 +46,32 @@ interface OpcionRecurso {
   label: string;
 }
 
-/** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
-interface EstadoVacio {
-  emptyTitle: string;
-  emptyMessage: string;
-  emptyActionLabel: string;
+/** Filtros propios de la lista: recurso (select) y acción (chips). */
+interface FiltrosDePermisos {
+  recurso: string;
+  accion: string;
 }
 
-/** ViewModel de la pantalla: filas ya buscadas/filtradas/ordenadas + los textos que corresponden. */
-interface PermisosVista extends EstadoVacio {
-  /** Solo la página visible. */
-  rows: PermisoFilaVM[];
-  /** Total tras filtrar (lo que cuenta el toolbar y alimenta al paginador). */
-  total: number;
-  pageIndex: number;
-  hayFiltros: boolean;
-  filtrosActivos: FiltroActivo[];
+/** Textos del vacío + lo que necesitan los controles de filtro. */
+interface ExtrasDePermisos extends TextosDeVacio {
   /** Chips de acción, con los contadores calculados sobre lo ya buscado y filtrado por recurso. */
   tabs: FilterTabOption[];
   /** Opciones del select: salen del catálogo completo, así no se achican al filtrar. */
   recursos: OpcionRecurso[];
 }
+
+const TEXTOS_DE_VACIO = textosDeVacio(
+  {
+    emptyTitle: 'Todavía no hay permisos',
+    emptyMessage: 'El catálogo de permisos define qué puede hacer cada rol. Creá el primero para empezar a armarlos.',
+    emptyActionLabel: 'Nuevo permiso',
+  },
+  {
+    emptyTitle: 'Sin resultados',
+    emptyMessage: 'Ningún permiso coincide con la búsqueda o los filtros aplicados.',
+    emptyActionLabel: 'Limpiar filtros',
+  },
+);
 
 @Component({
   selector: 'app-permisos-list',
@@ -96,36 +99,19 @@ interface PermisosVista extends EstadoVacio {
 })
 export class PermisosListComponent implements OnInit {
   private readonly facade = inject(PermisosFacade);
-  /**
-   * Excepción documentada (sesión): `/api/permission` se autoriza por ROL, no por permiso atómico,
-   * así que el CTA del estado vacío (que gatea por permiso) necesita saber si quien mira puede crear.
-   */
-  private readonly auth = inject(AuthTokenService);
   /** Crear/editar/eliminar: solo SUPERADMIN (PPDT-5.1). ADMIN_BACKOFFICE ve la pantalla en lectura. */
   readonly escribirPermisos = ESCRIBIR_ROLES_PERMISOS_ACCESS;
-  readonly puedeEscribir$ = this.auth.getCurrentUser$().pipe(
-    map(() => this.auth.canAccess(ESCRIBIR_ROLES_PERMISOS_ACCESS)),
-  );
+  /**
+   * `/api/permission` se autoriza por ROL, no por permiso atómico: el CTA del estado vacío (que gatea por
+   * permiso) necesita saber si quien mira puede crear. Lo resuelve el facade con la sesión.
+   */
+  readonly puedeEscribir$ = this.facade.puedeEscribir$;
   readonly permisos$ = this.facade.permisos$;
 
-  loading = true;
-  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
-  error = false;
-  /** Id del permiso con un borrado en vuelo, para bloquear su fila mientras dura. */
-  deletingId: string | null = null;
-
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
   /** Filtro por recurso (`ACCION_RECURSO`); '' = todos. Es select y no chips: hay ~14 recursos. */
   readonly recursoCtrl = new FormControl('', { nonNullable: true });
   /** Filtro por acción (CREATE/READ/...), en la fila de chips. */
   readonly filtro$ = new BehaviorSubject<string>(TODAS);
-  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
-
-  private readonly search$ = this.searchCtrl.valueChanges.pipe(
-    debounceTime(200),
-    distinctUntilChanged(),
-    startWith(this.searchCtrl.value),
-  );
 
   private readonly recurso$ = this.recursoCtrl.valueChanges.pipe(
     distinctUntilChanged(),
@@ -141,39 +127,37 @@ export class PermisosListComponent implements OnInit {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
-  readonly pageIndex$ = new BehaviorSubject<number>(0);
-  readonly pageSize$ = new BehaviorSubject<number>(10);
-
-  readonly vista$ = combineLatest([
-    this.filas$, this.search$, this.recurso$, this.filtro$, this.sort$, this.pageIndex$, this.pageSize$,
-  ]).pipe(
-    map(([filas, search, recurso, accion, sort, pageIndex, pageSize]): PermisosVista => {
-      const porRecurso = this.buscar(filas, search)
-        .filter((fila) => !recurso || fila.recursoKey === recurso);
-      const filtradas = this.ordenar(
-        porRecurso.filter((fila) => accion === TODAS || fila.accionKey === accion),
-        sort,
-      );
-      // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de
-      // mostrar una tabla vacía con resultados que sí existen.
-      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
-      const pagina = Math.min(pageIndex, ultimaPagina);
-      const desde = pagina * pageSize;
-
-      const filtrosActivos = this.filtrosActivos(filas, search, recurso, accion);
-      const hayFiltros = filtrosActivos.length > 0;
-      return {
-        rows: filtradas.slice(desde, desde + pageSize),
-        total: filtradas.length,
-        pageIndex: pagina,
-        hayFiltros,
-        filtrosActivos,
-        tabs: this.tabsDeAccion(porRecurso),
-        recursos: this.recursosDe(filas),
-        ...this.estadoVacio(hayFiltros),
-      };
+  /**
+   * Búsqueda (por código y descripción, y también por los rótulos de recurso y acción: los códigos están en
+   * inglés y la pantalla se lee en español), filtros, orden, paginado y estado de carga en cliente.
+   */
+  readonly lista = new ListaCliente<PermisoFilaVM, FiltrosDePermisos, ExtrasDePermisos>({
+    fuente$: this.filas$,
+    cargar: () => this.facade.loadPermisos(),
+    buscarEn: (p) => [p.codigo, p.descripcion, p.recursoLabel, p.accionLabel],
+    comparar: compararPorTexto((fila, columna) =>
+      (columna === 'codigo' ? fila.codigo : columna === 'recurso' ? fila.recursoLabel : columna === 'descripcion' ? fila.descripcion : '')),
+    filtros$: combineLatest([this.recurso$, this.filtro$]).pipe(
+      map(([recurso, accion]): FiltrosDePermisos => ({ recurso, accion })),
+    ),
+    filtrar: (buscadas, { recurso, accion }) => buscadas.filter((fila) =>
+      (!recurso || fila.recursoKey === recurso) && (accion === TODAS || fila.accionKey === accion)),
+    filtrosActivos: (filtros, filas) => this.filtrosActivos(filas, filtros),
+    limpiarFiltros: () => {
+      this.recursoCtrl.setValue('');
+      this.filtro$.next(TODAS);
+    },
+    quitarFiltro: (clave) => {
+      if (clave === 'recurso') this.recursoCtrl.setValue('');
+      else this.filtro$.next(TODAS);
+    },
+    extras: (contexto) => ({
+      ...TEXTOS_DE_VACIO(contexto),
+      tabs: this.tabsDeAccion(contexto.buscadas.filter((fila) => !contexto.filtros.recurso || fila.recursoKey === contexto.filtros.recurso)),
+      recursos: this.recursosDe(contexto.items),
     }),
-  );
+    alCargar: (lista) => this.dialogo.listaLista(lista),
+  });
 
   columns: TableColumn<PermisoFilaVM>[] = [
     { key: 'codigo',      label: 'Código',      sortable: true, width: '32%' },
@@ -183,7 +167,6 @@ export class PermisosListComponent implements OnInit {
   ];
 
   private readonly destroyRef = inject(DestroyRef);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   private readonly dialog = inject(MatDialog);
@@ -193,69 +176,17 @@ export class PermisosListComponent implements OnInit {
   private readonly dialogo = new DialogoEnLista<PermisoVM, PermisoVM>({
     abrir: (permiso) => abrirFormDialog(this.dialog, dialogoDePermiso(this.facade, permiso)),
     buscar: async (id) => (await firstValueFrom(this.permisos$)).find((fila) => fila.id === id),
-    alGuardar: (_guardado, permiso) => {
-      this.snackBar.open(permiso ? 'Permiso actualizado' : 'Permiso creado', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      });
-    },
+    alGuardar: (_guardado, permiso) => avisarExito(this.snackBar, permiso ? 'Permiso actualizado' : 'Permiso creado'),
     noEncontrada: 'No encontramos ese permiso. Puede que lo hayan eliminado.',
   });
 
   ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading = true;
-    this.error = false;
-    this.dialogo.listaLista(false);
-    this.facade.loadPermisos()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); this.dialogo.listaLista(true); },
-        // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
-        // permisos, indistinguible de una carga fallida.
-        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
-      });
-  }
-
-  limpiarFiltros(): void {
-    this.searchCtrl.setValue('');
-    this.recursoCtrl.setValue('');
-    this.filtro$.next(TODAS);
-  }
-
-  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: string): void {
-    if (clave === 'search') this.searchCtrl.setValue('');
-    else if (clave === 'recurso') this.recursoCtrl.setValue('');
-    else this.filtro$.next(TODAS);
-  }
-
-  hayFiltrosActivos(): boolean {
-    return this.searchCtrl.value.trim().length > 0
-      || this.recursoCtrl.value !== ''
-      || this.filtro$.value !== TODAS;
+    this.lista.cargar();
   }
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
   onEmptyAction(): void {
-    if (this.hayFiltrosActivos()) {
-      this.limpiarFiltros();
-      return;
-    }
-    this.onCreate();
-  }
-
-  onSortChange(sort: TableSortEvent): void {
-    this.sort$.next(sort);
-  }
-
-  onPageChange(evento: TablePageEvent): void {
-    this.pageIndex$.next(evento.pageIndex);
-    this.pageSize$.next(evento.pageSize);
+    this.lista.accionDeVacio(() => this.onCreate());
   }
 
   onCreate(): void {
@@ -294,10 +225,11 @@ export class PermisosListComponent implements OnInit {
   }
 
   onDelete(permiso: PermisoFilaVM): void {
-    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
-    const indice = indiceDeFilaActiva(this.host);
-    abrirConfirmacion(this.dialog, {
-      data: {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: {
         title: '¿Eliminar el permiso?',
         // Cuenta la consecuencia real: el permiso es un ítem del catálogo que los roles
         // referencian, así que borrarlo cambia lo que esos roles habilitan.
@@ -306,27 +238,12 @@ export class PermisosListComponent implements OnInit {
         danger: true,
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
-        // El diálogo se queda abierto con el botón en spinner hasta que el backend
-        // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
-        confirmAction: () => {
-          this.deletingId = permiso.id;
-          this.cdr.markForCheck();
-          return this.facade.delete(permiso.id).pipe(
-            finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
-          );
-        },
+        confirmAction: () => this.facade.delete(permiso.id),
       },
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        enfocarTrasEliminar(this.host, indice, this.destroyRef);
-        this.snackBar.open('Permiso eliminado', 'OK', {
-          duration: 3000,
-          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-          panelClass: 'snackbar-success',
-        });
-      });
+      aviso: 'Permiso eliminado',
+      ocupado: this.lista.ocupar(permiso.id),
+      foco: { host: this.host },
+    });
   }
 
   /**
@@ -351,33 +268,6 @@ export class PermisosListComponent implements OnInit {
         accionLabel: PERMISO_ACTION_LABELS[accionKey] ?? accionKey,
       };
     });
-  }
-
-  /**
-   * Busca por código y descripción, y también por los rótulos de recurso y acción: los
-   * códigos están en inglés (`DELETE_PROCEDURE`) y la pantalla se lee en español, así que
-   * sin esto buscar "trámites" o "eliminar" no encontraba nada.
-   */
-  private buscar(filas: PermisoFilaVM[], termino: string): PermisoFilaVM[] {
-    return buscarEn(filas, termino, (p) => [p.codigo, p.descripcion, p.recursoLabel, p.accionLabel]);
-  }
-
-  private ordenar(filas: PermisoFilaVM[], sort: TableSortEvent | null): PermisoFilaVM[] {
-    if (!sort?.direction) return filas;
-    const factor = sort.direction === 'asc' ? 1 : -1;
-    return [...filas].sort((a, b) =>
-      this.valorDeOrden(a, sort.active)
-        .localeCompare(this.valorDeOrden(b, sort.active), 'es-AR', { sensitivity: 'base' }) * factor,
-    );
-  }
-
-  private valorDeOrden(fila: PermisoFilaVM, key: string): string {
-    switch (key) {
-      case 'codigo':      return fila.codigo ?? '';
-      case 'recurso':     return fila.recursoLabel ?? '';
-      case 'descripcion': return fila.descripcion ?? '';
-      default:            return '';
-    }
   }
 
   /** Recursos presentes en el catálogo, ya ordenados por `buildPermisoGroups`. */
@@ -420,10 +310,8 @@ export class PermisosListComponent implements OnInit {
     ];
   }
 
-  private filtrosActivos(filas: PermisoFilaVM[], search: string, recurso: string, accion: string): FiltroActivo[] {
+  private filtrosActivos(filas: PermisoFilaVM[], { recurso, accion }: FiltrosDePermisos): FiltroActivo[] {
     const activos: FiltroActivo[] = [];
-    const termino = search.trim();
-    if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
     if (recurso) {
       const label = filas.find((fila) => fila.recursoKey === recurso)?.recursoLabel ?? recurso;
       activos.push({ clave: 'recurso', etiqueta: `Recurso: ${label}` });
@@ -434,21 +322,5 @@ export class PermisosListComponent implements OnInit {
       activos.push({ clave: 'accion', etiqueta: `Acción: ${label}` });
     }
     return activos;
-  }
-
-  private estadoVacio(hayFiltros: boolean): EstadoVacio {
-    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
-    if (hayFiltros) {
-      return {
-        emptyTitle: 'Sin resultados',
-        emptyMessage: 'Ningún permiso coincide con la búsqueda o los filtros aplicados.',
-        emptyActionLabel: 'Limpiar filtros',
-      };
-    }
-    return {
-      emptyTitle: 'Todavía no hay permisos',
-      emptyMessage: 'El catálogo de permisos define qué puede hacer cada rol. Creá el primero para empezar a armarlos.',
-      emptyActionLabel: 'Nuevo permiso',
-    };
   }
 }

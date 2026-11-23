@@ -1,0 +1,93 @@
+<div class="admin-layout__search">
+    <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+    <input type="search"
+        #searchInput
+        class="admin-layout__search-input"
+        placeholder="Buscar o ejecutar…"
+        aria-label="Buscar secciones y acciones"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-haspopup="listbox"
+        [attr.aria-controls]="resultados.length > 0 ? 'nav-resultados' : null"
+        [attr.aria-expanded]="searchQuery.length > 0"
+        [attr.aria-activedescendant]="indiceActivo >= 0 ? 'resultado-' + indiceActivo : null"
+        [value]="searchQuery"
+        (input)="onSearchInput(searchInput.value)"
+        (keydown)="onSearchKeydown($event)" />
+    <kbd class="admin-layout__search-kbd" aria-hidden="true">/</kbd>
+</div>
+
+<nav class="admin-layout__nav" #navScroll aria-label="Secciones del backoffice">
+    <!-- Con búsqueda activa el nav SE CONVIERTE en los resultados, en vez de
+         filtrarse y quedar tapado por un panel flotante encima. Las opciones no son
+         focusables: el foco queda en el input y el cursor se anuncia con aria-activedescendant. -->
+    @if (searchQuery) {
+        @if (resultados.length > 0) {
+            <div class="admin-layout__nav-resultados" id="nav-resultados" role="listbox"
+                aria-label="Resultados de la búsqueda">
+                @for (grupo of gruposResultado; track grupo.titulo) {
+                    <div class="admin-layout__nav-group" role="group" [attr.aria-label]="grupo.titulo">
+                        <span class="admin-layout__nav-group-title" aria-hidden="true">{{ grupo.titulo }}</span>
+
+                        <div class="admin-layout__nav-group-items">
+                            @for (r of grupo.items; track r.indice) {
+                                <div class="admin-layout__nav-item"
+                                    [id]="'resultado-' + r.indice"
+                                    role="option"
+                                    [attr.aria-selected]="r.indice === indiceActivo"
+                                    [class.is-cursor]="r.indice === indiceActivo"
+                                    (mousedown)="$event.preventDefault()"
+                                    (mouseenter)="indiceActivo = r.indice"
+                                    (click)="elegir(r)">
+                                    <i class="ph ph-{{ r.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
+                                    <span class="admin-layout__nav-label">{{ r.label }}</span>
+                                    @if (r.indice === indiceActivo) {
+                                        <i class="ph ph-arrow-elbow-down-left admin-layout__nav-enter" aria-hidden="true"></i>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <p class="cdk-visually-hidden" role="status">
+                {{ resultados.length }} {{ resultados.length === 1 ? 'resultado' : 'resultados' }}
+            </p>
+        } @else {
+            <p class="admin-layout__nav-empty" role="status">
+                Sin resultados para "{{ searchQuery }}".
+            </p>
+        }
+    } @else {
+        @for (group of navGroups; track group.label) {
+            <div class="admin-layout__nav-group">
+                <button type="button"
+                    class="admin-layout__nav-group-header"
+                    (click)="toggleGroup(group.label)"
+                    [attr.aria-expanded]="group.isOpen"
+                    [attr.aria-label]="'Sección ' + group.label">
+                    <span class="admin-layout__nav-group-label">{{ group.label }}</span>
+                    <i class="ph admin-layout__nav-group-chev" [class.ph-caret-up]="group.isOpen" [class.ph-caret-down]="!group.isOpen" aria-hidden="true"></i>
+                </button>
+
+                @if (group.isOpen) {
+                    <div class="admin-layout__nav-group-items">
+                        @for (item of group.items; track item.route) {
+                            <a class="admin-layout__nav-item"
+                                [routerLink]="item.route"
+                                routerLinkActive="is-active"
+                                #rla="routerLinkActive"
+                                [attr.aria-current]="rla.isActive ? 'page' : null"
+                                [matTooltip]="colapsado ? item.label : ''"
+                                matTooltipPosition="right"
+                                (click)="navegado.emit()">
+                                <i class="ph ph-{{ item.icon }} admin-layout__nav-icon" aria-hidden="true"></i>
+                                <span class="admin-layout__nav-label">{{ item.label }}</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+</nav>

@@ -188,5 +188,3 @@ export const TEXTOS_FICHA_ERROR_CARGA = {
   texto: 'Puede que no exista, que no sea de tu organismo o que haya un problema de conexión. Intentá de nuevo; si sigue, avisá a Soporte.',
 } as const;
 
-/** Texto de "no se pudo resolver el nombre" (sin permiso para leerlo, o el id ya no está). */
-export const NO_DISPONIBLE = 'No disponible';

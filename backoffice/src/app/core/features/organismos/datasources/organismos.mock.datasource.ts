@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
+import { API_CODES } from '@core/constants/api-codes.constants';
+import { errorDeNegocio } from '@core/mocks/mock-errors';
 import { OrganismosDataSource } from './organismos.datasource';
 import { OrganismoFormValue, OrganismoVM } from '../models/organismo.vm';
 
@@ -20,7 +22,8 @@ export class OrganismosMockDataSource extends OrganismosDataSource {
 
   getById(id: string): Observable<OrganismoVM> {
     const o = this.data.find((x) => x.id === id);
-    return o ? of({ ...o }).pipe(delay(DELAY)) : throwError(() => new Error('Organismo no encontrado'));
+    // Mismo rechazo que `OrganismService.getOrganism`: 404 `4058`.
+    return o ? of({ ...o }).pipe(delay(DELAY)) : errorDeNegocio(API_CODES.ORGANISM_NOT_FOUND, 'Organismo no encontrado');
   }
 
   create(form: OrganismoFormValue): Observable<OrganismoVM> {

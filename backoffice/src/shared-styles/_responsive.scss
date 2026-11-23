@@ -8,16 +8,6 @@
 @use 'mixins' as *;
 
 // ---------------------------------------------------------------------------
-// Visibility Helpers
-// ---------------------------------------------------------------------------
-@include responsive(mobile) {
-  .hide-mobile {
-    display: none !important;
-  }
-}
-
-
-// ---------------------------------------------------------------------------
 // Mobile Table Adjustments
 // El prefijo `table.` sube la especificidad por encima de las reglas de _material.scss
 // (`.mat-mdc-table .mat-mdc-row .mat-mdc-cell`), que si no pisaban estos ajustes.
@@ -50,6 +40,7 @@
 @include responsive(mobile) {
   .mat-mdc-form-field {
     .mdc-text-field {
+      // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- 16px fijo en mobile: mínimo para que iOS no haga zoom al enfocar un input; no es un escalón de la escala
       font-size: 16px; // prevents iOS zoom on focus
     }
   }

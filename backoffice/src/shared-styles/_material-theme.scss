@@ -118,7 +118,6 @@ $misiones-theme: mat.define-light-theme((
 @include mat.select-theme($misiones-theme);
 @include mat.datepicker-theme($misiones-theme);
 @include mat.slide-toggle-theme($misiones-theme);
-@include mat.radio-theme($misiones-theme);
 @include mat.checkbox-theme($misiones-theme);
 @include mat.dialog-theme($misiones-theme);
 @include mat.snack-bar-theme($misiones-theme);

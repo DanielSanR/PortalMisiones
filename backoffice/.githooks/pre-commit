@@ -1,0 +1,23 @@
+#!/bin/sh
+# pre-commit del backoffice — segundos. Solo actúa si el commit toca backoffice/.
+#   1. ESLint / stylelint SOLO de los archivos staged de backoffice/src (errores; los warnings con tope
+#      se miden en `npm run lint`).
+#   2. check-structure (carpetas y nombres de core/features y pages).
+# Lintea la versión del árbol de trabajo de cada archivo staged.
+# Activar: `npm run hooks:install` (en backoffice/). Saltear una vez: `git commit --no-verify`.
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$ROOT/backoffice" 2>/dev/null || exit 0
+
+# ¿Hay algo staged dentro de backoffice/?
+git diff --cached --quiet -- . && exit 0
+
+command -v node >/dev/null 2>&1 || { echo "[pre-commit] node no está en el PATH: se saltean los chequeos del backoffice." >&2; exit 0; }
+[ -d node_modules ] || { echo "[pre-commit] backoffice/node_modules no existe (corré npm ci): se saltean los chequeos." >&2; exit 0; }
+
+node scripts/lint-files.mjs --staged || {
+  echo "[pre-commit] Corregí los errores de lint de arriba (o 'npm run lint' para ver todo)." >&2
+  exit 1
+}
+node scripts/check-structure.mjs || exit 1
+exit 0

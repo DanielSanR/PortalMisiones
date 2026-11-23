@@ -18,8 +18,8 @@
         width: 100%;
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 7px var(--theme-space-sm);
+        gap: var(--theme-space-10);
+        padding: var(--theme-space-7) var(--theme-space-sm);
         border: none;
         border-radius: var(--theme-radius-md);
         background: transparent;
@@ -86,14 +86,14 @@
 
     &__arrow {
         flex: none;
-        font-size: 18px;
+        font-size: var(--theme-icon-size-18);
         color: var(--theme-text-tertiary);
     }
 
     // ---- Contenido del menú ----
     &__header {
         display: flex;
-        gap: 11px;
+        gap: var(--theme-space-11);
         padding: var(--theme-space-md);
         border-bottom: 1px solid var(--theme-border-subtle);
     }
@@ -101,7 +101,7 @@
     &__header-info {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: var(--theme-space-2xs);
         min-width: 0;
 
         strong {
@@ -118,8 +118,8 @@
         @include truncate;
     }
 
-    // Fila "rótulo → valor" de la ficha de la cuenta (rol, organismo): el rótulo a la izquierda y el dato a
-    // la derecha, como insignia (`-badge`) o como texto (`-valor`).
+    // Fila "rótulo → valor" de la ficha de la cuenta (hoy, el organismo): el rótulo a la izquierda y el dato
+    // a la derecha. El rol no va acá: ya se lee en el disparador.
     &__dato {
         display: flex;
         align-items: center;
@@ -128,47 +128,29 @@
         padding: var(--theme-space-gap) var(--theme-space-md);
         background-color: var(--theme-surface-sunken);
         border-bottom: 1px solid var(--theme-border-subtle);
+    }
 
-        &-label {
-            font-size: var(--theme-font-overline-size);
-            font-weight: var(--theme-font-weight-semibold);
-            letter-spacing: var(--theme-font-overline-track);
-            text-transform: uppercase;
-            color: var(--theme-text-secondary);
-        }
+    &__dato-label {
+        font-size: var(--theme-font-overline-size);
+        font-weight: var(--theme-font-weight-semibold);
+        letter-spacing: var(--theme-font-overline-track);
+        text-transform: uppercase;
+        color: var(--theme-text-secondary);
+    }
 
-        // Dato en texto plano a la derecha (p. ej. el organismo): puede ser largo, así que baja de línea
-        // en vez de truncarse (no hay otro lugar donde leerlo completo).
-        &-valor {
-            min-width: 0;
-            font-size: var(--theme-font-caption-size);
-            font-weight: var(--theme-font-weight-semibold);
-            color: var(--theme-text-primary);
-            text-align: right;
-            overflow-wrap: anywhere;
-        }
-
-        &-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            height: 22px;
-            padding: 0 9px;
-            border-radius: var(--theme-radius-full);
-            background-color: var(--theme-info-bg);
-            color: var(--theme-nav-item-active-fg);
-            font-size: var(--theme-font-caption-size);
-            font-weight: var(--theme-font-weight-semibold);
-            white-space: nowrap;
-
-            i {
-                font-size: 13px;
-            }
-        }
+    // Dato en texto plano a la derecha (p. ej. el organismo): puede ser largo, así que baja de línea
+    // en vez de truncarse (no hay otro lugar donde leerlo completo).
+    &__dato-valor {
+        min-width: 0;
+        font-size: var(--theme-font-caption-size);
+        font-weight: var(--theme-font-weight-semibold);
+        color: var(--theme-text-primary);
+        text-align: right;
+        overflow-wrap: anywhere;
     }
 
     &__actions {
-        padding: 6px;
+        padding: var(--theme-space-6);
     }
 
     &__item {
@@ -181,7 +163,7 @@
             width: 19px;
             height: 19px;
             margin-right: 0;
-            font-size: 19px;
+            font-size: var(--theme-icon-size-19);
             color: var(--theme-text-secondary);
         }
 

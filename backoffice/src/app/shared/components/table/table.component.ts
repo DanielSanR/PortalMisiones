@@ -5,8 +5,8 @@ import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
-import { AuthTokenService } from '../../../core/services/auth-token.service';
-import { AccessRule } from '../../../core/models/access-rule.model';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { AccessRule } from '@core/models/access-rule.model';
 import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.model';
 
 // Directiva para registrar cell templates por nombre desde el consumidor.
@@ -16,7 +16,7 @@ import { TableColumn, TablePageEvent, TableSortEvent } from './table-column.mode
 })
 export class TableCellDirective {
   @Input('appTableCell') columnKey = '';
-  constructor(public templateRef: TemplateRef<any>) { }
+  constructor(public templateRef: TemplateRef<unknown>) { }
 }
 
 // Directiva para registrar header templates personalizados.
@@ -26,7 +26,7 @@ export class TableCellDirective {
 })
 export class TableHeaderDirective {
   @Input('appTableHeader') columnKey = '';
-  constructor(public templateRef: TemplateRef<any>) { }
+  constructor(public templateRef: TemplateRef<unknown>) { }
 }
 
 @Component({
@@ -42,11 +42,11 @@ export class TableHeaderDirective {
     TableHeaderDirective,
   ],
   templateUrl: './table.component.html',
-  styleUrls: ['./table.component.scss'],
+  styleUrl: './table.component.scss',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SharedTableComponent<T = any> implements AfterContentInit {
+export class SharedTableComponent<T = unknown> implements AfterContentInit {
   // Debe declararse antes que `puedeAccionar$`: los campos de clase se inicializan en orden.
   private readonly auth = inject(AuthTokenService);
 
@@ -131,8 +131,8 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
   @ContentChildren(TableCellDirective) cellTemplates!: QueryList<TableCellDirective>;
   @ContentChildren(TableHeaderDirective) headerTemplates!: QueryList<TableHeaderDirective>;
   _displayedColumns: string[] = [];
-  private cellTemplateMap = new Map<string, TemplateRef<any>>();
-  private headerTemplateMap = new Map<string, TemplateRef<any>>();
+  private cellTemplateMap = new Map<string, TemplateRef<unknown>>();
+  private headerTemplateMap = new Map<string, TemplateRef<unknown>>();
 
   get displayedColumns(): string[] {
     return this._displayedColumns;
@@ -170,16 +170,19 @@ export class SharedTableComponent<T = any> implements AfterContentInit {
 
   //Helpers
 
-  getCellTemplate(column: TableColumn<T>): TemplateRef<any> | null {
+  getCellTemplate(column: TableColumn<T>): TemplateRef<unknown> | null {
     return column.cellTemplate || this.cellTemplateMap.get(column.key) || null;
   }
 
-  getHeaderTemplate(column: TableColumn<T>): TemplateRef<any> | null {
+  getHeaderTemplate(column: TableColumn<T>): TemplateRef<unknown> | null {
     return column.headerTemplate || this.headerTemplateMap.get(column.key) || null;
   }
 
-  getCellValue(row: T, key: string): any {
-    return key.split('.').reduce((obj: any, k) => obj?.[k], row);
+  getCellValue(row: T, key: string): unknown {
+    return key.split('.').reduce<unknown>(
+      (obj, k) => (obj == null ? undefined : (obj as Record<string, unknown>)[k]),
+      row,
+    );
   }
 
 //Event Handlers

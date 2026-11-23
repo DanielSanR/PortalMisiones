@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,7 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 import { CuentaFacade } from '@features/cuenta';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
-import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 
 @Component({
   selector: 'app-forgot-password',
@@ -27,16 +27,16 @@ import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
   styleUrl: './forgot-password.component.scss',
 })
 export class ForgotPasswordComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly cuentaFacade = inject(CuentaFacade);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   form: FormGroup;
   loading = false;
   errorMessage = '';
   successMessage = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private cuentaFacade: CuentaFacade,
-    private cdr: ChangeDetectorRef
-  ) {
+  constructor() {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
     });

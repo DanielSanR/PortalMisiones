@@ -51,7 +51,7 @@ export class HttpErrorService {
 
     void Promise.all([
       import('@angular/material/dialog'),
-      import('../../shared/components/error-dialog/error-dialog.component'),
+      import('@shared/components/error-dialog/error-dialog.component'),
     ]).then(([{ MatDialog }, { ErrorDialogComponent }]) => {
       this.injector.get(MatDialog).open(ErrorDialogComponent, {
         data: { title, message },

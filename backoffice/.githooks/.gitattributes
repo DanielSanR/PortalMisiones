@@ -1,0 +1,2 @@
+# Los hooks son scripts de sh: siempre LF, aunque el clon tenga core.autocrlf=true (con CRLF no corren).
+* text eol=lf

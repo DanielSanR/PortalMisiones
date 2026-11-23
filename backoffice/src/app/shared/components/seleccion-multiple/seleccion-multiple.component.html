@@ -1,5 +1,5 @@
 <!-- Esc en el grupo entero: cierra también con el foco en el botón, no solo dentro de la lista. -->
-<div class="seleccion-multiple perm-group" role="group" [attr.aria-labelledby]="idEtiqueta"
+<div class="seleccion-multiple perm-group" role="group" [attr.aria-labelledby]="idEtiqueta" [attr.aria-describedby]="describedBy"
      (keydown.escape)="onEscape($event)">
 
   <div class="seleccion-multiple__encabezado perm-group__header">
@@ -7,7 +7,7 @@
     <span class="perm-group__count">{{ contador }}</span>
     <button #alternar type="button" class="seleccion-multiple__alternar" [disabled]="disabled"
             [attr.aria-expanded]="abierto" [attr.aria-controls]="abierto ? idPanel : null" [attr.aria-label]="ariaAlternar"
-            (click)="onAlternar()">
+            [attr.aria-describedby]="describedBy" (click)="onAlternar()">
       <i class="ph" [ngClass]="iconoAlternar" aria-hidden="true"></i>
       {{ etiquetaAlternar }}
     </button>

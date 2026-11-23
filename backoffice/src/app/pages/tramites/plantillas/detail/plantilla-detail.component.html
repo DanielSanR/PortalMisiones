@@ -13,88 +13,73 @@
 </ng-template>
 
 @if (estado$ | async; as estado) {
-  @if (estado.tipo === 'cargando') {
-    <div class="loading-inline" role="status">
-      <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-      <span>Cargando plantilla…</span>
-    </div>
-  } @else if (estado.tipo === 'error') {
-    <div class="load-state" role="alert">
-      <span class="load-state__icono" aria-hidden="true">
-        <i class="ph" [class.ph-file-x]="estado.noExiste" [class.ph-cloud-slash]="!estado.noExiste"></i>
-      </span>
-      <h2 class="load-state__titulo">{{ estado.noExiste ? textosInexistente.titulo : 'No pudimos cargar la plantilla' }}</h2>
-      <p class="load-state__texto">
-        {{ estado.noExiste
-          ? textosInexistente.texto
-          : 'Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.' }}
-      </p>
-      <div class="load-state__acciones">
-        @if (!estado.noExiste) {
-          <button type="button" mat-flat-button color="primary" (click)="reintentar()">
-            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
-          </button>
-        }
-        <button type="button" mat-stroked-button color="primary" (click)="volverAlListado()">
-          <i class="ph ph-list-dashes" aria-hidden="true"></i> Ir al listado
-        </button>
-      </div>
-    </div>
+  @if (estado.tipo !== 'ok') {
+    <app-estado-carga [tipo]="estado.tipo" [noExiste]="estado.tipo === 'error' && estado.noExiste"
+        cargandoTexto="Cargando plantilla…"
+        [titulo]="estado.tipo === 'error' && estado.noExiste ? textosInexistente.titulo : 'No pudimos cargar la plantilla'"
+        [texto]="estado.tipo === 'error' && estado.noExiste ? textosInexistente.texto : 'Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.'"
+        volverTexto="Ir al listado" (reintentar)="reintentar()" (volver)="volverAlListado()">
+    </app-estado-carga>
   } @else {
     <div class="plantdet">
-      <app-plantilla-membrete [titulo]="estado.plantilla.titulo" [slug]="estado.plantilla.slug"
-                              [activa]="estado.plantilla.activa" [avisoDesactivada]="true"
-                              [modalidad]="estado.plantilla.modalidad ? (estado.plantilla.modalidad.nombre ?? noDisponible) : ''"
-                              [principal]="estado.plantilla.categoriaPrincipal ? (estado.plantilla.categoriaPrincipal.nombre ?? noDisponible) : ''">
-        @if (estado.plantilla.activa) {
-          <button type="button" mat-stroked-button color="warn" (click)="desactivar(estado.plantilla)"
+      <app-membrete icono="files" [titulo]="estado.valor.plantilla.titulo" tituloVacio="Plantilla sin título"
+                    [datos]="estado.valor.membrete"
+                    [aviso]="estado.valor.plantilla.activa ? '' : 'Está desactivada: no aparece en el listado y no se puede adoptar.'">
+        <span membretePill class="pill pill--bordered" [class.pill--active]="estado.valor.plantilla.activa"
+              [class.pill--inactive]="!estado.valor.plantilla.activa">
+          <span class="pill__dot" aria-hidden="true"></span>
+          <span class="pill__label">{{ estado.valor.plantilla.activa ? 'Activa' : 'Desactivada' }}</span>
+        </span>
+        @if (estado.valor.plantilla.activa) {
+          <button type="button" mat-stroked-button color="warn" (click)="desactivar(estado.valor.plantilla)"
                   *appHasPermission="'DELETE_PROCEDURE'">
             <i class="ph ph-prohibit" aria-hidden="true"></i> Desactivar
           </button>
         }
-      </app-plantilla-membrete>
+      </app-membrete>
 
-      <div class="detail-grid detail-grid--ficha">
-        <div class="detail-col">
-          <section class="detail-card" aria-labelledby="plantdet-descripcion">
+      <div class="ficha-paneles ficha-paneles--separados">
+      <div class="ficha-paneles__grid">
+        <div class="ficha-paneles__columna">
+          <section class="ficha-paneles__panel" aria-labelledby="plantdet-descripcion">
             <header class="plantdet-encabezado">
-              <h3 class="detail-card__title" id="plantdet-descripcion">Descripción</h3>
-              <p class="detail-card__subtitle">Lo que se muestra del trámite en toda la provincia</p>
+              <h3 class="ficha-paneles__titulo" id="plantdet-descripcion">Descripción</h3>
+              <p class="ficha-paneles__subtitulo">Lo que se muestra del trámite en toda la provincia</p>
             </header>
             <dl class="detail-fields">
               <div class="detail-field">
                 <dt class="detail-field__label">Resumen</dt>
-                <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.plantilla.resumen">{{ estado.plantilla.resumen || '—' }}</dd>
+                <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.valor.plantilla.resumen">{{ estado.valor.plantilla.resumen || '—' }}</dd>
               </div>
               <div class="detail-field plantdet-separado">
                 <dt class="detail-field__label">Descripción larga</dt>
-                <dd class="detail-field__value detail-field__value--pre" [class.detail-field__value--muted]="!estado.plantilla.descripcionLarga">{{ estado.plantilla.descripcionLarga || '—' }}</dd>
+                <dd class="detail-field__value detail-field__value--pre" [class.detail-field__value--muted]="!estado.valor.plantilla.descripcionLarga">{{ estado.valor.plantilla.descripcionLarga || '—' }}</dd>
               </div>
             </dl>
           </section>
 
-          <section class="detail-card" aria-labelledby="plantdet-clasificacion">
+          <section class="ficha-paneles__panel" aria-labelledby="plantdet-clasificacion">
             <header class="plantdet-encabezado">
-              <h3 class="detail-card__title" id="plantdet-clasificacion">Clasificación</h3>
-              <p class="detail-card__subtitle">Cómo se encuentra el trámite en el portal</p>
+              <h3 class="ficha-paneles__titulo" id="plantdet-clasificacion">Clasificación</h3>
+              <p class="ficha-paneles__subtitulo">Cómo se encuentra el trámite en el portal</p>
             </header>
             <dl class="detail-fields detail-fields--grid">
               <div class="detail-field">
                 <dt class="detail-field__label">Modalidad</dt>
                 <dd class="detail-field__value">
-                  {{ estado.plantilla.modalidad ? (estado.plantilla.modalidad.nombre ?? noDisponible) : 'Sin modalidad' }}
+                  {{ estado.valor.plantilla.modalidad ? (estado.valor.plantilla.modalidad.nombre ?? noDisponible) : 'Sin modalidad' }}
                 </dd>
               </div>
               <div class="detail-field">
                 <dt class="detail-field__label">Categoría principal</dt>
                 <dd class="detail-field__value">
-                  {{ estado.plantilla.categoriaPrincipal ? (estado.plantilla.categoriaPrincipal.nombre ?? noDisponible) : 'Sin categoría principal' }}
+                  {{ estado.valor.plantilla.categoriaPrincipal ? (estado.valor.plantilla.categoriaPrincipal.nombre ?? noDisponible) : 'Sin categoría principal' }}
                 </dd>
               </div>
             </dl>
 
             <dl class="detail-fields detail-fields--grid plantdet-separado">
-              @for (grupo of estado.grupos; track grupo.label) {
+              @for (grupo of estado.valor.grupos; track grupo.label) {
                 <div class="detail-field">
                   <dt class="detail-field__label">{{ grupo.label }} ({{ grupo.refs.length }})</dt>
                   <dd class="detail-field__value">
@@ -116,17 +101,17 @@
           </section>
         </div>
 
-        <aside class="detail-col" aria-label="Datos recomendados y organismos que la adoptaron">
-          <section class="detail-card detail-card--flush" aria-labelledby="plantdet-recomendados">
-            <div class="detail-card__bar">
-              <h3 class="detail-card__title" id="plantdet-recomendados">Datos recomendados</h3>
-              <span class="pill plantdet-contador" [class.pill--success]="estado.recomendadosListos === estado.recomendados.length"
-                    [class.pill--warning]="estado.recomendadosListos !== estado.recomendados.length">
-                {{ estado.recomendadosListos }} de {{ estado.recomendados.length }}
+        <aside class="ficha-paneles__columna" aria-label="Datos recomendados y organismos que la adoptaron">
+          <section class="ficha-paneles__panel ficha-paneles__panel--corrido" aria-labelledby="plantdet-recomendados">
+            <div class="ficha-paneles__barra">
+              <h3 class="ficha-paneles__titulo" id="plantdet-recomendados">Datos recomendados</h3>
+              <span class="pill plantdet-contador" [class.pill--success]="estado.valor.recomendadosListos === estado.valor.recomendados.length"
+                    [class.pill--warning]="estado.valor.recomendadosListos !== estado.valor.recomendados.length">
+                {{ estado.valor.recomendadosListos }} de {{ estado.valor.recomendados.length }}
               </span>
             </div>
             <ul class="plantdet-checks">
-              @for (dato of estado.recomendados; track dato.etiqueta) {
+              @for (dato of estado.valor.recomendados; track dato.etiqueta) {
                 <li class="plantdet-checks__item" [class.is-listo]="dato.completo">
                   <i class="ph" [class.ph-check-circle]="dato.completo" [class.ph-circle]="!dato.completo" aria-hidden="true"></i>
                   <span class="plantdet-checks__label">{{ dato.etiqueta }}</span>
@@ -136,18 +121,19 @@
             </ul>
           </section>
 
-          <section class="detail-card detail-card--flush" aria-labelledby="plantdet-adopciones" *appHasPermission="'READ_ADOPTION'">
-            <div class="detail-card__bar">
-              <h3 class="detail-card__title" id="plantdet-adopciones">Organismos que la adoptaron</h3>
+          <section class="ficha-paneles__panel ficha-paneles__panel--corrido" aria-labelledby="plantdet-adopciones" *appHasPermission="'READ_ADOPTION'">
+            <div class="ficha-paneles__barra">
+              <h3 class="ficha-paneles__titulo" id="plantdet-adopciones">Organismos que la adoptaron</h3>
             </div>
             <div class="plantdet-adopciones">
-              <app-adopciones-de-plantilla [plantillaId]="estado.plantilla.id"></app-adopciones-de-plantilla>
+              <app-adopciones-de-plantilla [plantillaId]="estado.valor.plantilla.id"></app-adopciones-de-plantilla>
             </div>
             <p class="plantdet-pie">
               <a class="detail-link plantdet-pie__link" [routerLink]="rutaAdopciones">Ver en Trámites del organismo</a>
             </p>
           </section>
         </aside>
+      </div>
       </div>
     </div>
   }

@@ -25,7 +25,7 @@ export interface FiltroActivo {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgFor],
   templateUrl: './active-filters.component.html',
-  styleUrls: ['./active-filters.component.scss'],
+  styleUrl: './active-filters.component.scss',
 })
 export class ActiveFiltersComponent {
   @Input({ required: true }) filtros: FiltroActivo[] = [];

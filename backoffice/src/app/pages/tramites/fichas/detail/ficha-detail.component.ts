@@ -2,34 +2,32 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular
 import { AsyncPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  BehaviorSubject, Observable, catchError, combineLatest, distinctUntilChanged, map, of, shareReplay, startWith, switchMap, take,
-  tap,
-} from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
-import { EstadoBadgeComponent } from '../../../../shared/components/estado-badge/estado-badge.component';
-import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
-import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
-import { UnavailableDirective } from '../../../../shared/directives/unavailable.directive';
+import { ConfirmDialogData } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
+import { Carga, cargaLista, conCarga } from '@shared/utils/carga';
+import { EstadoCargaComponent } from '@shared/components/estado-carga/estado-carga.component';
+import { EstadoBadgeComponent } from '@shared/components/estado-badge/estado-badge.component';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 import { AccionWorkflow, EstadoFicha, FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
-import { RUTA_DETALLE_ADOPCION } from '../../adopciones/adopciones.rutas';
+import { RUTA_DETALLE_ADOPCION } from '@pages/tramites/adopciones/adopciones.rutas';
 import {
   ACCIONES_UI, AccionUI, MOTIVO_NO_VIGENTE, QUIEN_PUBLICA, TEXTO_FUENTE_SIMULADA, confirmAccion, confirmDesactivar, textoExito,
 } from '../ficha-textos';
 import {
-  NO_DISPONIBLE, TEXTOS_FICHA_ERROR_CARGA, TEXTOS_FICHA_INEXISTENTE, TEXTO_FICHA_SIN_CONTENIDO, esFichaInexistente,
+  TEXTOS_FICHA_ERROR_CARGA, TEXTOS_FICHA_INEXISTENTE, TEXTO_FICHA_SIN_CONTENIDO, esFichaInexistente,
 } from '../ficha-save-error';
 import { FRAGMENTO_PUNTOS, RUTA_EDITAR_FICHA, RUTA_LISTA_FICHAS } from '../fichas.rutas';
-import { PuntosAtencionPanelComponent } from '../puntos-atencion-panel/puntos-atencion-panel.component';
+import { PuntosAtencionPanelComponent } from '../components/puntos-atencion-panel/puntos-atencion-panel.component';
+import { MembreteComponent } from '@shared/components/membrete/membrete.component';
+import { NO_DISPONIBLE } from '@core/constants/textos.constants';
 
-type EstadoDetalle =
-  | { tipo: 'cargando' }
-  | { tipo: 'error'; noExiste: boolean }
-  | { tipo: 'ok'; ficha: FichaLocalVM };
+type EstadoDetalle = Carga<FichaLocalVM>;
 
 interface AccionVista {
   accion: AccionWorkflow;
@@ -63,8 +61,8 @@ const AYUDA_ESTADO: Record<EstadoFicha, string> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AsyncPipe, RouterLink, MatButtonModule, MatSnackBarModule, EstadoBadgeComponent, HasPermissionDirective,
-    PageActionsDirective, PuntosAtencionPanelComponent, UnavailableDirective,
+    AsyncPipe, RouterLink, MatButtonModule, MatSnackBarModule, EstadoBadgeComponent, EstadoCargaComponent, HasPermissionDirective,
+    PageActionsDirective, PuntosAtencionPanelComponent, UnavailableDirective, MembreteComponent,
   ],
   templateUrl: './ficha-detail.component.html',
   styleUrl: './ficha-detail.component.scss',
@@ -123,12 +121,8 @@ export class FichaDetailComponent {
       this.fuente$.next(null);
       return this.fuente$.pipe(
         switchMap((actual) => actual?.id === id
-          ? of<EstadoDetalle>({ tipo: 'ok', ficha: actual })
-          : this.facade.getDetalle(id).pipe(
-            map((ficha): EstadoDetalle => ({ tipo: 'ok', ficha })),
-            catchError((err: unknown) => of<EstadoDetalle>({ tipo: 'error', noExiste: esFichaInexistente(err) })),
-            startWith<EstadoDetalle>({ tipo: 'cargando' }),
-          )),
+          ? of(cargaLista(actual))
+          : this.facade.getDetalle(id).pipe(conCarga(esFichaInexistente))),
       );
     }),
     shareReplay({ bufferSize: 1, refCount: true }),
@@ -138,7 +132,7 @@ export class FichaDetailComponent {
   readonly acciones$: Observable<AccionVista[]> = combineLatest([this.estado$, this.facade.accionesWorkflow$]).pipe(
     map(([estado, accionesWorkflow]) => {
       if (estado.tipo !== 'ok') return [];
-      const vistas = accionesWorkflow(estado.ficha).map((accion) => ({ accion, ui: ACCIONES_UI[accion] }));
+      const vistas = accionesWorkflow(estado.valor).map((accion) => ({ accion, ui: ACCIONES_UI[accion] }));
       const primaria = vistas.find((v) => !v.ui.danger);
       return vistas.map((v): AccionVista => ({ ...v, primaria: v === primaria }));
     }),
@@ -174,26 +168,26 @@ export class FichaDetailComponent {
     const data = confirmAccion(ficha, accion, () => this.facade.ejecutar(ficha.id, accion).pipe(
       tap({ next: (actualizada) => { resultado = actualizada; }, error: () => { fallo = true; } }),
     ));
-    this.confirmar(data, () => {
-      this.snackBar.open(textoExito(ACCIONES_UI[accion].exito, this.fuenteSimulada), 'OK', { duration: 3000, panelClass: 'snackbar-success' });
-      this.fuente$.next(resultado);
-    }, () => {
+    this.confirmar(data, ACCIONES_UI[accion].exito, () => this.fuente$.next(resultado), () => {
       // Canceló después de un error: la ficha pudo cambiar (o quedar a mitad de un atajo de dos pasos).
       if (fallo) this.fuente$.next(null);
     });
   }
 
   desactivar(ficha: FichaLocalVM): void {
-    this.confirmar(confirmDesactivar(ficha, () => this.facade.desactivar(ficha.id)), () => {
-      this.snackBar.open(textoExito('Ficha desactivada', this.fuenteSimulada), 'OK', { duration: 3000, panelClass: 'snackbar-success' });
-      // Se relee: el backend decide el estado final (despublica si estaba publicada).
-      this.fuente$.next(null);
-    });
+    // Se relee: el backend decide el estado final (despublica si estaba publicada).
+    this.confirmar(confirmDesactivar(ficha, () => this.facade.desactivar(ficha.id)), 'Ficha desactivada', () => this.fuente$.next(null));
   }
 
-  private confirmar(data: ConfirmDialogData, alConfirmar: () => void, alCancelar?: () => void): void {
-    abrirConfirmacion(this.dialog, { data, panelClass: 'custom-modal-panel' })
-      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
-      .subscribe((ok) => (ok ? alConfirmar() : alCancelar?.()));
+  private confirmar(confirmacion: ConfirmDialogData, exito: string, alConfirmar: () => void, alCancelar?: () => void): void {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion,
+      aviso: textoExito(exito, this.fuenteSimulada),
+      alConfirmar,
+      alCancelar,
+    });
   }
 }

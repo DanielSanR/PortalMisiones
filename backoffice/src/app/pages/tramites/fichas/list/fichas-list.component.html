@@ -17,7 +17,7 @@
 <div class="list-toolbar list-toolbar--stacked">
   <div class="list-toolbar__row">
     <app-list-search [atajoFoco]="true"
-      [control]="searchCtrl"
+      [control]="lista.searchCtrl"
       placeholder="Buscar trámite o localidad…"
       ariaLabel="Buscar fichas por trámite, organismo, localidad o slug">
     </app-list-search>
@@ -46,7 +46,7 @@
 
     <mat-slide-toggle class="fichalist-toggle" color="primary" [formControl]="inactivasCtrl">Mostrar desactivadas</mat-slide-toggle>
 
-    <span class="list-toolbar-count">{{ vista.total }} fichas</span>
+    <span class="list-toolbar__count">{{ vista.total }} fichas</span>
   </div>
 
   @if (filterTabs$ | async; as tabs) {
@@ -61,26 +61,26 @@
 @if (vista.filtrosActivos.length) {
   <app-active-filters
     [filtros]="vista.filtrosActivos"
-    (quitar)="quitarFiltro($event)"
-    (limpiar)="limpiarFiltros()">
+    (quitar)="lista.quitar($event)"
+    (limpiar)="lista.limpiar()">
   </app-active-filters>
 }
 
 <app-shared-table
     [data]="vista.rows"
     [columns]="columns"
-    [loading]="loading"
-    [error]="error"
+    [loading]="vista.cargando"
+    [error]="vista.error"
     errorTitle="No pudimos cargar las fichas por localidad"
     errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
-    (retry)="load()"
+    (retry)="lista.cargar()"
     [sortable]="true"
-    (sortChange)="onSortChange($event)"
+    (sortChange)="lista.ordenar($event)"
     [paginated]="true"
     [totalItems]="vista.total"
     [pageIndex]="vista.pageIndex"
-    [pageSize]="(pageSize$ | async)!"
-    (pageChange)="onPageChange($event)"
+    [pageSize]="vista.pageSize"
+    (pageChange)="lista.paginar($event)"
     [emptyTitle]="vista.emptyTitle"
     [emptyMessage]="vista.emptyMessage"
     [emptyActionPermission]="vista.emptyAccion === 'nueva' ? crearFicha : ''"
@@ -126,7 +126,7 @@
       <app-row-actions
           [primary]="accionVer(row)"
           [actions]="accionesDe(row, vista.accionesWorkflow)"
-          [busy]="ocupadaId === row.id"
+          [busy]="vista.ocupadaId === row.id"
           busyLabel="Procesando…">
       </app-row-actions>
     </ng-template>

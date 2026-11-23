@@ -9,7 +9,8 @@ Referencia de diseño del **backoffice** (Angular 17 + Angular Material 17, SCSS
   archivos **"Kitchen Sink — Design System Misiones"** (`kitchen-sink.dc.html`: fundaciones, componentes y bloque
   Handoff de tokens) y **"Pantallas backoffice"** (`pantallas-backoffice.dc.html`: pantallas aplicadas).
 - **Código (lo que manda en runtime):** `backoffice/src/shared-styles/`
-  - `_themes.scss` — tokens `--theme-*` (CSS custom properties en `:root`).
+  - `_themes.scss` — tokens `--theme-*` (CSS custom properties en `:root`). Solo los que alguien consume:
+    `npm run check:styles` (`token-sin-uso`) falla ante un token sin consumidor. El token se agrega junto con su primer uso.
   - `_mixins.scss` — mixins (no emite CSS). Importar con `@use 'shared-styles/mixins' as *;`.
   - `_components.scss` — clases globales compartidas (`.list-toolbar`, `.state-panel`, `.row-action`…).
   - `_material.scss` — overrides globales de Angular Material vía tokens.
@@ -35,7 +36,7 @@ Referencia de diseño del **backoffice** (Angular 17 + Angular Material 17, SCSS
 
 Tema **solo claro**. Contrastes calculados sobre blanco salvo indicación.
 
-### 3.1 Marca — escala azul (`--theme-primary-50…900`)
+### 3.1 Marca — escala azul (`--theme-primary-50…900`, sin `-500`: ese tono es `--theme-accent`)
 `50 #E8F1FA · 100 #C5DCF2 · 200 #9EC4E8 · 300 #77ABDE · 400 #5A98D6 · 500 #3B82C4 · 600 #2F6EB1 · 700 #245A95 · 800 #1A4779 · 900 #0F335D`
 
 | Token | Hex | Uso | Contraste |
@@ -43,14 +44,14 @@ Tema **solo claro**. Contrastes calculados sobre blanco salvo indicación.
 | `--theme-primary` | `#2F6EB1` (600) | Botón primario, links, foco, acento | 5.27:1 (blanco encima: 5.27:1) |
 | `--theme-primary-dark` | `#264F82` (= brand-dark del portal) | Hover del primario; texto de botón secundario y de `.row-action` | 8.33:1 |
 | `--theme-primary-darker` | `#1A4779` (800) | Active del primario; `--theme-nav-item-active-fg` | 9.45:1 |
-| `--theme-primary-light` / `--theme-accent` | `#3B82C4` (500) | Íconos de formulario (`--theme-form-icon`) | — |
+| `--theme-accent` | `#3B82C4` (500) | Acento claro | — |
 | `--theme-surface-inverse` | `#0F335D` (900) | Solo hero de Login y tints oscuros | — |
 
 ### 3.2 Superficies y bordes
 
 | Token | Hex | Uso |
 |---|---|---|
-| `--theme-surface-app` / `--theme-surface-card` / `--theme-bg-card` | `#FFFFFF` | Contenido, cards |
+| `--theme-surface-card` / `--theme-bg-card` | `#FFFFFF` | Contenido, cards |
 | `--theme-bg-sidebar` | `#F7F9FB` | Sidebar claro |
 | `--theme-surface-sunken` / `--theme-table-header-bg` | `#F7F9FB` | Header de tabla, wells |
 | `--theme-bg-table-hover` / `--theme-table-hover-bg` | `#F7F9FB` | Hover de fila |
@@ -82,7 +83,7 @@ Tema **solo claro**. Contrastes calculados sobre blanco salvo indicación.
 | warning | `--theme-warning-bg` `#FFF3E0` | `--theme-warning-border` `#FFCC80` | `--theme-warning-text` `#BF360C` (5.11:1 sobre su bg) | `--theme-warning` `#E65100` (3.79:1: no como texto) |
 | info | `--theme-info-bg` `#E8F1FA` | `--theme-info-border` `#9EC4E8` | `--theme-primary-darker` `#1A4779` (8.28:1 sobre su bg) | `--theme-info` `#2F6EB1` |
 
-Destructivo (botones): `--theme-warn` `#D32F2F` / hover `--theme-warn-dark` `#B71C1C`.
+Destructivo (botones): `color="warn"` de Material (`#D32F2F`, = `--theme-error`) / hover `--theme-warn-dark` `#B71C1C`.
 
 ### 3.5 Estados de publicación (fichas)
 Tokens `--theme-estado-{borrador|revision|publicado|despublicado}-{bg|text|border|icon}`; todos los `-text` ≥ 4.5:1
@@ -97,10 +98,10 @@ etiqueta sale de `EstadoBadgePipe`). No recrear el badge a mano.
 | Despublicado | `#FFEBEE` | `#B71C1C` | `#C62828` |
 
 ### 3.6 Datos y otros
-- Series: `--theme-chart-1…6` (`#1A4779 #2F6EB1 #77ABDE #C5DCF2 #0F8A8A #7C5CBF`); histórico
+- Series: `--theme-chart-2` `#2F6EB1` y `--theme-chart-4` `#C5DCF2` (las únicas en uso; una serie nueva suma su token); histórico
   `--theme-chart-historic` `#5A98D6` (tramo reciente en `--theme-chart-2`). Nunca donut con más de 4 categorías.
 - Skeleton: `--theme-skeleton-base` / `--theme-skeleton-highlight`.
-- Snackbar: `--theme-snackbar-{success|error|warning}-{bg|icon|action}` + `--theme-snackbar-text` (texto de las
+- Snackbar: `--theme-snackbar-{success|error|warning}-{bg|action}` + `--theme-snackbar-text` (texto de las
   tres); se aplica con `panelClass: 'snackbar-success' | 'snackbar-error' | 'snackbar-warning'`. Texto y acción
   cumplen AA (≥ 4,5:1) sobre su fondo:
 
@@ -125,18 +126,28 @@ etiqueta sale de `EstadoBadgePipe`). No recrear el badge a mano.
 | Rol | Tamaño / peso | Tokens | Uso |
 |---|---|---|---|
 | Page title | 16 / 600, −0.1px | `--theme-font-page-title-size/-weight/-tracking` | Título en el topbar |
-| Display | 26 / 600, −0.3px | `--theme-font-display-size/-weight/-line-height/-tracking` | Título grande de página |
+| Display | 26 / 600, −0.3px | `--theme-font-display-size` | Título grande de página |
 | Section | 17 / 600, −0.2px | `--theme-font-section-size/-weight/-line-height/-tracking` | Bandas del Home, H2 |
 | Card title | 13.5 / 600 | `--theme-font-card-title-size/-weight` | Header de widget/card |
 | Metric | 26 / 600 | `--theme-font-metric-size/-weight` | KPI |
-| Subtitle | 15 / 400 | `--theme-font-subtitle-size/-weight/-line-height` | Subtítulo de page-header |
-| Body | 13.5 / 400, lh 1.5 | `--theme-font-body-size/-weight/-line-height` | Texto general, celdas |
-| Small | 12.5 / 400 | `--theme-font-small-size/-weight/-line-height` | Metadatos, ayudas |
+| Subtitle | 15 / 400 | `--theme-font-subtitle-size` | Subtítulo de page-header |
+| Body | 13.5 / 400, lh 1.5 | `--theme-font-body-size/-line-height` | Texto general, celdas |
+| Small | 12.5 / 400 | `--theme-font-small-size/-line-height` | Metadatos, ayudas |
 | Caption | 11.5 | `--theme-font-caption-size` | Header de tabla, badges, meta |
-| Overline | 11 / 600, +0.5px, MAYÚSCULA | `--theme-font-overline-size/-weight/-line-height/-track` | Label de campo (`@include field-label-overline`) |
+| Overline | 11 / 600, +0.5px, MAYÚSCULA | `--theme-font-overline-size/-weight/-track` | Label de campo (`@include field-label-overline`) |
 
 La escala cruda (`--theme-font-size-2xs…3xl`, 11→30px) y los pesos (`--theme-font-weight-*`) quedan para casos sin
-rol. Mixins de texto: `text-heading`, `text-body`, `text-caption`, `truncate`, `line-clamp($lines)`.
+rol. Mixins de texto: `text-body`, `text-caption`, `truncate`, `line-clamp($lines)`.
+
+Interlineado y tracking (letter-spacing) fuera de los roles — sin valores sueltos en los `.scss`:
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--theme-line-height-none` | 1 | Íconos, chips y números de una línea |
+| `--theme-line-height-tight` / `-normal` | 1.25 / 1.5 | Escala base |
+| `--theme-line-height-130` / `-140` / `-145` / `-160` | 1.3 / 1.4 / 1.45 / 1.6 | Intermedios nombrados por valor (ayudas, párrafos de card, avisos) |
+| `--theme-tracking-tight` / `-wide` | −0.01em / +0.01em | Títulos `h1…h6` · cuerpo y tabs (escalan con el texto) |
+| `--theme-tracking-tight-px` | −0.2px | Títulos de card y avatares |
 
 ## 5. Espaciado y medidas
 
@@ -149,10 +160,18 @@ rol. Mixins de texto: `text-heading`, `text-body`, `text-caption`, `truncate`, `
 | `--theme-space-lg` / `-xl` | 24 / 32 | Secciones |
 | `--theme-space-band` | 30 | Entre bandas del Home |
 | `--theme-space-2xl` / `-3xl` | 48 / 64 | Separaciones grandes |
+| `--theme-space-5` / `-6` / `-7` / `-9` / `-10` / `-11` / `-13` / `-14` / `-22` / `-40` | 5 / 6 / 7 / 9 / 10 / 11 / 13 / 14 / 22 / 40 | Escalones intermedios del diseño (ver abajo) |
+
+**Escalones intermedios.** Los valores del diseño que no caen en la escala t-shirt de arriba NO se redondean: tienen
+su propio token, nombrado por el valor en px (`--theme-space-<px>`) y con exactamente ese valor. Escala completa, en
+px: 2 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · 11 · 13 · 14 · 16 · 18 · 22 · 24 · 30 · 32 · 40 · 48 · 64 (con `1px` literal
+permitido para filetes). Un valor de un solo uso y sin significado reutilizable (3, 26, 34, 52 px) NO lleva token:
+queda como literal con `// stylelint-disable-next-line scale-unlimited/declaration-strict-value -- <motivo>`.
 
 - Alturas: `--theme-control-height-md` 34 (botón, chip, iconbtn) · `--theme-control-height-sm` 30 (acción de fila) ·
   `--theme-input-height` 40 · `--theme-table-row-height` 56 · `--theme-header-height` 60 · `--theme-sidebar-width` 260.
-- Ancho: `--theme-content-max-width` / `--theme-form-max-width` 1400.
+- Ancho: `--theme-content-max-width` 1400.
+- Apilado local (dentro de un componente): `--theme-z-raised` 1 y `--theme-z-raised-above` 2; el chrome usa `--theme-z-sticky` 200, `--theme-z-header` 1000 y `--theme-z-modal` 1300.
 - Responsive solo con `@include responsive(mobile | tablet | tablet-down | desktop | wide)`.
 - Grids con `fr`: `minmax(0, Nfr)` para que los tracks puedan encogerse.
 
@@ -160,6 +179,7 @@ rol. Mixins de texto: `text-heading`, `text-body`, `text-caption`, `truncate`, `
 
 | Token | px | Uso |
 |---|---|---|
+| `--theme-radius-3` / `-6` | 3 / 6 | Barra de acento y thumb de scrollbar · items de menú y toggle (intermedios nombrados por valor) |
 | `--theme-radius-sm` | 4 | Detalles chicos |
 | `--theme-radius-md` | 8 | Botones, inputs, iconbtn, row-action, snackbar |
 | `--theme-radius-panel` | 10 | Cards (`@include theme-card`), contenedor de tabla |
@@ -175,13 +195,17 @@ rol. Mixins de texto: `text-heading`, `text-body`, `text-caption`, `truncate`, `
 | `--theme-elevation-2` | = `--theme-shadow-md` | Menú, popover, panel de select |
 | `--theme-elevation-3` | = `--theme-shadow-dialog` | Diálogo |
 
-`--theme-shadow-snackbar` para el toast. No usar `--theme-shadow-card` en cards nuevas (el diseño es plano).
+`--theme-focus-ring-soft` / `--theme-focus-ring-danger-soft`: halo de 3px del campo con foco / inválido con foco.
+`--theme-shadow-snackbar` para el toast. Las cards no llevan sombra (el diseño es plano).
 
 ## 8. Iconografía
 
 - **Phosphor Icons, peso regular**, único set. Markup: `<i class="ph ph-<nombre>" aria-hidden="true"></i>`.
   En `RowAction.icon` y en `emptyIcon` de `app-shared-table` va el nombre **sin** el prefijo `ph-`.
 - Tamaños: `--theme-icon-size-sm` 16 (botones) · `--theme-icon-size-md` 17 (toolbar) · `--theme-icon-size-lg` 20 (nav).
+  Intermedios nombrados por valor: `--theme-icon-size-13` · `-14` · `-18` · `-19`. Escala completa, en px: 13 · 14 ·
+  sm 16 · md 17 · 18 · 19 · lg 20 · xl 24. Íconos de un solo uso (12, 22, 28, 40 px) quedan como literal con
+  `stylelint-disable` y motivo.
   Spinner: `ph ph-spinner-gap spin`.
 - **Subset:** se está reemplazando la hoja completa de `@phosphor-icons/web` por un subset generado con
   `npm run icons` (en `backoffice/`). **Al agregar un ícono nuevo hay que volver a correr `npm run icons`**, o el
@@ -224,7 +248,8 @@ Loading: el ícono pasa a `ph-spinner-gap spin` y el texto a gerundio ("Guardand
 - Pie: `<app-form-actions>` (`.form-actions`, `__help`, `__buttons`; `[integrada]` en tarjetas de paneles). El botón
   de guardar es plano (`mat-flat-button`) en páginas y diálogos; el texto en curso lleva `…` ("Guardando…").
 - Error de guardado y resumen de validación: `<app-form-error-banner>`.
-- Formularios dinámicos: `<app-dynamic-form>` / `<app-dynamic-form-field>`.
+- Formularios dinámicos: `<app-dynamic-form>` / `<app-dynamic-form-field>`. Con `[paneles]` dibuja la tarjeta de dos
+  paneles (ver "Ficha de una entidad") con el pie integrado; un widget propio va con `<ng-template appCampoPropio>`.
 - Diálogo con formulario: marco `.dialogo-formulario` (cabecera con título, subtítulo y X; cuerpo `mat-dialog-content`
   con scroll; error fuera del cuerpo; pie fijo; ancho `--theme-dialog-width-lg`). Es el mismo para `<app-form-dialog>`
   y para los diálogos con formulario propio. `.form-dialog` (`@include form-dialog`, `--theme-dialog-width-md`/`-sm`)
@@ -232,15 +257,26 @@ Loading: el ícono pasa a `ph-spinner-gap spin` y el texto a gerundio ("Guardand
   Cancelar, Escape y el clic afuera piden confirmación si hay cambios sin guardar y cierran directo si no.
 - Jerarquías (organismo superior, categoría padre): `<app-tree-select>` o el tipo de campo `tree-select` del
   formulario dinámico. Los nodos no elegibles se muestran con su motivo (`disabledReason`), no se ocultan.
-- Selección múltiple de catálogos: `<app-seleccion-multiple>` (chips + lista con buscador, un grupo abierto a la vez) dentro de una
-  tarjeta de dos paneles con el pie integrado (`<app-form-actions [integrada]="true">`, indicador en `formActionsInfo`); ver el form de Plantilla.
+- Selección múltiple de catálogos: `<app-seleccion-multiple>` (chips + lista con buscador, un grupo abierto a la vez); en un
+  formulario es el tipo de campo `select-multiple` del motor. Ver el form de Plantilla.
 
-#### Ver y editar una ficha: la misma pantalla en dos modos
-El detalle de una entidad con formulario de "ficha de dos paneles" (Plantilla, Rol, Ficha por localidad) usa el mismo
-membrete (`.detail-header--flush.detail-header--ficha`, con "Desactivar" dentro de `__actions`) y la misma tarjeta
-(`.ficha-paneles`), con el modificador `.ficha-paneles--lectura` (borde neutro: el celeste señala "en edición") y sin
-`<app-form-actions>`. Los campos van como `.detail-field` dentro de `.ficha-paneles__campos`. Un panel hijo con su propio
-alta (puntos de atención) lleva su cabecera con título, total y botón; con `#<fragmento>` en la URL el foco va al título.
+#### Ficha de una entidad: membrete + paneles (un solo patrón para formularios de página y detalles)
+- **Membrete**: `<app-membrete>` (`shared/components/membrete`). Tile con ícono (o avatar con iniciales, `[membreteTile]`),
+  título `h2` (atenuado mientras está vacío), estado (`[membretePill]`), línea meta (`[datos]`: slug/código en mono +
+  datos con ícono, separados por un filete), aviso opcional y acciones a la derecha ("Desactivar", o la pill
+  "Editando" / "Nuevo" del formulario). Es el mismo en el detalle y en el formulario, que lo arma en vivo.
+- **Paneles**: familia única `.ficha-paneles` (`_components.scss`), en dos presentaciones:
+  - **Unida**: UNA tarjeta con dos paneles (1.6fr / 1fr; `__grid--iguales` 1 / 1) separados por una línea fina, cada uno
+    con su cabecera (barra de acento + título 15/600 + subtítulo, y un total a la derecha) y, en un formulario, el pie de
+    guardar integrado abarcando ambos (`<app-form-actions [integrada]="true">`, indicador en `formActionsInfo`). Borde
+    celeste = "en edición"; `--lectura` (borde neutro, sin pie) para el detalle. Plantilla, Rol y Ficha (formulario),
+    Ficha (detalle).
+  - **`--separados`**: cada panel es una tarjeta y una columna apila varias (gap 12). Organismo, Trámite del organismo
+    (`__grid--lateral-ancho`, 1 / 1.4) y Plantilla (detalle).
+  En tablet y mobile el segundo panel baja debajo del primero. Los campos de lectura van como `.detail-field`.
+- **Ver y editar, la misma pantalla en dos modos**: el detalle usa el mismo membrete (con "Desactivar" como acción) y la
+  misma tarjeta que su formulario. Un panel hijo con su propio alta (puntos de atención) lleva su cabecera con título,
+  total y botón; con `#<fragmento>` en la URL el foco va al título.
 
 #### Alta y edición: ¿diálogo o página?
 Una sola forma por entidad; nunca las dos para lo mismo.
@@ -250,10 +286,11 @@ Una sola forma por entidad; nunca las dos para lo mismo.
   `abrirFormDialog` (`@shared/utils/abrir-form-dialog`, carga diferida). Si no hay nada que cargar antes de mostrar
   el formulario, la config se arma con `formDialogEstatico`. Lo usan usuarios (alta/edición y cambio de email o
   contraseña) y los catálogos de "nombre y poco más" (modalidades, destinatarios, eventos de vida, tipos de
-  organismo, permisos, etiquetas). Siguen con componente propio, porque llevan contenido que el motor no dibuja,
-  pero sobre el mismo marco `.dialogo-formulario` y con el mismo cierre con confirmación (edición sin cambios no
-  guarda): Categorías (`pages/categorias/dialog`, franja de ubicación y slug que
-  sigue al nombre), puntos de atención ("Ver en mapa") y "Adoptar trámite" (`app-vigencia-campos`).
+  organismo, permisos, etiquetas). También los que llevan algo más que campos, que el motor resuelve con
+  capacidades declaradas en el `FieldConfig`: Categorías (franja de ubicación como campo `vista` y slug `derivado`
+  del nombre), puntos de atención (mapa interactivo como `vista` que escribe latitud y longitud, con las coordenadas a mano como
+  alternativa) y "Adoptar trámite" (dos `datepicker` con regla
+  cruzada). No quedan diálogos de formulario con componente propio.
 - **Página** cuando la entidad tiene ficha con más bloques alrededor o muchos campos. Ej.: Organismos (ficha única
   en modos ver / editar / nuevo).
 - Las rutas `…/nuevo` y `…/editar/:id` de una entidad con diálogo se mantienen como puerta de entrada (enlaces
@@ -265,7 +302,8 @@ Una sola forma por entidad; nunca las dos para lo mismo.
   La ayuda de un control que no es `mat-form-field` incluye el mixin `form-help-text`.
 
 ### Lista: encabezado, toolbar y tabla
-- Encabezado: `<app-page-header>` (+ directiva `appPageActions` para las acciones de página).
+- Encabezado: lo dibuja el shell (`AdminLayout`): el `<h1>` y las migas salen de `data.breadcrumb` de la ruta
+  (`pages/pages.module.ts`); la pantalla solo aporta sus acciones con `<ng-template appPageActions>`.
 - Toolbar (clases globales, no redefinir): `.list-toolbar` (`--stacked`) › `.list-toolbar__row` (`--chips`) ›
   `<app-list-search>`, `.list-toolbar-count` (`--end`), `.list-toolbar__actions` › `.list-iconbtn`. Fila de chips:
   `<app-filter-tabs>`, `<app-active-filters>`, `.list-ghost-button`.
@@ -294,7 +332,9 @@ motivo visible.
 ### Estados (carga / vacío / error)
 - Dentro de una card: `.state-panel` › `__icon` (`--error`), `__title`, `__text`, `__cta` (círculo 56, ícono 28,
   título 15, texto 12.5 máx. 250px). Error: `role="alert"` + "Reintentar" (`ph-arrow-clockwise`).
-- Form/detalle que no carga o no existe: `.load-state`.
+- Página (formulario o detalle) que todavía no tiene qué dibujar: `<app-estado-carga>`. **Cargando**: un solo dibujo,
+  ícono giratorio + texto en línea (`.loading-inline`), con `role="status"` y `aria-live="polite"`. **No carga**:
+  `.load-state` con "Reintentar". **No existe**: `.load-state` con texto propio e "Ir al listado", sin "Reintentar".
 - Carga: skeleton en tablas (`--theme-skeleton-*`); `<app-loading>` para bloques.
 - Mensaje inline: `@include inline-message`.
 - Copys es-AR con voseo: "Todavía no hay organismos" · "No pudimos cargar los organismos" · "Revisá tu conexión e
@@ -304,7 +344,8 @@ motivo visible.
 - Confirmación: `ConfirmDialogComponent` (`app-confirm-dialog`) con `ConfirmDialogData` (`highlight` resalta el
   objeto afectado, `danger`, `confirmAction` async + `busyText`). Título en pregunta ("¿Eliminar el organismo?"),
   consecuencia explícita, botones "Cancelar" / "Sí, eliminar".
-- Error global: `app-error-dialog` (lo abre el interceptor; un servicio puede optar por `SKIP_ERROR_INTERCEPTOR`).
+- Error global: `app-error-dialog` (lo abre el interceptor; un `.http.datasource.ts` lo evita con `sinDialogoGlobal()`
+  cuando el error lo muestra el formulario o la confirmación).
 - Diálogos: radio `--theme-radius-lg` y sombra `--theme-elevation-3` (global en `_material.scss`).
 - Snackbar: `panelClass` `snackbar-success` / `snackbar-error` / `snackbar-warning`.
 - Menús: `mat-menu`; ítem destructivo con `.delete-action`.

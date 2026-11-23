@@ -50,6 +50,11 @@ export class SeleccionMultipleComponent implements ControlValueAccessor, OnChang
   @Input() maxChips = 6;
   /** Con más opciones que éstas aparece el buscador. */
   @Input() umbralBuscador = 8;
+  /**
+   * `id` del texto que describe el estado del grupo (el error de validación que proyecta el motor). Va en el
+   * grupo y en su botón, que es donde llega el foco. `null` = sin descripción.
+   */
+  @Input() describedBy: string | null = null;
 
   @Output() abiertoChange = new EventEmitter<boolean>();
 

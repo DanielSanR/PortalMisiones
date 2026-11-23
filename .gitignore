@@ -54,3 +54,6 @@ id_ed25519*
 id_ecdsa*
 *.pem
 *.key
+
+# Archivo suelto local con datos de usuarios (puede tener datos sensibles): NO subir
+Usuarios.txt

@@ -8,7 +8,7 @@ import { FichasLocalesDataSource } from './fichas-locales.datasource';
 import { FichasLocalesFiltro, OrganismProcedureLocationResponseDTO } from '../models/ficha-local.dto';
 import { toFichaLocal, toOrganismProcedureLocationRequest } from '../mappers/fichas-locales.mapper';
 import { FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
-import { TransicionBackend } from '../models/workflow';
+import { TransicionBackend } from '../domain/workflow';
 
 /**
  * Implementación HTTP real (`/api/organism-procedure-location`, permisos `*_VARIANT` y

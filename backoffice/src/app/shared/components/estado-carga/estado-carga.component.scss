@@ -1,0 +1,6 @@
+// El dibujo lo dan las clases globales del envoltorio interno: `.loading-inline` (cargando) o `.load-state`
+// (error), con sus hijos `.load-state__icono`, `__titulo`, `__texto` y `__acciones` (`shared-styles/_components.scss`).
+// El host solo ocupa la línea entera, como el `<div>` que reemplaza.
+:host {
+  display: block;
+}

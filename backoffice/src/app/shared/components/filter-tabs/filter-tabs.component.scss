@@ -12,15 +12,15 @@
 .filter-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--theme-space-6);
   flex-wrap: wrap;
 
-  &-tab {
+  &__tab {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--theme-space-7);
     height: 34px;
-    padding: 0 14px;
+    padding: 0 var(--theme-space-14);
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-full);
     background: var(--theme-bg-card);
@@ -46,17 +46,17 @@
     }
   }
 
-  &-tab-count {
+  &__tab-count {
     font-variant-numeric: tabular-nums;
     font-size: var(--theme-font-size-xs);
   }
 
   // Contador del chip activo: color sólido (con `opacity: .75` caía a 4.39:1, bajo AA).
-  &-tab.is-active &-tab-count {
+  &__tab.is-active &__tab-count {
     color: var(--theme-primary-700);
   }
 
-  &-tab-dot {
+  &__tab-dot {
     flex: none;
     width: 6px;
     height: 6px;

@@ -1,6 +1,6 @@
 import { Component, OnInit, DestroyRef, ElementRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { distinctUntilChanged, filter, map } from 'rxjs';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
@@ -8,48 +8,21 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { UserMenuComponent } from '../user-menu/user-menu.component';
 import { AppFooterComponent } from '../app-footer/app-footer.component';
-import { UnavailableDirective } from '../../directives/unavailable.directive';
+import { BreadcrumbComponent } from '../breadcrumb/breadcrumb.component';
+import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
+import { ResultadoBuscador } from '../sidebar-nav/buscador-comandos';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthTokenService } from '../../../core/services/auth-token.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { LayoutChromeService } from '../../../core/services/layout-chrome.service';
-import { AtajosService } from '../../../core/services/atajos.service';
-import { abrirAyudaAtajos } from '../../utils/abrir-ayuda-atajos';
-import { AuthUser } from '../../../core/models/auth.model';
-import { COMANDOS } from '../../../core/constants/comandos.constants';
-import { NAV_GROUPS, NAV_ITEMS, NavGroup, NavItem } from '../../../core/constants/role-mapping.constants';
-import { UserRole } from '../../../core/enums/user-role.enum';
-import { AuthzContext, authzContextDe, evaluateAccess } from '../../../core/utils/authorization.utils';
-import { etiquetaDeOrganismo, organismoDeSesion } from '../../../core/utils/session.utils';
-import { BreadcrumbDeclarado, BreadcrumbItem, resolverBreadcrumb } from '../../../core/utils/breadcrumb.utils';
-
-/** Icono genérico cuando el primer segmento del breadcrumb no matchea ningún `NavItem`
- *  (ej. detalle de trámite, cuyo trail es ["Trámites", "Detalle"] — sí matchea; se usa
- *  solo como red de seguridad ante secciones fuera del nav). */
-const FALLBACK_SECTION_ICON = 'file-text';
-
-/** Grupo de nav ya filtrado por permiso + búsqueda, con su estado de colapso para el template. */
-interface NavGroupView {
-  label: string;
-  items: NavItem[];
-  isOpen: boolean;
-}
-
-/** Una fila de resultados del buscador (navegación o comando). */
-export interface ResultadoBuscador {
-  tipo: 'nav' | 'comando';
-  label: string;
-  icon: string;
-  route?: string;
-  id?: 'cerrar-sesion' | 'colapsar-nav';
-}
-
-/** Grupo del listado de resultados. `indice` es la posición en la lista plana
- *  `resultados`, para que las flechas recorran los grupos de corrido. */
-interface GrupoResultado {
-  titulo: string;
-  items: (ResultadoBuscador & { indice: number })[];
-}
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { AuthService } from '@core/services/auth.service';
+import { LayoutChromeService } from '@core/services/layout-chrome.service';
+import { AtajosService } from '@core/services/atajos.service';
+import { abrirAyudaAtajos } from '@shared/utils/abrir-ayuda-atajos';
+import { AuthUser } from '@core/models/auth.model';
+import { NAV_GROUPS, NavGroup, NavItem } from '@core/constants/role-mapping.constants';
+import { UserRole } from '@core/enums/user-role.enum';
+import { AuthzContext, authzContextDe, evaluateAccess } from '@core/utils/authorization.utils';
+import { etiquetaDeOrganismo, organismoDeSesion } from '@core/utils/session.utils';
 
 @Component({
   selector: 'app-admin-layout',
@@ -62,15 +35,16 @@ interface GrupoResultado {
     UnavailableDirective,
     UserMenuComponent,
     AppFooterComponent,
+    BreadcrumbComponent,
+    SidebarNavComponent,
   ],
   templateUrl: './admin-layout.component.html',
-  styleUrls: ['./admin-layout.component.scss'],
+  styleUrl: './admin-layout.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminLayoutComponent implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
-  @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
-  @ViewChild('navScroll') navScrollRef?: ElementRef<HTMLElement>;
+  @ViewChild(SidebarNavComponent) navRef?: SidebarNavComponent;
   @ViewChild('mainContent') mainContentRef?: ElementRef<HTMLElement>;
   isMobile = false;
   isCollapsed = false;
@@ -81,31 +55,12 @@ export class AdminLayoutComponent implements OnInit {
   /** Organismo al que pertenece la sesión ("Nombre (SIGLA)"), o `''` si es global / no informado. */
   userOrganismo = '';
 
-  /** Grupos de nav visibles (por permiso + búsqueda), lo que consume el template. */
-  navGroups: NavGroupView[] = [];
-  searchQuery = '';
-
-  /** Resultados en lista plana: es el orden que recorren las flechas. */
-  resultados: ResultadoBuscador[] = [];
-  /** Los mismos resultados agrupados, que es lo que dibuja el nav. */
-  gruposResultado: GrupoResultado[] = [];
-  /** Fila bajo el cursor; -1 cuando no hay resultados. */
-  indiceActivo = -1;
-
-  /** Contexto de autorización del usuario actual, para gatear los comandos. */
-  private authz: AuthzContext = authzContextDe(null);
-
-  /**
-   * Trail de breadcrumb de la sección activa (`route.data.breadcrumb`); vacío en Home = solo "Inicio".
-   * Los tramos intermedios traen `link` (la lista de su sección); el último es la página actual.
-   */
-  breadcrumbTrail: BreadcrumbItem[] = [];
-  /** Tramos previos al título (links a su sección); el último tramo es `tituloPagina`, el `<h1>`. */
-  breadcrumbPrevios: BreadcrumbItem[] = [];
-  /** Título de la página = último tramo del breadcrumb ("Inicio" en Home). */
-  tituloPagina = 'Inicio';
-  /** Icono de la sección activa (icono del `NavItem` cuyo label matchea `breadcrumbTrail[0]`). */
-  sectionIcon = 'layout';
+  /** Grupos accesibles para el usuario actual (gateados por permiso): el nav y el buscador de la sidebar. */
+  accessibleGroups: NavGroup[] = [];
+  /** Los ítems de esos grupos en una lista: las secciones contra las que el breadcrumb resuelve sus links. */
+  seccionesVisibles: NavItem[] = [];
+  /** Contexto de autorización del usuario actual, para gatear los comandos del buscador. */
+  authz: AuthzContext = authzContextDe(null);
 
   /** Slot de acciones de la página activa (ver `LayoutChromeService` / `appPageActions`). */
   readonly chrome = inject(LayoutChromeService);
@@ -115,12 +70,6 @@ export class AdminLayoutComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   /** Atajos de una tecla (`appAtajo`) y su preferencia on/off. */
   readonly atajos = inject(AtajosService);
-  private readonly activatedRoute = inject(ActivatedRoute);
-
-  /** Grupos accesibles para el usuario actual (gateados por permiso), previos al filtro de búsqueda. */
-  private accessibleGroups: NavGroup[] = [];
-  /** Labels de grupo colapsados manualmente por el usuario (vacío = todos abiertos). */
-  private readonly collapsedGroups = new Set<string>();
 
   constructor(
     private breakpointObserver: BreakpointObserver,
@@ -142,15 +91,6 @@ export class AdminLayoutComponent implements OnInit {
     this.authTokenService.getCurrentUser$()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => this.applyUser(user));
-
-    // Breadcrumb del header: refleja `data.breadcrumb` de la ruta activa más profunda.
-    this.router.events
-      .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(() => this.updateBreadcrumb());
-    this.updateBreadcrumb();
 
     // Al cambiar de página el foco se mueve al <main>: si no, el lector de pantalla queda parado en el
     // link del nav que se activó. Se ignora la carga inicial (el primer NavigationEnd que ve el shell) y
@@ -182,8 +122,7 @@ export class AdminLayoutComponent implements OnInit {
         // Colapsado el buscador está oculto: se expande para poder escribir.
         if (!this.isMobile && this.isCollapsed) this.isCollapsed = false;
         this.cdr.markForCheck();
-        // Tras el render (el menú abriéndose o expandiéndose): antes, el campo todavía no es enfocable.
-        setTimeout(() => this.searchInputRef?.nativeElement.focus());
+        this.navRef?.enfocarBuscador();
       },
     });
     const quitarAyuda = this.atajos.registrar({
@@ -216,9 +155,7 @@ export class AdminLayoutComponent implements OnInit {
       this.userRoleSpanish = '';
       this.userOrganismo = '';
       this.authz = authzContextDe(null);
-      this.accessibleGroups = [];
-      this.recomputeNavGroups();
-      this.updateBreadcrumb();
+      this.setAccessibleGroups([]);
       return;
     }
     // El JWT NO trae nombre/apellido (ver AuthUser): con el backend real quedaban vacíos
@@ -236,130 +173,22 @@ export class AdminLayoutComponent implements OnInit {
     this.userOrganismo = organismo ? etiquetaDeOrganismo(organismo) : '';
     this.authz = authzContextDe(user);
     const ctx = this.authz;
-    this.accessibleGroups = NAV_GROUPS
+    this.setAccessibleGroups(NAV_GROUPS
       .map((group) => ({ label: group.label, items: group.items.filter((item) => evaluateAccess(ctx, item.rule)) }))
-      .filter((group) => group.items.length > 0);
-    this.recomputeNavGroups();
-    // Los links del breadcrumb dependen de qué secciones ve el usuario.
-    this.updateBreadcrumb();
+      .filter((group) => group.items.length > 0));
   }
 
-  /**
-   * Deriva `breadcrumbTrail` de la ruta hija más profunda (la que efectivamente resuelve `router-outlet`).
-   * Los links se resuelven contra las secciones que el usuario VE (`accessibleGroups`), no contra todo
-   * `NAV_ITEMS`: un tramo de una sección a la que no tiene acceso queda como texto, en vez de llevarlo a
-   * una ruta que el guard le rechaza.
-   */
-  private updateBreadcrumb(): void {
-    let route = this.activatedRoute.root;
-    while (route.firstChild) route = route.firstChild;
-    const declarado = route.snapshot.data['breadcrumb'] as BreadcrumbDeclarado[] | undefined;
-    const visibles = this.accessibleGroups.flatMap((group) => group.items);
-    this.breadcrumbTrail = resolverBreadcrumb(declarado, visibles);
-    this.breadcrumbPrevios = this.breadcrumbTrail.slice(0, -1);
-    this.tituloPagina = this.breadcrumbTrail.length > 0
-      ? this.breadcrumbTrail[this.breadcrumbTrail.length - 1].label
-      : 'Inicio';
-    this.sectionIcon = this.resolveSectionIcon(this.breadcrumbTrail);
+  /** El nav, el buscador y los links del breadcrumb dependen de qué secciones ve el usuario. */
+  private setAccessibleGroups(groups: NavGroup[]): void {
+    this.accessibleGroups = groups;
+    this.seccionesVisibles = groups.flatMap((group) => group.items);
     this.cdr.markForCheck();
-  }
-
-  /** Icono de la sección activa: el de "Inicio" cuando no hay trail (Home), o el del `NavItem`
-   *  cuyo `label` matchea el primer segmento del trail (ej. "Roles" → shield-star). Fallback
-   *  genérico si el segmento no corresponde a ningún ítem del nav. */
-  private resolveSectionIcon(trail: BreadcrumbItem[]): string {
-    if (trail.length === 0) {
-      return NAV_ITEMS.find((item) => item.label === 'Inicio')?.icon ?? FALLBACK_SECTION_ICON;
-    }
-    return NAV_ITEMS.find((item) => item.label === trail[0].label)?.icon ?? FALLBACK_SECTION_ICON;
   }
 
   /** Skip-link: sin esto el `href="#contenido"` pasaría por el router (base href) en vez de mover el foco. */
   irAlContenido(event: Event): void {
     event.preventDefault();
     this.mainContentRef?.nativeElement.focus();
-  }
-
-  trackByRoute(_index: number, item: NavItem): string {
-    return item.route;
-  }
-
-  trackByGroup(_index: number, group: NavGroupView): string {
-    return group.label;
-  }
-
-  /** Filtro client-side del buscador de la sidebar (sin backend). */
-  onSearchInput(value: string): void {
-    this.searchQuery = value;
-    this.recomputeResultados();
-    this.cdr.markForCheck();
-  }
-
-  // ---------------------------------------------------------------------
-  // Buscador — el nav SE CONVIERTE en los resultados (no hay panel flotante).
-  // ---------------------------------------------------------------------
-
-  /**
-   * Arma la lista plana (para las flechas) y su agrupación (para el nav) en una
-   * sola pasada, así los índices no se pueden desfasar entre las dos vistas.
-   */
-  private recomputeResultados(): void {
-    const q = this.searchQuery.trim().toLocaleLowerCase('es-AR');
-    if (!q) {
-      this.resultados = [];
-      this.gruposResultado = [];
-      this.indiceActivo = -1;
-      return;
-    }
-
-    const navegacion: ResultadoBuscador[] = this.accessibleGroups
-      .flatMap((g) => g.items)
-      .filter((item) => item.label.toLocaleLowerCase('es-AR').includes(q))
-      .map((item) => ({ tipo: 'nav' as const, label: item.label, icon: item.icon, route: item.route }));
-
-    const ctx = this.authz;
-    const comandos: ResultadoBuscador[] = COMANDOS
-      .filter((c) => evaluateAccess(ctx, c.rule))
-      .filter((c) => c.label.toLocaleLowerCase('es-AR').includes(q)
-                  || c.keywords.some((k) => k.includes(q)))
-      .map((c) => ({ tipo: 'comando' as const, label: c.label, icon: c.icon, route: c.route, id: c.id }));
-
-    this.resultados = [...navegacion, ...comandos];
-    this.gruposResultado = [
-      { titulo: 'Ir a', items: navegacion.map((r, i) => ({ ...r, indice: i })) },
-      { titulo: 'Acciones', items: comandos.map((r, i) => ({ ...r, indice: navegacion.length + i })) },
-    ].filter((g) => g.items.length > 0);
-    // Se preselecciona el primero: Enter sin tocar las flechas ejecuta lo más probable.
-    this.indiceActivo = this.resultados.length > 0 ? 0 : -1;
-  }
-
-  /** Flechas para recorrer, Enter para ejecutar, Escape para limpiar. */
-  onSearchKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      // `MatDrawer` escucha Escape en su propio elemento y cierra el sidenav. Cortamos
-      // la propagación solo cuando hay algo que limpiar: si no, Escape con el buscador
-      // vacío deja de cerrar el drawer en mobile, que ahí sí es lo que se espera.
-      // En desktop el sidenav es fijo y no se cierra con Escape (`[disableClose]` en el
-      // template): no hay botón para volver a abrirlo.
-      if (!this.searchQuery) return;
-      event.stopPropagation();
-      this.limpiarBusqueda();
-      return;
-    }
-    if (this.resultados.length === 0) return;
-
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      const paso = event.key === 'ArrowDown' ? 1 : -1;
-      const total = this.resultados.length;
-      this.indiceActivo = (this.indiceActivo + paso + total) % total;
-      this.desplazarAlCursor();
-      return;
-    }
-    if (event.key === 'Enter' && this.indiceActivo >= 0) {
-      event.preventDefault();
-      this.ejecutar(this.resultados[this.indiceActivo]);
-    }
   }
 
   /**
@@ -373,19 +202,9 @@ export class AdminLayoutComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  /** La lista vive dentro del nav, que scrollea: sin esto el cursor se va de vista
-   *  con las flechas. `setTimeout` porque el alto hay que medirlo ya renderizado. */
-  private desplazarAlCursor(): void {
-    setTimeout(() => {
-      this.navScrollRef?.nativeElement
-        .querySelector('.is-cursor')
-        ?.scrollIntoView({ block: 'nearest' });
-    });
-  }
-
+  /** Resultado elegido en el buscador de la sidebar (que ya limpió la búsqueda). */
   ejecutar(resultado: ResultadoBuscador): void {
-    this.limpiarBusqueda();
-    if (this.isMobile) this.sidenav?.close();
+    this.cerrarMenuEnMobile();
 
     switch (resultado.id) {
       case 'cerrar-sesion': this.logout(); return;
@@ -395,34 +214,9 @@ export class AdminLayoutComponent implements OnInit {
     if (resultado.route) this.router.navigateByUrl(resultado.route);
   }
 
-  limpiarBusqueda(): void {
-    this.searchQuery = '';
-    this.resultados = [];
-    this.gruposResultado = [];
-    this.indiceActivo = -1;
-    if (this.searchInputRef) this.searchInputRef.nativeElement.value = '';
-    this.cdr.markForCheck();
-  }
-
-  /** Abre/cierra un grupo del nav. Estado local, no persiste entre sesiones. */
-  toggleGroup(label: string): void {
-    if (this.collapsedGroups.has(label)) {
-      this.collapsedGroups.delete(label);
-    } else {
-      this.collapsedGroups.add(label);
-    }
-    this.recomputeNavGroups();
-  }
-
-  /** Nav en reposo. El filtrado por texto ya no vive acá: con búsqueda activa el nav
-   *  no se dibuja, lo reemplaza el grupo "Ir a" de los resultados. */
-  private recomputeNavGroups(): void {
-    this.navGroups = this.accessibleGroups.map((group) => ({
-      label: group.label,
-      items: group.items,
-      isOpen: !this.collapsedGroups.has(group.label),
-    }));
-    this.cdr.markForCheck();
+  /** En mobile el menú tapa el contenido: se cierra al elegir un destino. */
+  cerrarMenuEnMobile(): void {
+    if (this.isMobile) this.sidenav?.close();
   }
 
   /** Switcher de rol para dev. Nota: la nav ahora es por PERMISO; cambiar el rol solo afecta
@@ -440,7 +234,7 @@ export class AdminLayoutComponent implements OnInit {
     this.isCollapsed = !this.isCollapsed;
     // Colapsado el input queda oculto: si quedara una búsqueda activa, el nav seguiría
     // mostrando resultados sin caja donde escribir ni forma de limpiarlos.
-    if (this.isCollapsed) this.limpiarBusqueda();
+    if (this.isCollapsed) this.navRef?.limpiarBusqueda();
   }
 
   logout(): void {

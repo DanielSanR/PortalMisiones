@@ -1,8 +1,13 @@
+<!-- El `aria-label` reemplaza al contenido: lleva nombre, rol y organismo (si no, el rol no llega a un lector de
+     pantalla). Contraída, solo se ve el avatar: el mismo texto va de tooltip a la derecha, como los ítems del menú
+     lateral (al ser idéntico al nombre accesible, el tooltip no se agrega además como descripción). -->
 <button type="button"
     class="user-menu__trigger"
     [class.is-compact]="compact"
     [matMenuTriggerFor]="menu"
-    [attr.aria-label]="'Menú de perfil: ' + name">
+    [attr.aria-label]="nombreAccesible"
+    [matTooltip]="compact ? nombreAccesible : ''"
+    matTooltipPosition="right">
     <span class="user-menu__avatar" aria-hidden="true">{{ initials }}</span>
     <span class="user-menu__info" [class.cdk-visually-hidden]="compact">
         <span class="user-menu__name">{{ name }}</span>
@@ -14,7 +19,8 @@
 </button>
 
 <mat-menu #menu="matMenu" class="user-menu-panel" xPosition="after" yPosition="above">
-    <!-- Ficha de la cuenta: solo se lee. `mat-menu` se cierra con cualquier click que llegue al panel, así que
+    <!-- Ficha de la cuenta: solo se lee. El rol no se repite acá: ya está en el disparador (nombre + rol).
+         `mat-menu` se cierra con cualquier click que llegue al panel, así que
          se frena UNA vez acá (no en cada fila) para poder seleccionar y copiar el email o el organismo sin
          que el menú se cierre. No es un control: no tiene rol, foco ni teclado. -->
     <div class="user-menu__cuenta" (click)="$event.stopPropagation()">
@@ -24,13 +30,6 @@
                 <strong>{{ name }}</strong>
                 <span class="user-menu__email">{{ email }}</span>
             </div>
-        </div>
-        <div class="user-menu__dato">
-            <span class="user-menu__dato-label">Rol</span>
-            <span class="user-menu__dato-badge">
-                <i class="ph ph-shield-star" aria-hidden="true"></i>
-                {{ role }}
-            </span>
         </div>
         @if (organismo) {
             <div class="user-menu__dato">

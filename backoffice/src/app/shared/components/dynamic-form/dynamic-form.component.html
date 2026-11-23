@@ -1,4 +1,5 @@
 <form class="dynamic-form" [class.dynamic-form--compacto]="compacto" [attr.id]="formId || null"
+      [attr.aria-busy]="paneles ? saving : null"
       [formGroup]="form" (ngSubmit)="submit()" *ngIf="form">
   <!-- El error del servidor queda a la vista hasta el próximo intento: el diálogo global
        se cierra y el usuario se queda sin el motivo del fallo. Un envío inválido ES el próximo intento:
@@ -9,36 +10,134 @@
        foco al enviar, para no duplicar anuncios. -->
   <app-form-error-banner #resumen *ngIf="submitted" [live]="false" [errors]="invalidFieldMessages()"></app-form-error-banner>
 
-  <div class="form-fields">
-    <ng-container *ngFor="let field of fields; trackBy: trackByName">
-    <div *ngIf="seDibuja(field)"
-         class="form-field"
-         [ngClass]="getFieldCssClass(field)">
-      <label *ngIf="showExternalLabel(field)"
-             class="form-field__label"
-             [id]="field.name + '-label'"
-             [attr.for]="field.name">
-        {{ field.label }}<span *ngIf="field.validations?.required && !field.readonly" class="form-field__required" aria-hidden="true"> *</span>
-      </label>
-      <app-dynamic-form-field
-        [field]="field"
-        [group]="form"
-        [nivelEncabezado]="compacto ? 3 : 2"
-        [revision]="revision">
-      </app-dynamic-form-field>
-      <!-- Una sola marca para todos los tipos de campo, en vez de repetirla por variante. -->
-      <span *ngIf="field.pendiente" class="form-field__pendiente">
-        <i class="ph ph-clock" aria-hidden="true"></i>
-        Campo de ejemplo, no persiste.
-      </span>
-    </div>
-    </ng-container>
-  </div>
+  <!-- Avisos de la página que van sobre el formulario y bajo los banners (`.form-aviso`). -->
+  <ng-content select="[formAviso]"></ng-content>
 
-  <!-- Widgets propios de la página, atados a campos `custom` (ver `FieldConfig.type`). -->
+  <!-- Un campo: su etiqueta y su control, o el template propio de la página (`appCampoPropio`). -->
+  <ng-template #campo let-field let-clase="clase">
+    @if (plantillaDe(field); as propia) {
+      <ng-container [ngTemplateOutlet]="propia" [ngTemplateOutletContext]="{ $implicit: form }"></ng-container>
+    } @else if (seDibuja(field)) {
+      <div class="form-field" [ngClass]="clase">
+        <label *ngIf="showExternalLabel(field)"
+               class="form-field__label"
+               [id]="field.name + '-label'"
+               [attr.for]="field.name">
+          {{ field.label }}<span *ngIf="field.validations?.required && !field.readonly" class="form-field__required" aria-hidden="true"> *</span>@if (field.opcional) {<span class="form-field__optional"> (opcional)</span>}
+        </label>
+        <app-dynamic-form-field
+          [field]="field"
+          [group]="form"
+          [esFijo]="esCampoFijo"
+          [nivelEncabezado]="compacto ? 3 : 2"
+          [seleccionAbierta]="seleccionAbierta === field.name"
+          (seleccionAbiertaChange)="alternarSeleccion(field.name, $event)"
+          [revision]="revision">
+        </app-dynamic-form-field>
+      </div>
+    }
+  </ng-template>
+
+  @if (panelesVista; as vistaDePaneles) {
+    <!-- Dos paneles: UNA tarjeta (`.ficha-paneles`, shared-styles) con una sección por panel y el pie de
+         guardar abarcándolos. Ver `PanelDeFormulario` en `@core/models/field.interface`. -->
+    <div class="ficha-paneles">
+      <div class="ficha-paneles__grid" [class.ficha-paneles__grid--iguales]="panelesIguales">
+        @for (item of vistaDePaneles; track item.panel.id) {
+          <section class="ficha-paneles__panel" [class.ficha-paneles__panel--lateral]="item.panel.lateral"
+                   [class.ficha-paneles__panel--acotado]="item.panel.acotado" [attr.aria-labelledby]="item.panel.id">
+            @if (item.panel.acotado) {
+              <!-- El contenido no aporta alto: ocupa la celda que le deja el otro panel. -->
+              <div class="ficha-paneles__ajuste">
+                <ng-container [ngTemplateOutlet]="panel" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
+              </div>
+            } @else {
+              <ng-container [ngTemplateOutlet]="panel" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
+            }
+          </section>
+        }
+      </div>
+
+      <!-- Pie de la tarjeta: abarca los paneles. `formActionsInfo` es el indicador que proyecta la página. -->
+      <app-form-actions [integrada]="true"
+                        [helpText]="helpText"
+                        [cancelText]="cancelButtonText"
+                        [submitText]="submitButtonText"
+                        [savingText]="savingButtonText"
+                        [saving]="saving"
+                        [sinCambios]="sinCambios"
+                        (cancelar)="formCancel.emit()">
+        <ng-container ngProjectAs="[formActionsInfo]">
+          <ng-content select="[formActionsInfo]"></ng-content>
+        </ng-container>
+      </app-form-actions>
+    </div>
+  } @else {
+    <div class="form-fields">
+      <ng-container *ngFor="let field of fields; trackBy: trackByName">
+        <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ $implicit: field, clase: getFieldCssClass(field) }"></ng-container>
+      </ng-container>
+    </div>
+  }
+
+  <ng-template #panel let-item>
+    <header class="ficha-paneles__cabecera">
+      <div class="ficha-paneles__encabezado">
+        <h3 class="ficha-paneles__titulo" [id]="item.panel.id">{{ item.panel.titulo }}</h3>
+        @if (item.panel.subtitulo) {
+          <p class="ficha-paneles__subtitulo">{{ item.panel.subtitulo }}</p>
+        }
+      </div>
+      @if (item.panel.total !== undefined) {
+        <!-- Región viva montada siempre que el panel la declare: cada cambio se anuncia una vez. -->
+        <span class="ficha-paneles__total" role="status">{{ item.panel.total }}</span>
+      }
+    </header>
+
+    @switch (item.panel.cuerpo) {
+      @case ('libre') {
+        @for (grupo of item.grupos; track $index) {
+          @for (field of grupo; track field.name) {
+            <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ $implicit: field, clase: '' }"></ng-container>
+          }
+        }
+      }
+      @case ('grupos') {
+        @for (grupo of item.grupos; track $index) {
+          <div class="ficha-paneles__grupo dynamic-form__grupo" [class.ficha-paneles__grupo--corrido]="grupoCorrido(grupo)">
+            @for (field of grupo; track field.name) {
+              <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ $implicit: field, clase: '' }"></ng-container>
+            }
+          </div>
+        }
+      }
+      @default {
+        <div class="ficha-paneles__cuerpo">
+          <div class="ficha-paneles__campos">
+            @for (grupo of item.grupos; track $index) {
+              @for (field of grupo; track field.name) {
+                <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ $implicit: field, clase: '' }"></ng-container>
+              }
+            }
+          </div>
+          @if (item.opciones.length) {
+            <div class="ficha-paneles__opciones">
+              @for (field of item.opciones; track field.name) {
+                <div class="ficha-paneles__opcion">
+                  <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ $implicit: field, clase: '' }"></ng-container>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  </ng-template>
+
+  <!-- Widgets propios de la página sin template `appCampoPropio` (ver `FieldConfig.type`). -->
   <ng-content></ng-content>
 
-  <app-form-actions *ngIf="!hideButtons"
+  <app-form-actions *ngIf="!hideButtons && !paneles"
                     [helpText]="helpText"
                     [cancelText]="cancelButtonText"
                     [submitText]="submitButtonText"

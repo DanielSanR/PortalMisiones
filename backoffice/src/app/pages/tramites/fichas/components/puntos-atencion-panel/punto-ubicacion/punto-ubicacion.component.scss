@@ -1,0 +1,118 @@
+// Ubicación del punto de atención en su diálogo: "Ubicar en el mapa", el resultado de la búsqueda, la lista
+// para elegir entre varios lugares, el mapa (`app-mapa-ubicacion`) y la invitación a cargar las coordenadas.
+
+@use 'shared-styles/mixins' as *;
+
+.punto-ubicacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-sm);
+  min-width: 0;
+
+  &__buscar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--theme-space-sm) var(--theme-space-md);
+  }
+
+  &__nota,
+  &__alternativa {
+    margin: 0;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+  }
+
+  // Siempre montado (región viva): vacío no ocupa lugar.
+  &__mensaje {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-xs);
+    margin: 0;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+
+    &:empty {
+      display: none;
+    }
+
+    &--error {
+      color: var(--theme-warning-text);
+    }
+  }
+
+  &__resultados {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-xs);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__resultado {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    width: 100%;
+    min-height: 34px;
+    padding: var(--theme-space-xs) var(--theme-space-sm);
+    border: 1px solid var(--theme-border-strong);
+    border-radius: var(--theme-radius-sm);
+    background: var(--theme-surface-card);
+    color: var(--theme-text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    @include focus-ring;
+
+    &:hover {
+      background: var(--theme-surface-sunken);
+    }
+
+    &[aria-pressed='true'] {
+      border-color: var(--theme-primary);
+      background: var(--theme-surface-sunken);
+    }
+  }
+
+  &__resultado-texto {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__resultado-nombre {
+    font-weight: var(--theme-font-weight-medium);
+    overflow-wrap: anywhere;
+  }
+
+  &__resultado-detalle {
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+    overflow-wrap: anywhere;
+  }
+
+  &__cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--theme-space-sm);
+    min-height: 120px;
+    margin: 0;
+    border: 1px solid var(--theme-border-strong);
+    border-radius: var(--theme-radius-md);
+    background: var(--theme-surface-sunken);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+  }
+
+  &__pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--theme-space-xs) var(--theme-space-md);
+  }
+}

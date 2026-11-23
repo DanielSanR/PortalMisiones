@@ -1,5 +1,5 @@
 import { Directive, DestroyRef, OnInit, TemplateRef, inject } from '@angular/core';
-import { LayoutChromeService } from '../../core/services/layout-chrome.service';
+import { LayoutChromeService } from '@core/services/layout-chrome.service';
 
 /**
  * Registra el `TemplateRef` de la página activa en el slot de acciones del header del shell.

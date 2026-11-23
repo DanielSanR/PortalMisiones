@@ -5,8 +5,7 @@
                 [attr.aria-labelledby]="field.name + '-label'"
                 [formControlName]="field.name"
                 [placeholder]="field.placeholder || ''"
-                [required]="field.validations?.required || false"
-                [multiple]="multiple">
+                [required]="field.validations?.required || false">
       <mat-option *ngIf="!field.options?.length" disabled>
         {{ field.optionsLoaded
             ? (field.emptyOptionsMessage || 'No hay opciones disponibles')

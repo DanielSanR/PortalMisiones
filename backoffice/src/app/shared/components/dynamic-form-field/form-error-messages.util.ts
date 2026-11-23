@@ -1,5 +1,5 @@
 import { AbstractControl, FormGroup, ValidationErrors } from '@angular/forms';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig } from '@core/models/field.interface';
 
 /** Generadores de mensaje por clave de error de validación (es-AR). */
 export const FORM_ERROR_MESSAGES: { [key: string]: (field: FieldConfig) => string } = {
@@ -15,19 +15,18 @@ export const FORM_ERROR_MESSAGES: { [key: string]: (field: FieldConfig) => strin
   email: () => 'El email ingresado no es válido',
   minlength: (field) => `No debe ser menor a los ${field.validations?.minLength} caracteres`,
   maxlength: (field) => `No puede superar los ${field.validations?.maxLength} caracteres`,
-  min: (field) => `El valor no puede ser menor a ${field.validations?.min}`,
-  max: (field) => `El valor no puede superar ${field.validations?.max}`,
   pattern: (field) => field.validations?.patternErrorMessage || 'El formato ingresado no es válido',
   matDatepickerParse: () => 'Por favor ingresá una fecha válida',
-  // Validadores propios de formularios a mano (plantilla provincial).
+  // Validador propio del formulario a mano de la ficha (`ficha-form-campos.ts`).
   slugVacio: () => 'Tiene que tener letras o números',
-  principalFuera: () => 'Tiene que ser una de las categorías elegidas',
 };
 
 /** Orden de prioridad: se muestra el primer error de esta lista presente en el control. */
 export const FORM_ERROR_PRIORITY: string[] = [
   // Error que devolvió el backend para este campo (ej. unicidad). Su valor ES el mensaje.
   'server',
+  // Antes que `required`: una fecha mal escrita deja el control en `null`, y "es obligatoria" no dice qué corregir.
+  'matDatepickerParse',
   'required',
   'requiredFile',
   'invalidFileType',
@@ -40,15 +39,16 @@ export const FORM_ERROR_PRIORITY: string[] = [
   'email',
   'minlength',
   'maxlength',
-  'min',
-  'max',
   'pattern',
-  'matDatepickerParse',
   // Regla propia del campo (`FieldValidations.validar`). Su valor ES el mensaje.
   'personalizado',
+  // Regla entre campos (`FieldValidations.validarCon`), después de la del propio campo. Su valor ES el mensaje.
+  'entreCampos',
   'slugVacio',
-  'principalFuera',
 ];
+
+/** Errores cuyo valor ya es el texto a mostrar (lo escribió el backend traducido, o una regla del campo). */
+const CLAVES_CON_MENSAJE = ['server', 'personalizado', 'entreCampos'];
 
 /** Resuelve el mensaje de error (es-AR) del primer error con mayor prioridad, o `null` si no hay. */
 export function getControlErrorMessage(
@@ -63,7 +63,7 @@ export function getControlErrorMessage(
   const mensajes = field.validations?.mensajes;
   const errorKey = FORM_ERROR_PRIORITY.find((key) => key in errors)
     ?? Object.keys(errors).find((key) => !!mensajes?.[key]);
-  if ((errorKey === 'server' || errorKey === 'personalizado') && typeof errors[errorKey] === 'string') {
+  if (errorKey && CLAVES_CON_MENSAJE.includes(errorKey) && typeof errors[errorKey] === 'string') {
     return errors[errorKey];
   }
   if (!errorKey) {

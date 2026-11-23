@@ -1,45 +1,26 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, firstValueFrom, map, startWith } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom, map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
-import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
-import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
-import { ListSearchComponent } from '../../../shared/components/list-search';
-import { AtajoDirective } from '../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
-import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { buscarEn, todasOnlyTabs } from '@core/utils/list-filter.utils';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '@shared/components/table';
+import { FilterTabsComponent } from '@shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '@shared/components/row-actions';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { ListaPendienteComponent } from '@shared/components/lista-pendiente';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent } from '@shared/components/active-filters';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { todasOnlyTabs } from '@shared/utils/list-filter.utils';
 import { ModalidadesFacade, ModalidadVM } from '@features/modalidades';
-import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { ListaCliente, compararPorTexto, textosDeVacio } from '@shared/utils/lista-cliente';
+import { avisarExito } from '@shared/utils/avisos';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
 import { DialogoEnLista } from '@shared/utils/dialogo-en-lista';
 import { abrirFormDialog } from '@shared/utils/abrir-form-dialog';
 import { dialogoDeModalidad } from '../modalidad-dialogo';
-
-/** Textos del estado vacío: distinguen "todavía no hay nada" de "la búsqueda no matchea". */
-interface EstadoVacio {
-  emptyTitle: string;
-  emptyMessage: string;
-  emptyActionLabel: string;
-}
-
-/** ViewModel de la pantalla: filas ya buscadas/ordenadas/paginadas + los textos que corresponden. */
-interface ModalidadesVista extends EstadoVacio {
-  /** Solo la página visible. */
-  rows: ModalidadVM[];
-  /** Total tras buscar (lo que cuenta el toolbar y alimenta al paginador). */
-  total: number;
-  pageIndex: number;
-  hayFiltros: boolean;
-  filtrosActivos: FiltroActivo[];
-}
 
 @Component({
   selector: 'app-modalidades-list',
@@ -47,7 +28,6 @@ interface ModalidadesVista extends EstadoVacio {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe,
-    ReactiveFormsModule,
     MatButtonModule,
     MatSnackBarModule,
     SharedTableComponent,
@@ -55,143 +35,70 @@ interface ModalidadesVista extends EstadoVacio {
     FilterTabsComponent,
     RowActionsComponent,
     ListSearchComponent,
+    ListaPendienteComponent,
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
     AtajoDirective,
-    UnavailableDirective,
   ],
   templateUrl: './modalidades-list.component.html',
-  styleUrls: ['./modalidades-list.component.scss'],
+  styleUrl: './modalidades-list.component.scss',
 })
 export class ModalidadesListComponent implements OnInit {
   private readonly facade = inject(ModalidadesFacade);
-  readonly modalidades$ = this.facade.modalidades$;
-
-  loading = true;
-  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
-  error = false;
-  /** Id de la modalidad con un borrado en vuelo, para bloquear su fila mientras dura. */
-  deletingId: string | null = null;
-
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
-  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
-
-  private readonly search$ = this.searchCtrl.valueChanges.pipe(
-    debounceTime(200),
-    distinctUntilChanged(),
-    startWith(this.searchCtrl.value),
-  );
-
-  /**
-   * Chip único "Todas": el `activo` del VM es un soft-delete que el backend nunca devuelve
-   * en false, así que un filtro Activas/Inactivas contaría siempre cero y mentiría.
-   * El contador se calcula sobre lo ya buscado, igual que en el resto de las listas.
-   */
-  readonly filterTabs$ = combineLatest([this.modalidades$, this.search$]).pipe(
-    map(([modalidades, search]) => todasOnlyTabs(this.buscar(modalidades, search).length)),
-  );
-
-  readonly pageIndex$ = new BehaviorSubject<number>(0);
-  readonly pageSize$ = new BehaviorSubject<number>(10);
-
-  readonly vista$ = combineLatest([
-    this.modalidades$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
-  ]).pipe(
-    map(([modalidades, search, sort, pageIndex, pageSize]): ModalidadesVista => {
-      const filtradas = this.ordenar(this.buscar(modalidades, search), sort);
-      // Al buscar, la página actual puede quedar fuera de rango: se acota en vez de
-      // mostrar una tabla vacía con resultados que sí existen.
-      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
-      const pagina = Math.min(pageIndex, ultimaPagina);
-      const desde = pagina * pageSize;
-
-      const filtrosActivos = this.filtrosActivos(search);
-      const hayFiltros = filtrosActivos.length > 0;
-      return {
-        rows: filtradas.slice(desde, desde + pageSize),
-        total: filtradas.length,
-        pageIndex: pagina,
-        hayFiltros,
-        filtrosActivos,
-        ...this.estadoVacio(hayFiltros),
-      };
-    }),
-  );
-
-  columns: TableColumn<ModalidadVM>[] = [
-    { key: 'nombre',   label: 'Nombre',   sortable: true },
-    { key: 'acciones', label: 'Acciones', width: '140px' },
-  ];
-
   private readonly destroyRef = inject(DestroyRef);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
   /** Alta y edición van en diálogo sobre la lista; el diálogo guarda y acá solo se avisa. */
   private readonly dialogo = new DialogoEnLista<ModalidadVM, ModalidadVM>({
     abrir: (modalidad) => abrirFormDialog(this.dialog, dialogoDeModalidad(this.facade, modalidad)),
-    buscar: async (id) => (await firstValueFrom(this.modalidades$)).find((fila) => fila.id === id),
-    alGuardar: (_guardada, modalidad) => {
-      this.snackBar.open(modalidad ? 'Modalidad actualizada' : 'Modalidad creada', 'OK', {
-        duration: 3000,
-        // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-        panelClass: 'snackbar-success',
-      });
-    },
+    buscar: async (id) => (await firstValueFrom(this.facade.modalidades$)).find((fila) => fila.id === id),
+    alGuardar: (_guardada, modalidad) => avisarExito(this.snackBar, modalidad ? 'Modalidad actualizada' : 'Modalidad creada'),
     noEncontrada: 'No encontramos esa modalidad. Puede que la hayan eliminado.',
   });
 
+  /** Búsqueda, orden, paginado y estado de carga en cliente sobre `modalidades$`. */
+  readonly lista = new ListaCliente<ModalidadVM>({
+    fuente$: this.facade.modalidades$,
+    cargar: () => this.facade.loadModalidades(),
+    buscarEn: (m) => [m.nombre],
+    comparar: compararPorTexto((m, columna) => (columna === 'nombre' ? m.nombre : '')),
+    extras: textosDeVacio(
+      {
+        emptyTitle: 'Todavía no hay modalidades',
+        emptyMessage: 'Creá la primera para indicar de qué forma se puede realizar cada trámite.',
+        emptyActionLabel: 'Nueva modalidad',
+      },
+      {
+        emptyTitle: 'Sin resultados',
+        emptyMessage: 'Ninguna modalidad coincide con la búsqueda.',
+        emptyActionLabel: 'Limpiar búsqueda',
+      },
+    ),
+    alCargar: (lista) => this.dialogo.listaLista(lista),
+  });
+
+  /**
+   * Chip único "Todas": el `activo` del VM es un soft-delete que el backend nunca devuelve
+   * en false, así que un filtro Activas/Inactivas contaría siempre cero y mentiría.
+   * El contador se calcula sobre lo ya buscado, igual que en el resto de las listas.
+   */
+  readonly filterTabs$ = this.lista.buscadas$.pipe(map((buscadas) => todasOnlyTabs(buscadas.length)));
+
+  readonly columns: TableColumn<ModalidadVM>[] = [
+    { key: 'nombre',   label: 'Nombre',   sortable: true },
+    { key: 'acciones', label: 'Acciones', width: '140px' },
+  ];
+
   ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading = true;
-    this.error = false;
-    this.dialogo.listaLista(false);
-    this.facade.loadModalidades()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); this.dialogo.listaLista(true); },
-        // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
-        // modalidades, indistinguible de una carga fallida.
-        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
-      });
-  }
-
-  limpiarFiltros(): void {
-    this.searchCtrl.setValue('');
-  }
-
-  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: string): void {
-    if (clave === 'search') this.searchCtrl.setValue('');
-  }
-
-  hayFiltrosActivos(): boolean {
-    return this.searchCtrl.value.trim().length > 0;
+    this.lista.cargar();
   }
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
   onEmptyAction(): void {
-    if (this.hayFiltrosActivos()) {
-      this.limpiarFiltros();
-      return;
-    }
-    this.onCreate();
-  }
-
-  onSortChange(sort: TableSortEvent): void {
-    this.sort$.next(sort);
-  }
-
-  onPageChange(evento: TablePageEvent): void {
-    this.pageIndex$.next(evento.pageIndex);
-    this.pageSize$.next(evento.pageSize);
+    this.lista.accionDeVacio(() => this.onCreate());
   }
 
   onCreate(): void {
@@ -224,10 +131,11 @@ export class ModalidadesListComponent implements OnInit {
   }
 
   onDelete(modalidad: ModalidadVM): void {
-    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
-    const indice = indiceDeFilaActiva(this.host);
-    abrirConfirmacion(this.dialog, {
-      data: {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: {
         title: '¿Eliminar la modalidad?',
         // Cuenta la consecuencia, no la restricción: si el backend rechaza borrar una
         // modalidad en uso, eso vuelve como error del propio pedido.
@@ -236,67 +144,11 @@ export class ModalidadesListComponent implements OnInit {
         danger: true,
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
-        // El diálogo se queda abierto con el botón en spinner hasta que el backend
-        // responde, en vez de cerrar optimistamente y dejar al usuario sin señal.
-        confirmAction: () => {
-          this.deletingId = modalidad.id;
-          this.cdr.markForCheck();
-          return this.facade.delete(modalidad.id).pipe(
-            finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
-          );
-        },
+        confirmAction: () => this.facade.delete(modalidad.id),
       },
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        enfocarTrasEliminar(this.host, indice, this.destroyRef);
-        this.snackBar.open('Modalidad eliminada', 'OK', {
-          duration: 3000,
-          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-          panelClass: 'snackbar-success',
-        });
-      });
-  }
-
-  private buscar(modalidades: ModalidadVM[], termino: string): ModalidadVM[] {
-    return buscarEn(modalidades, termino, (m) => [m.nombre]);
-  }
-
-  private ordenar(modalidades: ModalidadVM[], sort: TableSortEvent | null): ModalidadVM[] {
-    if (!sort?.direction) return modalidades;
-    const factor = sort.direction === 'asc' ? 1 : -1;
-    return [...modalidades].sort((a, b) =>
-      this.valorDeOrden(a, sort.active)
-        .localeCompare(this.valorDeOrden(b, sort.active), 'es-AR', { sensitivity: 'base' }) * factor,
-    );
-  }
-
-  private valorDeOrden(modalidad: ModalidadVM, key: string): string {
-    switch (key) {
-      case 'nombre': return modalidad.nombre ?? '';
-      default:       return '';
-    }
-  }
-
-  private filtrosActivos(search: string): FiltroActivo[] {
-    const termino = search.trim();
-    return termino ? [{ clave: 'search', etiqueta: `Búsqueda: ${termino}` }] : [];
-  }
-
-  private estadoVacio(hayFiltros: boolean): EstadoVacio {
-    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
-    if (hayFiltros) {
-      return {
-        emptyTitle: 'Sin resultados',
-        emptyMessage: 'Ninguna modalidad coincide con la búsqueda.',
-        emptyActionLabel: 'Limpiar búsqueda',
-      };
-    }
-    return {
-      emptyTitle: 'Todavía no hay modalidades',
-      emptyMessage: 'Creá la primera para indicar de qué forma se puede realizar cada trámite.',
-      emptyActionLabel: 'Nueva modalidad',
-    };
+      aviso: 'Modalidad eliminada',
+      ocupado: this.lista.ocupar(modalidad.id),
+      foco: { host: this.host },
+    });
   }
 }

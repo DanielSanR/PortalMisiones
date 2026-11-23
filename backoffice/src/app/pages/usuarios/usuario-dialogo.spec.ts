@@ -486,6 +486,28 @@ describe('dialogoDeUsuario', () => {
       expect(form().form.get('nombre')?.value).toBe('Ana');
     });
 
+    it('cambiar de rol tras un email repetido no borra el error del email (los campos se recalculan)', async () => {
+      await abrir();
+      elegirRol(ROL_GLOBAL.id);
+      form().form.patchValue(BASE);
+      facade.create.and.returnValue(throwError(() => ({ status: 409, error: { code: 4002, message: 'ya está' } })));
+      await fixture.componentInstance.onSubmit(form().form.getRawValue());
+      fixture.detectChanges();
+      const email = (): HTMLInputElement => fixture.nativeElement.querySelector('input#email');
+      expect(form().form.get('email')?.hasError('server')).toBeTrue();
+
+      elegirRol(ROL_ORGANISMO.id);
+
+      expect(form().form.contains('organismoId')).toBeTrue();
+      expect(form().form.get('email')?.errors).toEqual({ server: 'Ya existe un usuario con ese email' });
+      expect(email().getAttribute('aria-invalid')).toBe('true');
+      expect(fixture.nativeElement.textContent).toContain('Ya existe un usuario con ese email');
+
+      form().form.get('email')?.setValue('otra@example.com');
+      fixture.detectChanges();
+      expect(form().form.get('email')?.errors).toBeNull();
+    });
+
     it('volver a un rol de organismo después de uno global conserva el organismo elegido', async () => {
       await abrir();
 

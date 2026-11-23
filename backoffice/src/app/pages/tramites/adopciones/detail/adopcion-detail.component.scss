@@ -1,19 +1,13 @@
 // ==========================================================================
-// Detalle de Trámite del organismo — lo propio de la pantalla: el form de
-// "Vigencia y estado". Membrete, grilla, cards y campos son las clases
-// globales `.detail-*`; el toggle con su aviso es `.form-toggle` y el error
-// de guardado `app-form-error-banner` (shared-styles/_components.scss).
+// Detalle de Trámite del organismo — lo propio de la pantalla: el pie del form de
+// "Vigencia y estado" (lo dibuja `app-dynamic-form`). El membrete es `app-membrete`; paneles y
+// campos son las clases globales `.ficha-paneles--separados` y `.detail-field*` (shared-styles/_components.scss).
 // ==========================================================================
 
-.adopdet-form {
+.adopdet-acciones {
   display: flex;
-  flex-direction: column;
-  gap: var(--theme-space-md);
-
-  &__acciones {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: var(--theme-space-sm);
-  }
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--theme-space-sm);
+  margin-top: var(--theme-space-md);
 }

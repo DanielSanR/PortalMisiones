@@ -3,10 +3,10 @@ import { AsyncPipe } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
-import { AuthTokenService } from '../../../core/services/auth-token.service';
-import { AccessRule } from '../../../core/models/access-rule.model';
-import { AriaDisabledDirective } from '../../directives/aria-disabled.directive';
-import { UnavailableDirective } from '../../directives/unavailable.directive';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { AccessRule } from '@core/models/access-rule.model';
+import { AriaDisabledDirective } from '@shared/directives/aria-disabled.directive';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 
 let nextUid = 0;
 

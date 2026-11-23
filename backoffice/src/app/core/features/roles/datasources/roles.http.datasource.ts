@@ -5,7 +5,7 @@ import { environment } from '@env/environment';
 import { ResponseDTO } from '@core/models/api-response.model';
 import { RoleResponseDTO } from '@core/models/role.model';
 import { RolesDataSource } from './roles.datasource';
-import { toRolVM, toRoleRequest } from '../mappers/roles.mapper';
+import { pedidoDeActivacion, toRolVM, toRoleRequest } from '../mappers/roles.mapper';
 import { RolFormValue, RolVM } from '../models/role.vm';
 import { sinDialogoGlobal } from '@core/interceptors/http-error.interceptor';
 
@@ -52,5 +52,15 @@ export class RolesHttpDataSource extends RolesDataSource {
     return this.http
       .delete<ResponseDTO<void>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map(() => void 0));
+  }
+
+  /**
+   * `PUT /api/role/{id}` con el rol completo y `active: true` (`RoleService.updateRole` pisa todos los campos).
+   * `rol` tiene que venir de un `GET` recién hecho (lo arma `RolesFacade.activate`), no de una lista en caché.
+   */
+  activate(rol: RolVM): Observable<RolVM> {
+    return this.http
+      .put<ResponseDTO<RoleResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(rol.id)}`, pedidoDeActivacion(rol), sinDialogoGlobal())
+      .pipe(map((res) => toRolVM(res.data)));
   }
 }

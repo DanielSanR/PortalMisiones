@@ -17,7 +17,8 @@ export interface PermissionRequestDTO {
 export interface RoleResponseDTO {
   id: string;
   code: string; // sin prefijo ROLE_
-  description: string;
+  /** `null` si el rol no tiene descripción. */
+  description: string | null;
   scopeType: RoleScopeType;
   assignableByOrgAdmin: boolean;
   /** ¿ADMIN_BACKOFFICE puede asignar este rol? (V2.16, PPDT-5.1). Opcional: un backend anterior a V2.16 no lo manda. */
@@ -28,7 +29,7 @@ export interface RoleResponseDTO {
 
 export interface RoleRequestDTO {
   code: string;
-  description?: string;
+  description?: string | null;
   scopeType: RoleScopeType;
   assignableByOrgAdmin: boolean;
   /** ¿ADMIN_BACKOFFICE puede asignar este rol? (V2.16, PPDT-5.1). En el PUT se manda siempre: si falta, el backend lo toma como `false`. */

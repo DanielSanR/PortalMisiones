@@ -1,28 +1,25 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
+import { combineLatest, map, startWith } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../../shared/utils/abrir-confirmacion';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../../shared/components/table';
-import { RowAction, RowActionsComponent } from '../../../../shared/components/row-actions';
-import { ListSearchComponent } from '../../../../shared/components/list-search';
-import { AtajoDirective } from '../../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../../shared/components/active-filters';
-import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
-import { PageActionsDirective } from '../../../../shared/directives/page-actions.directive';
-import { buscarEn } from '@core/utils/list-filter.utils';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '@shared/components/table';
+import { RowAction, RowActionsComponent } from '@shared/components/row-actions';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent, FiltroActivo } from '@shared/components/active-filters';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { ListaCliente, textosDeVacio } from '@shared/utils/lista-cliente';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
 import { PlantillaOpcion, PlantillaVM, PlantillasFacade } from '@features/plantillas';
 import { RUTA_DETALLE_PLANTILLA, RUTA_EDITAR_PLANTILLA, RUTA_NUEVA_PLANTILLA } from '../plantillas.rutas';
-
-/** Texto de "no se pudo resolver el nombre" (id que no está en el catálogo). */
-const NO_DISPONIBLE = 'No disponible';
+import { NO_DISPONIBLE } from '@core/constants/textos.constants';
 
 /** Opciones de los selects de filtro, sacadas de lo que efectivamente usan las plantillas cargadas. */
 interface OpcionesDeFiltro {
@@ -30,17 +27,11 @@ interface OpcionesDeFiltro {
   modalidades: PlantillaOpcion[];
 }
 
-interface PlantillasVista {
-  /** Solo la página visible. */
-  rows: PlantillaVM[];
-  /** Total tras filtrar (lo que cuenta el toolbar y alimenta al paginador). */
-  total: number;
-  pageIndex: number;
-  hayFiltros: boolean;
-  filtrosActivos: FiltroActivo[];
-  emptyTitle: string;
-  emptyMessage: string;
-  emptyActionLabel: string;
+/** Filtros propios de la lista, con las opciones de las que sale el nombre de cada chip. */
+interface FiltrosDePlantillas {
+  categoriaId: string;
+  modalidadId: string;
+  opciones: OpcionesDeFiltro;
 }
 
 /**
@@ -77,76 +68,54 @@ export class PlantillasListComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   readonly plantillas$ = this.facade.plantillas$;
   readonly rutaDetalle = RUTA_DETALLE_PLANTILLA;
   readonly noDisponible = NO_DISPONIBLE;
 
-  loading = true;
-  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
-  error = false;
-  /** Plantilla con una desactivación en vuelo, para bloquear su fila mientras dura. */
-  desactivandoId: string | null = null;
-
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
   /** '' = todas. */
   readonly categoriaCtrl = new FormControl('', { nonNullable: true });
   readonly modalidadCtrl = new FormControl('', { nonNullable: true });
-  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
-  readonly pageIndex$ = new BehaviorSubject<number>(0);
-  readonly pageSize$ = new BehaviorSubject<number>(10);
-
-  private readonly search$ = this.searchCtrl.valueChanges.pipe(
-    debounceTime(200),
-    distinctUntilChanged(),
-    startWith(this.searchCtrl.value),
-  );
   private readonly categoria$ = this.categoriaCtrl.valueChanges.pipe(startWith(this.categoriaCtrl.value));
   private readonly modalidad$ = this.modalidadCtrl.valueChanges.pipe(startWith(this.modalidadCtrl.value));
 
   readonly opciones$ = this.plantillas$.pipe(map(opcionesDeFiltro));
 
-  readonly vista$ = combineLatest([
-    this.plantillas$, this.opciones$, this.search$, this.categoria$, this.modalidad$,
-    this.sort$, this.pageIndex$, this.pageSize$,
-  ]).pipe(
-    map(([plantillas, opciones, search, categoriaId, modalidadId, sort, pageIndex, pageSize]): PlantillasVista => {
-      const filtradas = this.ordenar(
-        buscarEn(plantillas, search, (x) => [x.titulo, x.slug])
-          .filter((p) => (!categoriaId || p.categoriaPrincipal?.id === categoriaId || p.categorias.some((c) => c.id === categoriaId))
-            && (!modalidadId || p.modalidad?.id === modalidadId)),
-        sort,
-      );
-      // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de mostrar
-      // una tabla vacía con resultados que sí existen.
-      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
-      const pagina = Math.min(pageIndex, ultimaPagina);
-      const desde = pagina * pageSize;
-
-      const filtrosActivos = this.filtrosActivos(search, categoriaId, modalidadId, opciones);
-      const hayFiltros = filtrosActivos.length > 0;
-      return {
-        rows: filtradas.slice(desde, desde + pageSize),
-        total: filtradas.length,
-        pageIndex: pagina,
-        hayFiltros,
-        filtrosActivos,
-        // Con filtros activos el CTA siempre limpia (aunque no haya plantillas); "Nueva" solo sin filtros.
-        ...(hayFiltros
-          ? {
-            emptyTitle: 'Sin resultados',
-            emptyMessage: 'Ninguna plantilla coincide con la búsqueda o los filtros aplicados.',
-            emptyActionLabel: 'Limpiar filtros',
-          }
-          : {
-            emptyTitle: 'Todavía no hay plantillas provinciales',
-            emptyMessage: 'Creá la primera para que los organismos puedan adoptarla.',
-            emptyActionLabel: 'Nueva plantilla',
-          }),
-      };
-    }),
-  );
+  /** Búsqueda, filtros, orden, paginado y estado de carga en cliente sobre `plantillas$`. */
+  readonly lista = new ListaCliente<PlantillaVM, FiltrosDePlantillas>({
+    fuente$: this.plantillas$,
+    cargar: () => this.facade.loadPlantillas(),
+    buscarEn: (p) => [p.titulo, p.slug],
+    comparar: (a, b, columna) => this.comparar(a, b, columna),
+    filtros$: combineLatest([this.categoria$, this.modalidad$, this.opciones$]).pipe(
+      map(([categoriaId, modalidadId, opciones]): FiltrosDePlantillas => ({ categoriaId, modalidadId, opciones })),
+    ),
+    filtrar: (buscadas, { categoriaId, modalidadId }) => buscadas.filter((p) =>
+      (!categoriaId || p.categoriaPrincipal?.id === categoriaId || p.categorias.some((c) => c.id === categoriaId))
+      && (!modalidadId || p.modalidad?.id === modalidadId)),
+    filtrosActivos: (filtros) => this.filtrosActivos(filtros),
+    limpiarFiltros: () => {
+      this.categoriaCtrl.setValue('');
+      this.modalidadCtrl.setValue('');
+    },
+    quitarFiltro: (clave) => {
+      if (clave === 'categoria') this.categoriaCtrl.setValue('');
+      if (clave === 'modalidad') this.modalidadCtrl.setValue('');
+    },
+    extras: textosDeVacio(
+      {
+        emptyTitle: 'Todavía no hay plantillas provinciales',
+        emptyMessage: 'Creá la primera para que los organismos puedan adoptarla.',
+        emptyActionLabel: 'Nueva plantilla',
+      },
+      {
+        emptyTitle: 'Sin resultados',
+        emptyMessage: 'Ninguna plantilla coincide con la búsqueda o los filtros aplicados.',
+        emptyActionLabel: 'Limpiar filtros',
+      },
+    ),
+  });
 
   readonly columns: TableColumn<PlantillaVM>[] = [
     { key: 'titulo', label: 'Plantilla', sortable: true },
@@ -158,50 +127,16 @@ export class PlantillasListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading = true;
-    this.error = false;
-    this.facade.loadPlantillas()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
-        // Sin esto la lista quedaría en el estado vacío, indistinguible de una carga fallida.
-        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
-      });
-  }
-
-  limpiarFiltros(): void {
-    this.searchCtrl.setValue('');
-    this.categoriaCtrl.setValue('');
-    this.modalidadCtrl.setValue('');
-  }
-
-  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: string): void {
-    if (clave === 'search') this.searchCtrl.setValue('');
-    if (clave === 'categoria') this.categoriaCtrl.setValue('');
-    if (clave === 'modalidad') this.modalidadCtrl.setValue('');
+    this.lista.cargar();
   }
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
   onEmptyAction(hayFiltros: boolean): void {
     if (hayFiltros) {
-      this.limpiarFiltros();
+      this.lista.limpiar();
       return;
     }
     this.onCreate();
-  }
-
-  onSortChange(sort: TableSortEvent): void {
-    this.sort$.next(sort);
-  }
-
-  onPageChange(evento: TablePageEvent): void {
-    this.pageIndex$.next(evento.pageIndex);
-    this.pageSize$.next(evento.pageSize);
   }
 
   onCreate(): void {
@@ -238,8 +173,11 @@ export class PlantillasListComponent implements OnInit {
   }
 
   onDesactivar(plantilla: PlantillaVM): void {
-    abrirConfirmacion(this.dialog, {
-      data: {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: {
         title: '¿Desactivar la plantilla?',
         message: `La plantilla ${plantilla.titulo} deja de listarse acá y no se va a poder adoptar. `
           + 'Por ahora no hay forma de verla ni reactivarla desde el listado.',
@@ -247,27 +185,13 @@ export class PlantillasListComponent implements OnInit {
         danger: true,
         confirmText: 'Sí, desactivar',
         busyText: 'Desactivando…',
-        confirmAction: () => {
-          this.desactivandoId = plantilla.id;
-          this.cdr.markForCheck();
-          return this.facade.desactivar(plantilla.id).pipe(
-            finalize(() => { this.desactivandoId = null; this.cdr.markForCheck(); }),
-          );
-        },
+        confirmAction: () => this.facade.desactivar(plantilla.id),
       },
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.snackBar.open('Plantilla desactivada', 'OK', {
-        duration: 3000,
-        panelClass: 'snackbar-success',
-      }));
-  }
-
-  private ordenar(plantillas: PlantillaVM[], sort: TableSortEvent | null): PlantillaVM[] {
-    if (!sort?.direction) return plantillas;
-    const factor = sort.direction === 'asc' ? 1 : -1;
-    return [...plantillas].sort((a, b) => this.comparar(a, b, sort.active) * factor);
+      aviso: 'Plantilla desactivada',
+      ocupado: this.lista.ocupar(plantilla.id),
+      // La plantilla desactivada sale de la lista: el foco va a la fila que ocupa su lugar.
+      foco: { host: this.host },
+    });
   }
 
   private comparar(a: PlantillaVM, b: PlantillaVM, key: string): number {
@@ -288,10 +212,8 @@ export class PlantillasListComponent implements OnInit {
     }
   }
 
-  private filtrosActivos(search: string, categoriaId: string, modalidadId: string, opciones: OpcionesDeFiltro): FiltroActivo[] {
+  private filtrosActivos({ categoriaId, modalidadId, opciones }: FiltrosDePlantillas): FiltroActivo[] {
     const activos: FiltroActivo[] = [];
-    const termino = search.trim();
-    if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
     if (categoriaId) {
       const nombre = opciones.categorias.find((o) => o.id === categoriaId)?.nombre ?? NO_DISPONIBLE;
       activos.push({ clave: 'categoria', etiqueta: `Categoría: ${nombre}` });

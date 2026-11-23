@@ -1,0 +1,31 @@
+<!-- Un envoltorio por estado, cada uno con su rol: el host no cambia de rol (mutar `role` de una región ya
+     montada se anuncia distinto en cada lector). El de error es una región nueva con `role="alert"`. -->
+@if (tipo === 'cargando') {
+  <div class="loading-inline" role="status" aria-live="polite">
+    <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
+    <span>{{ cargandoTexto }}</span>
+  </div>
+} @else {
+  <div class="load-state" role="alert">
+    <span class="load-state__icono" aria-hidden="true">
+      <i class="ph" [class.ph-file-x]="noExiste" [class.ph-cloud-slash]="!noExiste"></i>
+    </span>
+    <h2 class="load-state__titulo">{{ titulo }}</h2>
+    <p class="load-state__texto">{{ texto }}</p>
+    @if (textoExtra) {
+      <p class="load-state__texto">{{ textoExtra }}</p>
+    }
+    <div class="load-state__acciones">
+      @if (!noExiste) {
+        <button type="button" mat-flat-button color="primary" (click)="reintentar.emit()">
+          <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
+        </button>
+      }
+      @if (volverTexto) {
+        <button type="button" mat-stroked-button color="primary" (click)="volver.emit()">
+          <i class="ph ph-list-dashes" aria-hidden="true"></i> {{ volverTexto }}
+        </button>
+      }
+    </div>
+  </div>
+}

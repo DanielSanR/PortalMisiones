@@ -42,5 +42,3 @@ export const TEXTOS_ADOPCION_INEXISTENTE = {
   texto: 'Puede que el enlace esté mal escrito o que no esté entre los trámites de tu organismo. Buscalo en el listado.',
 } as const;
 
-/** Texto de "no se pudo resolver el nombre" (sin permiso para leerlo, o id que ya no está). */
-export const NO_DISPONIBLE = 'No disponible';

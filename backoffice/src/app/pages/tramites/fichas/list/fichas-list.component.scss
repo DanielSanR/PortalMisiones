@@ -22,7 +22,7 @@
 .fichalist-tramite {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--theme-space-2xs);
   min-width: 0;
   text-decoration: none;
   border-radius: var(--theme-radius-sm);

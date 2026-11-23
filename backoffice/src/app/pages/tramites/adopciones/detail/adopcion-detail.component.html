@@ -3,8 +3,8 @@
      a la adopción. -->
 <ng-template appPageActions>
   @if (estado$ | async; as estado) {
-    @if (estado.tipo === 'ok' && estado.adopcion.habilitada) {
-      <button type="button" mat-stroked-button color="warn" (click)="deshabilitar(estado.adopcion)"
+    @if (estado.tipo === 'ok' && estado.valor.habilitada) {
+      <button type="button" mat-stroked-button color="warn" (click)="deshabilitar(estado.valor)"
               *appHasPermission="'DELETE_ADOPTION'">
         <i class="ph ph-prohibit" aria-hidden="true"></i> Deshabilitar
       </button>
@@ -13,133 +13,88 @@
 </ng-template>
 
 @if (estado$ | async; as estado) {
-  @if (estado.tipo === 'cargando') {
-    <div class="loading-inline" role="status">
-      <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
-      <span>Cargando el trámite del organismo…</span>
-    </div>
-  } @else if (estado.tipo === 'error') {
-    <div class="load-state" role="alert">
-      <span class="load-state__icono" aria-hidden="true">
-        <i class="ph" [class.ph-file-x]="estado.noExiste" [class.ph-cloud-slash]="!estado.noExiste"></i>
-      </span>
-      <h2 class="load-state__titulo">{{ estado.noExiste ? textosInexistente.titulo : 'No pudimos cargar el trámite del organismo' }}</h2>
-      <p class="load-state__texto">
-        {{ estado.noExiste
-          ? textosInexistente.texto
-          : 'Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.' }}
-      </p>
-      <div class="load-state__acciones">
-        @if (!estado.noExiste) {
-          <button type="button" mat-flat-button color="primary" (click)="reintentar()">
-            <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
-          </button>
-        }
-        <button type="button" mat-stroked-button color="primary" (click)="volverAlListado()">
-          <i class="ph ph-list-dashes" aria-hidden="true"></i> Ir al listado
-        </button>
-      </div>
-    </div>
+  @if (estado.tipo !== 'ok') {
+    <app-estado-carga [tipo]="estado.tipo" [noExiste]="estado.tipo === 'error' && estado.noExiste"
+        cargandoTexto="Cargando el trámite del organismo…"
+        [titulo]="estado.tipo === 'error' && estado.noExiste ? textosInexistente.titulo : 'No pudimos cargar el trámite del organismo'"
+        [texto]="estado.tipo === 'error' && estado.noExiste ? textosInexistente.texto : 'Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte.'"
+        volverTexto="Ir al listado" (reintentar)="reintentar()" (volver)="volverAlListado()">
+    </app-estado-carga>
   } @else {
-    <div class="detail-col">
-      <header class="detail-header detail-header--flush detail-header--ficha">
-        <div class="detail-header__body">
-          <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-building-office"></i></span>
+    <app-membrete class="ficha-membrete" icono="building-office" [titulo]="estado.valor.plantillaTitulo"
+                  tituloVacio="Trámite sin nombre disponible"
+                  [datos]="[{ icono: 'building-office', texto: estado.valor.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }]"
+                  [aviso]="estado.valor.habilitada ? '' : 'Está deshabilitado: no aparece en el listado de Trámites del organismo.'">
+      <app-vigencia-badge membretePill [estado]="estado.valor.estadoVigencia" [habilitada]="estado.valor.habilitada" [bordered]="true"></app-vigencia-badge>
+    </app-membrete>
 
-          <div class="detail-header__identity">
-            <div class="detail-header__row">
-              <h2 class="detail-header__title" [class.detail-header__title--muted]="!estado.adopcion.plantillaTitulo">
-                {{ estado.adopcion.plantillaTitulo ?? 'Trámite sin nombre disponible' }}
-              </h2>
-              <app-vigencia-badge [estado]="estado.adopcion.estadoVigencia" [habilitada]="estado.adopcion.habilitada" [bordered]="true"></app-vigencia-badge>
-            </div>
-            <p class="detail-header__meta">
-              <span><i class="ph ph-building-office" aria-hidden="true"></i>
-              {{ estado.adopcion.organismoNombre ?? 'Organismo ' + noDisponible.toLowerCase() }}</span>
-            </p>
-            @if (!estado.adopcion.habilitada) {
-              <p class="detail-header__notice">
-                <i class="ph ph-info" aria-hidden="true"></i>
-                Está deshabilitado: no aparece en el listado de Trámites del organismo.
-              </p>
-            }
-          </div>
-        </div>
-      </header>
-
-      <div class="detail-grid detail-grid--aside">
-        <section class="detail-card" aria-labelledby="adopdet-datos">
-          <h3 class="detail-card__title" id="adopdet-datos">Datos</h3>
+    <div class="ficha-paneles ficha-paneles--separados">
+     <div class="ficha-paneles__columna">
+      <div class="ficha-paneles__grid ficha-paneles__grid--lateral-ancho">
+        <section class="ficha-paneles__panel" aria-labelledby="adopdet-datos">
+          <h3 class="ficha-paneles__titulo" id="adopdet-datos">Datos</h3>
           <dl class="detail-fields">
             <div class="detail-field">
               <dt class="detail-field__label">Plantilla provincial</dt>
               <dd class="detail-field__value">
-                <span [class.detail-field__value--muted]="!estado.adopcion.plantillaTitulo">{{ estado.adopcion.plantillaTitulo ?? noDisponible }}</span>
-                <a class="detail-link" [routerLink]="[rutaPlantilla, estado.adopcion.plantillaId]" *appHasPermission="'READ_PROCEDURE'">
+                <span [class.detail-field__value--muted]="!estado.valor.plantillaTitulo">{{ estado.valor.plantillaTitulo ?? noDisponible }}</span>
+                <a class="detail-link" [routerLink]="[rutaPlantilla, estado.valor.plantillaId]" *appHasPermission="'READ_PROCEDURE'">
                   Ver plantilla <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
                 </a>
               </dd>
             </div>
             <div class="detail-field">
               <dt class="detail-field__label">Organismo</dt>
-              <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.adopcion.organismoNombre">{{ estado.adopcion.organismoNombre ?? noDisponible }}</dd>
+              <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.valor.organismoNombre">{{ estado.valor.organismoNombre ?? noDisponible }}</dd>
             </div>
             <div class="detail-field">
               <dt class="detail-field__label">Vigente desde</dt>
-              <dd class="detail-field__value">{{ estado.adopcion.vigenteDesde | date: 'dd/MM/yyyy' }}</dd>
+              <dd class="detail-field__value">{{ estado.valor.vigenteDesde | date: 'dd/MM/yyyy' }}</dd>
             </div>
             <div class="detail-field">
               <dt class="detail-field__label">Vigente hasta</dt>
-              <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.adopcion.vigenteHasta">{{ estado.adopcion.vigenteHasta ? (estado.adopcion.vigenteHasta | date: 'dd/MM/yyyy') : 'Sin fecha de fin' }}</dd>
+              <dd class="detail-field__value" [class.detail-field__value--muted]="!estado.valor.vigenteHasta">{{ estado.valor.vigenteHasta ? (estado.valor.vigenteHasta | date: 'dd/MM/yyyy') : 'Sin fecha de fin' }}</dd>
             </div>
           </dl>
         </section>
 
-        <section class="detail-card" aria-labelledby="adopdet-editar" *appHasPermission="'UPDATE_ADOPTION'">
-          <h3 class="detail-card__title" id="adopdet-editar">Vigencia y estado</h3>
-          <form class="adopdet-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate [attr.aria-busy]="guardando">
-            <app-vigencia-campos [grupo]="form.controls.vigencia" idPrefijo="adopdet" [intentos]="intentos"></app-vigencia-campos>
-
-            <div class="form-toggle">
-              <mat-slide-toggle formControlName="habilitada" color="primary" aria-describedby="adopdet-habilitada-ayuda">Habilitado</mat-slide-toggle>
-              <!-- Montado siempre: es el destino de `aria-describedby` del toggle. -->
-              <div class="form-toggle__ayuda" id="adopdet-habilitada-ayuda">
-                @if (!form.controls.habilitada.value) {
-                  <p class="form-toggle__aviso form-toggle__aviso--alerta">
-                    <i class="ph ph-warning" aria-hidden="true"></i>
-                    Al guardar deja de listarse en Trámites del organismo y el trámite deja de verse en el portal.
-                  </p>
-                }
-              </div>
-            </div>
-
-            @if (errorMensaje) {
-              <app-form-error-banner [errors]="[errorMensaje]" titulo="No se pudo guardar"></app-form-error-banner>
-            }
-
-            <div class="adopdet-form__acciones">
-              <button type="button" mat-stroked-button color="primary" [disabled]="guardando || form.pristine" (click)="descartar()">
+        <section class="ficha-paneles__panel" aria-labelledby="adopdet-editar" *appHasPermission="'UPDATE_ADOPTION'">
+          <h3 class="ficha-paneles__titulo" id="adopdet-editar">Vigencia y estado</h3>
+          <!-- Guardado en el lugar: el pie es propio (no el flotante de `app-form-actions`) y va proyectado
+               dentro del `<form>` del motor, así "Guardar cambios" lo envía. -->
+          <app-dynamic-form [fields]="campos" [initialData]="inicial" [requireChanges]="true" [hideButtons]="true"
+                            [saving]="marco.guardando" [serverError]="marco.errorDeGuardado" (formSubmit)="guardar($event)">
+            <div class="adopdet-acciones">
+              <!-- Cada botón es UN solo nodo que alterna su estado (nunca dos `<button>` en `@if` / `@else`): al
+                   guardar o descartar el formulario vuelve a "sin cambios" y el foco tiene que quedar donde estaba
+                   (WCAG 2.4.3). Sin cambios siguen enfocables y dicen por qué no actúan (`appUnavailable`, que
+                   además anula el envío); `disabled` nativo solo mientras guarda. -->
+              <button type="button" mat-stroked-button color="primary" [disabled]="marco.guardando"
+                      [appUnavailable]="sinCambios && !marco.guardando ? 'No hay cambios para descartar' : false"
+                      (click)="descartar()">
                 Descartar
               </button>
-              <button type="submit" mat-flat-button color="primary" [disabled]="guardando || form.pristine">
-                @if (guardando) {
+              <button type="submit" mat-flat-button color="primary" [disabled]="marco.guardando" [attr.aria-busy]="marco.guardando || null"
+                      [appUnavailable]="sinCambios && !marco.guardando ? 'No hay cambios para guardar' : false">
+                @if (marco.guardando) {
                   <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
                 } @else {
                   <i class="ph ph-floppy-disk" aria-hidden="true"></i>
                 }
-                <span>{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</span>
+                <span>{{ marco.guardando ? 'Guardando…' : 'Guardar cambios' }}</span>
               </button>
             </div>
-          </form>
+          </app-dynamic-form>
         </section>
       </div>
 
       <!-- Fichas por localidad de esta adopción (componente hijo con su propio facade). Sin
            `READ_VARIANT` (AB) no se muestra: el backend no le deja leer fichas. -->
-      <section class="detail-card" aria-labelledby="adopdet-fichas" *appHasPermission="'READ_VARIANT'">
-        <h3 class="detail-card__title" id="adopdet-fichas">Fichas por localidad</h3>
-        <app-fichas-de-adopcion [adopcionId]="estado.adopcion.id" [habilitada]="estado.adopcion.habilitada"></app-fichas-de-adopcion>
+      <section class="ficha-paneles__panel" aria-labelledby="adopdet-fichas" *appHasPermission="'READ_VARIANT'">
+        <h3 class="ficha-paneles__titulo" id="adopdet-fichas">Fichas por localidad</h3>
+        <app-fichas-de-adopcion [adopcionId]="estado.valor.id" [habilitada]="estado.valor.habilitada"></app-fichas-de-adopcion>
       </section>
+     </div>
     </div>
   }
 }

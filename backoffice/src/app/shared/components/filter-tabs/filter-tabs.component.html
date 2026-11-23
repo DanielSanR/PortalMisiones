@@ -3,7 +3,7 @@
     @for (tab of tabs; track tab.value; let i = $index) {
       <button type="button"
           #tabBtn
-          class="filter-tabs-tab"
+          class="filter-tabs__tab"
           role="radio"
           [class.is-active]="tab.value === active"
           [attr.aria-checked]="tab.value === active"
@@ -11,10 +11,10 @@
           (click)="select(tab.value)">
         <span>{{ tab.label }}</span>
         @if (tab.count !== undefined) {
-          <span class="filter-tabs-tab-count">{{ tab.count }}</span>
+          <span class="filter-tabs__tab-count">{{ tab.count }}</span>
         }
         @if (tab.alert) {
-          <span class="filter-tabs-tab-dot" aria-hidden="true"></span>
+          <span class="filter-tabs__tab-dot" aria-hidden="true"></span>
         }
       </button>
     }

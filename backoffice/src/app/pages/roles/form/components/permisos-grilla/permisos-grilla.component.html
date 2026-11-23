@@ -1,0 +1,38 @@
+<!-- `vista$` siempre emite (parte de dos `BehaviorSubject`): la región de "sin coincidencias" queda montada. -->
+@if (vista$ | async; as v) {
+  <!-- Enter en el buscador filtra: no tiene que enviar el formulario. -->
+  <div class="permisos-grilla__buscador" (keydown.enter)="$event.preventDefault()">
+    <app-list-search [control]="busqueda" ariaLabel="Buscar permisos"
+                     [placeholder]="'Buscar entre ' + v.total + ' permisos…'"></app-list-search>
+  </div>
+
+  <div class="ficha-paneles__desplazable">
+    @for (grupo of v.grupos; track grupo.key) {
+      <div class="perm-group ficha-paneles__grupo permisos-grilla__grupo" role="group" [attr.aria-labelledby]="'rol-grupo-' + grupo.key">
+        <div class="permisos-grilla__cabecera">
+          <span class="perm-group__label" [id]="'rol-grupo-' + grupo.key">{{ grupo.label }}</span>
+          <span class="perm-group__count">{{ grupo.granted }} / {{ grupo.total }}</span>
+          <button type="button" class="permisos-grilla__todos" (click)="alternarGrupo(grupo)"
+                  [attr.aria-label]="grupo.ariaTodos">
+            {{ grupo.etiquetaTodos }}
+          </button>
+        </div>
+        <div class="perm-group__chips">
+          @for (item of grupo.items; track item.id) {
+            <button type="button"
+                    class="perm-chip perm-chip--toggle"
+                    [class.perm-chip--granted]="item.granted"
+                    [attr.aria-pressed]="item.granted"
+                    (click)="alternarPermiso(item.id)">
+              <i class="ph" [class.ph-check]="item.granted" [class.ph-x]="!item.granted" aria-hidden="true"></i>
+              {{ item.label }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Siempre en el DOM: una región viva insertada junto con su texto no se anuncia. Cambia solo el texto. -->
+    <p class="permisos-grilla__vacio" role="status">{{ v.sinCoincidencias ? 'Ningún permiso coincide con la búsqueda.' : '' }}</p>
+  </div>
+}

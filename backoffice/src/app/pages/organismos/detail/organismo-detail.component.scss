@@ -31,7 +31,7 @@
   color: var(--theme-primary-800);
   font-size: var(--theme-font-size-md);
   font-weight: var(--theme-font-weight-bold);
-  letter-spacing: -0.2px;
+  letter-spacing: var(--theme-tracking-tight-px);
 }
 
 // Pestañas (role=tablist) ----------------------------------------------------
@@ -49,7 +49,7 @@
   &__tab {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--theme-space-7);
     padding: var(--theme-space-gap) var(--theme-space-gap);
     border: 0;
     border-bottom: 2px solid transparent;

@@ -1,46 +1,29 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, DestroyRef, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ElementRef, inject } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BehaviorSubject, map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { abrirConfirmacion } from '../../../shared/utils/abrir-confirmacion';
-import { SharedTableComponent, TableCellDirective, TableColumn, TablePageEvent, TableSortEvent } from '../../../shared/components/table';
-import { FilterTabsComponent } from '../../../shared/components/filter-tabs';
-import { RowAction, RowActionsComponent } from '../../../shared/components/row-actions';
-import { ListSearchComponent } from '../../../shared/components/list-search';
-import { AtajoDirective } from '../../../shared/directives/atajo.directive';
-import { ActiveFiltersComponent, FiltroActivo } from '../../../shared/components/active-filters';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { UnavailableDirective } from '../../../shared/directives/unavailable.directive';
-import { PageActionsDirective } from '../../../shared/directives/page-actions.directive';
-import { ActivoFiltro, activoFilterTabs, buscarEn, filterByActivo } from '@core/utils/list-filter.utils';
+import { SharedTableComponent, TableCellDirective, TableColumn } from '@shared/components/table';
+import { FilterTabsComponent } from '@shared/components/filter-tabs';
+import { RowAction, RowActionsComponent } from '@shared/components/row-actions';
+import { ListSearchComponent } from '@shared/components/list-search';
+import { ListaPendienteComponent } from '@shared/components/lista-pendiente';
+import { AtajoDirective } from '@shared/directives/atajo.directive';
+import { ActiveFiltersComponent } from '@shared/components/active-filters';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
+import { PageActionsDirective } from '@shared/directives/page-actions.directive';
+import { ActivoFiltro, activoFilterTabs, filterByActivo } from '@shared/utils/list-filter.utils';
 import { OrganismosFacade, OrganismoVM } from '@features/organismos';
-import { PARAM_ORIGEN_EDICION } from '../organismo-origen';
-import { enfocarTrasEliminar, indiceDeFilaActiva } from '@shared/utils/foco-lista';
+import { ListaCliente, compararPorTexto, textosDeVacio } from '@shared/utils/lista-cliente';
+import { confirmarBaja } from '@shared/utils/confirmar-baja';
 import { tinteDeAvatar } from '@shared/utils/avatar-tinte';
+import {
+  PARAM_ORIGEN_EDICION, RUTA_DETALLE_ORGANISMO, RUTA_EDITAR_ORGANISMO, RUTA_NUEVO_ORGANISMO,
+} from '../organismos.rutas';
 import { errorDeEliminarOrganismo } from '../organismo-save-error';
-
-/** Textos del estado vacío: distinguen "todavía no hay nada" de "los filtros no matchean". */
-interface EstadoVacio {
-  emptyTitle: string;
-  emptyMessage: string;
-  emptyActionLabel: string;
-}
-
-/** ViewModel de la pantalla: filas ya filtradas/ordenadas + los textos que corresponden. */
-interface OrganismosVista extends EstadoVacio {
-  /** Solo la página visible. */
-  rows: OrganismoVM[];
-  /** Total tras filtrar (lo que cuenta el toolbar y alimenta al paginador). */
-  total: number;
-  pageIndex: number;
-  hayFiltros: boolean;
-  filtrosActivos: FiltroActivo[];
-}
 
 @Component({
   selector: 'app-organismos-list',
@@ -49,7 +32,6 @@ interface OrganismosVista extends EstadoVacio {
   imports: [
     AsyncPipe,
     DatePipe,
-    ReactiveFormsModule,
     MatButtonModule,
     MatSnackBarModule,
     SharedTableComponent,
@@ -57,6 +39,7 @@ interface OrganismosVista extends EstadoVacio {
     FilterTabsComponent,
     RowActionsComponent,
     ListSearchComponent,
+    ListaPendienteComponent,
     ActiveFiltersComponent,
     HasPermissionDirective,
     PageActionsDirective,
@@ -64,62 +47,57 @@ interface OrganismosVista extends EstadoVacio {
     UnavailableDirective,
   ],
   templateUrl: './organismos-list.component.html',
-  styleUrls: ['./organismos-list.component.scss'],
+  styleUrl: './organismos-list.component.scss',
 })
 export class OrganismosListComponent implements OnInit {
   private readonly facade = inject(OrganismosFacade);
-  readonly organismos$ = this.facade.organismos$;
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  loading = true;
-  /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
-  error = false;
-  /** Id del organismo con un borrado en vuelo, para bloquear su fila mientras dura. */
-  deletingId: string | null = null;
-
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
   /** Filtro "Todos/Activos/Inactivos" (campo real `activo`), client-side sobre el stream ya cargado. */
   readonly filtro$ = new BehaviorSubject<ActivoFiltro>('todos');
-  readonly sort$ = new BehaviorSubject<TableSortEvent | null>(null);
 
-  private readonly search$ = this.searchCtrl.valueChanges.pipe(
-    debounceTime(200),
-    distinctUntilChanged(),
-    startWith(this.searchCtrl.value),
-  );
+  /** Búsqueda, filtro por estado, orden, paginado y estado de carga en cliente sobre `organismos$`. */
+  readonly lista = new ListaCliente<OrganismoVM, ActivoFiltro>({
+    fuente$: this.facade.organismos$,
+    cargar: () => this.facade.loadOrganismos(),
+    buscarEn: (o) => [o.nombre, o.acronym, o.tipoNombre, o.parentNombre],
+    comparar: compararPorTexto((organismo, columna) => {
+      switch (columna) {
+        case 'nombre':       return organismo.nombre;
+        case 'parentNombre': return organismo.parentNombre;
+        case 'tipoNombre':   return organismo.tipoNombre;
+        case 'activo':       return organismo.activo ? 'Activo' : 'Inactivo';
+        default:             return '';
+      }
+    }),
+    filtros$: this.filtro$,
+    filtrar: filterByActivo,
+    filtrosActivos: (filtro) => (filtro === 'todos'
+      ? []
+      : [{ clave: 'estado', etiqueta: `Estado: ${filtro === 'activos' ? 'Activos' : 'Inactivos'}` }]),
+    limpiarFiltros: () => this.filtro$.next('todos'),
+    extras: textosDeVacio(
+      {
+        emptyTitle: 'Todavía no hay organismos',
+        emptyMessage: 'Creá el primero para empezar a cargar sus trámites y responsables.',
+        emptyActionLabel: 'Nuevo organismo',
+      },
+      {
+        emptyTitle: 'Sin resultados',
+        emptyMessage: 'Ningún organismo coincide con la búsqueda o el filtro aplicado.',
+        emptyActionLabel: 'Limpiar filtros',
+      },
+    ),
+  });
 
   /** Los contadores de los chips se calculan sobre lo ya buscado, para que no mientan. */
-  readonly filterTabs$ = combineLatest([this.organismos$, this.search$]).pipe(
-    map(([organismos, search]) => activoFilterTabs(this.buscar(organismos, search))),
-  );
+  readonly filterTabs$ = this.lista.buscadas$.pipe(map(activoFilterTabs));
 
-  readonly pageIndex$ = new BehaviorSubject<number>(0);
-  readonly pageSize$ = new BehaviorSubject<number>(10);
-
-  readonly vista$ = combineLatest([
-    this.organismos$, this.filtro$, this.search$, this.sort$, this.pageIndex$, this.pageSize$,
-  ]).pipe(
-    map(([organismos, filtro, search, sort, pageIndex, pageSize]): OrganismosVista => {
-      const filtradas = this.ordenar(filterByActivo(this.buscar(organismos, search), filtro), sort);
-      // Al filtrar, la página actual puede quedar fuera de rango: se acota en vez de
-      // mostrar una tabla vacía con resultados que sí existen.
-      const ultimaPagina = Math.max(0, Math.ceil(filtradas.length / pageSize) - 1);
-      const pagina = Math.min(pageIndex, ultimaPagina);
-      const desde = pagina * pageSize;
-
-      const filtrosActivos = this.filtrosActivos(search, filtro);
-      const hayFiltros = filtrosActivos.length > 0;
-      return {
-        rows: filtradas.slice(desde, desde + pageSize),
-        total: filtradas.length,
-        pageIndex: pagina,
-        hayFiltros,
-        filtrosActivos,
-        ...this.estadoVacio(hayFiltros),
-      };
-    }),
-  );
-
-  columns: TableColumn<OrganismoVM>[] = [
+  readonly columns: TableColumn<OrganismoVM>[] = [
     { key: 'nombre',       label: 'Nombre',     sortable: true },
     { key: 'parentNombre', label: 'Depende de', sortable: true, hideOnMobile: true },
     { key: 'tipoNombre',   label: 'Tipo',       sortable: true, hideOnMobile: true },
@@ -127,46 +105,8 @@ export class OrganismosListComponent implements OnInit {
     { key: 'acciones',     label: 'Acciones',   width: '140px' },
   ];
 
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly cdr = inject(ChangeDetectorRef);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-
-  constructor(
-    private router: Router,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-  ) {}
-
   ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading = true;
-    this.error = false;
-    this.facade.loadOrganismos()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => { this.loading = false; this.cdr.markForCheck(); },
-        // Sin esto la lista quedaría mostrando el estado vacío como si no hubiera
-        // organismos, indistinguible de una carga fallida.
-        error: () => { this.loading = false; this.error = true; this.cdr.markForCheck(); },
-      });
-  }
-
-  limpiarFiltros(): void {
-    this.searchCtrl.setValue('');
-    this.filtro$.next('todos');
-  }
-
-  /** Quita un solo filtro desde su chip en la barra "Filtros activos". */
-  quitarFiltro(clave: string): void {
-    if (clave === 'search') this.searchCtrl.setValue('');
-    else this.filtro$.next('todos');
-  }
-
-  hayFiltrosActivos(): boolean {
-    return this.filtro$.value !== 'todos' || this.searchCtrl.value.trim().length > 0;
+    this.lista.cargar();
   }
 
   // NOTA: el diseño dibuja un chip "/" también en este buscador, pero esa tecla ya está
@@ -176,20 +116,7 @@ export class OrganismosListComponent implements OnInit {
 
   /** El CTA del estado vacío crea o limpia según por qué está vacío. */
   onEmptyAction(): void {
-    if (this.hayFiltrosActivos()) {
-      this.limpiarFiltros();
-      return;
-    }
-    this.onCreate();
-  }
-
-  onSortChange(sort: TableSortEvent): void {
-    this.sort$.next(sort);
-  }
-
-  onPageChange(evento: TablePageEvent): void {
-    this.pageIndex$.next(evento.pageIndex);
-    this.pageSize$.next(evento.pageSize);
+    this.lista.accionDeVacio(() => this.onCreate());
   }
 
   /**
@@ -256,24 +183,25 @@ export class OrganismosListComponent implements OnInit {
   }
 
   onCreate(): void {
-    this.router.navigate(['/dashboard/organismos/nuevo']);
+    this.router.navigate([RUTA_NUEVO_ORGANISMO]);
   }
 
   onVerDetalle(organismo: OrganismoVM): void {
-    this.router.navigate(['/dashboard/organismos/detalle', organismo.id]);
+    this.router.navigate([RUTA_DETALLE_ORGANISMO, organismo.id]);
   }
 
   onEdit(organismo: OrganismoVM): void {
-    this.router.navigate(['/dashboard/organismos/editar', organismo.id], {
+    this.router.navigate([RUTA_EDITAR_ORGANISMO, organismo.id], {
       queryParams: { [PARAM_ORIGEN_EDICION]: 'lista' },
     });
   }
 
   onDelete(organismo: OrganismoVM): void {
-    // Foco tras borrar: la fila (y su botón) desaparece; se captura la posición antes de abrir el diálogo.
-    const indice = indiceDeFilaActiva(this.host);
-    abrirConfirmacion(this.dialog, {
-      data: {
+    confirmarBaja({
+      dialog: this.dialog,
+      snackBar: this.snackBar,
+      destroyRef: this.destroyRef,
+      confirmacion: {
         title: '¿Eliminar el organismo?',
         // El diseño pide contar la consecuencia, no la restricción: qué pasa si sigo.
         // La regla de "no se puede si tiene hijos activos" la aplica el backend y, si
@@ -283,77 +211,12 @@ export class OrganismosListComponent implements OnInit {
         danger: true,
         confirmText: 'Sí, eliminar',
         busyText: 'Eliminando…',
-        // El diálogo se queda abierto con el botón en spinner hasta que el backend responde,
-        // en vez de cerrar optimistamente y dejar al usuario sin señal. La fila queda
-        // bloqueada en paralelo para que la lista de atrás no invite a re-clickear.
-        confirmAction: () => {
-          this.deletingId = organismo.id;
-          this.cdr.markForCheck();
-          return this.facade.delete(organismo.id).pipe(
-            finalize(() => { this.deletingId = null; this.cdr.markForCheck(); }),
-          );
-        },
+        confirmAction: () => this.facade.delete(organismo.id),
         errorDeAccion: errorDeEliminarOrganismo,
       },
-      panelClass: 'custom-modal-panel',
-    })
-      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        enfocarTrasEliminar(this.host, indice, this.destroyRef);
-        this.snackBar.open('Organismo eliminado', 'OK', {
-          duration: 3000,
-          // Variante del design system (fondo #1A1A2E, acción en primary-200) — Kitchen Sink §07.
-          panelClass: 'snackbar-success',
-        });
-      });
-  }
-
-  private buscar(organismos: OrganismoVM[], termino: string): OrganismoVM[] {
-    return buscarEn(organismos, termino, (o) => [o.nombre, o.acronym, o.tipoNombre, o.parentNombre]);
-  }
-
-  private ordenar(organismos: OrganismoVM[], sort: TableSortEvent | null): OrganismoVM[] {
-    if (!sort?.direction) return organismos;
-    const factor = sort.direction === 'asc' ? 1 : -1;
-    return [...organismos].sort((a, b) =>
-      this.valorDeOrden(a, sort.active)
-        .localeCompare(this.valorDeOrden(b, sort.active), 'es-AR', { sensitivity: 'base' }) * factor,
-    );
-  }
-
-  private valorDeOrden(organismo: OrganismoVM, key: string): string {
-    switch (key) {
-      case 'nombre':       return organismo.nombre ?? '';
-      case 'parentNombre': return organismo.parentNombre ?? '';
-      case 'tipoNombre':   return organismo.tipoNombre ?? '';
-      case 'activo':       return organismo.activo ? 'Activo' : 'Inactivo';
-      default:             return '';
-    }
-  }
-
-  private filtrosActivos(search: string, filtro: ActivoFiltro): FiltroActivo[] {
-    const activos: FiltroActivo[] = [];
-    const termino = search.trim();
-    if (termino) activos.push({ clave: 'search', etiqueta: `Búsqueda: ${termino}` });
-    if (filtro !== 'todos') {
-      activos.push({ clave: 'estado', etiqueta: `Estado: ${filtro === 'activos' ? 'Activos' : 'Inactivos'}` });
-    }
-    return activos;
-  }
-
-  private estadoVacio(hayFiltros: boolean): EstadoVacio {
-    // Con filtros activos el CTA siempre limpia (aunque el dataset esté vacío): "Nuevo…" solo sin filtros.
-    if (hayFiltros) {
-      return {
-        emptyTitle: 'Sin resultados',
-        emptyMessage: 'Ningún organismo coincide con la búsqueda o el filtro aplicado.',
-        emptyActionLabel: 'Limpiar filtros',
-      };
-    }
-    return {
-      emptyTitle: 'Todavía no hay organismos',
-      emptyMessage: 'Creá el primero para empezar a cargar sus trámites y responsables.',
-      emptyActionLabel: 'Nuevo organismo',
-    };
+      aviso: 'Organismo eliminado',
+      ocupado: this.lista.ocupar(organismo.id),
+      foco: { host: this.host },
+    });
   }
 }

@@ -1,19 +1,24 @@
 import { Component, Directive, EventEmitter, Input, Output, TemplateRef, ViewContainerRef, inject } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
 import { FichaLocalVM, FichasLocalesFacade } from '@features/fichas-locales';
-import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
-import { PuntosAtencionPanelComponent } from '../puntos-atencion-panel/puntos-atencion-panel.component';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import {
+  confirmacionAbierta, errorDeConfirmacion, pulsarEnConfirmacion, tituloDeConfirmacion,
+} from '@shared/components/confirm-dialog/testing/confirmacion.testing';
+import { PuntosAtencionPanelComponent } from '../components/puntos-atencion-panel/puntos-atencion-panel.component';
 import { FichaDetailComponent } from './ficha-detail.component';
 
 /** Reemplaza al panel real (trae su propio facade): solo importa dónde se dibuja y con qué inputs. */
 @Component({ selector: 'app-puntos-atencion-panel', standalone: true, template: '<p class="puntos-stub">puntos</p>' })
 class PuntosPanelStub {
   @Input() fichaId = '';
+  @Input() localidad: string | null = null;
   @Input() cabecera = false;
   @Input() tituloId = '';
   @Input() enfocarTitulo = false;
@@ -92,7 +97,7 @@ describe('FichaDetailComponent', () => {
       expect(el().querySelector('header.detail-header--flush.detail-header--ficha')).not.toBeNull();
       expect(el().querySelector('.ficha-paneles.ficha-paneles--lectura')).not.toBeNull();
       expect(el().querySelectorAll('.ficha-paneles__panel').length).toBe(2);
-      expect(el().querySelector('.detail-card')).toBeNull();
+      expect(el().querySelector('.ficha-paneles--separados')).toBeNull();
       expect(el().querySelector('app-form-actions')).toBeNull();
     });
 
@@ -135,6 +140,8 @@ describe('FichaDetailComponent', () => {
       const stub = fixture.debugElement.query((d) => d.name === 'app-puntos-atencion-panel').componentInstance as PuntosPanelStub;
       expect(stub.cabecera).toBeTrue();
       expect(stub.tituloId).toBe('fichadet-puntos');
+      // La localidad de la ficha: el diálogo del punto la usa para ubicar la dirección y centrar el mapa.
+      expect(stub.localidad).toBe(FICHA.localidadNombre);
       expect(stub.enfocarTitulo).toBeTrue();
     });
 
@@ -273,5 +280,185 @@ describe('FichaDetailComponent', () => {
       expect(el().querySelector('.ficha-paneles')).toBeNull();
       expect(estado.textContent).toContain('Ir al listado');
     });
+  });
+});
+
+/**
+ * Caracterización de la carga (cargando / error con reintento) y de las confirmaciones (acción de workflow y
+ * desactivar) con el `MatDialog` real: el `describe` de arriba lo reemplaza por un espía.
+ */
+describe('FichaDetailComponent · carga y confirmaciones', () => {
+  let fixture: ComponentFixture<FichaDetailComponent>;
+  let facade: jasmine.SpyObj<FichasLocalesFacade>;
+  let avisos: jasmine.Spy;
+
+  const el = (): HTMLElement => fixture.nativeElement;
+  const botones = (raiz: Element): string[] =>
+    Array.from(raiz.querySelectorAll('button')).map((b) => b.textContent!.trim());
+  const dialog = (): MatDialog => fixture.debugElement.injector.get(MatDialog);
+
+  function crear(detalle$: Observable<FichaLocalVM>): void {
+    PERMISOS = [];
+    facade = jasmine.createSpyObj<FichasLocalesFacade>('FichasLocalesFacade', ['getDetalle', 'urlPublica', 'ejecutar', 'desactivar']);
+    facade.getDetalle.and.returnValue(detalle$);
+    facade.urlPublica.and.returnValue(null);
+    Object.assign(facade, { accionesWorkflow$: of(() => []), fuenteSimulada: false });
+    TestBed.configureTestingModule({
+      imports: [FichaDetailComponent, NoopAnimationsModule],
+      providers: [
+        provideRouter([]),
+        { provide: FichasLocalesFacade, useValue: facade },
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'f-1' })), fragment: of(null) } },
+      ],
+    }).overrideComponent(FichaDetailComponent, {
+      remove: { imports: [PuntosAtencionPanelComponent, HasPermissionDirective] },
+      add: { imports: [PuntosPanelStub, HasPermissionStub] },
+    });
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    fixture = TestBed.createComponent(FichaDetailComponent);
+    // El componente importa `MatSnackBarModule`: su `MatSnackBar` es el de su propio injector.
+    avisos = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+    fixture.detectChanges();
+  }
+
+  afterEach(() => dialog().closeAll());
+
+  describe('carga', () => {
+    it('mientras carga lo dice, sin dibujar la ficha', () => {
+      crear(new Subject<FichaLocalVM>());
+
+      const cargando = el().querySelector('.loading-inline[role="status"]')!;
+      expect(cargando.textContent).toContain('Cargando la ficha…');
+      expect(cargando.querySelector('i.ph-spinner-gap.spin')).not.toBeNull();
+      expect(el().querySelector('.fichadet')).toBeNull();
+      expect(el().querySelector('.load-state')).toBeNull();
+    });
+
+    it('si la carga falla ofrece reintentar o ir al listado, con el texto propio de la ficha', () => {
+      crear(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+      const error = el().querySelector('.load-state[role="alert"]')!;
+      expect(error.querySelector('.load-state__icono i.ph-cloud-slash')).not.toBeNull();
+      expect(error.querySelector('h2.load-state__titulo')!.textContent).toBe('No pudimos cargar la ficha');
+      expect(error.querySelector('p.load-state__texto')!.textContent).toContain('Intentá de nuevo; si sigue, avisá a Soporte.');
+      expect(botones(error.querySelector('.load-state__acciones')!)).toEqual(['Reintentar', 'Ir al listado']);
+    });
+
+    it('"Reintentar" vuelve a pedirla y, si llega, dibuja la ficha', () => {
+      crear(throwError(() => new HttpErrorResponse({ status: 500 })));
+      facade.getDetalle.and.returnValue(of(FICHA));
+
+      el().querySelector<HTMLButtonElement>('.load-state__acciones button')!.click();
+      fixture.detectChanges();
+
+      expect(facade.getDetalle).toHaveBeenCalledTimes(2);
+      expect(el().querySelector('.load-state')).toBeNull();
+      expect(el().querySelector('.fichadet')).not.toBeNull();
+    });
+
+    it('si no existe, el ícono y los botones cambian: solo queda ir al listado', () => {
+      crear(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+      const error = el().querySelector('.load-state[role="alert"]')!;
+      expect(error.querySelector('.load-state__icono i.ph-file-x')).not.toBeNull();
+      expect(error.querySelector('h2.load-state__titulo')!.textContent).toBe('Esa ficha no existe');
+      expect(botones(error.querySelector('.load-state__acciones')!)).toEqual(['Ir al listado']);
+
+      error.querySelector<HTMLButtonElement>('.load-state__acciones button')!.click();
+      expect(TestBed.inject(Router).navigate).toHaveBeenCalledOnceWith(['/dashboard/tramites/fichas']);
+    });
+  });
+
+  describe('acción de workflow', () => {
+    beforeEach(() => crear(of(FICHA)));
+
+    const pedir = (): void => {
+      fixture.componentInstance.ejecutar(FICHA, 'enviar-a-revision');
+      fixture.detectChanges();
+    };
+
+    it('pide confirmación y no ejecuta hasta confirmar', () => {
+      pedir();
+
+      expect(tituloDeConfirmacion()).toBe('¿Enviar la ficha a revisión?');
+      expect(facade.ejecutar).not.toHaveBeenCalled();
+    });
+
+    it('al confirmar ejecuta, avisa y muestra la ficha que devolvió la acción sin volver a pedirla', fakeAsync(() => {
+      facade.ejecutar.and.returnValue(of({ ...FICHA, estado: 'EN_REVISION', version: 4 }));
+      pedir();
+
+      pulsarEnConfirmacion('Sí, enviar');
+      flush();
+      fixture.detectChanges();
+
+      expect(facade.ejecutar).toHaveBeenCalledOnceWith('f-1', 'enviar-a-revision');
+      expect(avisos).toHaveBeenCalledOnceWith('Ficha enviada a revisión', 'OK', { duration: 3000, panelClass: 'snackbar-success' });
+      expect(facade.getDetalle).toHaveBeenCalledTimes(1);
+      expect(el().querySelector('header.detail-header')!.textContent).toContain('Versión 4');
+    }));
+
+    it('al cancelar sin haber intentado no ejecuta, no avisa y no relee', fakeAsync(() => {
+      pedir();
+
+      pulsarEnConfirmacion('Cancelar');
+      flush();
+
+      expect(facade.ejecutar).not.toHaveBeenCalled();
+      expect(avisos).not.toHaveBeenCalled();
+      expect(facade.getDetalle).toHaveBeenCalledTimes(1);
+    }));
+
+    it('si la acción falla el motivo queda en el diálogo; al cancelar después, la ficha se relee', fakeAsync(() => {
+      facade.ejecutar.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      pedir();
+
+      pulsarEnConfirmacion('Sí, enviar');
+      tick();
+      fixture.detectChanges();
+
+      expect(confirmacionAbierta()).not.toBeNull();
+      expect(errorDeConfirmacion()).not.toBe('');
+      expect(avisos).not.toHaveBeenCalled();
+
+      pulsarEnConfirmacion('Cancelar');
+      flush();
+
+      expect(avisos).not.toHaveBeenCalled();
+      expect(facade.getDetalle).toHaveBeenCalledTimes(2);
+    }));
+  });
+
+  describe('desactivar', () => {
+    beforeEach(() => crear(of(FICHA)));
+
+    const pedir = (): void => {
+      fixture.componentInstance.desactivar(FICHA);
+      fixture.detectChanges();
+    };
+
+    it('al confirmar desactiva, avisa y relee la ficha (el backend decide el estado final)', fakeAsync(() => {
+      facade.desactivar.and.returnValue(of(undefined));
+      pedir();
+      expect(tituloDeConfirmacion()).toBe('¿Desactivar la ficha?');
+
+      pulsarEnConfirmacion('Sí, desactivar');
+      flush();
+
+      expect(facade.desactivar).toHaveBeenCalledOnceWith('f-1');
+      expect(avisos).toHaveBeenCalledOnceWith('Ficha desactivada', 'OK', { duration: 3000, panelClass: 'snackbar-success' });
+      expect(facade.getDetalle).toHaveBeenCalledTimes(2);
+    }));
+
+    it('al cancelar no desactiva, no avisa y no relee', fakeAsync(() => {
+      pedir();
+
+      pulsarEnConfirmacion('Cancelar');
+      flush();
+
+      expect(facade.desactivar).not.toHaveBeenCalled();
+      expect(avisos).not.toHaveBeenCalled();
+      expect(facade.getDetalle).toHaveBeenCalledTimes(1);
+    }));
   });
 });

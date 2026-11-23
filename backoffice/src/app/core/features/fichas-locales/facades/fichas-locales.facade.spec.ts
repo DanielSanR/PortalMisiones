@@ -7,7 +7,7 @@ import { OrganismosRepository } from '@features/organismos';
 import { LocalidadVM, LocalidadesRepository } from '@features/localidades';
 import { FichasLocalesRepository } from '../repositories/fichas-locales.repository';
 import { FichaLocal } from '../models/ficha-local.vm';
-import { DespublicacionFallidaError, FichaCambiadaError, FichaSinContenidoError } from '../models/ficha-errores';
+import { DespublicacionFallidaError, FichaCambiadaError, FichaSinContenidoError } from '../domain/ficha-errores';
 import { FichasLocalesFacade } from './fichas-locales.facade';
 
 const LOCALIDADES: LocalidadVM[] = [

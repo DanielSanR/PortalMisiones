@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { AuthTokenService } from '../services/auth-token.service';
 import { getRouteData } from '../utils/route-access.utils';
 import { evaluateAccess } from '../utils/authorization.utils';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 /**
  * Guard único de autorización POR PERMISO. Exige sesión válida y que la `data.access` (AccessRule)

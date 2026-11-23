@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Observable, firstValueFrom } from 'rxjs';
-import { API_CODES } from '../../constants/api-codes.constants';
-import { HttpErrorService } from '../../services/http-error.service';
+import { API_CODES } from '@core/constants/api-codes.constants';
+import { HttpErrorService } from '@core/services/http-error.service';
 import { httpErrorInterceptor } from '../http-error.interceptor';
 
 /** Una escritura (alta o edición) de un formulario con unicidad, contra su datasource HTTP real. */

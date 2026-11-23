@@ -11,23 +11,6 @@ export enum UserRole {
   USER = 'USER',
 }
 
-export type UserRoleDisplay =
-  | 'superadmin'
-  | 'admin_backoffice'
-  | 'admin_organization'
-  | 'agent'
-  | 'manager'
-  | 'user';
-
-export const ROLE_TO_DISPLAY: Record<UserRole, UserRoleDisplay> = {
-  [UserRole.SUPERADMIN]: 'superadmin',
-  [UserRole.ADMIN_BACKOFFICE]: 'admin_backoffice',
-  [UserRole.ADMIN_ORGANIZATION]: 'admin_organization',
-  [UserRole.AGENT]: 'agent',
-  [UserRole.MANAGER]: 'manager',
-  [UserRole.USER]: 'user',
-};
-
 export const ROLE_TO_SPANISH: Record<UserRole, string> = {
   [UserRole.SUPERADMIN]: 'Super Administrador',
   [UserRole.ADMIN_BACKOFFICE]: 'Administrador de Backoffice',

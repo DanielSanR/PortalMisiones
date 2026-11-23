@@ -7,8 +7,23 @@
     <p *ngIf="field.placeholder" class="section-header-description">{{ field.placeholder }}</p>
   </div>
 
+  <!-- Vista (no form control): la dibuja el componente que declara el campo; con `vista.escribe` puede cambiar otros controles. -->
+  @if (field.type === 'vista' && field.vista; as vista) {
+    @if (entradasDeVista; as entradas) {
+      <ng-container [ngComponentOutlet]="vista.componente" [ngComponentOutletInputs]="entradas"></ng-container>
+    }
+  }
+
+  <!-- Tip de advertencia (no form control): algo que conviene saber antes de guardar. -->
+  @if (field.type === 'tip' && field.tono === 'alerta') {
+    <div class="form-aviso" role="note">
+      <i class="ph ph-warning" aria-hidden="true"></i>
+      <p>{{ field.placeholder || field.label }}</p>
+    </div>
+  }
+
   <!-- Tip (no form control) -->
-  <div *ngIf="field.type === 'tip'" class="tip-field" role="note">
+  <div *ngIf="field.type === 'tip' && field.tono !== 'alerta'" class="tip-field" role="note">
     <div class="tip-content">
       <i class="ph ph-info tip-icon" aria-hidden="true"></i>
       <div class="tip-body">
@@ -40,29 +55,48 @@
     <ng-template #editable>
     <ng-container [ngSwitch]="field.type">
 
-      <!-- Text -->
-      <mat-form-field *ngSwitchCase="'text'" appearance="outline" subscriptSizing="dynamic">
+      <!-- Text. Con `derivado.accion` lleva al lado el botón que vuelve a derivar el valor. -->
+      <ng-container *ngSwitchCase="'text'">
+        @if (field.derivado?.accion; as accion) {
+          <div class="form-field__fila">
+            <ng-container [ngTemplateOutlet]="campoDeTexto"></ng-container>
+            @if (rederivable$ | async) {
+              <button type="button" mat-stroked-button color="primary" (click)="rederivar()">
+                <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> {{ accion }}
+              </button>
+            }
+          </div>
+        } @else {
+          <ng-container [ngTemplateOutlet]="campoDeTexto"></ng-container>
+        }
+      </ng-container>
+      <ng-template #campoDeTexto>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <input matInput
                [id]="field.name"
                [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [class.form-field__mono]="field.mono"
-               [attr.autocomplete]="field.mono ? 'off' : null"
+               [attr.autocomplete]="field.autocomplete ?? (field.mono ? 'off' : null)"
                [attr.spellcheck]="field.mono ? 'false' : null"
+               [attr.inputmode]="field.inputMode ?? null"
                [placeholder]="field.placeholder || ''"
                [attr.maxlength]="field.validations?.maxLength"
-               [required]="field.validations?.required || false">
+               [required]="field.validations?.required || false"
+               (input)="transformar($event)" (compositionend)="transformar($event)">
         <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
         <mat-hint *ngIf="field.validations?.maxLength" align="end">
           {{ group.get(field.name)?.value?.length || 0 }} / {{ field.validations!.maxLength }}
         </mat-hint>
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
+      </ng-template>
 
       <!-- Email -->
       <mat-form-field *ngSwitchCase="'email'" appearance="outline" subscriptSizing="dynamic">
         <input matInput type="email"
                [id]="field.name"
+               [attr.autocomplete]="field.autocomplete ?? null"
                [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
@@ -75,6 +109,7 @@
       <mat-form-field *ngSwitchCase="'url'" appearance="outline" subscriptSizing="dynamic">
         <input matInput type="url"
                [id]="field.name"
+               [attr.autocomplete]="field.autocomplete ?? null"
                [attr.aria-labelledby]="field.name + '-label'"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || 'https://...'"
@@ -90,6 +125,7 @@
                [id]="field.name"
                [attr.aria-labelledby]="field.name + '-label'"
                [type]="showPassword ? 'text' : 'password'"
+               [attr.autocomplete]="field.autocomplete ?? null"
                [formControlName]="field.name"
                [placeholder]="field.placeholder || ''"
                [required]="field.validations?.required || false">
@@ -101,29 +137,15 @@
         <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
       </mat-form-field>
 
-      <!-- Number -->
-      <mat-form-field *ngSwitchCase="'number'" appearance="outline" subscriptSizing="dynamic">
-        <input matInput type="number"
-               [id]="field.name"
-               [attr.aria-labelledby]="field.name + '-label'"
-               [formControlName]="field.name"
-               [placeholder]="field.placeholder || ''"
-               [attr.min]="field.validations?.min"
-               [attr.max]="field.validations?.max"
-               [required]="field.validations?.required || false"
-               (keydown)="preventE($event)">
-        <mat-hint *ngIf="field.hint" align="start">{{ field.hint }}</mat-hint>
-        <mat-error appFormErrorMessage [control]="group.get(field.name)" [field]="field"></mat-error>
-      </mat-form-field>
-
       <!-- Textarea -->
       <mat-form-field *ngSwitchCase="'textarea'" appearance="outline" subscriptSizing="dynamic">
         <textarea matInput
                   [id]="field.name"
                   [attr.aria-labelledby]="field.name + '-label'"
                   cdkTextareaAutosize
-                  [cdkAutosizeMinRows]="4"
+                  [cdkAutosizeMinRows]="field.filas ?? 4"
                   [cdkAutosizeMaxRows]="16"
+                  [attr.autocomplete]="field.autocomplete ?? null"
                   [formControlName]="field.name"
                   [placeholder]="field.placeholder || ''"
                   [attr.maxlength]="field.validations?.maxLength"
@@ -136,7 +158,7 @@
       </mat-form-field>
 
       <!-- Tipos con módulo pesado de Material: componentes aparte cargados en diferido, para que
-           MatSelect / MatDatepicker / MatRadio / MatSlideToggle solo bajen si el form los usa.
+           MatSelect / MatDatepicker / MatSlideToggle solo bajen si el form los usa.
            El placeholder reserva el alto de un input (40px) mientras llega el chunk. -->
       <ng-container *ngSwitchCase="'select'">
         @defer (on immediate) {
@@ -146,9 +168,24 @@
         }
       </ng-container>
 
+      <!-- Selección múltiple de un catálogo: la dibuja `app-seleccion-multiple`, que trae su propia etiqueta
+           con contador (por eso el campo no lleva label externo). Abierta de a una: lo decide el formulario. -->
       <ng-container *ngSwitchCase="'select-multiple'">
         @defer (on immediate) {
-          <app-dynamic-form-select-field [field]="field" [group]="group" [multiple]="true" [revision]="revision"></app-dynamic-form-select-field>
+          <app-seleccion-multiple [formControlName]="field.name" [etiqueta]="field.label"
+                                  [nombre]="field.seleccion?.nombre ?? field.label.toLowerCase()"
+                                  [textoVacio]="field.seleccion?.textoVacio ?? 'Ninguna opción elegida.'"
+                                  [opciones]="opcionesDeSeleccion"
+                                  [abierto]="seleccionAbierta"
+                                  [describedBy]="errorDeSeleccion ? field.name + '-error' : null"
+                                  (abiertoChange)="seleccionAbiertaChange.emit($event)">
+            <!-- Error bajo el grupo (dentro de él), asociado por `aria-describedby`. -->
+            @if (errorDeSeleccion; as mensaje) {
+              <span class="form-field__error" role="alert" [id]="field.name + '-error'">
+                <i class="ph ph-warning-circle" aria-hidden="true"></i>{{ mensaje }}
+              </span>
+            }
+          </app-seleccion-multiple>
         } @placeholder {
           <div class="field-placeholder" aria-hidden="true"></div>
         }
@@ -163,14 +200,6 @@
       </ng-container>
 
       <ng-container *ngSwitchCase="'checkbox'">
-        @defer (on immediate) {
-          <app-dynamic-form-choice-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-choice-field>
-        } @placeholder {
-          <div class="field-placeholder" aria-hidden="true"></div>
-        }
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'radio'">
         @defer (on immediate) {
           <app-dynamic-form-choice-field [field]="field" [group]="group" [revision]="revision"></app-dynamic-form-choice-field>
         } @placeholder {

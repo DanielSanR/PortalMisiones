@@ -16,7 +16,7 @@
     align-items: center;
     gap: var(--theme-space-sm);
     height: 34px;
-    padding: 0 11px;
+    padding: 0 var(--theme-space-11);
     border: 1px solid var(--theme-border-input);
     border-radius: var(--theme-radius-md);
     background: var(--theme-surface-card);
@@ -36,7 +36,7 @@
 
     &__icon {
         flex: none;
-        font-size: 17px;
+        font-size: var(--theme-icon-size-md);
         color: var(--theme-text-tertiary);
     }
 

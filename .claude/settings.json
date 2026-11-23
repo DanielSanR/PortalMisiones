@@ -11,16 +11,32 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-session-start.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-typecheck.sh\"",
-            "async": true,
-            "timeout": 120,
-            "statusMessage": "Typecheck backoffice (tsc)"
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-lint-file.mjs\"",
+            "timeout": 60,
+            "statusMessage": "Lint del archivo (backoffice)"
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-typecheck.mjs\"",
+            "asyncRewake": true,
+            "timeout": 300
           }
         ]
       }
@@ -30,9 +46,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-gate.sh\"",
-            "timeout": 300,
-            "statusMessage": "Gate: madge + ng build"
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/backoffice-gate.mjs\"",
+            "timeout": 600,
+            "statusMessage": "Gate backoffice: npm run check:stop"
           }
         ]
       }

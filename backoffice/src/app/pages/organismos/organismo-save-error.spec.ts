@@ -1,7 +1,7 @@
 import { FormControl, FormGroup } from '@angular/forms';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
-import { FALLBACK_ORGANISMO, conflictosDeOrganismo, errorDeEliminarOrganismo } from './organismo-save-error';
+import { FALLBACK_ORGANISMO, conflictosDeOrganismo, errorDeEliminarOrganismo, esOrganismoInexistente } from './organismo-save-error';
 
 /** Lo que manda el backend en `message` (`messages.properties`): nunca tiene que llegar a la pantalla. */
 const MENSAJES: Record<number, string> = {
@@ -120,5 +120,22 @@ describe('eliminar un organismo: errorDeEliminarOrganismo', () => {
   it('cualquier otro error devuelve null (sigue el texto compartido de la confirmación)', () => {
     [error(404, 4058), error(409, 4066), { status: 500, error: { code: 5000 } }, { status: 0, error: null }, new Error('x')]
       .forEach((err) => expect(errorDeEliminarOrganismo(err)).toBeNull());
+  });
+});
+
+describe('lectura de la ficha de organismo: ¿no existe?', () => {
+  it('404 o código 4058 / 4073: el organismo no existe (también con la forma que tira el mock)', () => {
+    expect(esOrganismoInexistente(error(404, 4058))).toBeTrue();
+    expect(esOrganismoInexistente({ status: 404 })).toBeTrue();
+    expect(esOrganismoInexistente({ error: { code: 4058 } })).toBeTrue();
+    expect(esOrganismoInexistente({ error: { code: 4073 } })).toBeTrue();
+  });
+
+  it('cualquier otro fallo (sin conexión, 500, 403) se puede reintentar', () => {
+    expect(esOrganismoInexistente({ status: 0 })).toBeFalse();
+    expect(esOrganismoInexistente({ status: 500, error: { code: 5000 } })).toBeFalse();
+    expect(esOrganismoInexistente({ status: 403, error: { code: 4003 } })).toBeFalse();
+    expect(esOrganismoInexistente(new Error('falló'))).toBeFalse();
+    expect(esOrganismoInexistente(null)).toBeFalse();
   });
 });

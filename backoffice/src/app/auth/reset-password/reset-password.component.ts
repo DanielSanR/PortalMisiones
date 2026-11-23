@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  inject,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -23,9 +24,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom, timer } from 'rxjs';
 import { CuentaFacade } from '@features/cuenta';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
-import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
-import { API_CODES } from '../../core/constants/api-codes.constants';
-import { extractErrorCode } from '../../core/models/api-response.model';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
+import { API_CODES } from '@core/constants/api-codes.constants';
+import { extractErrorCode } from '@core/models/api-response.model';
 
 /** Valida que `password` y `confirmPassword` sean idénticos (nivel de grupo). */
 const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
@@ -51,6 +52,13 @@ const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): Validatio
   styleUrl: './reset-password.component.scss',
 })
 export class ResetPasswordComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly cuentaFacade = inject(CuentaFacade);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
   form: FormGroup;
   loading = false;
   errorMessage = '';
@@ -61,14 +69,7 @@ export class ResetPasswordComponent implements OnInit {
 
   private token = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router,
-    private cuentaFacade: CuentaFacade,
-    private cdr: ChangeDetectorRef,
-    private destroyRef: DestroyRef
-  ) {
+  constructor() {
     this.form = this.fb.group(
       {
         password: ['', [Validators.required, Validators.minLength(8)]],

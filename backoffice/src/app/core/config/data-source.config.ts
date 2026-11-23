@@ -1,5 +1,5 @@
 import { InjectionToken, Provider, Type } from '@angular/core';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 /**
  * Adaptador de fuente de datos.
@@ -29,6 +29,8 @@ export type FeatureKey =
   | 'modalidades'
   | 'eventos-de-vida'
   | 'localidades'
+  // Servicio externo (Nominatim de OpenStreetMap), no el backend: ubicar una dirección en el mapa.
+  | 'geocodificacion'
   | 'dashboard'
   | 'auditoria'
   | 'feedback';

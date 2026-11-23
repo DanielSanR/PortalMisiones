@@ -1,0 +1,13 @@
+@use 'shared-styles/mixins' as *;
+
+// El membrete es el `.detail-header` global (shared-styles/_components.scss), con su modificador
+// `.detail-header--ficha`; el host solo es un bloque para que la pantalla lo separe de lo que sigue
+// (`class="ficha-membrete"` sobre `<app-membrete>` cuando abajo va la tarjeta de paneles).
+:host {
+  display: block;
+}
+
+// Destino del foco por código (`tituloEnfocable`): que se vea dónde quedó.
+.membrete__titulo {
+  @include focus-ring;
+}

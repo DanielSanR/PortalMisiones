@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, filter, finalize, merge, timer } from 'rxjs';
-import { textoDeErrorHttp } from '../../../core/utils/http-error-text.utils';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 
 export interface ConfirmDialogData {
   title: string;
@@ -52,9 +52,15 @@ const DEMORA_MS = 8000;
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule],
   templateUrl: './confirm-dialog.component.html',
+  styleUrl: './confirm-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
+  readonly dialogRef = inject<MatDialogRef<ConfirmDialogComponent>>(MatDialogRef);
+  readonly data = inject<ConfirmDialogData>(MAT_DIALOG_DATA);
+  // OnPush: el estado cambia en callbacks async (timer, finalize, error) que no marcan la vista.
+  private readonly cdr = inject(ChangeDetectorRef);
+
   /**
    * La acción async está en vuelo: bloquea el cierre y "Confirmar" (con `aria-disabled`, no `disabled`: el
    * botón conserva el foco, y `confirmar()` descarta la repetición). Se lo ve no disponible con la clase
@@ -72,12 +78,7 @@ export class ConfirmDialogComponent {
   lenta = false;
   private ejecucion?: Subscription;
 
-  constructor(
-    public dialogRef: MatDialogRef<ConfirmDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData,
-    // OnPush: el estado cambia en callbacks async (timer, finalize, error) que no marcan la vista.
-    private readonly cdr: ChangeDetectorRef,
-  ) {
+  constructor() {
     // Escape y el clic afuera no cierran mientras corre la acción (`disableClose`): que no sea en silencio.
     merge(
       this.dialogRef.keydownEvents().pipe(filter((evento) => evento.key === 'Escape')),

@@ -1,0 +1,100 @@
+// ==========================================================================
+// Breadcrumb del topbar — ícono de sección + tramos previos + título (h1).
+// Las clases siguen siendo `admin-layout__*`: el markup se mudó tal cual desde
+// AdminLayout y el host no genera caja, así que el DOM y el aspecto no cambian.
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+// Ícono, tramos y h1 son hijos flex directos del header: el host no debe interponer una caja.
+:host {
+    display: contents;
+}
+
+// Ícono de sección del topbar (20px, text-secondary).
+.admin-layout__title-icon {
+    flex: none;
+    font-size: var(--theme-icon-size-lg);
+    color: var(--theme-text-secondary);
+
+    // Decorativo: en mobile cede su ancho al título.
+    @include responsive(mobile) {
+        display: none;
+    }
+}
+
+// h1 de la vista: 16/600, tracking -0.1px (tokens de título de página).
+.admin-layout__title {
+    min-width: 0;
+    margin: 0;
+    font-size: var(--theme-font-page-title-size);
+    font-weight: var(--theme-font-page-title-weight);
+    letter-spacing: var(--theme-font-page-title-tracking);
+    line-height: var(--theme-line-height-tight);
+    color: var(--theme-text-primary);
+    @include truncate;
+
+    // Mobile: hasta dos renglones antes de truncar.
+    @include responsive(mobile) {
+        @include line-clamp(2);
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+
+// Tramos previos al título ("Organismos /" Editar). En mobile queda solo el h1.
+.admin-layout__breadcrumb {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    // Pegado al h1: entre tramo y tramo ya hay un separador; el gap del header sería demasiado.
+    margin-right: calc(-1 * var(--theme-space-sm));
+    font-size: var(--theme-font-page-title-size);
+    font-weight: var(--theme-font-page-title-weight);
+    letter-spacing: var(--theme-font-page-title-tracking);
+    color: var(--theme-text-secondary);
+
+    @include responsive(mobile) {
+        display: none;
+    }
+}
+
+.admin-layout__breadcrumb-list {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.admin-layout__breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-sm);
+    min-width: 0;
+}
+
+.admin-layout__breadcrumb-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: var(--theme-radius-xs);
+    white-space: nowrap;
+
+    &:hover {
+        color: var(--theme-text-primary);
+        text-decoration: underline;
+    }
+
+    @include focus-ring;
+}
+
+.admin-layout__breadcrumb-sep {
+    padding-right: var(--theme-space-sm);
+    color: var(--theme-text-tertiary);
+}
+
+.admin-layout__breadcrumb-crumb {
+    @include truncate;
+}

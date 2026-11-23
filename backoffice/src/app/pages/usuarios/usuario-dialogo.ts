@@ -1,4 +1,4 @@
-import { Observable, catchError, defaultIfEmpty, forkJoin, from, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, defaultIfEmpty, map, of, switchMap, throwError } from 'rxjs';
 import { FieldConfig } from '@core/models/field.interface';
 import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
@@ -27,6 +27,85 @@ export interface UsuarioGuardado {
  */
 export interface SesionDeUsuarioDialogo {
   esSuperAdmin: boolean;
+}
+
+/**
+ * Campos base del formulario de usuario, nuevos en cada llamada (`armarFields` los adapta sin tocar una copia
+ * compartida). Backend real (`CreateUserRequest`): email 5–50, password 8–20, role (UUID), organizationId? y
+ * profileDto {firstName, lastName}. `armarFields` quita lo que no aplica: contraseña y estado en edición, y
+ * `organismoId` cuando el rol elegido no es de scope `organismo`.
+ */
+function camposBaseDeUsuario(): FieldConfig[] {
+  return [
+  { name: '_section_datos', label: 'Datos personales', type: 'section-header' },
+  {
+    name: 'nombre',
+    label: 'Nombre',
+    type: 'text',
+    placeholder: 'Ej: María',
+    cssClass: 'colspan-half',
+    validations: { required: true, maxLength: 100 },
+  },
+  {
+    name: 'apellido',
+    label: 'Apellido',
+    type: 'text',
+    placeholder: 'Ej: González',
+    cssClass: 'colspan-half',
+    validations: { required: true, maxLength: 100 },
+  },
+
+  { name: '_section_acceso', label: 'Acceso', type: 'section-header' },
+  {
+    name: 'email',
+    label: 'Email',
+    type: 'email',
+    placeholder: 'usuario@misiones.gob.ar',
+    cssClass: 'colspan-half',
+    validations: { required: true, email: true, maxLength: 50 },
+  },
+  {
+    name: 'password',
+    label: 'Contraseña',
+    type: 'password',
+    placeholder: 'Entre 8 y 20 caracteres',
+    cssClass: 'colspan-half',
+    validations: { required: true, minLength: 8, maxLength: 20 },
+  },
+
+  { name: '_section_rol', label: 'Rol y ubicación', type: 'section-header' },
+  {
+    name: 'rol',
+    label: 'Rol',
+    type: 'select',
+    placeholder: 'Seleccioná un rol',
+    hint: 'Define qué puede ver y hacer dentro del backoffice',
+    // Ancho completo: Organismo solo aparece con algunos roles, y a media fila Rol quedaba con un hueco al lado.
+    cssClass: 'colspan-full',
+    validations: { required: true },
+    options: [],
+    emptyOptionsMessage: 'No hay roles que puedas asignar.',
+  },
+  {
+    name: 'organismoId',
+    label: 'Organismo',
+    type: 'select',
+    placeholder: 'Seleccioná un organismo',
+    hint: 'Obligatorio para este rol: sus permisos valen dentro de un organismo',
+    cssClass: 'colspan-full',
+    validations: { required: true },
+    options: [],
+    emptyOptionsMessage: 'No hay organismos activos. Creá uno primero en Organismos.',
+  },
+
+  { name: '_section_estado', label: 'Estado', type: 'section-header' },
+  {
+    name: 'activo',
+    label: 'Activar la cuenta al crear',
+    type: 'checkbox',
+    value: false,
+  },
+  ];
 }
 
 /** Campos que solo existen en el alta: la contraseña y el estado inicial de la cuenta. */
@@ -179,12 +258,8 @@ export function dialogoDeUsuario(
       // un formulario que va a fallar al guardar.
       if (esEdicion && !facade.edicionDisponible) return throwError(() => EDICION_NO_DISPONIBLE);
 
-      // La config del formulario se baja recién al abrir el diálogo: así no viaja en el chunk de la lista.
-      return forkJoin({
-        config: from(import('@shared/components/dynamic-form/dynamic-form.config')),
-        datos: facade.getFormData(usuarioId),
-      }).pipe(map(({ config, datos }) => {
-        baseFields = config.getFormConfig('USUARIO').fields ?? [];
+      return facade.getFormData(usuarioId).pipe(map((datos) => {
+        baseFields = camposBaseDeUsuario();
         organismos = datos.organismos;
         organismoFijo = esEdicion ? null : datos.organismoFijo;
         rolesAllowed = datos.rolesAllowed;

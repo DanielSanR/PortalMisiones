@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,10 +9,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 // Excepción documentada: auth es infra (token + rotación); queda fuera del patrón de features
 // por ahora (ver migracion_arquitectura.md). AuthTokenService ya cumple rol de facade de sesión.
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService } from '@core/services/auth.service';
 import { mensajeErrorLogin } from './login-error';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
-import { UnavailableDirective } from '../../shared/directives/unavailable.directive';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 
 /** Clave de localStorage con el email recordado (nunca la contraseña). */
 const CLAVE_EMAIL_RECORDADO = 'backoffice.login.email';
@@ -36,17 +36,17 @@ const CLAVE_EMAIL_RECORDADO = 'backoffice.login.email';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   loginForm: FormGroup;
   loading = false;
   hidePassword = true;
   errorMessage = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private cdr: ChangeDetectorRef
-  ) {
+  constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],

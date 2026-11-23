@@ -31,4 +31,8 @@ export class RolesRepository {
   delete(id: string): Observable<void> {
     return this.ds.delete(id);
   }
+
+  activate(rol: RolVM): Observable<RolVM> {
+    return this.ds.activate(rol);
+  }
 }

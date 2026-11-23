@@ -1,7 +1,7 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthTokenService } from '../services/auth-token.service';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 /**
  * Protege rutas autenticadas: exige sesión con access token vigente (no expirado).

@@ -10,18 +10,19 @@
 .example-data-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--theme-space-5);
   height: 20px;
-  padding: 0 8px;
+  padding: 0 var(--theme-space-sm);
   border-radius: var(--theme-radius-full);
   background: var(--theme-warning-bg);
   color: var(--theme-warning-text);
   font-size: var(--theme-font-size-2xs);
   font-weight: var(--theme-font-weight-semibold);
   white-space: nowrap;
-  line-height: 1;
+  line-height: var(--theme-line-height-none);
 
   i.ph {
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- ícono de 12px de la píldora de datos de ejemplo, un solo uso
     font-size: 12px;
   }
 }

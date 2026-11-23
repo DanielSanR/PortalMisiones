@@ -35,7 +35,7 @@
 
   &__slug {
     color: var(--theme-text-tertiary);
-    font-family: var(--theme-font-mono, monospace);
+    font-family: var(--theme-font-mono);
     font-size: var(--theme-font-size-xs);
     @include truncate;
   }

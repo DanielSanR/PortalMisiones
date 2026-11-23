@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, filter, map, take, timer } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { FieldConfig } from '@core/models/field.interface';
 import { aplicarErrorDeGuardado } from '@core/utils/save-error.utils';
 import { esPantallaDestruida, unaVez } from '@core/utils/one-shot.utils';
-import { UnavailableDirective } from '../../directives/unavailable.directive';
-import { cierreConConfirmacion } from '../../utils/cierre-con-confirmacion';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
+import { cierreConConfirmacion } from '@shared/utils/cierre-con-confirmacion';
 import { DynamicFormComponent } from '../dynamic-form/dynamic-form.component';
 import { FormErrorBannerComponent } from '../form-error-banner/form-error-banner.component';
 import { LoadingComponent } from '../loading/loading.component';
@@ -40,6 +41,10 @@ export interface FormDialogData<R = unknown> {
   textoGuardar: string;
   /** Texto del botón mientras guarda. Por defecto "Guardando…". */
   textoGuardando?: string;
+  /** Texto del estado de carga. Por defecto "Cargando…". */
+  textoCargando?: string;
+  /** Título del banner de un guardado rechazado. Por defecto "No se pudo guardar". */
+  tituloDeError?: string;
   /** Edición: "Guardar" queda bloqueado (con motivo) hasta que cambie algo. */
   requiereCambios?: boolean;
   /**
@@ -64,6 +69,9 @@ export interface FormDialogData<R = unknown> {
 }
 
 const FORM_ID_POR_DEFECTO = 'form-dialog-form';
+/** Espera de los campos en diferido antes de dar el foco inicial: hasta ~1 s. */
+const ESPERA_DIFERIDOS_MS = 25;
+const INTENTOS_DIFERIDOS = 40;
 const FALLBACK_GUARDADO = 'No se pudo guardar. Intentá de nuevo.';
 const ERROR_DE_CARGA: FormDialogErrorCarga = {
   titulo: 'No pudimos cargar el formulario',
@@ -178,6 +186,9 @@ export class FormDialogComponent implements OnInit {
 
   async onSubmit(valor: Record<string, unknown>): Promise<void> {
     if (this.guardando) return;
+    // Edición sin cambios: el botón del pie ya no envía, pero con UN solo campo de texto el navegador envía
+    // igual al apretar Enter en él (envío implícito, no pasa por ningún botón).
+    if (this.sinCambios) return;
     this.guardando = true;
     this.serverError = '';
     this.cdr.markForCheck();
@@ -218,9 +229,31 @@ export class FormDialogComponent implements OnInit {
     if (this.destroyed) return;
     this.cdr.detectChanges();
     const cuerpo = this.host.querySelector<HTMLElement>('.dialogo-formulario__cuerpo');
-    const destino = this.errorCarga
-      ? cuerpo?.querySelector<HTMLElement>('.state-panel__cta')
-      : cuerpo?.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled]), mat-select:not([aria-disabled="true"])');
-    destino?.focus();
+    if (this.errorCarga) {
+      cuerpo?.querySelector<HTMLElement>('.state-panel__cta')?.focus();
+      return;
+    }
+    const primerCampo = (): HTMLElement | null | undefined =>
+      cuerpo?.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled]), mat-select:not([aria-disabled="true"])');
+    // Los campos con módulo pesado (select, fecha, árbol) llegan en diferido: mientras quede alguno por
+    // dibujarse, el "primer campo" todavía no es el definitivo.
+    const pendientes = (): boolean => !!cuerpo?.querySelector('.field-placeholder');
+    if (!pendientes()) {
+      primerCampo()?.focus();
+      return;
+    }
+    timer(0, ESPERA_DIFERIDOS_MS).pipe(
+      take(INTENTOS_DIFERIDOS),
+      // El último intento ya no espera: enfoca lo que haya.
+      map((intento) => !pendientes() || intento === INTENTOS_DIFERIDOS - 1),
+      filter(Boolean),
+      take(1),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => {
+      // Si la persona ya llevó el foco a un campo, no se lo saca.
+      if (cuerpo?.contains(document.activeElement)) return;
+      this.cdr.detectChanges();
+      primerCampo()?.focus();
+    });
   }
 }

@@ -1,27 +1,11 @@
 <!-- Alta y edición de ficha por localidad. El breadcrumb lo pone el shell. -->
-@if (cargando) {
-  <div class="loading-inline" role="status" aria-live="polite">
-    <app-loading [loading]="true" [message]="isEdit ? 'Cargando la ficha…' : 'Cargando el formulario…'"></app-loading>
-  </div>
-} @else if (errorCarga) {
-  <div class="load-state" role="alert">
-    <span class="load-state__icono" aria-hidden="true">
-      <i class="ph" [class.ph-file-x]="errorCarga.definitivo" [class.ph-cloud-slash]="!errorCarga.definitivo"></i>
-    </span>
-    <h2 class="load-state__titulo">{{ errorCarga.titulo }}</h2>
-    <p class="load-state__texto">{{ errorCarga.texto }}</p>
-    <div class="load-state__acciones">
-      @if (!errorCarga.definitivo) {
-        <button type="button" mat-flat-button color="primary" (click)="cargar()">
-          <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Reintentar
-        </button>
-      }
-      <button type="button" mat-stroked-button color="primary" (click)="volver()">
-        <i class="ph ph-list-dashes" aria-hidden="true"></i>
-        {{ errorCarga.volverA === 'adopciones' ? 'Ir a Trámites del organismo' : 'Ir al listado' }}
-      </button>
-    </div>
-  </div>
+@if (cargando || errorCarga) {
+  <app-estado-carga [tipo]="cargando ? 'cargando' : 'error'"
+      [cargandoTexto]="isEdit ? 'Cargando la ficha…' : 'Cargando el formulario…'"
+      [noExiste]="!!errorCarga?.definitivo" [titulo]="errorCarga?.titulo ?? ''" [texto]="errorCarga?.texto ?? ''"
+      [volverTexto]="errorCarga?.volverA === 'adopciones' ? 'Ir a Trámites del organismo' : 'Ir al listado'"
+      (reintentar)="cargar()" (volver)="volver()">
+  </app-estado-carga>
 } @else if (datos) {
 
   <!-- `vista$` resume el form en vivo (membrete e indicador de datos recomendados). Siempre emite. -->
@@ -29,54 +13,38 @@
 
     <!-- Membrete en vivo: se arma con lo que se elige y escribe. Sin `aria-live`: anunciaría el slug en
          cada tecla; el lector ya lee el campo que se está editando. -->
-    <header class="detail-header detail-header--flush detail-header--ficha ficha-membrete">
-      <div class="detail-header__body">
-        <span class="detail-header__tile" aria-hidden="true"><i class="ph ph-map-pin-area"></i></span>
+    <!-- `tituloEnfocable`: el título es el destino del foco tras recargar la ficha (el aviso que lo tenía desaparece). -->
+    <app-membrete class="ficha-membrete" icono="map-pin-area" [tituloEnfocable]="true" [titulo]="v.titulo"
+                  [tituloVacio]="v.sinAdopcion ? 'Elegí el trámite del organismo' : 'Trámite ' + noDisponible.toLowerCase()"
+                  [datos]="[
+                    { codigo: true, texto: v.slug || 'sin-slug' },
+                    { icono: 'map-pin', texto: v.localidad || 'Sin localidad' },
+                    { icono: 'building-office', texto: v.organismo || 'Organismo ' + noDisponible.toLowerCase() }
+                  ]">
+      @if (ficha) {
+        <app-estado-badge membretePill [estado]="ficha.estado" [bordered]="true"></app-estado-badge>
+      }
+      @if (!v.activa) {
+        <span membretePill class="pill pill--inactive pill--bordered">
+          <span class="pill__dot" aria-hidden="true"></span>
+          <span class="pill__label">Desactivada</span>
+        </span>
+      }
+      @if (datos.adopcion; as adopcion) {
+        <a class="detail-link" [routerLink]="[rutaAdopcion, adopcion.id]" *appHasPermission="'READ_ADOPTION'">
+          Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      }
+      <span class="pill pill--revision pill--bordered">
+        <i class="ph pill__icon" [class.ph-plus]="!isEdit" [class.ph-pencil-simple]="isEdit" aria-hidden="true"></i>
+        <span class="pill__label">{{ isEdit ? 'Editando' : 'Nueva' }}</span>
+      </span>
+    </app-membrete>
 
-        <div class="detail-header__identity">
-          <div class="detail-header__row">
-            <!-- `tabindex="-1"`: destino del foco tras recargar la ficha (el aviso que tenía el foco desaparece). -->
-            <h2 class="detail-header__title fichaform-titulo" tabindex="-1" [class.detail-header__title--muted]="!v.titulo">
-              {{ v.titulo || (v.sinAdopcion ? 'Elegí el trámite del organismo' : 'Trámite ' + noDisponible.toLowerCase()) }}
-            </h2>
-            @if (ficha) {
-              <app-estado-badge [estado]="ficha.estado" [bordered]="true"></app-estado-badge>
-            }
-            @if (!v.activa) {
-              <span class="pill pill--inactive pill--bordered">
-                <span class="pill__dot" aria-hidden="true"></span>
-                <span class="pill__label">Desactivada</span>
-              </span>
-            }
-          </div>
-
-          <p class="detail-header__meta">
-            <code class="detail-header__code">{{ v.slug || 'sin-slug' }}</code>
-            <span class="detail-header__sep" aria-hidden="true"></span>
-            <span><i class="ph ph-map-pin" aria-hidden="true"></i>{{ v.localidad || 'Sin localidad' }}</span>
-            <span class="detail-header__sep" aria-hidden="true"></span>
-            <span><i class="ph ph-building-office" aria-hidden="true"></i>{{ v.organismo || 'Organismo ' + noDisponible.toLowerCase() }}</span>
-          </p>
-        </div>
-
-        <div class="detail-header__actions">
-          @if (datos.adopcion; as adopcion) {
-            <a class="detail-link" [routerLink]="[rutaAdopcion, adopcion.id]" *appHasPermission="'READ_ADOPTION'">
-              Ver trámite del organismo <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-            </a>
-          }
-          <span class="pill pill--revision pill--bordered">
-            <i class="ph pill__icon" [class.ph-plus]="!isEdit" [class.ph-pencil-simple]="isEdit" aria-hidden="true"></i>
-            <span class="pill__label">{{ isEdit ? 'Editando' : 'Nueva' }}</span>
-          </span>
-        </div>
-      </div>
-    </header>
-
-    @if (serverError) {
+    @if (marco.errorDeGuardado) {
       <!-- Sin `live`: grupo con nombre que recibe el foco (el botón que lo provocó está al pie de la tarjeta). -->
       <app-form-error-banner data-banner="error-servidor" [live]="false"
-                             [errors]="[serverError]" [titulo]="serverErrorTitulo"></app-form-error-banner>
+                             [errors]="[marco.errorDeGuardado]" [titulo]="serverErrorTitulo"></app-form-error-banner>
     }
     @if (conflicto; as c) {
       <!-- La relectura previa al guardado encontró la ficha cambiada: no se guardó nada (el backend no lo detecta,
@@ -111,12 +79,12 @@
           </div>
           <!-- Sin `disabled` nativo mientras guarda: el botón enfocado no suelta el foco; el método ignora la repetición. -->
           <div class="fichaform-conflicto__acciones">
-            <button type="button" mat-flat-button color="primary" [class.is-unavailable]="saving"
-                    [attr.aria-disabled]="saving ? 'true' : null" (click)="guardarMisCambios()">
+            <button type="button" mat-flat-button color="primary" [class.is-unavailable]="marco.guardando"
+                    [attr.aria-disabled]="marco.guardando ? 'true' : null" (click)="guardarMisCambios()">
               <i class="ph ph-floppy-disk" aria-hidden="true"></i> Guardar mis cambios
             </button>
-            <button type="button" mat-stroked-button color="primary" [class.is-unavailable]="saving"
-                    [attr.aria-disabled]="saving ? 'true' : null" (click)="descartarMisCambios()">
+            <button type="button" mat-stroked-button color="primary" [class.is-unavailable]="marco.guardando"
+                    [attr.aria-disabled]="marco.guardando ? 'true' : null" (click)="descartarMisCambios()">
               <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Descartar mis cambios
             </button>
           </div>
@@ -184,7 +152,7 @@
 
     <!-- Una sola tarjeta: dos paneles (datos | puntos de atención, o qué sigue en el alta) y el pie de guardar
          compartido. Los puntos se guardan aparte, con su propio flujo: no dependen de "Guardar cambios". -->
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="saving">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate [attr.aria-busy]="marco.guardando">
       <div class="ficha-paneles">
         <div class="ficha-paneles__grid">
 
@@ -192,8 +160,8 @@
           <section class="ficha-paneles__panel" aria-labelledby="fichaform-datos">
             <header class="ficha-paneles__cabecera">
               <div class="ficha-paneles__encabezado">
-                <h3 class="detail-card__title" id="fichaform-datos">Datos de la ficha</h3>
-                <p class="detail-card__subtitle">
+                <h3 class="ficha-paneles__titulo" id="fichaform-datos">Datos de la ficha</h3>
+                <p class="ficha-paneles__subtitulo">
                   {{ !isEdit ? 'Lo propio del trámite en una localidad'
                     : seDespublicaAlGuardar ? 'Al guardar, la ficha se despublica' : 'Guardar no cambia el estado de publicación' }}
                 </p>
@@ -414,8 +382,8 @@
               <div class="ficha-paneles__ajuste">
                 <header class="ficha-paneles__cabecera">
                   <div class="ficha-paneles__encabezado">
-                    <h3 class="detail-card__title" id="fichaform-puntos">Puntos de atención</h3>
-                    <p class="detail-card__subtitle">Dónde se hace el trámite en esta localidad.</p>
+                    <h3 class="ficha-paneles__titulo" id="fichaform-puntos">Puntos de atención</h3>
+                    <p class="ficha-paneles__subtitulo">Dónde se hace el trámite en esta localidad.</p>
                   </div>
                 </header>
                 <p class="ficha-paneles__nota">
@@ -426,7 +394,7 @@
                   </span>
                 </p>
                 <div class="ficha-paneles__desplazable ficha-paneles__cuerpo">
-                  <app-puntos-atencion-panel [fichaId]="f.id"></app-puntos-atencion-panel>
+                  <app-puntos-atencion-panel [fichaId]="f.id" [localidad]="f.localidadNombre"></app-puntos-atencion-panel>
                 </div>
               </div>
             </section>
@@ -435,8 +403,8 @@
             <section class="ficha-paneles__panel ficha-paneles__panel--lateral" aria-labelledby="fichaform-despues">
               <header class="ficha-paneles__cabecera">
                 <div class="ficha-paneles__encabezado">
-                  <h3 class="detail-card__title" id="fichaform-despues">Después de crearla</h3>
-                  <p class="detail-card__subtitle">La ficha se crea en borrador.</p>
+                  <h3 class="ficha-paneles__titulo" id="fichaform-despues">Después de crearla</h3>
+                  <p class="ficha-paneles__subtitulo">La ficha se crea en borrador.</p>
                 </div>
               </header>
 
@@ -470,7 +438,7 @@
         <!-- Pie de la tarjeta: abarca los dos paneles. El indicador es informativo, no bloquea el guardado. -->
         <app-form-actions [integrada]="true"
                           [helpText]="ayudaDelPie" [submitText]="textoGuardar" savingText="Guardando…"
-                          [saving]="saving" [sinCambios]="sinCambios" (cancelar)="cancelar()">
+                          [saving]="marco.guardando" [sinCambios]="sinCambios" (cancelar)="cancelar()">
           <span formActionsInfo class="pill ficha-paneles__indicador" aria-live="polite"
                 [class.pill--success]="v.recomendadosCompletos" [class.pill--warning]="!v.recomendadosCompletos">
             <i class="ph pill__icon" [class.ph-check-circle]="v.recomendadosCompletos"

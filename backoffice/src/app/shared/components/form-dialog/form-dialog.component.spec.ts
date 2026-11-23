@@ -281,6 +281,35 @@ describe('FormDialogComponent', () => {
     });
   });
 
+  describe('requiereCambios con un solo campo de texto', () => {
+    const UN_CAMPO: FieldConfig[] = [{ name: 'nombre', label: 'Nombre', type: 'text', validations: { required: true } }];
+    /** Enter en el único campo de texto: el navegador envía el `<form>` sin pasar por ningún botón. */
+    const enterEnElCampo = (): void => {
+      el('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    };
+
+    it('Enter sin cambios no guarda ni cierra; con un cambio, sí', async () => {
+      const guardar = jasmine.createSpy('guardar').and.returnValue(of('guardado'));
+      await abrir(config({
+        requiereCambios: true, guardar,
+        cargar: () => of({ fields: UN_CAMPO, initialData: { nombre: 'Ana' } }),
+      }));
+
+      enterEnElCampo();
+      await asentar();
+
+      expect(guardar).not.toHaveBeenCalled();
+      expect(close).not.toHaveBeenCalled();
+
+      ensuciar();
+      enterEnElCampo();
+      await asentar();
+
+      expect(guardar).toHaveBeenCalledOnceWith({ nombre: 'Cambiado' });
+      expect(close).toHaveBeenCalledOnceWith('guardado');
+    });
+  });
+
   describe('cierre con confirmación (X, Cancelar, Escape y clic afuera)', () => {
     const confirmando = (): FormDialogData<string> => config({ mensajeDescartar: 'Se pierde.' });
 
@@ -387,6 +416,38 @@ describe('FormDialogComponent', () => {
 
       expect(close).not.toHaveBeenCalled();
       expect(matDialog.open).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('textos propios y campos en diferido', () => {
+    it('`textoCargando` reemplaza al "Cargando…" genérico', async () => {
+      await abrir(config({ cargar: () => NEVER, textoCargando: 'Cargando plantillas y organismos…' }));
+      expect(texto()).toContain('Cargando plantillas y organismos…');
+    });
+
+    it('`tituloDeError` titula el banner de un guardado rechazado; sin él es "No se pudo guardar"', async () => {
+      await abrir(config({ guardar: () => throwError(() => ({ error: {} })), tituloDeError: 'No se pudo adoptar' }));
+      await fixture.componentInstance.onSubmit({ nombre: 'Ana' });
+      fixture.detectChanges();
+      expect(el('.dialogo-formulario__error')!.textContent).toContain('No se pudo adoptar');
+
+      TestBed.resetTestingModule();
+      await abrir(config({ guardar: () => throwError(() => ({ error: {} })) }));
+      await fixture.componentInstance.onSubmit({ nombre: 'Ana' });
+      fixture.detectChanges();
+      expect(el('.dialogo-formulario__error')!.textContent).toContain('No se pudo guardar');
+    });
+
+    it('si el primer campo es un select (llega en diferido), el foco lo espera en vez de saltar al siguiente', async () => {
+      const campos: FieldConfig[] = [
+        { name: 'tipo', label: 'Tipo', type: 'select', options: [{ id: 'a', name: 'A' }], optionsLoaded: true },
+        { name: 'nombre', label: 'Nombre', type: 'text' },
+      ];
+      await abrir(config({ cargar: () => of({ fields: campos, initialData: null }) }));
+      await asentar();
+      await asentar();
+
+      expect(document.activeElement).toBe(el('mat-select#tipo'));
     });
   });
 });

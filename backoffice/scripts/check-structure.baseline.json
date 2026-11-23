@@ -1,0 +1,8 @@
+{
+  "_comentario": [
+    "Desvíos de estructura CONOCIDOS (medidos el 2026-11-20). Trinquete: esta lista solo puede BAJAR.",
+    "check-structure falla ante un desvío que no esté acá y también si una entrada ya no existe (borrarla: node scripts/check-structure.mjs --prune).",
+    "No agregar entradas para destrabar un chequeo: mover el archivo a su lugar. Si de verdad hace falta una excepción, sumala a mano con su motivo."
+  ],
+  "excepciones": []
+}

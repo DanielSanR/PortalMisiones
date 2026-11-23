@@ -1,5 +1,5 @@
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { FieldConfig } from '../../../core/models/field.interface';
+import { FieldConfig } from '@core/models/field.interface';
 import { getControlErrorMessage, resumenDeErrores } from './form-error-messages.util';
 
 const CAMPO: FieldConfig = { name: 'slug', label: 'Slug', type: 'text', validations: { maxLength: 255 } };
@@ -9,14 +9,10 @@ describe('form-error-messages.util', () => {
     expect(getControlErrorMessage(new FormControl('ok'), CAMPO)).toBeNull();
   });
 
-  it('resuelve los validadores propios de los formularios a mano', () => {
+  it('resuelve el validador propio del formulario a mano de la ficha (`slugVacio`)', () => {
     const slug = new FormControl('¡¡¡');
     slug.setErrors({ slugVacio: true });
     expect(getControlErrorMessage(slug, CAMPO)).toBe('Tiene que tener letras o números');
-
-    const principal = new FormControl('x');
-    principal.setErrors({ principalFuera: true });
-    expect(getControlErrorMessage(principal, CAMPO)).toBe('Tiene que ser una de las categorías elegidas');
   });
 
   it('`required` gana sobre `slugVacio`, y el error del servidor gana sobre todos', () => {
@@ -35,6 +31,15 @@ describe('form-error-messages.util', () => {
 
     control.setErrors({ personalizado: 'Usá al menos 3 letras o números', required: true });
     expect(getControlErrorMessage(control, CAMPO)).toBe('Este campo es obligatorio');
+  });
+
+  it('una regla entre campos (`validarCon`) muestra su mensaje, después de la regla del propio campo', () => {
+    const control = new FormControl('x');
+    control.setErrors({ entreCampos: 'No puede ser anterior al inicio' });
+    expect(getControlErrorMessage(control, CAMPO)).toBe('No puede ser anterior al inicio');
+
+    control.setErrors({ entreCampos: 'No puede ser anterior al inicio', personalizado: 'Usá al menos 3 letras o números' });
+    expect(getControlErrorMessage(control, CAMPO)).toBe('Usá al menos 3 letras o números');
   });
 
   it('el campo puede declarar su propio texto por error (`mensajes`); el resto usa el común', () => {

@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ETIQUETA_ESTADO_PUBLICACION, EstadoPublicacion } from '../../core/models/estado-publicacion.model';
+import { ETIQUETA_ESTADO_PUBLICACION, EstadoPublicacion } from '@core/models/estado-publicacion.model';
 
 /** Estado que entiende el badge: el `PublicationStatus` del backend (fichas por localidad). */
 export type EstadoBadge = EstadoPublicacion;

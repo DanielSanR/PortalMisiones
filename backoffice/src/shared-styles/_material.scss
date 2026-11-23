@@ -31,7 +31,7 @@
 .mat-mdc-button {
   // Kitchen Sink §03: botón md = 34px (sm = 30px, que es el de las acciones de fila).
   height: var(--theme-control-height-md) !important;
-  padding: 0 13px !important;
+  padding: 0 var(--theme-space-13) !important;
   border-radius: var(--theme-radius-md) !important;
   font-size: var(--theme-font-size-sm) !important;
   font-weight: var(--theme-font-weight-semibold) !important;
@@ -43,7 +43,7 @@
   @include focus-ring;
 
   .mat-icon {
-    margin-right: 7px;
+    margin-right: var(--theme-space-7);
     font-size: var(--theme-icon-size-sm);
     width: var(--theme-icon-size-sm);
     height: var(--theme-icon-size-sm);
@@ -59,9 +59,9 @@
 
   // Iconos Phosphor proyectados por las páginas (botones "Nuevo X", limpiar filtros, etc.)
   i.ph {
-    margin-right: 7px;
+    margin-right: var(--theme-space-7);
     font-size: var(--theme-icon-size-sm);
-    line-height: 1;
+    line-height: var(--theme-line-height-none);
   }
 
   &[disabled] {
@@ -95,9 +95,9 @@
   // Danger (warn) — bg error / hover error-dark
   &.mat-warn {
     --mdc-filled-button-container-color: var(--theme-error);
-    --mdc-filled-button-label-text-color: #FFFFFF;
+    --mdc-filled-button-label-text-color: var(--theme-text-on-primary);
     --mdc-protected-button-container-color: var(--theme-error);
-    --mdc-protected-button-label-text-color: #FFFFFF;
+    --mdc-protected-button-label-text-color: var(--theme-text-on-primary);
     box-shadow: none !important;
 
     &:hover:not([disabled]) {
@@ -142,7 +142,7 @@
 
 // Ghost — mat-button "plano" (texto, sin relleno ni borde)
 .mat-mdc-button:not(.mat-mdc-outlined-button) {
-  padding: 0 14px !important; // pad 0 14
+  padding: 0 var(--theme-space-14) !important; // pad 0 14
 
   &.mat-primary {
     --mdc-text-button-label-text-color: var(--theme-primary);
@@ -179,7 +179,7 @@
 .mat-mdc-icon-button {
   width: 40px !important;
   height: 40px !important;
-  padding: 8px !important;
+  padding: var(--theme-space-sm) !important;
   border-radius: var(--theme-radius-md) !important;
   color: var(--theme-text-secondary);
   transition: background-color var(--theme-transition-fast), color var(--theme-transition-fast);
@@ -201,7 +201,6 @@
     color: var(--theme-text-disabled);
   }
 
-  &.danger-action,
   &.delete-action {
     &:hover:not([disabled]) {
       background-color: var(--theme-error-bg);
@@ -211,7 +210,7 @@
 
   .mat-icon,
   i.ph {
-    font-size: 20px;
+    font-size: var(--theme-icon-size-lg);
     width: 20px;
     height: 20px;
   }
@@ -279,8 +278,8 @@
     // Kitchen Sink §04: alto del control = 40px.
     .mat-mdc-form-field-infix {
       min-height: 40px;
-      padding-top: 8px;
-      padding-bottom: 8px;
+      padding-top: var(--theme-space-sm);
+      padding-bottom: var(--theme-space-sm);
     }
 
     // MDC posiciona el label en reposo con `top: 28px`, la mitad del infix por
@@ -299,7 +298,7 @@
     }
 
     &.mat-form-field-invalid.mat-focused .mdc-notched-outline {
-      box-shadow: 0 0 0 3px var(--theme-focus-ring-danger-color);
+      box-shadow: var(--theme-focus-ring-danger-soft);
     }
 
     // El gris va en la caja del campo, no en el host: así no envuelve también la ayuda de abajo.
@@ -316,10 +315,10 @@
   // Iconos de prefijo/sufijo — 18px según la spec de inputs.
   .mat-mdc-form-field-icon-prefix,
   .mat-mdc-form-field-icon-suffix {
-    padding: 0 4px 0 0;
+    padding: 0 var(--theme-space-xs) 0 0;
     .mat-icon,
     i.ph {
-      font-size: 18px;
+      font-size: var(--theme-icon-size-18);
       width: 18px;
       height: 18px;
       color: var(--theme-text-tertiary);
@@ -340,11 +339,11 @@
   // toolbars de lista, por ejemplo) medía 6px de más. El de error solo existe mientras hay error.
   .mat-mdc-form-field-subscript-dynamic-size {
     .mat-mdc-form-field-error-wrapper {
-      padding-top: 6px;
+      padding-top: var(--theme-space-6);
     }
 
     .mat-mdc-form-field-hint {
-      margin-top: 6px;
+      margin-top: var(--theme-space-6);
     }
   }
 
@@ -352,18 +351,26 @@
     @include form-help-text;
   }
 
+  // El `mat-hint align="end"` es el contador de caracteres ("8 / 50"). El wrapper de ayuda es un flex: en un
+  // campo angosto con una ayuda larga a la izquierda, el contador se encogía y se partía en dos renglones
+  // ("8 /" y "50"). No se encoge ni corta; la que baja de renglón es la ayuda.
+  .mat-mdc-form-field-hint-end {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   // Mensaje de error inline (patrón FORM): ícono `ph-warning-circle` + texto,
   // pintado por `FormErrorMessageDirective` (ver dynamic-form-field).
   .mat-mdc-form-field-error {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--theme-space-5);
     font-size: var(--theme-font-size-xs);
     color: var(--theme-error-icon);
-    line-height: 1.4;
+    line-height: var(--theme-line-height-140);
 
     i.ph {
-      font-size: 14px;
+      font-size: var(--theme-icon-size-14);
       flex-shrink: 0;
     }
   }
@@ -371,7 +378,12 @@
   // Sin `min-height`: los textarea usan `cdkTextareaAutosize` con `cdkAutosizeMinRows`,
   // que mide una fila clonada. Si esa fila hereda un min-height, el alto se multiplica
   // por la cantidad de filas (72px × 3 = 216px). El alto lo fija el minRows.
+  // `font: inherit` también acá (Material lo pone en `.mat-mdc-form-field-input-control`, una clase que MatInput
+  // agrega recién con sus host bindings): el CDK mide la fila en su `ngAfterViewInit`, cuando el textarea solo
+  // tiene `mat-mdc-input-element`; sin esto mide con la fuente por defecto (15px por fila en vez de 24px) y
+  // `cdkAutosizeMinRows` queda corto (4 filas = 60px).
   textarea.mat-mdc-input-element {
+    font: inherit;
     resize: vertical;
   }
 }
@@ -393,7 +405,7 @@
   border-radius: var(--theme-radius-md) !important;
   box-shadow: var(--theme-elevation-2) !important;
   border: none !important;
-  padding: 6px !important;
+  padding: var(--theme-space-6) !important;
 
   .mat-mdc-option {
     min-height: 40px;
@@ -434,7 +446,7 @@
       font-size: var(--theme-font-caption-size);
       color: var(--theme-text-tertiary);
       border-bottom: 1px solid var(--theme-border-primary);
-      padding: 11px var(--theme-space-card);
+      padding: var(--theme-space-11) var(--theme-space-card);
     }
   }
 
@@ -453,7 +465,7 @@
     .mat-mdc-cell {
       font-size: var(--theme-font-body-size);
       color: var(--theme-text-primary);
-      padding: 10px var(--theme-space-card);
+      padding: var(--theme-space-10) var(--theme-space-card);
       border-bottom-color: var(--theme-border-subtle);
     }
   }
@@ -608,23 +620,23 @@
   border: 1px solid var(--theme-border-subtle);
 
   .mat-mdc-menu-content {
-    padding: 6px !important;
+    padding: var(--theme-space-6) !important;
   }
 
   // Kitchen Sink §07 (menú contextual): ítem 38px, 13.5px, radio 6, ícono 18px.
   .mat-mdc-menu-item {
     font-size: var(--theme-font-size-sm);
     min-height: 38px;
-    border-radius: 6px;
+    border-radius: var(--theme-radius-6);
 
     &:not(:last-child) {
-      margin-bottom: 2px;
+      margin-bottom: var(--theme-space-2xs);
     }
 
     .mat-icon,
     i.ph {
-      margin-right: 11px;
-      font-size: 18px;
+      margin-right: var(--theme-space-11);
+      font-size: var(--theme-icon-size-18);
       width: 18px;
       height: 18px;
       color: var(--theme-text-secondary);
@@ -642,7 +654,7 @@
 }
 
 // ---------------------------------------------------------------------------
-// Checkbox / Radio / Slide Toggle — color de marca primary
+// Checkbox / Slide Toggle — color de marca primary
 // ---------------------------------------------------------------------------
 .mat-mdc-checkbox {
   @include focus-ring;
@@ -652,26 +664,13 @@
   }
 
   &:not(.mat-warn) {
-    --mdc-checkbox-selected-checkmark-color: #FFFFFF;
+    --mdc-checkbox-selected-checkmark-color: var(--theme-text-on-primary);
     --mdc-checkbox-selected-focus-icon-color: var(--theme-primary);
     --mdc-checkbox-selected-hover-icon-color: var(--theme-primary-dark);
     --mdc-checkbox-selected-icon-color: var(--theme-primary);
     --mdc-checkbox-selected-pressed-icon-color: var(--theme-primary-dark);
     --mdc-checkbox-unselected-icon-color: var(--theme-border-strong);
     --mdc-checkbox-unselected-hover-icon-color: var(--theme-text-tertiary);
-  }
-}
-
-.mat-mdc-radio-button {
-  @include focus-ring;
-
-  &:not(.mat-warn) {
-    --mdc-radio-selected-focus-icon-color: var(--theme-primary);
-    --mdc-radio-selected-hover-icon-color: var(--theme-primary-dark);
-    --mdc-radio-selected-icon-color: var(--theme-primary);
-    --mdc-radio-selected-pressed-icon-color: var(--theme-primary-dark);
-    --mdc-radio-unselected-icon-color: var(--theme-border-strong);
-    --mdc-radio-unselected-hover-icon-color: var(--theme-text-tertiary);
   }
 }
 
@@ -698,18 +697,18 @@
     --mdc-switch-selected-hover-track-color: var(--theme-primary);
     --mdc-switch-selected-focus-track-color: var(--theme-primary);
     --mdc-switch-selected-pressed-track-color: var(--theme-primary-dark);
-    --mdc-switch-selected-handle-color: #FFFFFF;
-    --mdc-switch-selected-hover-handle-color: #FFFFFF;
-    --mdc-switch-selected-focus-handle-color: #FFFFFF;
-    --mdc-switch-selected-pressed-handle-color: #FFFFFF;
+    --mdc-switch-selected-handle-color: var(--theme-text-on-primary);
+    --mdc-switch-selected-hover-handle-color: var(--theme-text-on-primary);
+    --mdc-switch-selected-focus-handle-color: var(--theme-text-on-primary);
+    --mdc-switch-selected-pressed-handle-color: var(--theme-text-on-primary);
     --mdc-switch-unselected-track-color: var(--theme-neutral-400);
     --mdc-switch-unselected-hover-track-color: var(--theme-neutral-400);
     --mdc-switch-unselected-focus-track-color: var(--theme-neutral-400);
     --mdc-switch-unselected-pressed-track-color: var(--theme-neutral-500);
-    --mdc-switch-unselected-handle-color: #FFFFFF;
-    --mdc-switch-unselected-hover-handle-color: #FFFFFF;
-    --mdc-switch-unselected-focus-handle-color: #FFFFFF;
-    --mdc-switch-unselected-pressed-handle-color: #FFFFFF;
+    --mdc-switch-unselected-handle-color: var(--theme-text-on-primary);
+    --mdc-switch-unselected-hover-handle-color: var(--theme-text-on-primary);
+    --mdc-switch-unselected-focus-handle-color: var(--theme-text-on-primary);
+    --mdc-switch-unselected-pressed-handle-color: var(--theme-text-on-primary);
     --mdc-switch-disabled-selected-track-color: var(--theme-neutral-300);
     --mdc-switch-disabled-unselected-track-color: var(--theme-neutral-300);
   }
@@ -730,13 +729,13 @@
 // ---------------------------------------------------------------------------
 .mat-mdc-tooltip {
   --mdc-plain-tooltip-container-color: var(--theme-text-primary);
-  --mdc-plain-tooltip-supporting-text-color: #FFFFFF;
+  --mdc-plain-tooltip-supporting-text-color: var(--theme-text-on-primary);
   --mdc-plain-tooltip-container-shape: var(--theme-radius-sm);
   --mdc-plain-tooltip-supporting-text-size: var(--theme-font-size-xs);
 
   .mdc-tooltip__surface {
     min-height: 26px;
-    padding: 0 10px !important;
+    padding: 0 var(--theme-space-10) !important;
     display: flex;
     align-items: center;
   }
@@ -748,7 +747,7 @@
 .mat-mdc-tab-group {
   .mat-mdc-tab {
     font-weight: var(--theme-font-weight-medium);
-    letter-spacing: 0.01em;
+    letter-spacing: var(--theme-tracking-wide);
   }
 }
 

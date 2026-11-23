@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { EMPTY, NEVER, Subject, of, throwError } from 'rxjs';
-import { TEXTOS_DE_ERROR_HTTP } from '../../../core/utils/http-error-text.utils';
+import { TEXTOS_DE_ERROR_HTTP } from '@core/utils/http-error-text.utils';
 import { ConfirmDialogComponent, ConfirmDialogData } from './confirm-dialog.component';
 
 /**

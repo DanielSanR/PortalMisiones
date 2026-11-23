@@ -1,0 +1,78 @@
+<ng-template appPageActions>
+  @if (hasFilters()) {
+    <button mat-stroked-button (click)="clearFilters()">
+      <i class="ph ph-x-circle" aria-hidden="true"></i> Limpiar filtros
+    </button>
+  }
+</ng-template>
+
+@if ((pagina$ | async) ?? paginaVacia; as pagina) {
+<!-- Toolbar de lista (well): una sola fila = búsqueda + select de acción + contador. Sin fila de chips: no hay otro
+     filtro, y una fila vacía igual sumaba su separación al alto del toolbar. -->
+<div class="list-toolbar list-toolbar--stacked">
+  <form [formGroup]="filterForm" class="list-toolbar__row">
+    <app-list-search [atajoFoco]="true"
+      [control]="filterForm.controls.search"
+      placeholder="Buscar por trámite o usuario…"
+      ariaLabel="Buscar registros de auditoría por trámite o por usuario">
+    </app-list-search>
+
+    <mat-form-field appearance="outline" class="filter-select" subscriptSizing="dynamic">
+      <mat-select formControlName="accion" aria-label="Filtrar por acción">
+        <mat-option value="">Todas las acciones</mat-option>
+        @for (a of acciones; track a.value) {
+          <mat-option [value]="a.value">{{ a.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <span class="list-toolbar__count list-toolbar__count--end">{{ pagina.total }} registros</span>
+  </form>
+</div>
+
+<app-shared-table
+    [data]="pagina.registros"
+    [columns]="columns"
+    [loading]="loading"
+    [error]="error"
+    errorTitle="No pudimos cargar la auditoría"
+    errorMessage="Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Soporte."
+    (retry)="loadData()"
+    [paginated]="true"
+    [totalItems]="pagina.total"
+    [pageSize]="pageSize"
+    [pageIndex]="currentPage"
+
+    emptyMessage="No se encontraron registros de auditoría"
+    emptyIcon="clock-counter-clockwise"
+    (pageChange)="onPageChange($event)">
+
+    <ng-template appTableCell="accion" let-row>
+        <span class="pill pill--{{ row.accion | accionLabel:'tone' }}">
+            <i class="ph ph-{{ row.accion | accionLabel:'icon' }} pill__icon" aria-hidden="true"></i>
+            <span class="pill__label">{{ row.accion | accionLabel }}</span>
+        </span>
+    </ng-template>
+
+    <ng-template appTableCell="tramite" let-row>
+        <strong>{{ row.tramiteTitulo }}</strong>
+    </ng-template>
+
+    <ng-template appTableCell="usuario" let-row>
+        {{ row.usuarioNombre }}
+    </ng-template>
+
+    <ng-template appTableCell="fecha" let-row>
+        {{ row.fechaAccion | date:'dd/MM/yyyy HH:mm' }}
+    </ng-template>
+
+    <ng-template appTableCell="detalle" let-row>
+        <button type="button" class="row-action row-action--icon" matTooltip="Ver detalle de cambios"
+                [attr.aria-label]="'Ver detalle de ' + (row.accion | accionLabel | lowercase) + ' de ' + row.tramiteTitulo"
+                (click)="onViewDetail(row)">
+            <i class="ph ph-eye" aria-hidden="true"></i>
+        </button>
+    </ng-template>
+
+</app-shared-table>
+}

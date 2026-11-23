@@ -1,93 +1,78 @@
 # Portal Provincial de Trámites - Misiones
 
-## Project Overview
-Portal de trámites provinciales para la Subsecretaría de Gobierno Inteligente - Vicegobernación de Misiones.
-Dos aplicaciones frontend independientes consumiendo la misma API REST.
+Monorepo de la Subsecretaría de Gobierno Inteligente (Vicegobernación de Misiones). Dos frontends sobre la misma API REST:
+- **`backoffice/`** — Angular 17 standalone, sin SSR — panel de administración. **Todo lo de abajo aplica acá.**
+- **`public/`** — Next.js (App Router) — portal ciudadano, de otro desarrollador. Tiene su propio `public/CLAUDE.md`.
+- `e2e/` — e2e del backoffice contra staging (Playwright para Python).
 
-## Architecture
-- **backoffice/** — Angular 17+ (standalone components) — Panel de administración
-- **portal/** — Next.js 14 (App Router) — Portal público ciudadano (otro desarrollador)
-- **models** —Cada proyecto tiene su propio model en /models
+## Reglas duras del backoffice (el detalle está en `.claude/rules/`, que se carga solo según el archivo)
+- **RxJS, nunca signals.** Estado con Observables + `async` pipe; comandos con `takeUntilDestroyed` o `unaVez`.
+- **Capas**: `Componente → Facade → Repository → DataSource → {Http | Mock}`. La UI solo ve el Facade, por el barrel `@features/<f>`.
+- **Componentes**: standalone, OnPush, `templateUrl` + `styleUrl`, `inject()`, control flow `@if` / `@for`, alias `@core` `@features` `@shared` `@pages` `@env` (relativo solo `./` o `../`).
+- **Estilos**: BEM `bloque__elemento--modificador` (`&__`, `&--`, nunca `&-`), un prefijo por pantalla, solo tokens `var(--theme-*)`.
+- **Formularios**: siempre el dynamic form (`app-dynamic-form` o `abrirFormDialog` + `<x>-dialogo.ts`); `readonly` + `hint`, no `disabled`.
+- **Errores**: nunca el `message` del backend; se decide por `API_CODES` (`aplicarErrorDeGuardado`, `textoDeErrorHttp`, `errorDeAccion`).
+- **RBAC por permiso** (no por rol): `accessGuard` + `data.access`, `*appHasPermission`, `RowAction.permission`.
+- **WCAG 2.2 AA gana sobre el diseño.** Funciones sin backend: visibles con `appUnavailable`, nunca `disabled` + `title`.
+- **Reusar antes de crear**: `shared/components`, `shared/utils`, `core/utils`, clases globales de `shared-styles/_components.scss`.
+- UI en español con voseo, es-AR, fechas DD/MM/YYYY. Títulos de trámite con verbo en infinitivo (Obtener, Inscribirse).
 
-## Backoffice Architecture (Angular 17)
-Follows same architecture as JNR project (C:\JNR\jnr-frontend):
+| Tema | Regla | Tema | Regla |
+|---|---|---|---|
+| Capas y alta de un feature | `arquitectura-capas.md` | Textos y errores | `textos-y-errores.md` |
+| Componentes y RxJS | `componentes-angular.md` | Accesibilidad | `accesibilidad.md` |
+| SCSS, BEM, tokens | `scss-bem.md` | Permisos | `rbac-permisos.md` |
+| Árbol de `pages/`, listas, diálogos | `pantallas-lista-dialogo.md` | Specs | `tests.md` |
+| Formularios | `formularios-dynamic-form.md` | E2E en staging | `e2e-staging.md` |
 
+Molde a copiar: `core/features/etiquetas/**` + `pages/etiquetas/**`. Diseño: `DESIGN.md`. Contrato: `BACKEND_API_SPEC.md`.
+
+## Mapa del backoffice (`backoffice/src/`)
 ```
-backoffice/src/app/
-├── auth/                    # Auth module (NgModule, lazy-loaded)
-├── core/                    # Singleton services, guards, interceptors
-│   ├── guards/              # Functional guards (authGuard, roleGuard)
-│   ├── interceptors/        # Functional interceptors (auth, httpError)
-│   ├── services/            # API services, auth-token facade
-│   ├── models/              # TypeScript interfaces
-│   ├── enums/               # UserRole enum
-│   ├── constants/           # Nav items, routes, role mappings
-│   ├── utils/               # Role normalization, route helpers
-│   └── errors/              # Custom error classes
-├── pages/                   # Feature pages (lazy-loaded via PagesModule)
-│   ├── dashboard/
-│   ├── tramites/            # plantillas/ (provinciales), adopciones/ (del organismo), fichas/ (por localidad + puntos de atención)
-│   ├── organismos/          # list + detail (ficha única en 3 modos: ver / editar / nuevo)
-│   └── usuarios/            # list
-├── shared/
-│   ├── components/          # Standalone reusable components
-│   ├── layouts/             # AdminLayout (Material sidenav)
-│   ├── directives/          # appHasPermission, appPageActions, appUnavailable
-│   ├── pipes/               # EstadoBadgePipe
-│   └── shared.module.ts     # Re-exports Material modules
-└── (../shared-styles/)      # Global SCSS en backoffice/src/shared-styles/ (fuera de app/):
-                             #   _themes (tokens --theme-*), _mixins, _components (clases globales),
-                             #   _material (overrides), _material-theme (tema de Material separado),
-                             #   _base, _responsive, _main. `_variables.scss` ya no existe.
+app/auth/             login, recuperar, restablecer, activar (auth.routes.ts, sin NgModule)
+app/core/features/<f>/  index.ts · <f>.providers.ts · models · mappers · domain · datasources · repositories · facades
+app/core/             config · constants · enums · errors · guards · interceptors · mocks · models · services · utils
+app/pages/<sección>/  list | form | detail | dialog | components/<pieza>  (+ helpers -dialogo / -save-error / -accion-error /
+                      -textos / .rutas; `dashboard/home/` es la única pantalla sin lista)
+                      secciones: dashboard, tramites/{plantillas,adopciones,fichas}, organismos, tipos-organismo, usuarios, roles,
+                      permisos, categorias, etiquetas, modalidades, destinatarios, eventos-de-vida, auditoria, feedback
+app/pages/pages.module.ts   único NgModule: rutas lazy (`loadComponent`) bajo AdminLayout
+app/shared/           adapters · components · directives · guards · layouts · pipes · utils   (todo standalone)
+shared-styles/        _themes (tokens) · _mixins · _components (clases globales) · _material (overrides) · _material-theme
+environments/         environment{,.local,.staging,.prod}.ts → dataSource + featureOverrides ('mock' | 'local' | 'prod')
 ```
+- Sesión: `AuthTokenService` (`BehaviorSubject`); el claim `roles` del JWT mezcla roles `ROLE_*` y permisos (`core/utils/role.utils.ts`).
+- Error global: `httpErrorInterceptor` abre un diálogo; una escritura que muestra su propio error usa `sinDialogoGlobal()`.
+- Roles del backend: SUPERADMIN, ADMIN_BACKOFFICE, ADMIN_ORGANIZATION, AGENT, MANAGER, USER.
 
-## Key Patterns
-- **Hybrid standalone + NgModule**: New components are standalone, modules for lazy-loading
-- **Functional guards & interceptors**: Modern Angular approach (CanActivateFn, HttpInterceptorFn)
-- **AuthTokenService facade**: BehaviorSubject for auth state, sync + async accessors
-- **SKIP_ERROR_INTERCEPTOR context**: Services opt-out of global error dialog
-- **CSS Variables theming**: `shared-styles/_themes.scss` — azul institucional Misiones (#2F6EB1). Referencia de diseño: `DESIGN.md` (fuente visual: Claude Design). **WCAG 2.2 AA gana sobre el diseño** cuando chocan.
-- **Features sin backend**: visibles con la directiva `appUnavailable` (`shared/directives/unavailable.directive.ts`: `aria-disabled` + tooltip con el motivo), nunca `disabled` nativo + `title`.
-- **RBAC**: roleGuard with route data `{ allowedRoles: [...], redirectTo: '...' }`
+## Trámites (modelo real — `PLAN_TRAMITES_API.md`)
+Plantilla provincial (`/api/procedure-template`) → adopción = "Trámite del organismo" (`/api/organism-procedure`, con vigencia) →
+ficha por localidad (`/api/organism-procedure-location`) → puntos de atención (`/api/attention-point`).
+Features: `plantillas`, `adopciones`, `fichas-locales`, `puntos-atencion`.
+- Ficha: `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`. Publica quien tiene `PUBLISH_VARIANT`; envía a revisión `UPDATE_VARIANT`.
+- La cadena va toda con la misma fuente (se referencia por ids): mock en `ng serve`; real en `start:local`, staging y prod
+  (backend >= `586b670`). Siguen en mock en todos los entornos: `dashboard`, `auditoria`, `feedback`.
 
-## Arquitectura de capas (en migración — ver `migracion_arquitectura.md`)
-Modelo objetivo, **por feature (vertical slice)** en `core/features/<feature>/` con subcarpetas por capa:
-```
-Componente → Facade → Repository → DataSource(interface) → {HttpDataSource | MockDataSource}
-mappers + models/view = hojas · barrel index.ts = superficie pública · <feature>.providers.ts = wiring
-```
-- **Adaptador mock/real**: `environment.dataSource` ('mock'|'local'|'prod') + `featureOverrides`; `provideDataSource` + `InjectionToken` por feature. El DataSource es el único que conoce la fuente.
-- **REGLA DURA — RxJS, NUNCA signals**: facades exponen Observables (`async` pipe); one-shot con `firstValueFrom`; `subscribe` manual solo con `takeUntilDestroyed`.
-- **Vistas separadas**: `templateUrl` + `styleUrl` siempre (sin inline).
-- **Dirección estricta**: 0 deps circulares, 0 deps misma-capa (prohibido `facade→facade`). Cross-feature solo vía barrel `@features/<x>`.
-- **Path aliases**: `@core/*`, `@features/*`, `@shared/*`, `@env/*` (tsconfig).
-- Detalle accionable en `.claude/rules/` (arquitectura-capas, componentes-angular, scss-bem) y skills `nueva-feature` / `migrar-pantalla`.
+## Comandos (`cd backoffice`, Node 20.11.0 — `nvm use`)
+- `npx ng serve` (mock, :4200) · `npm run start:local` (backend local) · `npm run start:staging` (proxy a staging)
+- **`npm run check`** — fuente única: typecheck + lint + estilos + estructura + madge + íconos + mocks de prod + tests + build.
+  `npm run check:fast` (sin tests ni build) mientras trabajás; `npm run check:static` es lo que corre `prebuild`.
+- `npm run icons` — regenerar el subset de Phosphor al usar un ícono nuevo.
 
-## Tooling agéntico del proyecto (`.claude/`)
-- **rules/**: constraints path-scoped (arquitectura, componentes Angular, SCSS/BEM).
-- **skills/**: `nueva-feature` (scaffolder), `migrar-pantalla`, `checklist-design` (corpus de checklists UI/UX, build o audit).
-- **agents/**: `angular-ssr-reviewer`, `arquitecto-capas`, `front-design`. Derivar la revisión/diseño al agente correspondiente.
+## Terminado significa
+- `npm run check` en verde. Sin `eslint-disable`, sin entradas nuevas en `scripts/*.baseline.json` ni subir
+  `--max-warnings` (esos topes solo bajan), y nunca `--no-verify`.
+- `stylelint-disable-next-line <regla> -- <motivo>` se permite SOLO por línea y con motivo, para un valor de un único uso que no merece token; nunca un `stylelint-disable` de archivo ni sin motivo (`.claude/rules/scss-bem.md`).
+- Specs del comportamiento nuevo, y la UI alineada al contrato real (no mostrar campos que el backend no persiste).
+- Commits `tipo(scope): descripción en español`. Rama nueva, nunca sobre `main`. Commit y push **solo si el usuario lo pide**.
 
-## Roles (códigos reales del backend — ver BACKEND_API_SPEC.md §4.2)
-- SUPERADMIN, ADMIN_BACKOFFICE, ADMIN_ORGANIZATION, AGENT, MANAGER, USER
-- El claim `roles` del JWT mezcla roles (`ROLE_*`) y permisos atómicos, coma-separados (ver `core/utils/role.utils.ts`).
+## Subida
+- GitHub `origin` = este monorepo. GitLab `gitlab-backoffice` recibe el `git subtree split --prefix=backoffice` (ramas `dev` y
+  `staging`); `.claude/` no viaja: las reglas mínimas van en `backoffice/AGENTS.md`.
+- Staging se construye con `npm run build -- --configuration=production` en `node:20-alpine`: `prebuild` (`check:static`) corre ahí.
 
-## Workflow de Trámites (modelo real — ver `PLAN_TRAMITES_API.md`)
-Plantilla provincial (`/api/procedure-template`) → adopción por organismo = "Trámite del organismo" (`/api/organism-procedure`, con vigencia) → ficha por localidad (`/api/organism-procedure-location`) → puntos de atención (`/api/attention-point`). Features: `plantillas`, `adopciones`, `fichas-locales`, `puntos-atencion`.
-- Estados de la ficha: `BORRADOR → EN_REVISION → PUBLICADO ↔ DESPUBLICADO`. Quién publica lo decide el permiso `PUBLISH_VARIANT` (no el rol); enviar a revisión con `UPDATE_VARIANT`.
-- Fuente por entorno (`environments/*.ts`): la cadena va toda con la misma fuente (se referencia por ids). Toda en mock en `ng serve`; toda en real con `npm run start:local`, en staging y en prod (requiere backend >= `586b670`, desplegado en staging el 2026-11-19). Siguen en mock `dashboard`, `auditoria` y `feedback`.
-
-## Commands
-- `cd backoffice && npx ng serve` — Dev server (port 4200)
-- `cd backoffice && npm run build` — Production build (corre antes `icons:check` + `check:prod-mocks` vía `prebuild`; `npx ng build` directo los saltea)
-- `cd backoffice && npm run icons` — Regenerar el subset de Phosphor al agregar íconos (`icons:check` lo valida)
-- `cd backoffice && npm run check:circular` — madge: 0 dependencias circulares
-- `cd backoffice && npm run lint` — ESLint + boundaries (dirección de capas) sobre `core/features`
-- Node version: 20.11.0 (use `nvm use 20.11.0`)
-
-## Conventions
-- Spanish for UI labels and model names
-- Locale: es-AR
-- Date format: DD/MM/YYYY
-- Font: Oak Sans self-hosted (`backoffice/src/assets/fonts/oak-sans/`, woff2 subseteado de la del portal)
-- Titles must start with infinitive verbs (Obtener, Inscribirse)
+## Tooling agéntico (`.claude/`)
+- **agents** (backoffice): `angular-ssr-reviewer` (revisión de cada cambio), `arquitecto-capas` (capas y foldering), `front-design` (UI).
+  `frontend-developer`, `senior-frontend-architect` y `ui-ux-designer` son solo para `public/`.
+- **skills** (backoffice): `nueva-feature`, `nueva-pantalla-lista`, `nuevo-formulario`, `cablear-backend-real`, `checklist-design`.
+  `senior-frontend` y `frontend-design` son solo para `public/`.

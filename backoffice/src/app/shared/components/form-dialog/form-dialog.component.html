@@ -14,7 +14,7 @@
   </div>
 
   <div mat-dialog-content class="dialogo-formulario__cuerpo">
-    <app-loading [loading]="loading" message="Cargando…"></app-loading>
+    <app-loading [loading]="loading" [message]="data.textoCargando ?? 'Cargando…'"></app-loading>
 
     @if (!loading && errorCarga; as error) {
       <!-- Sin lo que el formulario necesita no se puede completar: se muestra el motivo y una salida. -->
@@ -53,7 +53,7 @@
     @if (serverError) {
       <!-- Fuera del cuerpo con scroll: el motivo del rechazo queda a la vista junto a "Guardar". -->
       <div class="dialogo-formulario__error">
-        <app-form-error-banner [errors]="[serverError]" titulo="No se pudo guardar"></app-form-error-banner>
+        <app-form-error-banner [errors]="[serverError]" [titulo]="data.tituloDeError ?? 'No se pudo guardar'"></app-form-error-banner>
       </div>
     }
 

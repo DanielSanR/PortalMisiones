@@ -26,7 +26,8 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 40px;
+    gap: var(--theme-space-40);
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- padding lateral de 52px del hero del login, un solo uso
     padding: var(--theme-space-2xl) 52px;
     background: var(--theme-surface-inverse);
     overflow: hidden;
@@ -73,7 +74,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: var(--theme-space-card);
     max-width: 480px;
 
     @include responsive(tablet-down) {
@@ -91,9 +92,12 @@
 
   &__titulo {
     margin: 0;
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- título hero del login (36px), fuera de la escala de página; un solo uso
     font-size: 2.25rem; // 36px — título hero, fuera de la escala de página (display = 26px)
     font-weight: var(--theme-font-weight-semibold);
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- interlineado del título hero del login, un solo uso
     line-height: 1.18;
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- tracking del título hero del login, un solo uso
     letter-spacing: -0.6px;
     color: var(--theme-text-on-primary);
     text-wrap: pretty;
@@ -105,8 +109,9 @@
 
   &__bajada {
     margin: 0;
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- bajada del login de 14.5px del diseño, un solo uso
     font-size: 0.90625rem; // 14.5px del diseño (entre body 13.5 y subtitle 15)
-    line-height: 1.6;
+    line-height: var(--theme-line-height-160);
     color: var(--auth-on-dark-bajada);
     text-wrap: pretty;
 
@@ -120,7 +125,7 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 14px;
+    gap: var(--theme-space-14);
 
     @include responsive(tablet-down) {
       display: none;
@@ -160,7 +165,7 @@
   // ── Panel y tarjeta ──
   &__panel {
     @include flex-center;
-    padding: var(--theme-space-2xl) 40px;
+    padding: var(--theme-space-2xl) var(--theme-space-40);
     background: var(--theme-surface-sunken);
 
     @include responsive(mobile) {
@@ -172,10 +177,10 @@
   &__card {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: var(--theme-space-22);
     width: 100%;
     max-width: 408px;
-    padding: var(--theme-space-xl) 30px;
+    padding: var(--theme-space-xl) var(--theme-space-band);
     background: var(--theme-surface-card);
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-panel);
@@ -189,14 +194,14 @@
   &__encabezado {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: var(--theme-space-7);
   }
 
   &__card-titulo {
     margin: 0;
     font-size: var(--theme-font-size-xl);
     font-weight: var(--theme-font-weight-semibold);
-    letter-spacing: -0.2px;
+    letter-spacing: var(--theme-tracking-tight-px);
     color: var(--theme-text-primary);
   }
 

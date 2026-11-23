@@ -16,7 +16,7 @@
 .cat-view {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--theme-space-14);
 }
 
 .cat-table {
@@ -31,7 +31,7 @@
   }
 
   &__th {
-    padding: 11px var(--theme-space-card);
+    padding: var(--theme-space-11) var(--theme-space-card);
     font-size: var(--theme-font-caption-size);
     font-weight: var(--theme-font-weight-semibold);
     color: var(--theme-text-tertiary);
@@ -52,12 +52,12 @@
     display: flex;
     align-items: center;
     min-width: 0;
-    padding: 9px var(--theme-space-card);
+    padding: var(--theme-space-9) var(--theme-space-card);
 
-    &--name { gap: 8px; padding-right: var(--theme-space-gap); }
+    &--name { gap: var(--theme-space-sm); padding-right: var(--theme-space-gap); }
 
     // Las acciones son tres `.row-action--icon` globales; la celda las empuja a la derecha.
-    &--actions { justify-content: flex-end; padding-inline: 14px; }
+    &--actions { justify-content: flex-end; padding-inline: var(--theme-space-14); }
   }
 
   // Chevron de expandir/colapsar + marcador de hoja + spacer de alineación (24px, radio 6)
@@ -70,7 +70,7 @@
     flex-shrink: 0;
     border: none;
     background: transparent;
-    border-radius: 6px;
+    border-radius: var(--theme-radius-6);
     cursor: pointer;
     color: var(--theme-text-secondary);
     transition: background var(--theme-transition-fast);
@@ -129,9 +129,9 @@
 .cat-note {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--theme-space-9);
   margin: 0;
-  padding: 11px 14px;
+  padding: var(--theme-space-11) var(--theme-space-14);
   background: var(--theme-surface-sunken);
   border: 1px solid var(--theme-border-primary);
   border-radius: var(--theme-radius-md);

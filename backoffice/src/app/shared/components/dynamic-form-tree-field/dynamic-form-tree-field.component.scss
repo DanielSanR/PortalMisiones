@@ -8,7 +8,7 @@
 // Misma línea de ayuda que el `mat-hint` de los demás campos: a 6px del control y sin sangría.
 .tree-field {
   &__ayuda {
-    margin-top: 6px;
+    margin-top: var(--theme-space-6);
   }
 
   &__hint {

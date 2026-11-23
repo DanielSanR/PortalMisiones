@@ -9,11 +9,14 @@
     <button mat-stroked-button color="primary" type="button" [disabled]="saving" (click)="cancelar.emit()">
       {{ cancelText }}
     </button>
-    <span class="form-actions__submit"
-          [matTooltip]="bloqueadoSinCambios ? 'No hay cambios para guardar' : ''"
-          [attr.tabindex]="bloqueadoSinCambios ? 0 : null">
+    <span class="form-actions__submit">
+      <!-- UN solo botón que alterna su estado: si "sin cambios" lo reemplazara por otro nodo, al guardar y
+           quedarse en la página el botón enfocado se destruiría y el foco caería a `body` (WCAG 2.4.3).
+           Edición sin cambios: no es un `disabled` mudo; sigue enfocable y el motivo aparece al pasar el mouse,
+           al enfocarlo y al tocarlo (`appUnavailable`, que además anula el envío). -->
       <button mat-flat-button color="primary" type="submit"
-              [attr.aria-busy]="saving || null" [disabled]="saving || sinCambios">
+              [appUnavailable]="bloqueadoSinCambios ? 'No hay cambios para guardar' : false"
+              [attr.aria-busy]="saving || null" [disabled]="saving">
         @if (saving) {
           <i class="ph ph-spinner-gap spin" aria-hidden="true"></i>
         } @else {

@@ -1,5 +1,5 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { ClaveEstadoBadge, EstadoBadge, EstadoBadgePipe, claveDeEstado } from '../../pipes/estado-badge.pipe';
+import { ClaveEstadoBadge, EstadoBadge, EstadoBadgePipe, claveDeEstado } from '@shared/pipes/estado-badge.pipe';
 
 // Badge de estado de publicación (borrador/en revisión/publicado/despublicado).
 // Recibe el `PublicationStatus` del backend ('EN_REVISION') y lo pinta con su clave visual ('revision').
@@ -9,7 +9,7 @@ import { ClaveEstadoBadge, EstadoBadge, EstadoBadgePipe, claveDeEstado } from '.
   standalone: true,
   imports: [EstadoBadgePipe],
   templateUrl: './estado-badge.component.html',
-  styleUrls: ['./estado-badge.component.scss'],
+  styleUrl: './estado-badge.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EstadoBadgeComponent {

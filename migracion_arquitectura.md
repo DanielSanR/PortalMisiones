@@ -1,5 +1,26 @@
 # Migración del Backoffice a una Arquitectura de Capas
 
+> **DOCUMENTO HISTÓRICO — la migración terminó.** Se conserva como registro de decisiones (§11, §12) y del refactor de
+> RBAC (§13). **No es la norma vigente**: la norma son `.claude/rules/*.md` (en especial `arquitectura-capas.md`) y el
+> resumen de `CLAUDE.md`; lo que se cumple lo verifica `cd backoffice && npm run check`.
+>
+> **Estado real al 2026-11-20** (donde este documento diga otra cosa, vale esto):
+> - Los 19 features de `core/features/` tienen facade, repository y datasource mock, y todos menos `dashboard`, `auditoria` y
+>   `feedback` (sin endpoint) tienen su `HttpDataSource`; ninguna pantalla consume
+>   servicios ni HTTP directo. `organismos` **sí** tiene facade, mapper y ABM completo.
+> - No existe `storage.service` ni un feature `storage` (queda solo la clave `'storage'` en `FeatureKey`, sin uso).
+> - `core/services` conserva únicamente infraestructura: `auth.service`, `auth-token.service`, `http-error.service`,
+>   `atajos.service`, `layout-chrome.service`, `app-title.strategy`, `datepicker-intl-es-ar` y el legado `usuario.service`.
+> - No hay NgModules salvo `pages/pages.module.ts` (rutas); `auth/` es `auth.routes.ts`; no existe `shared.module.ts`.
+> - Fuente por entorno: toda la cadena de trámites y `usuarios` van en real en `start:local`, staging y prod; siguen en
+>   mock `dashboard`, `auditoria` y `feedback`. (La tabla de §12 quedó con el estado de octubre: `adopciones`, `fichas-locales` y `puntos-atencion` ya no están en mock.)
+> - Árbol del feature vigente: suma `domain/` (reglas puras) y restringe `models/` a `*.dto.ts` / `*.vm.ts`.
+> - Política de `subscribe` vigente (reemplaza la regla 4 de §1): estado por `async` pipe; comandos con
+>   `takeUntilDestroyed` o `unaVez` (`@core/utils/one-shot.utils`).
+> - Guardarraíles vigentes (reemplaza "Guardarraíles activos" de §12): `npm run check` (`check:fast`, `check:static`),
+>   ESLint + boundaries sobre todo `src/app`, stylelint, `check:structure`, `check:styles`, madge. La skill
+>   `migrar-pantalla` quedó obsoleta.
+
 > **Objetivo.** Reorganizar el backoffice (Angular 17) en capas explícitas con un **adaptador de fuente
 > de datos (DataSource)** que permite elegir entre **mock / local / producción**, para:
 > 1. Aislar a los componentes del contrato real del backend (envelopes `ResponseDTO`, typo `lockeTime`, DTOs anidados, nullables).
@@ -290,7 +311,8 @@ y los modelos `tramite.model.ts` / `dashboard.model.ts`. En `core/services` qued
   exponga el listado. Es temporal y está acotado a ese archivo; ver la fila de `usuarios` arriba.
 - **Auth** (`AuthService`/`AuthTokenService` en `login`, guards, interceptors): infra de sesión/token.
   Queda fuera del patrón de features por decisión del plan. `AuthTokenService` ya cumple rol de facade.
-- **`storage.service`**: wrapper real de `/api/storage` sin consumidor aún (listo para features de archivos).
+- ~~**`storage.service`**: wrapper real de `/api/storage` sin consumidor aún.~~ **Corregido (2026-11-20):** ese
+  servicio ya no existe; no hay consumidor de `/api/storage` en el backoffice.
 
 ### Deuda pendiente (actualizada tras la fase 5 de trámites, 2026-10-13)
 Ninguna pantalla consume mock services directo: todas pasan por su facade.
@@ -321,8 +343,8 @@ La auditoría (0 ciclos, 0 facade→facade/repo→repo, sin signals, barrels OK)
    La regla "hoja" se refina: una hoja no depende de capas SUPERIORES de su propio feature; puede
    componer TIPOS públicos de otro feature vía barrel.
 3. **Features lean sin todas las subcarpetas (excepción documentada):**
-   - `organismos`: solo provee `OrganismosRepository` (opciones para selects, consumido por usuarios).
-     Sin facade ni mapper propios (mapeo inline en el mock).
+   - ~~`organismos`: solo provee `OrganismosRepository`. Sin facade ni mapper propios.~~ **Corregido (2026-11-20):**
+     `organismos` es un feature completo (facade, mapper, ABM); además exporta `OrganismosRepository` para otros features.
    - `cuenta`: command-only (recuperación). Sin VM/DTO propios (usa `MessageDTO` envelope); sin estado.
 
 ---

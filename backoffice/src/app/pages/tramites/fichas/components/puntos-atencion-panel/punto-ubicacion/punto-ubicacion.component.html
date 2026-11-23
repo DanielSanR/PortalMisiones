@@ -1,0 +1,81 @@
+@if (vista$ | async; as vista) {
+  <div class="punto-ubicacion">
+    <div class="punto-ubicacion__buscar">
+      <!-- Un solo nodo: disponible, buscando (deshabilitado solo mientras dura) o sin proveedor (`appUnavailable`). -->
+      <button type="button" mat-stroked-button color="primary" class="punto-ubicacion__ubicar"
+              [disabled]="vista.busqueda.tipo === 'buscando'" [attr.aria-busy]="vista.busqueda.tipo === 'buscando' || null"
+              [appUnavailable]="motivoNoDisponible" (click)="ubicarDireccion()">
+        <i class="ph" [class.ph-magnifying-glass]="vista.busqueda.tipo !== 'buscando'"
+           [class.ph-spinner-gap]="vista.busqueda.tipo === 'buscando'" [class.spin]="vista.busqueda.tipo === 'buscando'"
+           aria-hidden="true"></i>
+        <span>{{ vista.busqueda.tipo === 'buscando' ? 'Buscando…' : 'Ubicar en el mapa' }}</span>
+      </button>
+      <span class="punto-ubicacion__nota">
+        Busca la dirección escrita arriba{{ datos?.localidad ? ' (en ' + datos?.localidad + ', si no nombrás otra localidad)' : '' }}.
+      </span>
+    </div>
+
+    <!-- Región viva montada siempre: resultado de la búsqueda (o por qué no se encontró). -->
+    <p class="punto-ubicacion__mensaje" aria-live="polite"
+       [class.punto-ubicacion__mensaje--error]="vista.busqueda.tipo === 'mensaje' && vista.busqueda.error">
+      @switch (vista.busqueda.tipo) {
+        @case ('mensaje') {
+          @if (vista.busqueda.tipo === 'mensaje') {
+            <i class="ph ph-warning-circle" aria-hidden="true"></i> {{ vista.busqueda.texto }}
+          }
+        }
+        @case ('resultados') {
+          @if (vista.busqueda.tipo === 'resultados') {
+            <i class="ph ph-check-circle" aria-hidden="true"></i> {{ vista.busqueda.texto }}
+          }
+        }
+      }
+    </p>
+
+    @if (vista.busqueda.tipo === 'resultados' && vista.busqueda.lugares.length > 1) {
+      <ul class="punto-ubicacion__resultados" aria-label="Lugares encontrados">
+        @for (lugar of vista.busqueda.lugares; track lugar.id) {
+          <li>
+            <button type="button" class="punto-ubicacion__resultado" [attr.aria-pressed]="lugar.id === vista.busqueda.elegido"
+                    (click)="elegir(vista.busqueda.lugares, lugar)">
+              <i class="ph" [class.ph-map-pin]="lugar.id === vista.busqueda.elegido" [class.ph-circle]="lugar.id !== vista.busqueda.elegido"
+                 aria-hidden="true"></i>
+              <span class="punto-ubicacion__resultado-texto">
+                <span class="punto-ubicacion__resultado-nombre">{{ lugar.nombre }}</span>
+                @if (lugar.detalle) {
+                  <span class="punto-ubicacion__resultado-detalle">{{ lugar.detalle }}</span>
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    @defer (on immediate) {
+      <app-mapa-ubicacion etiqueta="Mapa para ubicar el punto de atención" [textoSinMapa]="textoSinMapa"
+                          [ubicacion]="vista.ubicacion" [encuadre]="vista.encuadre"
+                          (ubicacionChange)="alMarcar($event)"></app-mapa-ubicacion>
+    } @placeholder {
+      <!-- Solo visual (y legible con el cursor): lo anuncia el estado propio del mapa, que llega enseguida. Dos
+           `role="status"` seguidos con el mismo texto se oirían dos veces. -->
+      <p class="punto-ubicacion__cargando">
+        <i class="ph ph-spinner-gap spin" aria-hidden="true"></i> Cargando el mapa…
+      </p>
+    } @error {
+      <p class="punto-ubicacion__cargando" role="alert">
+        <i class="ph ph-cloud-slash" aria-hidden="true"></i> No pudimos cargar el mapa. {{ textoSinMapa }}
+      </p>
+    }
+
+    <div class="punto-ubicacion__pie">
+      <p class="punto-ubicacion__alternativa">{{ textoAlternativa }}</p>
+      @if (vista.enlace; as url) {
+        <a class="detail-link punto-ubicacion__externo" [href]="url" target="_blank" rel="noopener noreferrer">
+          <i class="ph ph-map-trifold" aria-hidden="true"></i> Abrir en OpenStreetMap
+          <span class="cdk-visually-hidden">(se abre en una pestaña nueva)</span>
+        </a>
+      }
+    </div>
+  </div>
+}

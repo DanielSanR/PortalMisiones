@@ -1,0 +1,319 @@
+<!-- Datos de los widgets vía DashboardFacade (hoy mock). VM de pantalla: cargando / listo / error. -->
+@if (vm$ | async; as vm) {
+  @switch (vm.estado) {
+    @case ('cargando') {
+      <section class="dashboard-state" aria-busy="true" aria-live="polite">
+        <span class="cdk-visually-hidden">Cargando el inicio…</span>
+        <app-loading [loading]="true" variant="skeleton" [rows]="6"></app-loading>
+      </section>
+    }
+
+    @case ('error') {
+      <section class="dashboard-state state-panel" role="alert">
+        <span class="state-panel__icon state-panel__icon--error" aria-hidden="true">
+          <i class="ph ph-cloud-slash"></i>
+        </span>
+        <span class="state-panel__title">No pudimos cargar el inicio</span>
+        <span class="state-panel__text">Revisá tu conexión e intentá de nuevo. Si sigue, avisá a Gobierno Inteligente.</span>
+        <button type="button" mat-stroked-button color="primary" class="state-panel__cta" (click)="reintentar()">
+          <i class="ph ph-arrow-clockwise" aria-hidden="true"></i>Reintentar
+        </button>
+      </section>
+    }
+
+    @case ('listo') {
+      @if (vm.home; as home) {
+        <!-- ── Banda A — Núcleo operativo (placeholder honesto, role-aware) ──────── -->
+        @if (vm.widgets.queue || vm.widgets.myQueue || vm.widgets.pipeline || vm.widgets.mine) {
+          <section class="dashboard-band">
+            <div class="dashboard-band__header">
+              <h2 class="dashboard-band__title">Núcleo operativo</h2>
+              <app-example-data-pill></app-example-data-pill>
+            </div>
+
+            @if (vm.widgets.queue) {
+              <app-dashboard-panel
+                  icon="tray"
+                  title="Cola de revisión"
+                  [badgeCount]="home.queueItems.length"
+                  actionLabel="Abrir bandeja"
+                  actionReason="Se habilita cuando el módulo de trámites esté activo"
+                  variant="rows"
+                  gateSource="Trámites · sin controller"
+                  gatePermission="READ_PROCEDURE">
+                <div>
+                  @for (item of home.queueItems; track item.titulo) {
+                    <div class="dashboard-queue-row">
+                      <div class="dashboard-queue-row__info">
+                        <strong>{{ item.titulo }}</strong>
+                        <span>{{ item.organismo }} · {{ item.tiempo }}</span>
+                      </div>
+                      <span class="dashboard-sla" [attr.data-level]="item.slaLevel">{{ item.slaLabel }}</span>
+                      <button type="button" class="dashboard-row-btn"
+                          appUnavailable="Se habilita cuando el módulo de trámites esté activo">Revisar</button>
+                    </div>
+                  }
+                </div>
+              </app-dashboard-panel>
+            }
+
+            @if (vm.widgets.myQueue) {
+              <app-dashboard-panel
+                  icon="tray"
+                  title="Pendientes de completar"
+                  [badgeCount]="home.myQueueItems.length"
+                  actionLabel="Ver todas"
+                  actionReason="Se habilita cuando las fichas por localidad usen la API real"
+                  variant="rows"
+                  gateSource="Variantes · sin API"
+                  gatePermission="READ_VARIANT · scope organismo">
+                <div>
+                  @for (item of home.myQueueItems; track item.titulo) {
+                    <div class="dashboard-queue-row dashboard-queue-row--chips">
+                      <div class="dashboard-queue-row__info">
+                        <strong>{{ item.titulo }}</strong>
+                        <span>{{ item.organismo }}</span>
+                      </div>
+                      <div class="dashboard-queue-row__chips">
+                        @for (f of item.faltantes; track f) {
+                          <span class="dashboard-chip-warning">falta {{ f }}</span>
+                        }
+                      </div>
+                      <button type="button" class="dashboard-row-btn"
+                          appUnavailable="Se habilita cuando las fichas por localidad usen la API real">Completar</button>
+                    </div>
+                  }
+                </div>
+              </app-dashboard-panel>
+            }
+
+            @if (vm.widgets.pipeline || vm.widgets.mine) {
+              <div class="dashboard-band__row">
+                @if (vm.widgets.pipeline) {
+                  <app-dashboard-panel
+                      [icon]="vm.pipelineScope.icon"
+                      [title]="vm.pipelineScope.title"
+                      [subtitle]="vm.pipelineScope.subtitle"
+                      gateSource="Trámites"
+                      [gatePermission]="vm.pipelineScope.gatePermission">
+                    <div class="dashboard-pipeline">
+                      <div class="dashboard-pipeline__bar">
+                        @for (seg of home.pipelineSegments; track seg.label) {
+                          <span class="dashboard-pipeline__bar-segment" [attr.data-color]="seg.color" [style.width.%]="seg.percent"></span>
+                        }
+                      </div>
+                      <ul class="dashboard-list">
+                        @for (seg of home.pipelineSegments; track seg.label) {
+                          <li>
+                            <span class="dashboard-pipeline__list-dot" [attr.data-color]="seg.color" aria-hidden="true"></span>
+                            <span class="dashboard-pipeline__list-label">{{ seg.label }}</span>
+                            <span class="dashboard-pipeline__list-percent">{{ seg.percent }}%</span>
+                            <strong class="dashboard-pipeline__list-value">{{ seg.value }}</strong>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  </app-dashboard-panel>
+                }
+
+                @if (vm.widgets.mine) {
+                  <app-dashboard-panel
+                      icon="squares-four"
+                      title="Mis fichas y contactos"
+                      gateSource="OrganismProcedureLocation · Contact"
+                      gatePermission="READ_VARIANT · READ_CONTACT">
+                    <ul class="dashboard-list">
+                      @for (item of home.mineItems; track item.label) {
+                        <li>
+                          <span class="dashboard-mine__list-dot" [attr.data-color]="item.color" aria-hidden="true"></span>
+                          <span class="dashboard-mine__list-label">{{ item.label }}</span>
+                          <strong class="dashboard-mine__list-value">{{ item.value }}</strong>
+                        </li>
+                      }
+                    </ul>
+                  </app-dashboard-panel>
+                }
+              </div>
+            }
+          </section>
+        }
+
+        <!-- ── Banda B — Analítica del portal (placeholder honesto, role-aware) ──── -->
+        @if (vm.widgets.analytics || vm.widgets.procedures) {
+          <section class="dashboard-band">
+            <div class="dashboard-band__header">
+              <h2 class="dashboard-band__title">Analítica del portal</h2>
+              <app-example-data-pill></app-example-data-pill>
+            </div>
+
+            <div class="dashboard-band__row">
+              @if (vm.widgets.analytics) {
+                <app-dashboard-panel
+                    title="Consultas del portal"
+                    variant="chart"
+                    gateSource="VisitLog · sin endpoint"
+                    gatePermission="VIEW_ANALYTICS">
+                  <div panelHeaderBody class="dashboard-visits-kpi-inline">
+                    <span class="dashboard-visits-kpi-inline__value">{{ home.visitsTotal | number }}</span>
+                    <span class="dashboard-visits-kpi-inline__avg">{{ home.visitsAvgPerDay | number }}/día promedio</span>
+                  </div>
+                  <span panelHeaderExtra class="dashboard-visits-kpi-trend">
+                    <i class="ph ph-trend-up" aria-hidden="true"></i> {{ copy.visitsTrend }}
+                  </span>
+                  <div class="dashboard-visits">
+                    <div class="dashboard-visits__axis" aria-hidden="true">
+                      @for (tick of copy.visitsAxisY; track tick) {
+                        <span>{{ tick }}</span>
+                      }
+                    </div>
+                    <div class="dashboard-visits__plot">
+                      <div class="dashboard-barchart" role="img"
+                          [attr.aria-label]="'Consultas diarias del último mes: ' + (home.visitsTotal | number) + ' en total, ' + (home.visitsAvgPerDay | number) + ' por día en promedio. Tendencia ascendente, ' + copy.visitsTrend + '.'">
+                        @for (bar of home.visitsDaily; track $index) {
+                          <span class="dashboard-barchart__bar" [class.is-recent]="$index >= home.visitsDaily.length - copy.visitsRecentBars" [style.height.%]="bar"></span>
+                        }
+                      </div>
+                      <div class="dashboard-visits__axis dashboard-visits__axis--x" aria-hidden="true">
+                        @for (tick of copy.visitsAxisX; track tick) {
+                          <span>{{ tick }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </app-dashboard-panel>
+              }
+
+              @if (vm.widgets.procedures) {
+                <app-dashboard-panel
+                    title="Trámites por organismo"
+                    variant="chart"
+                    [subtitle]="copy.orgSubtitle"
+                    gateSource="Trámites · sin controller"
+                    gatePermission="READ_PROCEDURE">
+                  <div panelHeaderExtra class="dashboard-orgbars__legend">
+                    <span><i class="dashboard-orgbars__legend-dot" data-color="info" aria-hidden="true"></i> Publicados</span>
+                    <span><i class="dashboard-orgbars__legend-dot" data-color="muted" aria-hidden="true"></i> Borrador / revisión</span>
+                  </div>
+                  <div panelFooterExtra>
+                    <button type="button" class="dashboard-panel__footer-action"
+                        appUnavailable="Se habilita cuando el módulo de trámites esté activo">
+                      {{ copy.orgSeeAll }} <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="dashboard-orgbars">
+                    @for (org of home.orgRows; track org.organismo) {
+                      <div class="dashboard-orgbars__row">
+                        <span class="dashboard-orgbars__row-label">{{ org.organismo }}</span>
+                        <span class="dashboard-orgbars__row-bar" role="img" [style.width.%]="org.scale"
+                            [attr.aria-label]="org.publicadosPercent + ' % publicados, ' + org.otrosPercent + ' % en borrador o revisión'">
+                          <span class="dashboard-orgbars__row-bar-published" [style.width.%]="org.publicadosPercent"></span>
+                          <span class="dashboard-orgbars__row-bar-other" [style.width.%]="org.otrosPercent"></span>
+                        </span>
+                        <span class="dashboard-orgbars__row-total">{{ org.total }}</span>
+                      </div>
+                    }
+                  </div>
+                </app-dashboard-panel>
+              }
+            </div>
+
+            @if (vm.widgets.analytics) {
+              <div class="dashboard-band__row">
+                <app-dashboard-panel
+                    icon="magnifying-glass"
+                    title="Búsquedas sin resultados"
+                    gateSource="SearchLog"
+                    gatePermission="VIEW_ANALYTICS">
+                  <p class="dashboard-panel__hint">Lo que la ciudadanía busca y el portal no tiene. Es la lista de contenido a crear.</p>
+                  <ul class="dashboard-list">
+                    @for (item of home.searchesWithoutResults; track item.termino) {
+                      <li>
+                        <span>"{{ item.termino }}"</span>
+                        <strong>{{ item.cantidad | number }}</strong>
+                      </li>
+                    }
+                  </ul>
+                </app-dashboard-panel>
+
+                <app-dashboard-panel
+                    icon="trend-up"
+                    title="Trámites más consultados"
+                    gateSource="VisitLog"
+                    gatePermission="VIEW_ANALYTICS">
+                  <ul class="dashboard-toplist">
+                    @for (item of home.topTramites; track item.titulo) {
+                      <li>
+                        <div class="dashboard-toplist__row">
+                          <span>{{ item.titulo }}</span>
+                          <strong>{{ item.consultas | number }}</strong>
+                        </div>
+                        <div class="dashboard-toplist__bar" role="img" [attr.aria-label]="item.percent + ' % respecto del trámite más consultado'"><span [style.width.%]="item.percent"></span></div>
+                      </li>
+                    }
+                  </ul>
+                </app-dashboard-panel>
+              </div>
+            }
+          </section>
+        }
+
+        <!-- ── Banda C — Seguimiento (placeholder honesto, role-aware) ───────────── -->
+        @if (vm.widgets.feedback || vm.widgets.audit) {
+          <section class="dashboard-band">
+            <div class="dashboard-band__header">
+              <h2 class="dashboard-band__title">Seguimiento</h2>
+              <app-example-data-pill></app-example-data-pill>
+            </div>
+
+            <div class="dashboard-band__row">
+              @if (vm.widgets.feedback) {
+                <app-dashboard-panel
+                    icon="chats-circle"
+                    title="Feedback pendiente"
+                    [badgeCount]="home.feedbackItems.length"
+                    badgeVariant="info"
+                    gateSource="Feedback"
+                    gatePermission="VIEW_ANALYTICS · scope">
+                  <ul class="dashboard-list dashboard-list--top">
+                    @for (item of home.feedbackItems; track item.texto) {
+                      <li>
+                        <i class="ph dashboard-feedback-icon"
+                            [class.ph-smiley-sad]="item.sentimiento === 'negativo'"
+                            [class.ph-smiley-meh]="item.sentimiento === 'neutral'"
+                            [class.ph-smiley]="item.sentimiento === 'positivo'"
+                            [attr.data-sentiment]="item.sentimiento"
+                            aria-hidden="true"></i>
+                        <div class="dashboard-feedback-body">
+                          <p>{{ item.texto }}</p>
+                          <span>{{ item.meta }}</span>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                </app-dashboard-panel>
+              }
+
+              @if (vm.widgets.audit) {
+                <app-dashboard-panel
+                    icon="clock-counter-clockwise"
+                    title="Actividad reciente"
+                    gateSource="Audit"
+                    gatePermission="por rol">
+                  <ol class="dashboard-timeline">
+                    @for (item of home.activityRows; track item.fecha + item.objeto) {
+                      <li>
+                        <span class="dashboard-timeline__dot" [attr.data-color]="item.dot" aria-hidden="true"></span>
+                        <p><strong>{{ item.actor }}</strong> {{ item.accion }} <strong>{{ item.objeto }}</strong></p>
+                        <span class="dashboard-timeline__date">{{ item.fecha }}</span>
+                      </li>
+                    }
+                  </ol>
+                </app-dashboard-panel>
+              }
+            </div>
+          </section>
+        }
+      }
+    }
+  }
+}

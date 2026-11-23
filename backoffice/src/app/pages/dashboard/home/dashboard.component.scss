@@ -1,0 +1,594 @@
+// ==========================================================================
+// DashboardComponent — Home role-aware (vista Home de pantallas-backoffice)
+// Bandas: Núcleo operativo / Analítica del portal / Seguimiento (placeholders
+// honestos, `app-dashboard-panel` da el chrome común; ver
+// `dashboard-panel.component.scss`).
+// ==========================================================================
+
+@use 'shared-styles/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-band);
+}
+
+// ── Estados de carga y error del Home (mismo patrón que `app-shared-table`) ──
+.dashboard-state {
+  @include theme-card;
+  overflow: hidden;
+}
+
+// ── Bandas (Núcleo operativo / Analítica del portal / Seguimiento) ────────
+.dashboard-band {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-gap);
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--theme-space-10);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--theme-font-section-size);
+    font-weight: var(--theme-font-section-weight);
+    line-height: var(--theme-font-section-line-height);
+    letter-spacing: var(--theme-font-section-tracking);
+    color: var(--theme-text-primary);
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: var(--theme-space-gap);
+    align-items: start;
+  }
+}
+
+// Elementos del panel que la pantalla PROYECTA dentro de `app-dashboard-panel` (`.dashboard-panel__hint`,
+// `.dashboard-panel__footer-action`): se estilan acá porque el markup proyectado lleva el alcance de esta pantalla.
+.dashboard-panel__hint {
+  margin: 0 0 var(--theme-space-sm);
+  font-size: var(--theme-font-small-size);
+  line-height: var(--theme-font-small-line-height);
+  color: var(--theme-text-secondary);
+}
+
+// Acción de footer estilo link ("Ver los 68", proyectada vía `[panelFooterExtra]`).
+// No disponible: `appUnavailable` aporta el estado atenuado y el tooltip.
+.dashboard-panel__footer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--theme-space-xs);
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--theme-text-link);
+  font-family: inherit;
+  font-size: var(--theme-font-small-size);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+}
+
+// ── Cola de revisión / Pendientes de completar (filas a sangre) ─────────
+.dashboard-queue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 92px;
+  align-items: center;
+  gap: var(--theme-space-sm);
+  min-height: 52px;
+  padding: var(--theme-space-sm) var(--theme-space-card);
+  border-bottom: 1px solid var(--theme-border-subtle);
+  transition: background var(--theme-transition-fast) ease;
+
+  &:hover {
+    background: var(--theme-table-hover-bg);
+  }
+
+  &--chips {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 240px) 104px;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--theme-space-5);
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+
+    strong {
+      font-size: var(--theme-font-size-sm);
+      font-weight: var(--theme-font-weight-medium);
+      color: var(--theme-text-primary);
+      @include truncate;
+    }
+
+    span {
+      font-size: var(--theme-font-caption-size);
+      color: var(--theme-text-tertiary);
+      @include truncate;
+    }
+  }
+}
+
+.dashboard-chip-warning,
+.dashboard-sla {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--theme-radius-full);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+}
+
+.dashboard-chip-warning {
+  min-height: 20px;
+  padding: var(--theme-space-2xs) var(--theme-space-sm);
+  background: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+  font-size: var(--theme-font-size-2xs);
+}
+
+.dashboard-sla {
+  justify-self: start;
+  height: 22px;
+  padding: 0 var(--theme-space-9);
+  font-size: var(--theme-font-caption-size);
+
+  &[data-level='danger']  { background: var(--theme-error-bg);   color: var(--theme-error-icon); }
+  &[data-level='warning'] { background: var(--theme-warning-bg); color: var(--theme-warning-text); }
+  &[data-level='success'] { background: var(--theme-success-bg); color: var(--theme-success-text); }
+}
+
+.dashboard-row-btn {
+  justify-self: end;
+  height: 28px;
+  padding: 0 var(--theme-space-11);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: calc(var(--theme-radius-md) - 1px);
+  background: var(--theme-bg-card);
+  color: var(--theme-primary-700);
+  font-family: inherit;
+  font-size: var(--theme-font-size-xs);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+}
+
+// ── Listas de filas con divisor (pipeline, mis fichas, búsquedas, feedback) ──
+.dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-10);
+    min-width: 0;
+    padding: var(--theme-space-7) 0;
+    border-top: 1px solid var(--theme-border-subtle);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-primary);
+  }
+
+  &--top li {
+    align-items: flex-start;
+    padding: var(--theme-space-9) 0;
+  }
+
+  strong {
+    font-weight: var(--theme-font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Cantidad al final de la fila (búsquedas, pipeline, mis fichas).
+  li > span:first-child:not([class]) {
+    flex: 1;
+    @include truncate;
+  }
+}
+
+.dashboard-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-14);
+
+  &__bar {
+    display: flex;
+    gap: var(--theme-space-2xs);
+    height: 10px;
+    border-radius: var(--theme-radius-full);
+    overflow: hidden;
+  }
+
+  &__list-label,
+  &__list-percent {
+    font-size: var(--theme-font-small-size);
+  }
+
+  &__list-label {
+    flex: 1;
+    min-width: 0;
+    @include truncate;
+  }
+
+  &__list-percent {
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__list-value {
+    min-width: 34px;
+    text-align: right;
+  }
+}
+
+.dashboard-mine__list-label {
+  flex: 1;
+  min-width: 0;
+  @include truncate;
+}
+
+.dashboard-mine__list-value {
+  text-align: right;
+}
+
+.dashboard-pipeline__bar-segment,
+.dashboard-pipeline__list-dot,
+.dashboard-mine__list-dot {
+  &[data-color='success'] { background: var(--theme-success); }
+  &[data-color='info']    { background: var(--theme-primary); }
+  &[data-color='warning'] { background: var(--theme-warning); }
+  &[data-color='error']   { background: var(--theme-error); }
+}
+
+.dashboard-pipeline__bar-segment {
+  height: 100%;
+}
+
+.dashboard-pipeline__list-dot,
+.dashboard-mine__list-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+// ── Consultas del portal (KPI en el header + columnas punteadas) ────────
+// Total + promedio se proyectan en `[panelHeaderBody]` y la tendencia en `[panelHeaderExtra]`.
+.dashboard-visits-kpi-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--theme-space-7);
+  // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- ajuste óptico de 3px del KPI inline, un solo uso
+  margin-top: 3px;
+
+  &__value {
+    font-size: var(--theme-font-metric-size);
+    font-weight: var(--theme-font-metric-weight);
+    line-height: var(--theme-line-height-none);
+    color: var(--theme-text-primary);
+    font-variant-numeric: tabular-nums;
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- tracking del número grande del KPI inline, un solo uso
+    letter-spacing: -0.5px;
+  }
+
+  &__avg {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-text-tertiary);
+  }
+}
+
+.dashboard-visits-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--theme-space-6);
+  height: 24px;
+  padding: 0 var(--theme-space-10);
+  border-radius: var(--theme-radius-full);
+  background: var(--theme-success-bg);
+  color: var(--theme-success-text);
+  font-size: var(--theme-font-caption-size);
+  font-weight: var(--theme-font-weight-semibold);
+  white-space: nowrap;
+
+  i.ph {
+    font-size: var(--theme-icon-size-13);
+  }
+}
+
+.dashboard-visits {
+  display: flex;
+  gap: var(--theme-space-10);
+
+  // Eje Y (4k…0) y eje X (fechas): texto, así que usa tertiary (≥4,5:1) y no el gris decorativo del diseño.
+  &__axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: none;
+    height: 168px;
+    font-size: var(--theme-font-size-2xs);
+    color: var(--theme-text-tertiary);
+    font-variant-numeric: tabular-nums;
+
+    &--x {
+      flex-direction: row;
+      height: auto;
+    }
+  }
+
+  &__plot {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+  }
+}
+
+.dashboard-barchart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--theme-space-2xs);
+  height: 168px;
+  padding: 0 1px;
+  border-bottom: 1px solid var(--theme-border-primary);
+  border-left: 1px solid var(--theme-border-subtle);
+
+  // Columnas punteadas (patrón del diseño). Serie histórica `chart-historic` (3,05:1 sobre blanco,
+  // cumple 1.4.11); últimas barras en `chart-2`.
+  &__bar {
+    --bar-color: var(--theme-chart-historic);
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: var(--theme-radius-xs) var(--theme-radius-xs) 0 0;
+    background-image: radial-gradient(circle at center, var(--bar-color) 1.1px, transparent 1.3px);
+    background-size: 5px 5px;
+
+    &.is-recent {
+      --bar-color: var(--theme-chart-2);
+    }
+  }
+}
+
+// ── Trámites por organismo (barras apiladas, sin pista) ─────────────────
+// Leyenda en `[panelHeaderExtra]`, acción "Ver los N" en `[panelFooterExtra]`.
+// Tramo "borrador / revisión": `chart-4` no llega a 3:1 sobre blanco (1.4.11) → se le suma un contorno
+// `chart-historic`. Desviación documentada respecto del diseño (relleno liso).
+.dashboard-orgbars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-gap);
+
+  &__legend {
+    display: flex;
+    gap: var(--theme-space-gap);
+    flex-wrap: wrap;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--theme-space-6);
+      font-size: var(--theme-font-caption-size);
+      color: var(--theme-text-secondary);
+      white-space: nowrap;
+    }
+  }
+
+  &__legend-dot,
+  &__row-bar-other {
+    background: var(--theme-chart-4);
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- anillo inset de 1px sobre la serie del gráfico, un solo uso
+    box-shadow: inset 0 0 0 1px var(--theme-chart-historic);
+  }
+
+  &__legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--theme-radius-xs);
+
+    &[data-color='info'] {
+      background: var(--theme-chart-2);
+      box-shadow: none;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 54px;
+    align-items: center;
+    gap: var(--theme-space-gap);
+  }
+
+  &__row-label {
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+    @include truncate;
+  }
+
+  &__row-bar {
+    --bar-radius: calc(var(--theme-radius-sm) - 1px);
+    display: flex;
+    gap: var(--theme-space-2xs);
+    height: 20px;
+    min-width: 0;
+  }
+
+  &__row-bar-published,
+  &__row-bar-other {
+    height: 100%;
+  }
+
+  &__row-bar-published {
+    background: var(--theme-chart-2);
+    border-radius: var(--bar-radius) 0 0 var(--bar-radius);
+  }
+
+  &__row-bar-other {
+    border-radius: 0 var(--bar-radius) var(--bar-radius) 0;
+  }
+
+  &__row-total {
+    text-align: right;
+    font-size: var(--theme-font-small-size);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// ── Trámites más consultados ────────────────────────────────────────────
+.dashboard-toplist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-11);
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-5);
+    min-width: 0;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-10);
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-primary);
+
+    span {
+      flex: 1;
+      min-width: 0;
+      @include truncate;
+    }
+
+    strong {
+      font-size: var(--theme-font-size-xs);
+      font-weight: var(--theme-font-weight-semibold);
+      font-variant-numeric: tabular-nums;
+      color: var(--theme-text-secondary);
+    }
+  }
+
+  &__bar {
+    height: 5px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-surface-sunken);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--theme-chart-historic);
+    }
+  }
+}
+
+// ── Feedback pendiente ──────────────────────────────────────────────────
+.dashboard-feedback-icon {
+  flex: none;
+  font-size: var(--theme-icon-size-sm);
+  margin-top: 1px;
+
+  &[data-sentiment='negativo'] { color: var(--theme-error-icon); }
+  &[data-sentiment='neutral']  { color: var(--theme-warning); }
+  &[data-sentiment='positivo'] { color: var(--theme-success); }
+}
+
+.dashboard-feedback-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-2xs);
+  min-width: 0;
+
+  p {
+    margin: 0;
+    line-height: var(--theme-line-height-145);
+  }
+
+  span {
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-tertiary);
+    @include truncate;
+  }
+}
+
+// ── Actividad reciente (timeline) ───────────────────────────────────────
+.dashboard-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--theme-space-xs);
+
+  li {
+    position: relative;
+    padding: 0 0 var(--theme-space-14) var(--theme-space-card);
+    border-left: 1px solid var(--theme-border-primary);
+
+    &:last-child {
+      border-left-color: transparent;
+      padding-bottom: 0;
+    }
+
+    p {
+      margin: 0;
+      font-size: var(--theme-font-small-size);
+      color: var(--theme-text-secondary);
+      line-height: var(--theme-line-height-145);
+
+      strong {
+        color: var(--theme-text-primary);
+        font-weight: var(--theme-font-weight-semibold);
+      }
+    }
+  }
+
+  // Punto por tipo de evento: publicar = success, el resto = primary.
+  &__dot {
+    position: absolute;
+    left: -4px;
+    top: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--theme-primary);
+
+    &[data-color='success'] { background: var(--theme-success); }
+  }
+
+  &__date {
+    display: block;
+    margin-top: var(--theme-space-2xs);
+    font-size: var(--theme-font-caption-size);
+    color: var(--theme-text-tertiary);
+  }
+}
+
+// ── Responsive ───────────────────────────────────────────────────────────
+@include responsive(mobile) {
+  .dashboard-queue-row,
+  .dashboard-queue-row--chips {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    gap: var(--theme-space-6);
+  }
+
+  .dashboard-orgbars__row {
+    grid-template-columns: 96px 1fr 36px;
+  }
+}

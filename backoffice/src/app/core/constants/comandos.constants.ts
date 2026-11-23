@@ -1,5 +1,4 @@
 import { AccessRule } from '../models/access-rule.model';
-import { UserRole } from '../enums/user-role.enum';
 import { ADOPTAR_ACCESS, CREAR_ETIQUETA_ACCESS, ESCRIBIR_ROLES_PERMISOS_ACCESS } from './policy-overrides.constants';
 
 /**

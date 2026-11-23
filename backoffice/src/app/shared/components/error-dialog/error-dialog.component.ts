@@ -13,6 +13,7 @@ export interface ErrorDialogData {
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule],
   templateUrl: './error-dialog.component.html',
+  styleUrl: './error-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ErrorDialogComponent {

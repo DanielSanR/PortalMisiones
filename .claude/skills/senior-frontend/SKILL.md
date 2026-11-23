@@ -1,7 +1,11 @@
 ---
 name: senior-frontend
-description: Comprehensive frontend development skill for building modern, performant web applications using ReactJS, NextJS, TypeScript, Tailwind CSS. Includes component scaffolding, performance optimization, bundle analysis, and UI best practices. Use when developing frontend features, optimizing performance, implementing UI/UX designs, managing state, or reviewing frontend code.
+description: SOLO para el portal ciudadano public/ (Next.js). NO usar en backoffice/ (Angular 17), donde rigen .claude/rules/ y los agentes angular-ssr-reviewer, arquitecto-capas y front-design. Comprehensive frontend development skill for building modern, performant web applications using ReactJS, NextJS, TypeScript, Tailwind CSS. Includes component scaffolding, performance optimization, bundle analysis, and UI best practices. Use when developing frontend features, optimizing performance, implementing UI/UX designs, managing state, or reviewing frontend code.
 ---
+
+> **Alcance: SOLO `public/` (portal ciudadano, Next.js).** No se usa en `backoffice/` (Angular 17): ahí rigen
+> `.claude/rules/` y los agentes `angular-ssr-reviewer`, `arquitecto-capas` y `front-design`. Si el pedido toca
+> `backoffice/`, no sigas este documento.
 
 # Senior Frontend
 

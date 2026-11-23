@@ -1,27 +1,27 @@
 <section class="dashboard-panel" [class.is-rows]="variant === 'rows'" [class.is-chart]="variant === 'chart'">
-  <header class="dashboard-panel-header">
+  <header class="dashboard-panel__header">
     @if (icon) {
-      <i class="ph ph-{{ icon }} dashboard-panel-header-icon" aria-hidden="true"></i>
+      <i class="ph ph-{{ icon }} dashboard-panel__header-icon" aria-hidden="true"></i>
     }
 
-    <div class="dashboard-panel-header-text">
-      <h3 class="dashboard-panel-header-title">{{ title }}</h3>
+    <div class="dashboard-panel__header-text">
+      <h3 class="dashboard-panel__header-title">{{ title }}</h3>
       @if (subtitle) {
-        <p class="dashboard-panel-header-subtitle">{{ subtitle }}</p>
+        <p class="dashboard-panel__header-subtitle">{{ subtitle }}</p>
       }
       <ng-content select="[panelHeaderBody]"></ng-content>
     </div>
 
     @if (badgeCount !== undefined) {
-      <span class="dashboard-panel-header-badge" [class.dashboard-panel-header-badge--info]="badgeVariant === 'info'">
+      <span class="dashboard-panel__header-badge" [class.dashboard-panel__header-badge--info]="badgeVariant === 'info'">
         {{ badgeCount }}
       </span>
     }
 
-    <div class="dashboard-panel-header-extra">
+    <div class="dashboard-panel__header-extra">
       <ng-content select="[panelHeaderExtra]"></ng-content>
       @if (actionLabel) {
-        <button type="button" class="dashboard-panel-header-action" [appUnavailable]="actionReason">
+        <button type="button" class="dashboard-panel__header-action" [appUnavailable]="actionReason">
           {{ actionLabel }}
           <i class="ph ph-arrow-right" aria-hidden="true"></i>
         </button>
@@ -29,13 +29,13 @@
     </div>
   </header>
 
-  <div class="dashboard-panel-body">
+  <div class="dashboard-panel__body">
     <ng-content></ng-content>
   </div>
 
-  <footer class="dashboard-panel-footer">
+  <footer class="dashboard-panel__footer">
     <app-gate-label [source]="gateSource" [permission]="gatePermission"></app-gate-label>
-    <div class="dashboard-panel-footer-extra">
+    <div class="dashboard-panel__footer-extra">
       <ng-content select="[panelFooterExtra]"></ng-content>
     </div>
   </footer>

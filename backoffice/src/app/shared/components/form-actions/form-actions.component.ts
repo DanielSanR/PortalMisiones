@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 import { fromEvent } from 'rxjs';
 
 /** Aire entre el campo enfocado y el pie pegado (deja ver entero el anillo de foco). */
@@ -26,9 +26,9 @@ function contenedorConScroll(elemento: HTMLElement): HTMLElement | null {
  * botón de envío (plano, como en los diálogos) a la derecha. Va DENTRO del `<form>` de quien la usa: el botón es `type="submit"`,
  * así que dispara el `(ngSubmit)` de ese formulario (el envío es del DOM, no del componente).
  *
- * `sinCambios` bloquea el envío de una edición sin cambios y lo explica en un tooltip. El tooltip
- * no puede colgar de un `disabled` nativo (no recibe foco ni hover): va en un envoltorio que solo
- * es focusable mientras el botón está bloqueado por ese motivo.
+ * `sinCambios` bloquea el envío de una edición sin cambios y lo explica con `appUnavailable`, igual que
+ * el pie de `form-dialog`: el botón sigue en el orden de tabulación con `aria-disabled`, muestra el motivo
+ * en un tooltip (hover, foco y tap) y no envía el formulario (ni con clic ni con Enter en un campo).
  *
  * Contenido proyectado con el atributo `formActionsInfo` (p. ej. un indicador): va a la izquierda,
  * antes de la ayuda, y a diferencia de ésta se conserva en mobile.
@@ -40,7 +40,7 @@ function contenedorConScroll(elemento: HTMLElement): HTMLElement | null {
   selector: 'app-form-actions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatTooltipModule],
+  imports: [MatButtonModule, UnavailableDirective],
   templateUrl: './form-actions.component.html',
   styleUrl: './form-actions.component.scss',
 })
@@ -51,7 +51,7 @@ export class FormActionsComponent {
   /** Texto del botón mientras `saving`: se conserva junto al spinner para que no pierda su nombre accesible. */
   @Input() savingText = 'Guardando…';
   @Input() saving = false;
-  /** Edición sin nada que guardar: el botón queda deshabilitado, con el motivo en el tooltip. */
+  /** Edición sin nada que guardar: el botón queda no disponible (`appUnavailable`), con el motivo en el tooltip. */
   @Input() sinCambios = false;
   /**
    * Pie de una tarjeta sin padding propio: deja de ser sticky y de sangrar con margen negativo, y toma
@@ -102,7 +102,7 @@ export class FormActionsComponent {
     });
   }
 
-  /** El bloqueo que explica el tooltip: sin cambios y sin un guardado en curso. */
+  /** El bloqueo que explica `appUnavailable`: sin cambios y sin un guardado en curso. */
   get bloqueadoSinCambios(): boolean {
     return this.sinCambios && !this.saving;
   }

@@ -7,14 +7,15 @@ import { Subject, of, throwError } from 'rxjs';
 import {
   DespublicacionFallidaError, FichaAdopcionResumen, FichaCambiadaError, FichaFormData, FichaLocalVM, FichasLocalesFacade,
 } from '@features/fichas-locales';
-import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
-import { PuntosAtencionPanelComponent } from '../puntos-atencion-panel/puntos-atencion-panel.component';
+import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
+import { PuntosAtencionPanelComponent } from '../components/puntos-atencion-panel/puntos-atencion-panel.component';
 import { FichaFormComponent } from './ficha-form.component';
 
 /** Reemplaza al panel real (que trae su propio facade): solo importa dónde se dibuja. */
 @Component({ selector: 'app-puntos-atencion-panel', standalone: true, template: '<p class="puntos-stub">puntos</p>' })
 class PuntosPanelStub {
   @Input() fichaId = '';
+  @Input() localidad: string | null = null;
 }
 
 /** Reemplaza al gating por permiso: siempre dibuja. */
@@ -171,7 +172,7 @@ describe('FichaFormComponent', () => {
 
     it('sin cambios el pie lo dice y Guardar queda sin habilitar', () => {
       expect(el().querySelector('.form-actions__help')!.textContent).toContain('Sin cambios para guardar');
-      expect(el().querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBeTrue();
+      expect(el().querySelector<HTMLButtonElement>('button[type="submit"]')!.getAttribute('aria-disabled')).toBe('true');
     });
   });
 
@@ -447,8 +448,8 @@ describe('FichaFormComponent', () => {
       await fixture.componentInstance.onSubmit();
       fixture.detectChanges();
 
-      expect(fixture.componentInstance.saving).toBeFalse();
-      expect(fixture.componentInstance.serverError).toContain('El trámite del organismo ya no está vigente');
+      expect(fixture.componentInstance.marco.guardando).toBeFalse();
+      expect(fixture.componentInstance.marco.errorDeGuardado).toContain('El trámite del organismo ya no está vigente');
       expect(el().textContent).not.toContain('OrganismProcedure');
       expect(el().textContent).not.toContain('identificador');
     });
@@ -550,7 +551,7 @@ describe('FichaFormComponent', () => {
       expect(c.form.pristine).toBeTrue();
       expect(c.sinCambios).toBeFalse();
       const enviar = el().querySelector<HTMLButtonElement>('button[type="submit"]')!;
-      expect(enviar.disabled).toBeFalse();
+      expect(enviar.getAttribute('aria-disabled')).toBeNull();
       expect(enviar.textContent).toContain('Guardar y despublicar');
       expect(el().querySelector('[data-aviso="se-despublica"]')!.textContent).toContain('usá "Guardar y despublicar"');
       expect(el().querySelector('.form-actions__help')!.textContent).toContain('Al guardar, la ficha se despublica.');
@@ -604,7 +605,7 @@ describe('FichaFormComponent', () => {
       const banner = el().querySelector('app-form-error-banner')!.textContent!;
       expect(banner).toContain('Los cambios se guardaron, pero no se pudo despublicar la ficha');
       expect(banner).not.toContain('No se pudo guardar');
-      expect(fixture.componentInstance.saving).toBeFalse();
+      expect(fixture.componentInstance.marco.guardando).toBeFalse();
       expect((TestBed.inject(Router).navigate as jasmine.Spy)).not.toHaveBeenCalled();
 
       // Reintentar parte de lo que quedó guardado: si no, la relectura daría un falso "la ficha cambió".
@@ -651,7 +652,7 @@ describe('FichaFormComponent', () => {
         expect(aviso()!.querySelector('[data-conflicto="en-disputa"]')).toBeNull();
         expect(botones().map((b) => b.textContent!.trim())).toEqual(['Guardar mis cambios', 'Descartar mis cambios']);
         expect((TestBed.inject(Router).navigate as jasmine.Spy)).not.toHaveBeenCalled();
-        expect(fixture.componentInstance.saving).toBeFalse();
+        expect(fixture.componentInstance.marco.guardando).toBeFalse();
       });
 
       it('el campo que no se tocó toma el valor nuevo sin ensuciarse; el editado conserva lo escrito', () => {
@@ -731,7 +732,7 @@ describe('FichaFormComponent', () => {
         expect(valores().requisitos).toBe('Lo que cargó otra persona');
         expect(valores().costos).toBe('Gratis');
         expect(fixture.componentInstance.form.pristine).toBeTrue();
-        const titulo = el().querySelector<HTMLElement>('.fichaform-titulo')!;
+        const titulo = el().querySelector<HTMLElement>('.membrete__titulo')!;
         expect(titulo.getAttribute('tabindex')).toBe('-1');
         expect(document.activeElement).toBe(titulo);
       });
@@ -871,14 +872,14 @@ describe('FichaFormComponent', () => {
       c.form.controls.slug.setValue('');
       await c.onSubmit();
       fixture.detectChanges();
-      expect(c.serverError).not.toBe('');
+      expect(c.marco.errorDeGuardado).not.toBe('');
       expect(c.submitted).toBeTrue();
 
       c.cargar();
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(c.serverError).toBe('');
+      expect(c.marco.errorDeGuardado).toBe('');
       expect(c.serverErrorTitulo).toBe('No se pudo guardar');
       expect(c.submitted).toBeFalse();
       expect(el().querySelector('.form-error-banner')).toBeNull();

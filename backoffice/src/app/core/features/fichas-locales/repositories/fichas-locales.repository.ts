@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { FICHAS_LOCALES_DS, FichasLocalesDataSource } from '../datasources/fichas-locales.datasource';
 import { FichasLocalesFiltro } from '../models/ficha-local.dto';
 import { FichaLocal, FichaLocalFormValue } from '../models/ficha-local.vm';
-import { TransicionBackend } from '../models/workflow';
+import { TransicionBackend } from '../domain/workflow';
 
 /** Repositorio de fichas por localidad. Inyecta el DataSource vía token. */
 @Injectable({ providedIn: 'root' })

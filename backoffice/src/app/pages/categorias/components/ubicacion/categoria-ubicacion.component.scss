@@ -1,0 +1,62 @@
+// ==========================================================================
+// Franja "dónde queda" del diálogo de categoría: pegada a la cabecera y de borde a borde (compensa el
+// padding del cuerpo del diálogo). Abajo deja el aire que antes ponía su margen: lo que falta para
+// `space-lg` lo completa el `row-gap` de la grilla del formulario (`space-md`).
+//
+// El padding que compensa es el de `.dialogo-formulario__cuerpo` (`shared-styles/_components.scss`), que lo
+// expone como `--dialogo-formulario-relleno` (hoy `--theme-space-lg`). Los márgenes negativos y el padding
+// lateral leen esa propiedad: si el cuerpo del diálogo cambia su padding, la franja lo sigue sola.
+// ==========================================================================
+
+.categoria-ubicacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-space-xs);
+  margin:
+    calc(-1 * var(--dialogo-formulario-relleno))
+    calc(-1 * var(--dialogo-formulario-relleno))
+    calc(var(--theme-space-lg) - var(--theme-space-md));
+  padding: var(--theme-space-gap) var(--dialogo-formulario-relleno);
+  border-bottom: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-sunken);
+
+  &__ruta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-xs);
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-secondary);
+
+    > i.ph {
+      font-size: var(--theme-icon-size-sm);
+    }
+
+  }
+
+  // La categoría que se está cargando, al final de la ruta.
+  &__nombre {
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  &__ruta &__separador {
+    font-size: var(--theme-font-size-xs);
+    color: var(--theme-border-input);
+  }
+
+  &__ruta &__sin-nombre {
+    color: var(--theme-text-secondary);
+  }
+
+  &__slug {
+    margin: 0;
+    font-family: var(--theme-font-mono);
+    font-size: var(--theme-font-size-xs);
+    font-weight: var(--theme-font-weight-medium);
+    color: var(--theme-text-secondary);
+    overflow-wrap: anywhere;
+  }
+}

@@ -17,7 +17,7 @@
         align-items: center;
         gap: var(--theme-space-xs);
         min-height: 26px;
-        padding: 0 2px 0 10px;
+        padding: 0 var(--theme-space-2xs) 0 var(--theme-space-10);
         border-radius: var(--theme-radius-full);
         background: var(--theme-info-bg);
         color: var(--theme-primary-800);
@@ -41,7 +41,7 @@
         @include focus-ring;
 
         i.ph {
-            font-size: 13px;
+            font-size: var(--theme-icon-size-13);
         }
 
         &:hover {
@@ -50,7 +50,7 @@
     }
 
     &__limpiar {
-        margin-left: 2px;
+        margin-left: var(--theme-space-2xs);
         min-height: 24px;
         border: 0;
         padding: 0 var(--theme-space-xs);

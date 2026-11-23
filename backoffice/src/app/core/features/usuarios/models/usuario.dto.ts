@@ -89,10 +89,3 @@ export interface ChangeEmailRequest {
 export interface StatusAccountRequest {
   accountActive: boolean;
 }
-
-/** PUT /api/user/update-profile (usuario autenticado). Todos requeridos. */
-export interface ProfileUpdateRequest {
-  firstName: string;
-  lastName: string;
-  cuil: string;
-}

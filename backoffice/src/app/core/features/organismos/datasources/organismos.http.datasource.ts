@@ -24,9 +24,10 @@ export class OrganismosHttpDataSource extends OrganismosDataSource {
       .pipe(map((res) => res.data.map(toOrganismoVM)));
   }
 
+  /** Sin diálogo global: la ficha cuenta su propio error de carga (y distingue "no existe", 404 `4058`). */
   getById(id: string): Observable<OrganismoVM> {
     return this.http
-      .get<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`)
+      .get<ResponseDTO<OrganismResponseDTO>>(`${this.apiUrl}/${encodeURIComponent(id)}`, sinDialogoGlobal())
       .pipe(map((res) => toOrganismoVM(res.data)));
   }
 

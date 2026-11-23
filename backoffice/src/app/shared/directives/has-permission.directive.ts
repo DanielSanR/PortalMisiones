@@ -1,7 +1,7 @@
 import { Directive, Input, OnInit, TemplateRef, ViewContainerRef, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthTokenService } from '../../core/services/auth-token.service';
-import { AccessRule } from '../../core/models/access-rule.model';
+import { AuthTokenService } from '@core/services/auth-token.service';
+import { AccessRule } from '@core/models/access-rule.model';
 
 /**
  * Directiva estructural de gating por PERMISO atómico (no por rol).

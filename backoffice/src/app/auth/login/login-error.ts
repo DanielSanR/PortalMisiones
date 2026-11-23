@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { API_CODES } from '../../core/constants/api-codes.constants';
-import { extractErrorCode } from '../../core/models/api-response.model';
-import { NoBackofficeAccessError } from '../../core/errors/no-backoffice-access.error';
+import { API_CODES } from '@core/constants/api-codes.constants';
+import { extractErrorCode } from '@core/models/api-response.model';
+import { NoBackofficeAccessError } from '@core/errors/no-backoffice-access.error';
 
 export const LOGIN_SIN_CONEXION =
   'No pudimos conectarnos con el servidor. Revisá tu conexión o que el servicio esté disponible e intentá de nuevo.';

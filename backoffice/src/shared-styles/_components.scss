@@ -5,7 +5,7 @@
 .form-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--theme-space-6);
     min-width: 0;
 
     &__label {
@@ -26,13 +26,13 @@
     &__error {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: var(--theme-space-5);
         font-size: var(--theme-font-size-xs);
         color: var(--theme-error-icon);
-        line-height: 1.4;
+        line-height: var(--theme-line-height-140);
 
         i.ph {
-            font-size: 14px;
+            font-size: var(--theme-icon-size-14);
             flex-shrink: 0;
         }
     }
@@ -106,15 +106,15 @@
 .form-error-banner {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
-    padding: 11px 14px;
+    gap: var(--theme-space-9);
+    padding: var(--theme-space-11) var(--theme-space-14);
     margin-bottom: var(--theme-space-lg);
     border-radius: var(--theme-radius-md);
     background-color: var(--theme-error-bg);
     border: 1px solid var(--theme-error-border);
 
     &__icon {
-        font-size: 17px;
+        font-size: var(--theme-icon-size-md);
         color: var(--theme-error-icon);
         margin-top: 1px;
         flex-shrink: 0;
@@ -123,7 +123,7 @@
     &__body {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: var(--theme-space-2xs);
         min-width: 0;
     }
 
@@ -134,9 +134,9 @@
     }
 
     &__detail {
-        font-size: 12.5px;
+        font-size: var(--theme-font-small-size);
         color: var(--theme-error-icon);
-        line-height: 1.4;
+        line-height: var(--theme-line-height-140);
     }
 }
 
@@ -151,7 +151,7 @@
 // ==========================================================================
 // Grupos de permisos por recurso + chip otorgado/no otorgado (Roles y permisos).
 // Reusado por el panel de detalle read-friendly (`pages/roles/list`) y por el
-// multi-select interactivo de permisos del form de Rol (`pages/roles/create`).
+// multi-select interactivo de permisos del form de Rol (`pages/roles/form`).
 // ==========================================================================
 .perm-group {
     &__header {
@@ -178,7 +178,7 @@
     &__chips {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: var(--theme-space-6);
     }
 }
 
@@ -189,12 +189,12 @@
     display: inline-flex;
     align-items: center;
     // Diseño (Roles y permisos): pad 0 9, 11.5/600, ícono 13, gap 5.
-    gap: 5px;
+    gap: var(--theme-space-5);
     // Alto mínimo, no fijo: un nombre largo salta de línea dentro del chip en vez de salirse y pisar a los vecinos.
     max-width: 100%;
     min-height: 24px;
-    padding: var(--theme-space-2xs) 9px;
-    line-height: 1.3;
+    padding: var(--theme-space-2xs) var(--theme-space-9);
+    line-height: var(--theme-line-height-130);
     text-align: left;
     overflow-wrap: anywhere;
     border-radius: var(--theme-radius-full);
@@ -204,7 +204,7 @@
     font-size: var(--theme-font-caption-size);
     font-weight: var(--theme-font-weight-semibold);
 
-    i.ph { font-size: 13px; }
+    i.ph { font-size: var(--theme-icon-size-13); }
 
     &--granted {
         background: var(--theme-info-bg);
@@ -268,7 +268,7 @@
 //   <div class="list-toolbar list-toolbar--stacked">
 //     <div class="list-toolbar__row">
 //       <app-list-search .../>
-//       <span class="list-toolbar-count">68 organismos</span>
+//       <span class="list-toolbar__count">68 organismos</span>
 //       <div class="list-toolbar__actions">
 //         <button class="list-iconbtn">…</button>
 //       </div>
@@ -292,8 +292,8 @@
         // 5 + 24 (línea) + 5 = 34: con 6 el control medía 36 y era más alto que el buscador de al lado.
         .mat-mdc-form-field-infix {
             min-height: var(--theme-control-height-md);
-            padding-top: 5px;
-            padding-bottom: 5px;
+            padding-top: var(--theme-space-5);
+            padding-bottom: var(--theme-space-5);
         }
 
         // `inline-block` deja debajo el hueco de la línea base (1px más de alto).
@@ -303,7 +303,7 @@
     }
 
     // Contador; `--end` lo empuja contra el borde derecho de la fila.
-    &-count {
+    &__count {
         @include list-toolbar-count;
 
         &--end {
@@ -417,18 +417,18 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 6px;
+    gap: var(--theme-space-6);
 }
 
 .row-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: var(--theme-space-6);
     // Diseño: "Editar" = botón de 30px, pad 0 12, 12.5/600, SIN ícono (el ícono solo aparece
     // como spinner mientras la fila está ocupada).
     height: var(--theme-control-height-sm);
-    padding: 0 12px;
+    padding: 0 var(--theme-space-gap);
     border: 1px solid var(--theme-border-primary);
     border-radius: var(--theme-radius-md);
     background: var(--theme-bg-card);
@@ -538,10 +538,10 @@ $pill-tones: (
 
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--theme-space-5);
     max-width: 100%;
     height: 22px;
-    padding: 0 9px;
+    padding: 0 var(--theme-space-9);
     border: 1px solid transparent;
     border-radius: var(--theme-radius-full);
     background: var(--pill-bg);
@@ -549,7 +549,7 @@ $pill-tones: (
     font-size: var(--theme-font-caption-size);
     font-weight: var(--theme-font-weight-semibold);
     white-space: nowrap;
-    line-height: 1;
+    line-height: var(--theme-line-height-none);
 
     &__dot {
         flex: none;
@@ -559,39 +559,46 @@ $pill-tones: (
         background: var(--pill-dot);
     }
 
-    &__label {
-        overflow: hidden;
-        text-overflow: ellipsis;
+}
+
+// `__label`, `__icon` y `--bordered` son solo de `.pill`: `.bool-badge` usa el dot y los tonos.
+.pill__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+// Ícono Phosphor en lugar del dot (chips que necesitan ícono: acción de auditoría).
+.pill__icon {
+    flex: none;
+    font-size: var(--theme-font-size-sm);
+}
+
+// `.bool-badge` solo usa los tonos `active` / `inactive`; el resto es solo de `.pill`.
+@each $tone, $vars in $pill-tones {
+    $selector: '.pill--#{$tone}';
+    @if $tone == active or $tone == inactive {
+        $selector: '.pill--#{$tone}, .bool-badge--#{$tone}';
     }
 
-    // Ícono Phosphor en lugar del dot (chips que necesitan ícono: acción de auditoría).
-    &__icon {
-        flex: none;
-        font-size: var(--theme-font-size-sm);
+    #{$selector} {
+        --pill-bg: var(#{nth($vars, 1)});
+        --pill-fg: var(#{nth($vars, 2)});
+        --pill-border: var(#{nth($vars, 3)});
+        --pill-dot: var(#{nth($vars, 4)});
     }
+}
 
-    @each $tone, $vars in $pill-tones {
-        &--#{$tone} {
-            --pill-bg: var(#{nth($vars, 1)});
-            --pill-fg: var(#{nth($vars, 2)});
-            --pill-border: var(#{nth($vars, 3)});
-            --pill-dot: var(#{nth($vars, 4)});
-        }
-    }
+// Detalle / membrete: con borde y un punto más de tamaño.
+.pill--bordered {
+    gap: var(--theme-space-6);
+    height: 24px;
+    padding: 0 var(--theme-space-10);
+    border-color: var(--pill-border);
+    font-size: var(--theme-font-size-xs);
 
-    // Detalle / membrete: con borde y un punto más de tamaño.
-    &--bordered {
-        gap: 6px;
-        height: 24px;
-        padding: 0 10px;
-        border-color: var(--pill-border);
-        font-size: var(--theme-font-size-xs);
-
-        .pill__dot,
-        .bool-badge__dot {
-            width: 6px;
-            height: 6px;
-        }
+    .pill__dot {
+        width: 6px;
+        height: 6px;
     }
 }
 
@@ -620,7 +627,7 @@ mat-select,
 // Campo con label externo + prefijo Phosphor: aire a la izquierda del ícono y label azul con foco.
 .auth-campo {
   .mat-mdc-form-field-icon-prefix {
-    padding-left: 11px;
+    padding-left: var(--theme-space-11);
   }
 
   &:focus-within:not(.is-invalid) .form-field__label {
@@ -649,7 +656,7 @@ mat-select,
   @include focus-ring;
 
   i.ph {
-    font-size: 18px;
+    font-size: var(--theme-icon-size-18);
   }
 
   &:hover {
@@ -695,11 +702,11 @@ mat-select,
 .auth-notice {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  padding: 11px 14px;
+  gap: var(--theme-space-9);
+  padding: var(--theme-space-11) var(--theme-space-14);
   border-radius: var(--theme-radius-md);
   font-size: var(--theme-font-small-size);
-  line-height: 1.5;
+  line-height: var(--theme-line-height-normal);
 
   &--success {
     background: var(--theme-success-bg);
@@ -785,7 +792,7 @@ mat-select,
     display: flex;
     align-items: center;
     flex: 1;
-    gap: 11px;
+    gap: var(--theme-space-11);
     min-width: 0;
     font: inherit;
     letter-spacing: inherit;
@@ -843,6 +850,7 @@ mat-select,
   border-radius: calc(var(--theme-radius-md) - 1px);
   font-size: var(--theme-font-size-2xs);
   font-weight: var(--theme-font-weight-bold);
+  // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- tracking 0.2px propio de las iniciales del avatar de celda, un solo uso
   letter-spacing: 0.2px;
 
   i.ph { font-size: var(--theme-icon-size-sm); }
@@ -859,7 +867,7 @@ mat-select,
 .cell-person {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: var(--theme-space-11);
   min-width: 0;
 }
 
@@ -879,22 +887,17 @@ mat-select,
 }
 
 // ===== tramites =====
-// Detalle de entidad (plantilla, trámite del organismo, ficha, organismo): membrete + grilla de cards
-// + campos. Reemplaza los `*-membrete`, `*-grid`, `*-card` y `*-campo` que repetía cada pantalla.
+// Detalle de entidad (plantilla, trámite del organismo, ficha, organismo): membrete + paneles + campos.
+// El membrete lo dibuja `<app-membrete>` (`shared/components/membrete`): este `.detail-header` es su estilo y no
+// se escribe a mano en una pantalla. Los paneles son la familia `.ficha-paneles` (más abajo).
 //
-//   <header class="detail-header">
-//     <div class="detail-header__row"><h2 class="detail-header__title">…</h2><span class="pill …">…</span></div>
-//     <p class="detail-header__meta"><span><i class="ph ph-…"></i> …</span></p>
-//     <p class="detail-header__notice"><i class="ph ph-info"></i> …</p>
-//   </header>
-//   <div class="detail-grid">
-//     <section class="detail-card" aria-labelledby="x"><h3 class="detail-card__title" id="x">…</h3>
+//   <app-membrete icono="files" [titulo]="…" [datos]="[…]">…acciones…</app-membrete>
+//   <div class="ficha-paneles ficha-paneles--separados">…<section class="ficha-paneles__panel">
 //       <dl class="detail-fields">
 //         <div class="detail-field"><dt class="detail-field__label">…</dt><dd class="detail-field__value">…</dd></div>
 //       </dl>
-//     </section>
-//   </div>
-// El `<h1>` de página lo pone el shell: el título de la entidad es `h2` y el de cada card `h3`.
+//   </section>…</div>
+// El `<h1>` de página lo pone el shell: el título de la entidad es `h2` y el de cada panel `h3`.
 .detail-header {
     @include theme-card;
     display: flex;
@@ -948,7 +951,7 @@ mat-select,
         margin: 0;
         font-size: var(--theme-font-detail-title-size);
         font-weight: var(--theme-font-weight-semibold);
-        letter-spacing: -0.2px;
+        letter-spacing: var(--theme-tracking-tight-px);
         overflow-wrap: anywhere;
     }
 
@@ -983,7 +986,7 @@ mat-select,
 
         i.ph {
             flex: none;
-            margin-top: 2px;
+            margin-top: var(--theme-space-2xs);
         }
     }
 
@@ -1041,103 +1044,6 @@ mat-select,
     }
 }
 
-// Grilla de cards. Sin modificador: principal 1.4fr / lateral 1fr.
-.detail-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: var(--theme-space-gap);
-    // stretch (default): las cards de una misma fila miden lo mismo aunque una tenga menos campos.
-    // Una `.detail-col` también se estira, pero sus cards internas conservan su alto natural.
-    align-items: stretch;
-
-    &--aside {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
-    }
-
-    &--even {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
-
-    &--main {
-        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    }
-
-    // Detalle de ficha (Plantilla): principal + lateral, cards separadas
-    // `--theme-space-card`. Los ajustes de las cards de adentro los leen `.detail-col`, `.detail-card__bar`,
-    // `.detail-card__subtitle` y `.detail-field__label` (con su valor de siempre como fallback).
-    &--ficha {
-        // Misma proporción que `--main`: el diseño pide una lateral fija de 320px, pero no hay token de
-        // ancho y no se hardcodea.
-        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-        gap: var(--theme-space-card);
-        --detail-col-gap: var(--theme-space-card);
-        // Franja de cards `--flush`: 16px vertical (el diseño usa 14, sin token; 12 y 16 equidistan).
-        --detail-bar-padding-block: var(--theme-space-md);
-        // Subtítulo en secundario y etiqueta en terciario (#6B7280, 4.8:1 sobre blanco: AA).
-        --detail-subtitle-color: var(--theme-text-secondary);
-        --detail-label-color: var(--theme-text-tertiary);
-    }
-
-    @include responsive(tablet-down) {
-        &,
-        &--aside,
-        &--even,
-        &--main,
-        &--ficha {
-            grid-template-columns: minmax(0, 1fr);
-        }
-    }
-}
-
-// Columna de una grilla (apila cards).
-.detail-col {
-    display: flex;
-    flex-direction: column;
-    gap: var(--detail-col-gap, var(--theme-space-gap));
-    min-width: 0;
-}
-
-.detail-card {
-    @include theme-card;
-    display: flex;
-    flex-direction: column;
-    gap: var(--theme-space-md);
-    min-width: 0;
-    padding: var(--theme-space-card);
-
-    // Card cuyo contenido llega a los bordes (listas con divisores): el padding lo ponen `__bar` y el cuerpo.
-    &--flush {
-        gap: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-
-    // Diseño: título de card 15/600.
-    &__title {
-        margin: 0;
-        font-size: var(--theme-font-subtitle-size);
-        font-weight: var(--theme-font-card-title-weight);
-        line-height: var(--theme-line-height-tight);
-        color: var(--theme-text-primary);
-    }
-
-    &__subtitle {
-        margin: 0;
-        font-size: var(--theme-font-small-size);
-        color: var(--detail-subtitle-color, var(--theme-text-tertiary));
-    }
-
-    // Franja de título de una card `--flush`: título + contador + enlace, con divisor.
-    &__bar {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--theme-space-gap);
-        padding: var(--detail-bar-padding-block, var(--theme-space-gap)) var(--theme-space-card);
-        border-bottom: 1px solid var(--theme-border-subtle);
-    }
-}
-
 // Lista de campos (apilados). `--grid` = varias columnas que se reparten solas.
 .detail-fields {
     display: flex;
@@ -1160,7 +1066,7 @@ mat-select,
 
     &__label {
         @include field-label-overline;
-        color: var(--detail-label-color, var(--theme-text-secondary));
+        color: var(--theme-text-secondary);
     }
 
     &__value {
@@ -1212,10 +1118,6 @@ mat-select,
     color: var(--theme-text-secondary);
     font-size: var(--theme-font-body-size);
 
-    &--compact {
-        padding: var(--theme-space-xl) 0;
-    }
-
     i.ph {
         font-size: var(--theme-icon-size-lg);
     }
@@ -1262,7 +1164,7 @@ mat-select,
     &__texto {
         margin: var(--theme-space-2xs) 0 0;
         font-size: var(--theme-font-size-xs);
-        line-height: 1.45;
+        line-height: var(--theme-line-height-145);
         color: var(--theme-text-secondary);
     }
 }
@@ -1275,27 +1177,24 @@ mat-select,
     @include focus-ring;
 }
 
-// Contenedor del botón Guardar: el tooltip "No hay cambios para guardar" no puede colgar de un `disabled`
-// nativo; el contenedor (focusable solo mientras el botón está deshabilitado) lo recibe en hover y foco.
-.form-submit-tip {
-  display: inline-flex;
-  border-radius: var(--theme-radius-md);
-  @include focus-ring;
-}
-
-// ===== ficha de dos paneles =====
-// Formulario de una entidad en UNA tarjeta: dos paneles lado a lado (datos | lo relacionado) y el pie de
-// guardar (`<app-form-actions integrada>`) abarcando ambos. Lo usan Plantilla y Rol. Sin padding ni
-// overflow: cada panel pone el suyo y el pie redondea sus esquinas. El borde celeste señala "en edición".
+// ===== paneles de una ficha (formulario de página y detalle) =====
+// UNA sola familia para el layout "columna principal + lateral" de una entidad. Dos presentaciones:
 //
-// El membrete de arriba (`.detail-header--ficha`) va con `.ficha-membrete` para separarlo de la tarjeta.
+// 1. **Unida** (por defecto): UNA tarjeta con dos paneles lado a lado (datos | lo relacionado) y, en un
+//    formulario, el pie de guardar (`<app-form-actions integrada>`) abarcando ambos. El borde celeste señala
+//    "en edición"; `--lectura` lo deja neutro (detalle). Plantilla, Rol y Ficha (formulario) y Ficha (detalle).
+//    En un formulario del motor la dibuja `<app-dynamic-form [paneles]>`: no se escribe a mano.
+// 2. **`--separados`**: cada panel es una tarjeta propia y una columna (`__columna`) puede apilar varias.
+//    Organismo, Trámite del organismo y Plantilla (detalle).
+//
+// El membrete de arriba es `<app-membrete class="ficha-membrete">` (la clase lo separa de la tarjeta).
 // Dentro de un panel: `__campos` apila los campos y `__grupo` es cada grupo del panel lateral.
 //
-//   <div class="ficha-paneles">
-//     <div class="ficha-paneles__grid [ficha-paneles__grid--iguales]">
+//   <div class="ficha-paneles [ficha-paneles--lectura | ficha-paneles--separados]">
+//     <div class="ficha-paneles__grid [ficha-paneles__grid--iguales | --lateral-ancho]">
 //       <section class="ficha-paneles__panel" aria-labelledby="a">
 //         <header class="ficha-paneles__cabecera">
-//           <div class="ficha-paneles__encabezado"><h3 class="detail-card__title" id="a">…</h3><p class="detail-card__subtitle">…</p></div>
+//           <div class="ficha-paneles__encabezado"><h3 class="ficha-paneles__titulo" id="a">…</h3><p class="ficha-paneles__subtitulo">…</p></div>
 //           <span class="ficha-paneles__total">…</span>
 //         </header>
 //         <div class="ficha-paneles__cuerpo">…</div>
@@ -1305,6 +1204,19 @@ mat-select,
 //     <app-form-actions [integrada]="true">
 //       <span formActionsInfo class="pill ficha-paneles__indicador pill--info">…</span>
 //     </app-form-actions>
+//   </div>
+//
+// Separados (un panel `--corrido` no tiene padding: lo ponen su `__barra` y su cuerpo):
+//   <div class="ficha-paneles ficha-paneles--separados">
+//     <div class="ficha-paneles__grid">
+//       <div class="ficha-paneles__columna">
+//         <section class="ficha-paneles__panel">…<h3 class="ficha-paneles__titulo">…</h3>…</section>
+//         <section class="ficha-paneles__panel ficha-paneles__panel--corrido">
+//           <div class="ficha-paneles__barra"><h3 class="ficha-paneles__titulo">…</h3>…</div>…
+//         </section>
+//       </div>
+//       <div class="ficha-paneles__columna">…</div>
+//     </div>
 //   </div>
 // Membrete en vivo sobre la tarjeta: la tarjeta no tiene margen superior propio.
 .ficha-membrete {
@@ -1330,10 +1242,16 @@ mat-select,
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
+    // El panel angosto va primero (p. ej. datos | fichas por localidad del trámite del organismo).
+    &--lateral-ancho {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    }
+
     // Tablet y mobile: el segundo panel baja debajo del primero.
     @include responsive(tablet-down) {
       &,
-      &--iguales {
+      &--iguales,
+      &--lateral-ancho {
         grid-template-columns: minmax(0, 1fr);
       }
     }
@@ -1414,9 +1332,96 @@ mat-select,
     @include accent-heading;
   }
 
+  // Título de un panel (15/600) y su subtítulo.
+  &__titulo {
+    margin: 0;
+    font-size: var(--theme-font-subtitle-size);
+    font-weight: var(--theme-font-card-title-weight);
+    line-height: var(--theme-line-height-tight);
+    color: var(--theme-text-primary);
+  }
+
+  &__subtitulo {
+    margin: 0;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-tertiary);
+  }
+
+  // Franja de título de un panel `--corrido`: título + contador + enlace, con divisor.
+  &__barra {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-gap);
+    padding: var(--theme-space-gap) var(--theme-space-card);
+    border-bottom: 1px solid var(--theme-border-subtle);
+  }
+
+  // Pie de un panel de formulario: los interruptores de configuración (y alguna nota), separados de los
+  // campos por un filete y entre sí por una línea fina. Lo dibuja `<app-dynamic-form [paneles]>` con
+  // `PanelDeFormulario.opciones`.
+  &__opciones {
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--theme-space-xs);
+    border-top: 1px solid var(--theme-border-subtle);
+  }
+
+  &__opcion {
+    padding: var(--theme-space-gap) 0;
+    border-bottom: 1px solid var(--theme-border-subtle);
+
+    &:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    // Interruptor del motor en una fila de opciones: compacto, con su ayuda pegada (como `.form-toggle`). Los
+    // 40px de `.slide-toggle-field` son para alinearlo con los inputs de una grilla, que acá no hay.
+    .slide-toggle-field {
+      min-height: var(--theme-space-lg);
+    }
+  }
+
+  // Columna que apila paneles (solo `--separados`).
+  &__columna {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-gap);
+    min-width: 0;
+  }
+
+  // Paneles como tarjetas separadas: el contenedor deja de ser la tarjeta y cada panel pasa a serlo.
+  // stretch (default de la grilla): los paneles de una misma fila miden lo mismo aunque uno tenga menos
+  // campos; una `__columna` también se estira, pero sus paneles conservan su alto natural.
+  &--separados {
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+
+    .ficha-paneles__grid {
+      gap: var(--theme-space-gap);
+    }
+
+    .ficha-paneles__panel {
+      @include theme-card;
+      gap: var(--theme-space-md);
+      padding: var(--theme-space-card);
+    }
+
+    // Panel cuyo contenido llega a los bordes (listas con divisores).
+    .ficha-paneles__panel--corrido {
+      gap: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+  }
+
   &__total {
     font-size: var(--theme-font-size-xs);
     // Medida del diseño: 22px, la altura de la `.pill`, para que el total alinee con el título del panel.
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value -- alto de línea de 22px = altura de la .pill, para alinear el total con el título; un solo uso
     line-height: 22px;
     color: var(--theme-text-secondary);
     font-variant-numeric: tabular-nums;
@@ -1477,6 +1482,14 @@ mat-select,
   &__grupo {
     padding: var(--theme-space-gap) var(--theme-space-card);
     border-bottom: 1px solid var(--theme-border-subtle);
+
+    // De borde a borde, sin aire ni divisor: el contenido trae su propio padding y es lo último del panel (el
+    // divisor quedaría doble contra el pie). En el motor: un grupo que es solo una `vista` de la página
+    // ("Después de crearla" del alta de plantilla). Ver `PanelDeFormulario.campos`.
+    &--corrido {
+      padding: 0;
+      border-bottom: 0;
+    }
   }
 
   // Indicador del pie (`.pill` proyectado en `formActionsInfo`): el texto puede ser largo, así que en
@@ -1507,12 +1520,16 @@ mat-select,
 //       <button mat-icon-button class="dialogo-formulario__cerrar" aria-label="Cerrar">…</button>
 //     </div>
 //     <div mat-dialog-content class="dialogo-formulario__cuerpo">
-//       <div class="dialogo-formulario__campos">…`.form-field`…</div>
+//       <app-dynamic-form [compacto]="true" …></app-dynamic-form>      // trae su grilla de campos
 //     </div>
 //     <div class="dialogo-formulario__error"><app-form-error-banner …></app-form-error-banner></div>   // si falló
 //     <mat-dialog-actions align="end" class="dialogo-formulario__pie">…</mat-dialog-actions>
 //   </form>
 .dialogo-formulario {
+  // Padding del cuerpo, expuesto: una pieza que va de borde a borde dentro del cuerpo (la franja de
+  // `categoria-ubicacion`) lo compensa con margen negativo leyendo ESTA propiedad, no repitiendo el token.
+  --dialogo-formulario-relleno: var(--theme-space-lg);
+
   display: flex;
   flex-direction: column;
   width: var(--theme-dialog-width-lg);
@@ -1540,7 +1557,7 @@ mat-select,
   & &__titulo.mat-mdc-dialog-title {
     margin: 0;
     padding: 0;
-    line-height: var(--theme-line-height-normal, 1.4);
+    line-height: var(--theme-line-height-normal);
 
     &::before {
       display: none;
@@ -1550,7 +1567,7 @@ mat-select,
   &__subtitulo {
     margin: 0 0 var(--theme-space-xs);
     font-size: var(--theme-font-size-sm);
-    line-height: var(--theme-line-height-normal, 1.4);
+    line-height: var(--theme-line-height-normal);
     color: var(--theme-text-secondary);
     overflow-wrap: anywhere;
   }
@@ -1566,25 +1583,7 @@ mat-select,
 
   & &__cuerpo.mat-mdc-dialog-content {
     margin: 0;
-    padding: var(--theme-space-lg);
-  }
-
-  // Campos apilados de un formulario propio (el de `app-dynamic-form` trae su grilla).
-  &__campos {
-    display: flex;
-    flex-direction: column;
-    gap: var(--theme-space-md);
-  }
-
-  // Dos campos cortos lado a lado (p. ej. latitud y longitud); en mobile se apilan.
-  &__fila {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--theme-space-md) var(--theme-space-lg);
-
-    @include responsive(mobile) {
-      grid-template-columns: minmax(0, 1fr);
-    }
+    padding: var(--dialogo-formulario-relleno);
   }
 
   // Fuera del cuerpo con scroll: el motivo del rechazo queda a la vista junto a "Guardar".
@@ -1621,7 +1620,7 @@ mat-select,
 
   i.ph {
     flex: none;
-    margin-top: 2px;
+    margin-top: var(--theme-space-2xs);
     font-size: var(--theme-icon-size-md);
   }
 
@@ -1640,13 +1639,9 @@ mat-select,
 
 // Entre el membrete de una ficha y su tarjeta todo va a la misma distancia: el banner de error trae el
 // margen de los formularios de una columna (24px) y acá toma el del membrete.
-.ficha-membrete ~ app-form-error-banner .form-error-banner {
+.ficha-membrete ~ app-form-error-banner .form-error-banner,
+.ficha-membrete ~ app-dynamic-form .form-error-banner {
   margin-bottom: var(--theme-space-gap);
-}
-
-// Formulario propio directo en una tarjeta de detalle: la separación la pone su `gap`.
-.detail-card > form > app-form-error-banner .form-error-banner {
-  margin-bottom: 0;
 }
 
 // Campo con una acción al lado (p. ej. el slug y "Sugerir"): el botón toma el alto del input (los 34px
@@ -1702,7 +1697,7 @@ mat-select,
 
   &__icono {
     font-size: var(--theme-font-size-sm);
-    line-height: 1;
+    line-height: var(--theme-line-height-none);
     color: var(--theme-text-tertiary);
   }
 

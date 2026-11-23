@@ -17,6 +17,14 @@ describe('RolesMockDataSource', () => {
     expect(manager?.scopeTipo).toBe('global');
   });
 
+  it('un rol que no existe falla como el backend: 404 con código 4059', async () => {
+    const err = await firstValueFrom(dsCon([UserRole.SUPERADMIN]).getById('no-existe'))
+      .then(() => null, (e: unknown) => e as { status?: number; error?: { code?: number } });
+
+    expect(err?.status).toBe(404);
+    expect(err?.error?.code).toBe(4059);
+  });
+
   it('listAllowed: SUPERADMIN recibe todos los roles', async () => {
     expect(await codigosAsignables([UserRole.SUPERADMIN]))
       .toEqual(['SUPERADMIN', 'ADMIN_BACKOFFICE', 'ADMIN_ORGANIZATION', 'AGENT', 'MANAGER', 'USER']);
@@ -36,5 +44,49 @@ describe('RolesMockDataSource', () => {
     const agente = (await firstValueFrom(ds.list())).find((r) => r.id === 'rol-4');
     expect(agente?.activo).toBeFalse();
     await expectAsync(firstValueFrom(ds.delete('no-existe'))).toBeRejected();
+  });
+
+  it('activate reactiva un rol dado de baja como el PUT real: reemplaza el rol con lo que llega, permisos incluidos', async () => {
+    const ds = dsCon([UserRole.SUPERADMIN]);
+    await firstValueFrom(ds.delete('rol-4'));
+    const inactivo = (await firstValueFrom(ds.list())).find((r) => r.id === 'rol-4')!;
+    const permiso = { id: 'p-1', codigo: 'READ_USER', descripcion: 'Ver usuarios' };
+
+    const activado = await firstValueFrom(ds.activate({ ...inactivo, permisos: [permiso] }));
+
+    expect(activado.activo).toBeTrue();
+    const enLista = (await firstValueFrom(ds.list())).find((r) => r.id === 'rol-4');
+    expect(enLista?.activo).toBeTrue();
+    expect(enLista?.codigo).toBe('AGENT');
+    expect(enLista?.permisos).toEqual([permiso]);
+  });
+
+  it('getById + activate (lo que hace el facade) conserva lo que otro administrador cambió después de listar', async () => {
+    const ds = dsCon([UserRole.SUPERADMIN]);
+    await firstValueFrom(ds.delete('rol-4'));
+    const filaVieja = (await firstValueFrom(ds.list())).find((r) => r.id === 'rol-4')!;
+    // Otro administrador edita el rol inactivo mientras la lista sigue abierta.
+    await firstValueFrom(ds.update('rol-4', {
+      codigo: 'AGENT', descripcion: 'Operador (revisado)', scopeTipo: 'organismo', asignablePorOrgAdmin: true,
+      asignablePorBackoffice: true, active: false, permissionsIds: [],
+    }));
+
+    await firstValueFrom(ds.activate(await firstValueFrom(ds.getById('rol-4'))));
+
+    const enLista = (await firstValueFrom(ds.list())).find((r) => r.id === 'rol-4')!;
+    expect(enLista.activo).toBeTrue();
+    expect(enLista.descripcion).toBe('Operador (revisado)');
+    expect(filaVieja.descripcion).not.toBe('Operador (revisado)');
+  });
+
+  it('activate de un rol que no existe falla como el backend: 404 con código 4059', async () => {
+    const ds = dsCon([UserRole.SUPERADMIN]);
+    const inexistente = { ...(await firstValueFrom(ds.list()))[0], id: 'no-existe' };
+
+    const err = await firstValueFrom(ds.activate(inexistente))
+      .then(() => null, (e: unknown) => e as { status?: number; error?: { code?: number } });
+
+    expect(err?.status).toBe(404);
+    expect(err?.error?.code).toBe(4059);
   });
 });

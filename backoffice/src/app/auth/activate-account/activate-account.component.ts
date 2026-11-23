@@ -4,10 +4,10 @@ import { firstValueFrom, timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { AuthService } from '../../core/services/auth.service';
-import { UnavailableDirective } from '../../shared/directives/unavailable.directive';
+import { AuthService } from '@core/services/auth.service';
+import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
-import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
+import { textoDeErrorHttp } from '@core/utils/http-error-text.utils';
 
 /**
  * Activación de cuenta vía token del email (`/auth/activacion/:token`).
@@ -24,16 +24,13 @@ import { textoDeErrorHttp } from '../../core/utils/http-error-text.utils';
 export class ActivateAccountComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   /** 'activando' | 'ok' | 'error' */
   estado: 'activando' | 'ok' | 'error' = 'activando';
   errorMessage = '';
-
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private authService: AuthService
-  ) {}
 
   async ngOnInit(): Promise<void> {
     const token = (this.route.snapshot.params['token'] ?? '') as string;

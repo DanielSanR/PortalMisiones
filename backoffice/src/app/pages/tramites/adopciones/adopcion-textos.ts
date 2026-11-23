@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { AdopcionVM } from '@features/adopciones';
-import { ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogData } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Texto del confirm "Deshabilitar", compartido por el listado y el detalle. Deshabilitar es el

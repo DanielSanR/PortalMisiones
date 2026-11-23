@@ -1,0 +1,23 @@
+@if (vista$ | async; as vista) {
+    <i class="ph ph-{{ vista.icono }} admin-layout__title-icon" aria-hidden="true"></i>
+
+    <!-- Tramos previos = links a la lista de su sección (se ocultan en mobile). El último
+         tramo es el título de la página: el único h1 de la vista. -->
+    @if (vista.previos.length > 0) {
+        <nav class="admin-layout__breadcrumb" aria-label="Ruta de navegación">
+            <ol class="admin-layout__breadcrumb-list">
+                @for (crumb of vista.previos; track $index) {
+                    <li class="admin-layout__breadcrumb-item">
+                        @if (crumb.link) {
+                            <a [routerLink]="crumb.link" class="admin-layout__breadcrumb-link">{{ crumb.label }}</a>
+                        } @else {
+                            <span class="admin-layout__breadcrumb-crumb">{{ crumb.label }}</span>
+                        }
+                        <span class="admin-layout__breadcrumb-sep" aria-hidden="true">/</span>
+                    </li>
+                }
+            </ol>
+        </nav>
+    }
+    <h1 class="admin-layout__title">{{ vista.titulo }}</h1>
+}
