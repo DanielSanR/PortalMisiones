@@ -40,7 +40,8 @@
   // ── Filas ───────────────────────────────────────────────────
   &__row {
     @extend %cat-cols;
-    // Sigue la densidad de Preferencias (52px cómoda / 44px compacta).
+    // Sigue la densidad de Preferencias (52px cómoda / 44px compacta), también en mobile: la fila no es un
+    // objetivo táctil (los botones de acción conservan sus 30px).
     min-height: var(--theme-tree-row-height);
     border-bottom: 1px solid var(--theme-border-subtle);
     transition: background var(--theme-transition-fast);

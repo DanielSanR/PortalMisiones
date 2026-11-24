@@ -56,7 +56,6 @@ describe('SharedTableComponent — densidad', () => {
   afterEach(() => {
     ventana?.cerrar();
     document.documentElement.classList.remove('densidad-compacta');
-    (fixture.nativeElement as HTMLElement).remove();
   });
 
   describe('en escritorio', () => {
@@ -77,10 +76,11 @@ describe('SharedTableComponent — densidad', () => {
     });
   });
 
-  // El viewport de Karma (~750px) es `mobile`: ahí la fila queda en 48px para el toque, con cualquier densidad.
-  it('en mobile la fila sigue en 48px aunque la densidad sea compacta', () => {
-    document.body.append(fixture.nativeElement);
-    document.documentElement.classList.add('densidad-compacta');
+  // En mobile (<768) la fila queda en 48px para el toque, con cualquier densidad (`_responsive.scss`). Se mide en
+  // una ventana de 375px para no depender del tamaño de la ventana de Karma.
+  it('en mobile la fila sigue en 48px aunque la densidad sea compacta', async () => {
+    ventana = await abrirVentanaEscritorio(fixture.nativeElement, 375);
+    ventana.densidadCompacta(true);
 
     expect(altoDeFila('con-avatar')).toBe(48);
     expect(altoDeFila('solo-texto')).toBe(48);
