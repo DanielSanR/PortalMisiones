@@ -54,6 +54,12 @@ describe('avisos', () => {
       expect(snackBar.open).toHaveBeenCalledWith('Etiqueta creada', 'OK', jasmine.objectContaining({ duration: undefined }));
     });
 
+    it('con la preferencia largo una duración explícita también se duplica', () => {
+      localStorage.setItem(PREFERENCIAS_STORAGE_KEY, JSON.stringify({ avisos: 'largo' }));
+      avisarExito(snackBar, 'x', { duracion: 5000 });
+      expect(snackBar.open).toHaveBeenCalledOnceWith('x', 'OK', { duration: 10000, panelClass: 'snackbar-success' });
+    });
+
     it('con la preferencia largo la advertencia queda el doble', () => {
       localStorage.setItem(PREFERENCIAS_STORAGE_KEY, JSON.stringify({ avisos: 'largo' }));
       avisarAdvertencia(snackBar, 'El rol ya se creó');
