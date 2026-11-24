@@ -71,19 +71,74 @@ function actionLabel(codigo: string): string {
   return PERMISO_ACTION_LABELS[action] ?? action;
 }
 
-/** Arma los grupos de permisos por recurso, comparando el catálogo completo contra los otorgados. */
-export function buildPermisoGroups(catalog: PermisoVM[], grantedIds: Set<string>): PermisoGroupVM[] {
+/** Clave y etiqueta del grupo donde caen los códigos que no siguen `ACCION_RECURSO` con una acción conocida. */
+const GRUPO_OTROS = { key: 'OTROS', label: 'Otros' };
+
+interface EntradaDeChip {
+  key: string;
+  groupLabel: string;
+  chip: PermisoChipVM;
+}
+
+/** Junta los chips por grupo (en orden de aparición) y ordena los grupos por etiqueta, en es. */
+function agrupar(entradas: EntradaDeChip[]): PermisoGroupVM[] {
   const byResource = new Map<string, PermisoGroupVM>();
-  for (const permiso of catalog) {
-    const key = resourceOf(permiso.codigo);
+  for (const { key, groupLabel, chip } of entradas) {
     if (!byResource.has(key)) {
-      byResource.set(key, { key, label: humanizeResource(key), granted: 0, total: 0, items: [] });
+      byResource.set(key, { key, label: groupLabel, granted: 0, total: 0, items: [] });
     }
     const group = byResource.get(key)!;
-    const granted = grantedIds.has(permiso.id);
-    group.items.push({ id: permiso.id, label: actionLabel(permiso.codigo), codigo: permiso.codigo, granted });
+    group.items.push(chip);
     group.total += 1;
-    if (granted) group.granted += 1;
+    if (chip.granted) group.granted += 1;
   }
   return Array.from(byResource.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+}
+
+/** Arma los grupos de permisos por recurso, comparando el catálogo completo contra los otorgados. */
+export function buildPermisoGroups(catalog: PermisoVM[], grantedIds: Set<string>): PermisoGroupVM[] {
+  return agrupar(
+    catalog.map((permiso) => {
+      const key = resourceOf(permiso.codigo);
+      return {
+        key,
+        groupLabel: humanizeResource(key),
+        chip: {
+          id: permiso.id,
+          label: actionLabel(permiso.codigo),
+          codigo: permiso.codigo,
+          granted: grantedIds.has(permiso.id),
+        },
+      };
+    }),
+  );
+}
+
+function esCodigoConocido(codigo: string): boolean {
+  const [action, ...rest] = codigo.split('_');
+  return rest.length > 0 && action in PERMISO_ACTION_LABELS;
+}
+
+/**
+ * Agrupa los códigos que trae la sesión (`AuthUser.permissions`), sin catálogo: todos otorgados, el código hace de id.
+ * Mismos grupos, etiquetas y orden que `buildPermisoGroups`; los códigos que no son `ACCION_RECURSO` con una acción
+ * conocida van al final, en "Otros", con el código como etiqueta. Los repetidos cuentan una vez.
+ */
+export function gruposDeCodigos(codigos: readonly string[]): PermisoGroupVM[] {
+  const unicos = Array.from(new Set(codigos));
+  const conocidos = unicos.filter(esCodigoConocido);
+  const otros = unicos.filter((codigo) => !esCodigoConocido(codigo));
+  const grupos = buildPermisoGroups(
+    conocidos.map((codigo) => ({ id: codigo, codigo, descripcion: '' })),
+    new Set(conocidos),
+  );
+  if (!otros.length) return grupos;
+  const [grupoOtros] = agrupar(
+    otros.map((codigo) => ({
+      key: GRUPO_OTROS.key,
+      groupLabel: GRUPO_OTROS.label,
+      chip: { id: codigo, label: codigo, codigo, granted: true },
+    })),
+  );
+  return [...grupos, grupoOtros];
 }
