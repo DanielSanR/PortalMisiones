@@ -24,6 +24,10 @@ Piezas de la pantalla = mini-bloques `<prefijo>-<pieza>` con sus elementos en `_
 | etiquetas / permisos / eventos de vida (lista) | `etiqlist` / `permlist` / `eventoslist` | plantillas | `plantlist` · `plantdet` · `plantform` |
 | organismos (detalle) | `orgdet` | fichas | `fichalist` · `fichadet` · `fichaform` |
 | roles (form) | `rolform` | adopciones | `adoplist` · `adopdet` |
+| Mi perfil | `mi-perfil` | Preferencias | `preferencias` |
+
+`mi-perfil` y `preferencias` son pantallas de la cuenta, sin entidad ni `<list|det|form>`: su prefijo es el nombre de la
+pantalla (lo fijó el plan de perfil y preferencias).
 
 Componentes de `shared/` y `components/<pieza>/`: bloque = nombre del componente (`row-actions`, `filter-tabs`).
 

@@ -110,6 +110,9 @@ paths:
 - `pages/tramites/fichas/form/ficha-form` (edición concurrente por versión, validadores que dependen del facade). Arma su
   `FormGroup` a mano, pero comparte el marco: `<app-membrete>`, la tarjeta `.ficha-paneles`, `<app-estado-carga>`,
   `<app-form-actions>` y lo que le sirve de `formularioDePagina`. Sus piezas viven al lado (`form/ficha-form-*.ts`).
+- `pages/preferencias/form/` (Preferencias): pantalla de ajustes **sin envío**. Cada control (interruptor, botones de
+  alternar, radios de Material) aplica y guarda al momento por `CuentaFacade`; no hay "Guardar", `FormGroup`, cambios
+  sin guardar ni error de guardado, así que no usa el motor.
 - La lista ejecutable es `FORMULARIOS_A_MANO` en `backoffice/.eslintrc.cjs` (incluye los filtros de `auditoria` y `feedback`).
   Desde 2026-11-20 no quedan diálogos con formulario propio, y desde 2026-11-21 tampoco páginas fuera de la ficha:
   plantilla y rol usan el motor con `paneles`.
