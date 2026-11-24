@@ -389,3 +389,9 @@
   --theme-z-header: 1000;
   --theme-z-modal: 1300;
 }
+
+// Densidad compacta (Preferencias): `PreferenciasService` pone la clase en `<html>`. Solo achica las filas de las
+// tablas; los botones de fila (`--theme-control-height-sm`, 30px) no cambian. `_responsive` no pisa este token.
+:root.densidad-compacta {
+  --theme-table-row-height: 44px;
+}

@@ -1,4 +1,4 @@
-import { ApplicationConfig } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, inject } from '@angular/core';
 import { provideRouter, TitleStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -11,6 +11,7 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { mockApiInterceptor } from './core/mocks/mock-api.interceptor';
 import { AppTitleStrategy } from './core/services/app-title.strategy';
+import { PreferenciasService } from './core/services/preferencias.service';
 // Wiring de features: el composition root importa cada `<feature>.providers.ts` y NO el barrel
 // `@features/<x>`. El barrel re-exporta el facade (`providedIn: 'root'`, con dependencias cross-feature)
 // y esbuild no lo descarta del chunk inicial aunque acá no se use; importando el providers, cada facade
@@ -55,6 +56,8 @@ export const appConfig: ApplicationConfig = {
     // `<title>` por ruta (último tramo del breadcrumb). Los textos del calendario en es-AR van en
     // `provideFechaArDatepicker()` (provider de componente) para no meter el datepicker en el initial.
     { provide: TitleStrategy, useClass: AppTitleStrategy },
+    // Crea `PreferenciasService` al arrancar: sin esto la densidad compacta guardada no se aplica hasta abrir Preferencias.
+    { provide: APP_INITIALIZER, multi: true, useFactory: () => { inject(PreferenciasService); return () => undefined; } },
 
     // ── Wiring por feature (cada feature provee sus DataSources; la fuente la resuelve environment) ──
     ...provideUsuariosFeature(),

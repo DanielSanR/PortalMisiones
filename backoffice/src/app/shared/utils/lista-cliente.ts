@@ -4,6 +4,7 @@ import { FormControl } from '@angular/forms';
 import {
   BehaviorSubject, Observable, combineLatest, debounceTime, distinctUntilChanged, map, of, startWith, take,
 } from 'rxjs';
+import { PreferenciasService } from '@core/services/preferencias.service';
 import type { FiltroActivo } from '../components/active-filters';
 import type { TablePageEvent, TableSortEvent } from '../components/table';
 import { buscarEn } from './list-filter.utils';
@@ -77,7 +78,7 @@ export interface ListaClienteConfig<T, F, V extends object> {
   quitarFiltro?: (clave: string) => void;
   /** Textos del vacío y cualquier dato más que la vista necesite. Con dos juegos de textos: `textosDeVacio`. */
   extras: (contexto: ContextoDeLista<T, F>) => V;
-  /** Filas por página (10). `null`: la lista no pagina. */
+  /** Filas por página (por defecto, la preferencia "Filas por página"). `null`: la lista no pagina. */
   tamanoDePagina?: number | null;
   /** La lista terminó de cargar (`true`) o empezó a cargar (`false`): `DialogoEnLista.listaLista`. */
   alCargar?: (lista: boolean) => void;
@@ -112,6 +113,8 @@ function criterioDe(filtros: unknown): unknown {
  *
  * Paginado: cambiar la búsqueda, un filtro o el orden vuelve a la primera página. Cambiar de página o de
  * tamaño no, y una recarga (tras un alta, una edición o una baja) conserva la página, acotada a la última que exista.
+ * El tamaño inicial es `config.tamanoDePagina` o, sin él, la preferencia "Filas por página" (`PreferenciasService`),
+ * leída una vez al crear la lista: cambiar la preferencia aplica a la próxima lista que se abra, no a la que está a la vista.
  *
  * Se crea en un inicializador de campo del componente (usa `inject`) y la pantalla consume `vista$`:
  *
@@ -132,12 +135,16 @@ function criterioDe(filtros: unknown): unknown {
  */
 export class ListaCliente<T, F = undefined, V extends object = TextosDeVacio> {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly preferencias = inject(PreferenciasService);
 
   /** Control del buscador (`<app-list-search [control]="lista.searchCtrl">`). */
   readonly searchCtrl = new FormControl('', { nonNullable: true });
 
   /** Orden y tamaño de página. La página pedida va aparte (`paginaPedida`): también la mueve un cambio de criterio. */
-  private readonly tabla$ = new BehaviorSubject<{ orden: TableSortEvent | null; tamano: number | null }>({ orden: null, tamano: 10 });
+  private readonly tabla$ = new BehaviorSubject<{ orden: TableSortEvent | null; tamano: number | null }>({
+    orden: null,
+    tamano: this.preferencias.actual.filasPorPagina,
+  });
   private paginaPedida = 0;
   /** Búsqueda y filtros con los que se calculó la última vista: si cambian, se vuelve a la primera página. */
   private criterio = '';
