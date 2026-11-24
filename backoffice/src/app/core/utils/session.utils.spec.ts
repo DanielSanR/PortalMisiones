@@ -1,6 +1,7 @@
 import { AuthMeResponseDTO, AuthUser } from '../models/auth.model';
 import {
-  ORGANISMO_SIN_NOMBRE, alcanceDeSesion, etiquetaDeOrganismo, hintDeOrganismoPropio, organismoDeSesion,
+  ORGANISMO_SIN_NOMBRE, alcanceDeSesion, etiquetaDeOrganismo, hintDeOrganismoPropio, inicialesDe, nombreVisible,
+  organismoDeSesion,
 } from './session.utils';
 
 const me = (extra: Partial<AuthMeResponseDTO> = {}): AuthMeResponseDTO => ({
@@ -85,5 +86,35 @@ describe('textos del organismo de la sesión', () => {
 
   it('el hint arranca con "Tu cuenta pertenece a …"', () => {
     expect(hintDeOrganismoPropio({ id: 'o', nombre: 'Rentas', sigla: 'DGR' })).toBe('Tu cuenta pertenece a Rentas (DGR)');
+  });
+});
+
+describe('nombre e iniciales de la sesión', () => {
+  const usuario = (extra: Partial<AuthUser>): AuthUser => ({
+    id: 'u-1', email: 'juan.perez@misiones.gob.ar', nombre: '', apellido: '', role: null, roles: [], roleCodes: [],
+    permissions: [], ...extra,
+  });
+
+  it('con nombre y apellido usa los dos, y sus iniciales', () => {
+    const ana = usuario({ nombre: 'Ana', apellido: 'López' });
+    expect(nombreVisible(ana)).toBe('Ana López');
+    expect(inicialesDe(ana)).toBe('AL');
+  });
+
+  it('con solo el nombre usa el nombre y su inicial', () => {
+    const ana = usuario({ nombre: 'Ana' });
+    expect(nombreVisible(ana)).toBe('Ana');
+    expect(inicialesDe(ana)).toBe('A');
+  });
+
+  it('sin nombre (el JWT real no lo trae) lo arma desde el correo y toma sus dos primeras letras', () => {
+    expect(nombreVisible(usuario({}))).toBe('Juan Perez');
+    expect(inicialesDe(usuario({}))).toBe('JU');
+    expect(nombreVisible(usuario({ email: 'maria_del-carmen@x.ar' }))).toBe('Maria Del Carmen');
+  });
+
+  it('sin nombre ni usuario en el correo cae a "Usuario"', () => {
+    expect(nombreVisible(usuario({ email: '' }))).toBe('Usuario');
+    expect(inicialesDe(usuario({ email: '@x.ar' }))).toBe('US');
   });
 });

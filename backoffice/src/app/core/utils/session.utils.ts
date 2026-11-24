@@ -65,3 +65,33 @@ export function etiquetaDeOrganismo(organismo: OrganismoDeSesion): string {
 export function hintDeOrganismoPropio(organismo: OrganismoDeSesion): string {
   return `Tu cuenta pertenece a ${etiquetaDeOrganismo(organismo)}`;
 }
+
+/** "juan.perez@misiones.gob.ar" → "Juan Perez"; sin usuario en el correo, "Usuario". */
+function nombreDesdeEmail(email: string): string {
+  const usuario = (email ?? '').split('@')[0];
+  if (!usuario) return 'Usuario';
+  return usuario
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((parte) => parte.charAt(0).toLocaleUpperCase('es-AR') + parte.slice(1))
+    .join(' ');
+}
+
+function nombreCompleto(user: AuthUser): string {
+  return `${user.nombre ?? ''} ${user.apellido ?? ''}`.trim();
+}
+
+/**
+ * Nombre para mostrar de la sesión: nombre + apellido si vienen y, si no (el JWT del backend real no los
+ * trae), el que se arma desde el correo, que siempre está.
+ */
+export function nombreVisible(user: AuthUser): string {
+  return nombreCompleto(user) || nombreDesdeEmail(user.email);
+}
+
+/** Iniciales del avatar: las de nombre y apellido o, sin ellos, las dos primeras letras del nombre visible. */
+export function inicialesDe(user: AuthUser): string {
+  return nombreCompleto(user)
+    ? `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase()
+    : nombreVisible(user).slice(0, 2).toLocaleUpperCase('es-AR');
+}
