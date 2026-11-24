@@ -3,6 +3,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { By } from '@angular/platform-browser';
 import { MatTooltip } from '@angular/material/tooltip';
+import { provideRouter } from '@angular/router';
 import { UserMenuComponent } from './user-menu.component';
 
 /** Ficha de la cuenta dentro del menú de perfil: el organismo como dato, no como control; el rol solo en el disparador. */
@@ -11,7 +12,7 @@ describe('UserMenuComponent — ficha de la cuenta', () => {
   let overlay: HTMLElement;
 
   async function montar(organismo: string, compact = false): Promise<void> {
-    await TestBed.configureTestingModule({ imports: [UserMenuComponent, NoopAnimationsModule] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [UserMenuComponent, NoopAnimationsModule], providers: [provideRouter([])] }).compileComponents();
     fixture = TestBed.createComponent(UserMenuComponent);
     fixture.componentRef.setInput('name', 'Ana Paz');
     fixture.componentRef.setInput('email', 'ana@misiones.gob.ar');
@@ -97,6 +98,16 @@ describe('UserMenuComponent — ficha de la cuenta', () => {
     });
     // Ninguna fila de la ficha es un ítem del menú: el teclado salta directo a las acciones.
     expect(overlay.querySelector('.user-menu__cuenta [role^="menuitem"]')).toBeNull();
+  });
+
+  it('"Mi perfil" es un enlace a la pantalla, ya no una función pendiente', async () => {
+    await abrir('');
+
+    const perfil = Array.from(overlay.querySelectorAll<HTMLElement>('.user-menu__item')).find((item) => item.textContent?.includes('Mi perfil'));
+    expect(perfil?.tagName).toBe('A');
+    expect(perfil?.getAttribute('href')).toBe('/dashboard/perfil');
+    expect(perfil?.getAttribute('aria-disabled')).not.toBe('true');
+    expect(perfil?.classList).not.toContain('is-unavailable');
   });
 
   it('un click en la ficha (para seleccionar el email o el organismo) no cierra el menú; "Cerrar sesión" sí', async () => {

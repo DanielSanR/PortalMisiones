@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 
 /**
@@ -12,7 +13,7 @@ import { UnavailableDirective } from '@shared/directives/unavailable.directive';
 @Component({
   selector: 'app-user-menu',
   standalone: true,
-  imports: [MatMenuModule, MatDividerModule, MatTooltipModule, UnavailableDirective],
+  imports: [MatMenuModule, MatDividerModule, MatTooltipModule, RouterLink, UnavailableDirective],
   templateUrl: './user-menu.component.html',
   styleUrl: './user-menu.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
