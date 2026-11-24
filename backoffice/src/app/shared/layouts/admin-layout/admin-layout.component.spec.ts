@@ -5,6 +5,7 @@ import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { AuthService } from '@core/services/auth.service';
+import { ATAJOS_STORAGE_KEY } from '@core/services/atajos.service';
 import { PREFERENCIAS_STORAGE_KEY, PreferenciasService } from '@core/services/preferencias.service';
 import { PREFERENCIAS_DE_FABRICA, Preferencias } from '@core/models/preferencias.model';
 import { AuthUser } from '@core/models/auth.model';
@@ -73,6 +74,20 @@ describe('AdminLayoutComponent', () => {
     layout.toggleCollapse();
     expect(layout.isCollapsed).toBeTrue();
     expect(preferencias.actual.menuContraido).toBeTrue();
+  });
+
+  it('"/" con el menú contraído lo expande y guarda menuContraido: false (al recargar no vuelve contraído)', () => {
+    localStorage.removeItem(ATAJOS_STORAGE_KEY); // atajos encendidos (de fábrica)
+    guardarPreferencias({ recordarMenuContraido: true, menuContraido: true });
+    const layout = crear();
+    const preferencias = TestBed.inject(PreferenciasService);
+    expect(layout.isCollapsed).toBeTrue();
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true }));
+
+    expect(layout.isCollapsed).toBeFalse();
+    expect(preferencias.actual.menuContraido).toBeFalse();
+    expect(JSON.parse(localStorage.getItem(PREFERENCIAS_STORAGE_KEY) ?? '{}').menuContraido).toBeFalse();
   });
 
   it('al abrir el shell aplica la densidad compacta guardada en <html>', () => {

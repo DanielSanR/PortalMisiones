@@ -132,8 +132,12 @@ export class AdminLayoutComponent implements OnInit {
       descripcion: 'Buscar en el menú lateral',
       accion: () => {
         if (this.isMobile) this.sidenav.open();
-        // Colapsado el buscador está oculto: se expande para poder escribir.
-        if (!this.isMobile && this.isCollapsed) this.isCollapsed = false;
+        // Colapsado el buscador está oculto: se expande para poder escribir. Se guarda como al expandir con el botón:
+        // si no, con "Recordar si el menú está contraído" el menú volvería contraído al recargar.
+        if (!this.isMobile && this.isCollapsed) {
+          this.isCollapsed = false;
+          this.preferencias.actualizar({ menuContraido: false });
+        }
         this.cdr.markForCheck();
         this.navRef?.enfocarBuscador();
       },
