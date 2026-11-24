@@ -115,6 +115,8 @@ const routes: Routes = [
 
       // Mi perfil: la cuenta en curso, solo lectura y armada con la sesión. Sin `access`: la ve cualquier sesión.
       { path: 'perfil', loadComponent: () => import('./perfil/detail/mi-perfil-detail.component').then(m => m.MiPerfilDetailComponent), data: { breadcrumb: ['Mi perfil'] } },
+      // Preferencias de este navegador (localStorage). Sin `access`: la ve cualquier sesión.
+      { path: 'preferencias', loadComponent: () => import('./preferencias/form/preferencias-form.component').then(m => m.PreferenciasFormComponent), data: { breadcrumb: ['Preferencias'] } },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       // Cualquier /dashboard/* sin match (rutas "bare" tipo /organismos, typos, secciones aún sin

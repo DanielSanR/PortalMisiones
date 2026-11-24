@@ -169,7 +169,7 @@ permitido para filetes). Un valor de un solo uso y sin significado reutilizable 
 queda como literal con `// stylelint-disable-next-line scale-unlimited/declaration-strict-value -- <motivo>`.
 
 - Alturas: `--theme-control-height-md` 34 (botón, chip, iconbtn) · `--theme-control-height-sm` 30 (acción de fila) ·
-  `--theme-input-height` 40 · `--theme-table-row-height` 56 · `--theme-header-height` 60 · `--theme-sidebar-width` 260.
+  `--theme-input-height` 40 · `--theme-table-row-height` 56 (44 en densidad compacta: `-comoda` / `-compacta`) · `--theme-header-height` 60 · `--theme-sidebar-width` 260.
 - Ancho: `--theme-content-max-width` 1400.
 - Apilado local (dentro de un componente): `--theme-z-raised` 1 y `--theme-z-raised-above` 2; el chrome usa `--theme-z-sticky` 200, `--theme-z-header` 1000 y `--theme-z-modal` 1300.
 - Responsive solo con `@include responsive(mobile | tablet | tablet-down | desktop | wide)`.

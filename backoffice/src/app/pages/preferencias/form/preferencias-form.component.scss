@@ -1,0 +1,184 @@
+@use 'shared-styles/mixins' as *;
+
+// Preferencias: tarjetas `.ficha-paneles--separados` (con `__encabezado`, `__titulo`, `__subtitulo`), `.form-toggle`
+// para los interruptores, `.detail-fields` para "Idioma y formato" y `.tecla` para las teclas. Acá solo lo propio:
+// la tabla de atajos, los grupos de opciones, la vista previa de densidad y las filas de "Este navegador".
+.preferencias {
+  // Tabla de atajos. Apagados: atenuada (el texto de ayuda del interruptor ya dice que no hacen nada).
+  &__atajos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--theme-font-size-sm);
+
+    // Las celdas y las teclas pasan al gris terciario (sigue legible: es información, no un control).
+    &--apagados,
+    &--apagados .preferencias__celda,
+    &--apagados .tecla {
+      color: var(--theme-text-tertiary);
+    }
+  }
+
+  &__celda {
+    padding: var(--theme-space-sm) var(--theme-space-sm) var(--theme-space-sm) 0;
+    border-bottom: 1px solid var(--theme-border-subtle);
+    text-align: left;
+    vertical-align: middle;
+
+    &--cabecera {
+      font-size: var(--theme-font-size-xs);
+      font-weight: var(--theme-font-weight-semibold);
+      color: var(--theme-text-secondary);
+    }
+
+    &--donde {
+      color: var(--theme-text-secondary);
+    }
+  }
+
+  &__nota {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+    margin: 0;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+
+    i.ph {
+      flex: none;
+      margin-top: var(--theme-space-2xs);
+      font-size: var(--theme-icon-size-md);
+    }
+  }
+
+  // Un control con su rótulo arriba y la ayuda abajo (Filas por página).
+  &__control {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--theme-space-sm);
+  }
+
+  &__rotulo {
+    padding: 0;
+    font-size: var(--theme-font-size-sm);
+    font-weight: var(--theme-font-weight-semibold);
+    color: var(--theme-text-primary);
+  }
+
+  &__ayuda {
+    margin: 0;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-tertiary);
+  }
+
+  // `fieldset` + `legend` de un grupo de radios, sin el marco del navegador.
+  &__grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-xs);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__opciones {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__opcion-titulo {
+    display: block;
+    font-size: var(--theme-font-size-base);
+    color: var(--theme-text-primary);
+  }
+
+  &__opcion-ayuda {
+    display: block;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-tertiary);
+  }
+
+  // Vista previa de la densidad: una mini tabla con el alto de fila de la opción elegida (no la vigente en `<html>`).
+  &__previa {
+    display: flex;
+    flex-direction: column;
+    gap: var(--theme-space-sm);
+  }
+
+  &__previa-tabla {
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: var(--theme-radius-md);
+    overflow: hidden;
+
+    --preferencias-fila: var(--theme-table-row-height-comoda);
+
+    &--compacta {
+      --preferencias-fila: var(--theme-table-row-height-compacta);
+    }
+  }
+
+  &__previa-fila {
+    display: flex;
+    align-items: center;
+    gap: var(--theme-space-md);
+    box-sizing: border-box;
+    height: var(--preferencias-fila);
+    padding: 0 var(--theme-space-md);
+    border-bottom: 1px solid var(--theme-border-subtle);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  &__previa-barra {
+    flex: 1;
+    height: var(--theme-space-sm);
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-neutral-100);
+
+    &--corta {
+      flex: 0 0 25%;
+    }
+  }
+
+  &__previa-rango {
+    align-self: flex-end;
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Fila de "Este navegador": ícono, texto y la acción a la derecha.
+  &__item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--theme-space-gap);
+    border-radius: var(--theme-radius-md);
+
+    // El bloque del correo recibe el foco por programa tras "Olvidar" (el botón desaparece).
+    @include focus-ring;
+
+    &--restablecer {
+      padding-top: var(--theme-space-md);
+      border-top: 1px solid var(--theme-border-subtle);
+    }
+  }
+
+  &__item-icono {
+    flex: none;
+    font-size: var(--theme-icon-size-md);
+    color: var(--theme-text-tertiary);
+  }
+
+  &__item-texto {
+    display: flex;
+    flex: 1 1 200px;
+    flex-direction: column;
+    gap: var(--theme-space-2xs);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

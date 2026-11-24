@@ -80,4 +80,14 @@ describe('AdminLayoutComponent', () => {
     crear();
     expect(document.documentElement.classList).toContain('densidad-compacta');
   });
+
+  it('"Preferencias" del pie es un enlace a su pantalla, no una función pendiente', () => {
+    crear();
+    const enlace = Array.from(document.querySelectorAll<HTMLAnchorElement>('.admin-layout__footer-item')).find((el) =>
+      el.textContent?.includes('Preferencias'),
+    );
+    expect(enlace?.tagName).toBe('A');
+    expect(enlace?.getAttribute('href')).toBe('/dashboard/preferencias');
+    expect(enlace?.getAttribute('aria-disabled')).toBeNull();
+  });
 });

@@ -264,8 +264,18 @@
         color: var(--theme-text-tertiary);
     }
 
+    // Enlace (Preferencias) con el mismo aspecto que los botones del pie.
+    text-decoration: none;
+
     &:hover {
         background-color: var(--theme-bg-sidebar-hover);
+    }
+
+    // Pantalla actual (Preferencias): mismo tono que el ítem activo del nav.
+    &.is-active {
+        background-color: var(--theme-bg-sidebar-active);
+        color: var(--theme-nav-item-active-fg);
+        font-weight: var(--theme-font-weight-semibold);
     }
 }
 

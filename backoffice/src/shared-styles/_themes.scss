@@ -352,7 +352,11 @@
   // ---------------------------------------------------------------------------
   // Table (nuevo)
   // ---------------------------------------------------------------------------
-  --theme-table-row-height: 56px;
+  // Alto de fila por densidad (Preferencias). `--theme-table-row-height` es el vigente; la vista previa de
+  // Preferencias usa los dos fijos para mostrar la densidad elegida.
+  --theme-table-row-height-comoda: 56px;
+  --theme-table-row-height-compacta: 44px;
+  --theme-table-row-height: var(--theme-table-row-height-comoda);
   --theme-table-header-bg: var(--theme-surface-sunken);
   --theme-table-hover-bg: var(--theme-bg-table-hover);
 
@@ -393,5 +397,5 @@
 // Densidad compacta (Preferencias): `PreferenciasService` pone la clase en `<html>`. Solo achica las filas de las
 // tablas; los botones de fila (`--theme-control-height-sm`, 30px) no cambian. `_responsive` no pisa este token.
 :root.densidad-compacta {
-  --theme-table-row-height: 44px;
+  --theme-table-row-height: var(--theme-table-row-height-compacta);
 }
