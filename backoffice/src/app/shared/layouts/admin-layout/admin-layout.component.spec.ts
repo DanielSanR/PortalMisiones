@@ -60,8 +60,7 @@ describe('AdminLayoutComponent', () => {
     expect(crear(true).isCollapsed).toBeFalse();
   });
 
-  it('toggleCollapse guarda menuContraido solo si recordarMenuContraido está encendido', () => {
-    guardarPreferencias({ recordarMenuContraido: true });
+  it('toggleCollapse guarda menuContraido siempre, aunque recordarMenuContraido esté apagado', () => {
     const layout = crear();
     const preferencias = TestBed.inject(PreferenciasService);
 
@@ -70,10 +69,10 @@ describe('AdminLayoutComponent', () => {
     layout.toggleCollapse();
     expect(preferencias.actual.menuContraido).toBeFalse();
 
-    preferencias.actualizar({ recordarMenuContraido: false });
+    preferencias.actualizar({ recordarMenuContraido: true });
     layout.toggleCollapse();
     expect(layout.isCollapsed).toBeTrue();
-    expect(preferencias.actual.menuContraido).toBeFalse();
+    expect(preferencias.actual.menuContraido).toBeTrue();
   });
 
   it('al abrir el shell aplica la densidad compacta guardada en <html>', () => {

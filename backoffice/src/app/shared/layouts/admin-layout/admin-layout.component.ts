@@ -231,7 +231,9 @@ export class AdminLayoutComponent implements OnInit {
 
   toggleCollapse(): void {
     this.isCollapsed = !this.isCollapsed;
-    if (this.preferencias.actual.recordarMenuContraido) this.preferencias.actualizar({ menuContraido: this.isCollapsed });
+    // Se guarda siempre: así, al encender "Recordar si el menú está contraído", ya está el estado actual. Al arrancar
+    // solo se aplica con esa preferencia encendida.
+    this.preferencias.actualizar({ menuContraido: this.isCollapsed });
     // Colapsado el input queda oculto: si quedara una búsqueda activa, el nav seguiría
     // mostrando resultados sin caja donde escribir ni forma de limpiarlos.
     if (this.isCollapsed) this.navRef?.limpiarBusqueda();

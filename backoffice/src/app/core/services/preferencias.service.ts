@@ -1,7 +1,7 @@
 import { DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, map } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, defer, distinctUntilChanged, map } from 'rxjs';
 import {
   OPCIONES_AVISOS,
   OPCIONES_DENSIDAD,
@@ -51,10 +51,14 @@ export function leerPreferencias(storage: Storage | null | undefined): Preferenc
   };
 }
 
+/**
+ * `true` si todas las elecciones de la persona están como vienen. `menuContraido` no cuenta: no es una elección sino el
+ * registro de cómo quedó el menú (el layout lo guarda en cada contraer / expandir).
+ */
 function sonDeFabrica(p: Preferencias): boolean {
-  return (Object.keys(PREFERENCIAS_DE_FABRICA) as (keyof Preferencias)[]).every(
-    (clave) => p[clave] === PREFERENCIAS_DE_FABRICA[clave],
-  );
+  return (Object.keys(PREFERENCIAS_DE_FABRICA) as (keyof Preferencias)[])
+    .filter((clave) => clave !== 'menuContraido')
+    .every((clave) => p[clave] === PREFERENCIAS_DE_FABRICA[clave]);
 }
 
 /**
@@ -69,7 +73,7 @@ export class PreferenciasService {
   private readonly atajos = inject(AtajosService);
 
   private readonly preferenciasSubject = new BehaviorSubject<Preferencias>(leerPreferencias(this.storage()));
-  private readonly correoSubject = new BehaviorSubject<string>(this.leerCorreo());
+  private readonly correoSubject = new BehaviorSubject<string>('');
 
   readonly preferencias$: Observable<Preferencias> = this.preferenciasSubject.asObservable();
 
@@ -79,8 +83,14 @@ export class PreferenciasService {
     distinctUntilChanged(),
   );
 
-  /** Correo que el login recuerda en este navegador (`''` si no hay). */
-  readonly correoRecordado$: Observable<string> = this.correoSubject.asObservable();
+  /**
+   * Correo que el login recuerda en este navegador (`''` si no hay). Cada suscripción arranca de lo guardado en ese
+   * momento (`defer`): el servicio vive toda la sesión y el login puede haber recordado otro correo después de crearlo.
+   */
+  readonly correoRecordado$: Observable<string> = defer(() => {
+    this.correoSubject.next(this.leerCorreo());
+    return this.correoSubject.asObservable();
+  });
 
   constructor() {
     if (!isPlatformBrowser(this.platformId)) return;
@@ -104,9 +114,12 @@ export class PreferenciasService {
     this.guardar({ ...this.actual, ...cambios });
   }
 
-  /** Vuelve todo a fábrica, incluidos los atajos de teclado (encendidos). No toca el correo recordado. */
+  /**
+   * Vuelve todo a fábrica, incluidos los atajos de teclado (encendidos). No toca el correo recordado ni
+   * `menuContraido`, que sigue registrando cómo está el menú ahora.
+   */
   restablecer(): void {
-    this.guardar({ ...PREFERENCIAS_DE_FABRICA });
+    this.guardar({ ...PREFERENCIAS_DE_FABRICA, menuContraido: this.actual.menuContraido });
     this.atajos.setHabilitados(true);
   }
 

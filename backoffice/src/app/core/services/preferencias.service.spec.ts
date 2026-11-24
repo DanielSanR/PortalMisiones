@@ -90,7 +90,7 @@ describe('PreferenciasService', () => {
   it('restablecer vuelve a fábrica y enciende los atajos (AtajosService.habilitados === true)', async () => {
     const service = crear();
     const atajos = TestBed.inject(AtajosService);
-    service.actualizar({ avisos: 'fijo', menuContraido: true });
+    service.actualizar({ avisos: 'fijo', recordarMenuContraido: true });
     atajos.setHabilitados(false);
 
     service.restablecer();
@@ -133,6 +133,33 @@ describe('PreferenciasService', () => {
 
     expect(localStorage.getItem(CLAVE_EMAIL_RECORDADO)).toBeNull();
     expect(await firstValueFrom(service.correoRecordado$)).toBe('');
+  });
+
+  it('correoRecordado$ relee el storage al suscribirse (otro login con "Recordarme" después de crear el servicio)', async () => {
+    localStorage.setItem(CLAVE_EMAIL_RECORDADO, 'ana@misiones.gob.ar');
+    const service = crear();
+    expect(await firstValueFrom(service.correoRecordado$)).toBe('ana@misiones.gob.ar');
+
+    localStorage.setItem(CLAVE_EMAIL_RECORDADO, 'eva@misiones.gob.ar');
+    expect(await firstValueFrom(service.correoRecordado$)).toBe('eva@misiones.gob.ar');
+
+    localStorage.removeItem(CLAVE_EMAIL_RECORDADO);
+    expect(await firstValueFrom(service.correoRecordado$)).toBe('');
+  });
+
+  it('esDeFabrica$ no cuenta el estado del menú (menuContraido es un registro, no una elección)', async () => {
+    const service = crear();
+    service.actualizar({ menuContraido: true });
+    expect(await firstValueFrom(service.esDeFabrica$)).toBeTrue();
+  });
+
+  it('restablecer conserva menuContraido: sigue registrando cómo está el menú ahora', () => {
+    const service = crear();
+    service.actualizar({ recordarMenuContraido: true, menuContraido: true, densidad: 'compacta' });
+
+    service.restablecer();
+
+    expect(service.actual).toEqual({ ...PREFERENCIAS_DE_FABRICA, menuContraido: true });
   });
 
   it('si setItem tira, la preferencia rige igual en memoria', async () => {
