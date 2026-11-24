@@ -38,7 +38,7 @@ const TEXTOS_DENSIDAD: Record<Densidad, Omit<Opcion<Densidad>, 'valor'>> = {
 const TEXTOS_AVISOS: Record<DuracionDeAvisos, Omit<Opcion<DuracionDeAvisos>, 'valor'>> = {
   normal: { titulo: 'Normal', ayuda: 'Los de éxito se ven 3 s, los de error 5 s y las advertencias 8 s.' },
   largo: { titulo: 'Más tiempo', ayuda: 'El doble: 6 s, 10 s y 16 s.' },
-  fijo: { titulo: 'Hasta que lo cierre', ayuda: 'Quedan en pantalla hasta que tocás "Cerrar".' },
+  fijo: { titulo: 'Hasta que lo cierre', ayuda: 'Quedan en pantalla hasta que los cerrás con su botón.' },
 };
 
 /** Atajos que muestra la tabla de "Teclado" (fija: son los transversales, no los que estén registrados ahora). */

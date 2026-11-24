@@ -108,6 +108,15 @@ describe('PreferenciasFormComponent', () => {
     expect(facade.actualizarPreferencias).toHaveBeenCalledOnceWith({ avisos: 'fijo' });
   });
 
+  it('la ayuda de cada opción queda visible dentro de su etiqueta, sin aria-describedby en el mat-radio-button', async () => {
+    await montar();
+    const radio = Array.from(el().querySelectorAll('mat-radio-button')).find((r) => r.textContent?.includes('Hasta que lo cierre'));
+    const etiqueta = radio?.querySelector('label');
+
+    expect(etiqueta?.textContent).toContain('Quedan en pantalla hasta que los cerrás con su botón.');
+    expect(el().querySelectorAll('mat-radio-button[aria-describedby]').length).toBe(0);
+  });
+
   it('el interruptor de atajos llama setHabilitados(false) y atenúa la tabla de atajos', async () => {
     await montar();
     const tabla = (): HTMLElement | null => $('.preferencias__atajos');

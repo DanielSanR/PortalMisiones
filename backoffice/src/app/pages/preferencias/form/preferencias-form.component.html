@@ -76,10 +76,9 @@
             <mat-radio-group class="preferencias__opciones" color="primary" [value]="vista.preferencias.densidad"
               (change)="alCambiarDensidad($event)">
               @for (opcion of opcionesDensidad; track opcion.valor) {
-                <mat-radio-button class="preferencias__opcion" [value]="opcion.valor"
-                  [attr.aria-describedby]="'preferencias-densidad-' + opcion.valor">
+                <mat-radio-button class="preferencias__opcion" [value]="opcion.valor">
                   <span class="preferencias__opcion-titulo">{{ opcion.titulo }}</span>
-                  <span class="preferencias__opcion-ayuda" [id]="'preferencias-densidad-' + opcion.valor">{{ opcion.ayuda }}</span>
+                  <span class="preferencias__opcion-ayuda">{{ opcion.ayuda }}</span>
                 </mat-radio-button>
               }
             </mat-radio-group>
@@ -114,10 +113,9 @@
             <mat-radio-group class="preferencias__opciones" color="primary" [value]="vista.preferencias.avisos"
               (change)="alCambiarAvisos($event)">
               @for (opcion of opcionesAvisos; track opcion.valor) {
-                <mat-radio-button class="preferencias__opcion" [value]="opcion.valor"
-                  [attr.aria-describedby]="'preferencias-avisos-' + opcion.valor">
+                <mat-radio-button class="preferencias__opcion" [value]="opcion.valor">
                   <span class="preferencias__opcion-titulo">{{ opcion.titulo }}</span>
-                  <span class="preferencias__opcion-ayuda" [id]="'preferencias-avisos-' + opcion.valor">{{ opcion.ayuda }}</span>
+                  <span class="preferencias__opcion-ayuda">{{ opcion.ayuda }}</span>
                 </mat-radio-button>
               }
             </mat-radio-group>
