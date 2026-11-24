@@ -29,13 +29,9 @@
     color: var(--theme-text-tertiary);
   }
 
-  // Grupos de permisos: con muchos (SUPERADMIN) scrollean dentro del panel en vez de estirarlo. Mismo patrón
-  // que `.rol-detail__groups` (Roles): techo de viewport, scrollbar propia y foco por teclado con anillo inset.
+  // Grupos de permisos: el alto y el scroll los dan `.ficha-paneles__panel--acotado` + `__desplazable` (globales).
+  // Acá solo el foco por teclado de la región con scroll, con anillo inset (el panel recorta con overflow hidden).
   &__grupos {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-    @include custom-scrollbar;
-
     &:focus-visible {
       @include focus-ring-inset;
     }

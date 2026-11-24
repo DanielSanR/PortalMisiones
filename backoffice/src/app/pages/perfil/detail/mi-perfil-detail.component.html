@@ -59,41 +59,44 @@
         </p>
       </section>
 
-      <section class="ficha-paneles__panel ficha-paneles__panel--lateral" data-testid="mi-perfil-permisos" aria-labelledby="mi-perfil-permisos">
-        <header class="ficha-paneles__cabecera">
-          <div class="ficha-paneles__encabezado">
-            <h3 class="ficha-paneles__titulo" id="mi-perfil-permisos">Qué podés hacer</h3>
-            <p class="ficha-paneles__subtitulo">Viene de tu rol: {{ vista.rol }}</p>
-          </div>
-          <span class="ficha-paneles__total">{{ vista.totalPermisos }}</span>
-        </header>
-        <!-- Con muchos permisos (SUPERADMIN) el panel no se estira: scrollea acá, como el detalle de Roles.
-             Región con scroll enfocable por teclado (WCAG 2.1.1). -->
-        <div class="ficha-paneles__cuerpo mi-perfil__grupos" role="group" tabindex="0" data-testid="mi-perfil-grupos"
-             [attr.aria-label]="'Permisos de tu rol: ' + vista.rol">
-          @for (grupo of vista.grupos; track grupo.key) {
-            <div class="perm-group">
-              <div class="perm-group__header">
-                <span class="perm-group__label" [id]="'mi-perfil-grupo-' + grupo.key">{{ grupo.label }}</span>
-                <span class="perm-group__count">{{ grupo.total }}</span>
-              </div>
-              <ul class="perm-group__chips mi-perfil__chips" [attr.aria-labelledby]="'mi-perfil-grupo-' + grupo.key">
-                @for (item of grupo.items; track item.id) {
-                  <li class="perm-chip perm-chip--granted">
-                    <i class="ph ph-check" aria-hidden="true"></i>
-                    {{ item.label }}
-                  </li>
-                }
-              </ul>
+      <!-- `--acotado`: el panel no aporta alto propio, mide lo que "Datos de la cuenta" (como el detalle de Roles,
+           que mide lo que la tabla). Con muchos permisos (SUPERADMIN) la lista scrollea en `__desplazable`. -->
+      <section class="ficha-paneles__panel ficha-paneles__panel--lateral ficha-paneles__panel--acotado" data-testid="mi-perfil-permisos" aria-labelledby="mi-perfil-permisos">
+        <div class="ficha-paneles__ajuste">
+          <header class="ficha-paneles__cabecera">
+            <div class="ficha-paneles__encabezado">
+              <h3 class="ficha-paneles__titulo" id="mi-perfil-permisos">Qué podés hacer</h3>
+              <p class="ficha-paneles__subtitulo">Viene de tu rol: {{ vista.rol }}</p>
             </div>
-          } @empty {
-            <p class="mi-perfil__vacio">Tu rol no tiene permisos asignados</p>
-          }
+            <span class="ficha-paneles__total">{{ vista.totalPermisos }}</span>
+          </header>
+          <!-- Región con scroll enfocable por teclado (WCAG 2.1.1). -->
+          <div class="ficha-paneles__desplazable ficha-paneles__cuerpo mi-perfil__grupos" role="group" tabindex="0" data-testid="mi-perfil-grupos"
+               [attr.aria-label]="'Permisos de tu rol: ' + vista.rol">
+            @for (grupo of vista.grupos; track grupo.key) {
+              <div class="perm-group">
+                <div class="perm-group__header">
+                  <span class="perm-group__label" [id]="'mi-perfil-grupo-' + grupo.key">{{ grupo.label }}</span>
+                  <span class="perm-group__count">{{ grupo.total }}</span>
+                </div>
+                <ul class="perm-group__chips mi-perfil__chips" [attr.aria-labelledby]="'mi-perfil-grupo-' + grupo.key">
+                  @for (item of grupo.items; track item.id) {
+                    <li class="perm-chip perm-chip--granted">
+                      <i class="ph ph-check" aria-hidden="true"></i>
+                      {{ item.label }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            } @empty {
+              <p class="mi-perfil__vacio">Tu rol no tiene permisos asignados</p>
+            }
+          </div>
+          <p class="ficha-paneles__nota mi-perfil__nota">
+            <i class="ph ph-info" aria-hidden="true"></i>
+            <span>Si te cambian el rol, lo nuevo se ve al volver a iniciar sesión.</span>
+          </p>
         </div>
-        <p class="ficha-paneles__nota mi-perfil__nota">
-          <i class="ph ph-info" aria-hidden="true"></i>
-          <span>Si te cambian el rol, lo nuevo se ve al volver a iniciar sesión.</span>
-        </p>
       </section>
     </div>
   </div>

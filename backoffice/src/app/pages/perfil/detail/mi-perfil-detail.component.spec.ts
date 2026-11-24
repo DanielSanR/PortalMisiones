@@ -5,6 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { UserRole } from '@core/enums/user-role.enum';
 import { AuthUser } from '@core/models/auth.model';
 import { CuentaFacade, SesionDeCuentaVM } from '@features/cuenta';
+import { VentanaEscritorio, abrirVentanaEscritorio } from '@shared/utils/testing/ventana-escritorio.testing';
 import { MiPerfilDetailComponent } from './mi-perfil-detail.component';
 
 const AGENTE_IPS: AuthUser = {
@@ -40,6 +41,12 @@ const ADMIN_GLOBAL: AuthUser = {
 describe('MiPerfilDetailComponent', () => {
   let fixture: ComponentFixture<MiPerfilDetailComponent>;
   let sesion$: BehaviorSubject<SesionDeCuentaVM>;
+  let ventana: VentanaEscritorio | undefined;
+
+  afterEach(() => {
+    ventana?.cerrar();
+    ventana = undefined;
+  });
 
   async function montar(usuario: AuthUser, rol: string): Promise<void> {
     sesion$ = new BehaviorSubject<SesionDeCuentaVM>({ usuario, rol });
@@ -104,17 +111,23 @@ describe('MiPerfilDetailComponent', () => {
     expect(el().querySelector('[data-testid="mi-perfil-permisos"] button')).toBeNull();
   });
 
-  it('con muchos permisos los grupos scrollean dentro del panel: región con techo, enfocable y con nombre', async () => {
-    await montar(AGENTE_IPS, 'Agente');
+  it('con muchos permisos (SUPERADMIN) el panel mide lo que "Datos de la cuenta" y la lista scrollea adentro', async () => {
+    const acciones = ['READ', 'CREATE', 'UPDATE', 'DELETE'];
+    const recursos = ['USER', 'ROLE', 'PERMISSION', 'ORGANISM', 'ORGANISM_TYPE', 'CATEGORY', 'TAG', 'MODALITY', 'RECIPIENT',
+      'LIFE_EVENT', 'PROCEDURE', 'VARIANT'];
+    const todos = recursos.flatMap((recurso) => acciones.map((accion) => accion + '_' + recurso));
+    await montar({ ...ADMIN_GLOBAL, role: UserRole.SUPERADMIN, roles: [UserRole.SUPERADMIN], permissions: todos }, 'Superadmin');
+    ventana = await abrirVentanaEscritorio(el());
 
-    const region = el().querySelector<HTMLElement>('[data-testid="mi-perfil-grupos"]');
-    expect(region).not.toBeNull();
-    expect(region?.getAttribute('tabindex')).toBe('0');
-    expect(region?.getAttribute('role')).toBe('group');
-    expect(region?.getAttribute('aria-label')).toBe('Permisos de tu rol: Agente');
-    const estilo = getComputedStyle(region as HTMLElement);
-    expect(estilo.overflowY).toBe('auto');
-    expect(estilo.maxHeight).not.toBe('none');
+    const datos = el().querySelector<HTMLElement>('[data-testid="mi-perfil-datos"]') as HTMLElement;
+    const permisos = el().querySelector<HTMLElement>('[data-testid="mi-perfil-permisos"]') as HTMLElement;
+    const region = el().querySelector<HTMLElement>('[data-testid="mi-perfil-grupos"]') as HTMLElement;
+    expect(Math.abs(permisos.getBoundingClientRect().height - datos.getBoundingClientRect().height)).toBeLessThan(1);
+    expect(region.scrollHeight).toBeGreaterThan(region.clientHeight);
+    // Región con scroll: enfocable por teclado y con nombre.
+    expect(region.getAttribute('tabindex')).toBe('0');
+    expect(region.getAttribute('role')).toBe('group');
+    expect(region.getAttribute('aria-label')).toBe('Permisos de tu rol: Superadmin');
   });
 
   it('sin permisos muestra "Tu rol no tiene permisos asignados"', async () => {
