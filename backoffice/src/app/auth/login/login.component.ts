@@ -10,12 +10,10 @@ import { firstValueFrom } from 'rxjs';
 // Excepción documentada: auth es infra (token + rotación); queda fuera del patrón de features
 // por ahora (ver migracion_arquitectura.md). AuthTokenService ya cumple rol de facade de sesión.
 import { AuthService } from '@core/services/auth.service';
+import { CLAVE_EMAIL_RECORDADO } from '@core/services/preferencias.service';
 import { mensajeErrorLogin } from './login-error';
 import { AuthShellComponent } from '../shared/auth-shell/auth-shell.component';
 import { UnavailableDirective } from '@shared/directives/unavailable.directive';
-
-/** Clave de localStorage con el email recordado (nunca la contraseña). */
-const CLAVE_EMAIL_RECORDADO = 'backoffice.login.email';
 
 @Component({
   selector: 'app-login',
