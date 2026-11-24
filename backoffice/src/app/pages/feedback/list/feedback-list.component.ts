@@ -14,6 +14,7 @@ import { FilterTabsComponent, FilterTabOption } from '@shared/components/filter-
 import { ListSearchComponent } from '@shared/components/list-search';
 import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { provideFechaArDatepicker } from '@shared/adapters/fecha-ar-date-adapter';
+import { CuentaFacade } from '@features/cuenta';
 import { FeedbackFacade, FeedbackFilterVM, FeedbackPageVM, FeedbackStatsVM, FeedbackVM } from '@features/feedback';
 
 @Component({
@@ -42,6 +43,8 @@ export class FeedbackListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly facade = inject(FeedbackFacade);
+  /** Da el tamaño de página inicial: la preferencia "Filas por página". */
+  private readonly cuenta = inject(CuentaFacade);
   private readonly route = inject(ActivatedRoute);
   /** Cada emisión dispara una consulta; `switchMap` descarta la anterior si sigue en vuelo. */
   private readonly load$ = new Subject<FeedbackFilterVM>();
@@ -58,7 +61,8 @@ export class FeedbackListComponent implements OnInit {
   error = false;
   totalItems = 0;
   currentPage = 0;
-  pageSize = 10;
+  /** Arranca en "Filas por página" (Preferencias); después lo cambia el paginador. */
+  pageSize: number = this.cuenta.filasPorPagina;
   tramiteIdFijo: string | null = null;
 
   columns: TableColumn<FeedbackVM>[] = [

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, defer, filter, map } from 'rxjs';
 import { MessageDTO } from '@core/models/api-response.model';
 import { AuthUser } from '@core/models/auth.model';
-import { Preferencias } from '@core/models/preferencias.model';
+import { FilasPorPagina, Preferencias } from '@core/models/preferencias.model';
 import { AtajosService } from '@core/services/atajos.service';
 import { AuthTokenService } from '@core/services/auth-token.service';
 import { PreferenciasService } from '@core/services/preferencias.service';
@@ -43,6 +43,14 @@ export class CuentaFacade {
 
   /** Correo que recuerda el login en este navegador (`''` si no hay); se relee al suscribirse. */
   readonly correoRecordado$: Observable<string> = this.preferencias.correoRecordado$;
+
+  /**
+   * "Filas por página" en este momento (lectura síncrona): el tamaño inicial de las listas con paginado en servidor
+   * (auditoría, feedback), que no van sobre `ListaCliente`.
+   */
+  get filasPorPagina(): FilasPorPagina {
+    return this.preferencias.actual.filasPorPagina;
+  }
 
   /** Preferencia "Atajos de teclado". */
   readonly atajosHabilitados$: Observable<boolean> = this.atajos.habilitados$;

@@ -52,6 +52,7 @@ describe('CuentaFacade — preferencias locales', () => {
 
   beforeEach(() => {
     preferencias = jasmine.createSpyObj<PreferenciasService>('PreferenciasService', ['actualizar', 'restablecer', 'olvidarCorreo'], {
+      actual: PREFS,
       preferencias$: of(PREFS),
       esDeFabrica$: of(false),
       correoRecordado$: of('ana@misiones.gob.ar'),
@@ -73,6 +74,10 @@ describe('CuentaFacade — preferencias locales', () => {
     expect(await firstValueFrom(facade.preferenciasDeFabrica$)).toBeFalse();
     expect(await firstValueFrom(facade.correoRecordado$)).toBe('ana@misiones.gob.ar');
     expect(await firstValueFrom(facade.atajosHabilitados$)).toBeFalse();
+  });
+
+  it('filasPorPagina lee la preferencia actual (tamaño inicial de las listas paginadas en servidor)', () => {
+    expect(TestBed.inject(CuentaFacade).filasPorPagina).toBe(20);
   });
 
   it('los comandos aplican al momento en los servicios de preferencias y atajos', () => {
