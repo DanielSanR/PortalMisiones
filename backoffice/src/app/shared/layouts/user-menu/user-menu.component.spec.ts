@@ -110,6 +110,19 @@ describe('UserMenuComponent — ficha de la cuenta', () => {
     expect(perfil?.classList).not.toContain('is-unavailable');
   });
 
+  it('el menú solo lleva a Mi perfil, a Preferencias y a Cerrar sesión: lo demás vive en esas pantallas', async () => {
+    await abrir('');
+
+    const items = Array.from(overlay.querySelectorAll<HTMLElement>('.user-menu__item'));
+    expect(items.map((item) => item.textContent?.replace(/\s+/g, ' ').trim())).toEqual(['Mi perfil', 'Preferencias', 'Cerrar sesión']);
+    const preferencias = items.find((item) => item.textContent?.includes('Preferencias'));
+    expect(preferencias?.tagName).toBe('A');
+    expect(preferencias?.getAttribute('href')).toBe('/dashboard/preferencias');
+    // Ya no hay funciones pendientes ni interruptores en el menú.
+    expect(overlay.querySelector('.user-menu-panel [aria-disabled="true"]')).toBeNull();
+    expect(overlay.querySelector('[role="menuitemcheckbox"]')).toBeNull();
+  });
+
   it('un click en la ficha (para seleccionar el email o el organismo) no cierra el menú; "Cerrar sesión" sí', async () => {
     await abrir('Instituto de Previsión Social (IPS)');
     const salir = jasmine.createSpy('logout');
