@@ -21,7 +21,7 @@ export interface VistaDePerfil {
 }
 
 const AYUDA_POR_ORGANISMO = 'Ves y editás solo lo de tu organismo.';
-const AYUDA_GLOBAL = 'Ves y editás lo de todos los organismos.';
+const AYUDA_GLOBAL = 'Ves y editás todo el backoffice.';
 
 /**
  * Vista de "Mi perfil" a partir de la sesión y del rol legible (`getUserRoleLabel`).

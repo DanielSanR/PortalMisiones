@@ -81,6 +81,7 @@ describe('MiPerfilDetailComponent', () => {
 
     expect(Object.keys(campos())).toEqual(['Correo', 'Rol', 'Alcance']);
     expect(campos()['Alcance']).toContain('Global');
+    expect(campos()['Alcance']).toContain('Ves y editás todo el backoffice.');
     expect(texto('.detail-header__meta')).toContain('Alcance global');
   });
 

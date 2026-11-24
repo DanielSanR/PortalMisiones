@@ -48,7 +48,7 @@ describe('vistaDePerfil', () => {
     const vista = vistaDePerfil(ADMIN_BACKEND_VIEJO, 'Administrador de Backoffice');
 
     expect(vista.alcance).toBe('Global');
-    expect(vista.alcanceAyuda).toBe('Ves y editás lo de todos los organismos.');
+    expect(vista.alcanceAyuda).toBe('Ves y editás todo el backoffice.');
     expect(vista.organismo).toBeNull();
     expect(vista.totalPermisos).toBe('1 permiso');
   });
