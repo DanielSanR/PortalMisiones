@@ -55,20 +55,26 @@ export const PERMISO_RESOURCE_LABELS: Record<string, string> = {
   ANALYTICS: 'Analítica',
 };
 
+/** Etiqueta propia del mapa (no hereda del prototipo: `toString`, `constructor`… no son acciones ni recursos). */
+function etiquetaPropia(etiquetas: Record<string, string>, clave: string): string | undefined {
+  return Object.hasOwn(etiquetas, clave) ? etiquetas[clave] : undefined;
+}
+
 function resourceOf(codigo: string): string {
   const [, ...rest] = codigo.split('_');
   return rest.length ? rest.join('_') : codigo;
 }
 
 function humanizeResource(resource: string): string {
-  if (PERMISO_RESOURCE_LABELS[resource]) return PERMISO_RESOURCE_LABELS[resource];
+  const etiqueta = etiquetaPropia(PERMISO_RESOURCE_LABELS, resource);
+  if (etiqueta) return etiqueta;
   const words = resource.replace(/_/g, ' ').toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function actionLabel(codigo: string): string {
   const action = codigo.split('_')[0];
-  return PERMISO_ACTION_LABELS[action] ?? action;
+  return etiquetaPropia(PERMISO_ACTION_LABELS, action) ?? action;
 }
 
 /** Clave y etiqueta del grupo donde caen los códigos que no siguen `ACCION_RECURSO` con una acción conocida. */
@@ -116,16 +122,17 @@ export function buildPermisoGroups(catalog: PermisoVM[], grantedIds: Set<string>
 
 function esCodigoConocido(codigo: string): boolean {
   const [action, ...rest] = codigo.split('_');
-  return rest.length > 0 && action in PERMISO_ACTION_LABELS;
+  return rest.length > 0 && Object.hasOwn(PERMISO_ACTION_LABELS, action);
 }
 
 /**
  * Agrupa los códigos que trae la sesión (`AuthUser.permissions`), sin catálogo: todos otorgados, el código hace de id.
  * Mismos grupos, etiquetas y orden que `buildPermisoGroups`; los códigos que no son `ACCION_RECURSO` con una acción
- * conocida van al final, en "Otros", con el código como etiqueta. Los repetidos cuentan una vez.
+ * conocida van al final, en "Otros", con el código como etiqueta. Los repetidos cuentan una vez y los vacíos (un
+ * claim con comas de más) se descartan.
  */
 export function gruposDeCodigos(codigos: readonly string[]): PermisoGroupVM[] {
-  const unicos = Array.from(new Set(codigos));
+  const unicos = Array.from(new Set(codigos.filter((codigo) => codigo.trim() !== '')));
   const conocidos = unicos.filter(esCodigoConocido);
   const otros = unicos.filter((codigo) => !esCodigoConocido(codigo));
   const grupos = buildPermisoGroups(

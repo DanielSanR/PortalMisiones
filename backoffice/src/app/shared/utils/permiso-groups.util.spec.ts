@@ -25,6 +25,21 @@ describe('gruposDeCodigos', () => {
     expect(gruposDeCodigos([])).toEqual([]);
   });
 
+  it('una "acción" que es una clave del prototipo (toString_X, constructor_X) no es conocida: va a "Otros" con el código', () => {
+    const grupos = gruposDeCodigos(['toString_X', 'constructor_USER', 'READ_USER']);
+    expect(grupos.map((g) => g.label)).toEqual(['Usuarios', 'Otros']);
+    const otros = grupos[1];
+    expect(otros.items.map((i) => i.label)).toEqual(['toString_X', 'constructor_USER']);
+    expect(grupos.flatMap((g) => g.items).every((i) => typeof i.label === 'string')).toBeTrue();
+  });
+
+  it('descarta los códigos vacíos o en blanco antes de agrupar', () => {
+    const grupos = gruposDeCodigos(['', '  ', 'READ_USER', '']);
+    expect(grupos.length).toBe(1);
+    expect(grupos[0].items.map((i) => i.codigo)).toEqual(['READ_USER']);
+    expect(gruposDeCodigos(['', ' '])).toEqual([]);
+  });
+
   it('ignora códigos repetidos', () => {
     const [g] = gruposDeCodigos(['READ_USER', 'READ_USER']);
     expect(g.total).toBe(1);
@@ -39,6 +54,13 @@ describe('gruposDeCodigos', () => {
 });
 
 describe('buildPermisoGroups', () => {
+  it('con un código cuya acción o recurso es una clave del prototipo, las etiquetas siguen siendo texto', () => {
+    const catalogo = [{ id: '1', codigo: 'toString_constructor' }] as PermisoVM[];
+    const [g] = buildPermisoGroups(catalogo, new Set(['1']));
+    expect(g.label).toBe('Constructor');
+    expect(g.items[0].label).toBe('toString');
+  });
+
   it('marca otorgados por id y cuenta por grupo', () => {
     const catalogo = [
       { id: '1', codigo: 'READ_USER' },
