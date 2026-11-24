@@ -39,10 +39,18 @@
                 (navegado)="cerrarMenuEnMobile()" />
 
             <div class="admin-layout__footer">
-                <button type="button" class="admin-layout__footer-item" appUnavailable="Preferencias: todavía no está disponible">
+                <!-- Ruta de `pages/preferencias/preferencias.rutas.ts` (RUTA_PREFERENCIAS): `shared/` no puede importar de `pages/`. -->
+                <a class="admin-layout__footer-item"
+                    routerLink="/dashboard/preferencias"
+                    routerLinkActive="is-active"
+                    #rlaPreferencias="routerLinkActive"
+                    [attr.aria-current]="rlaPreferencias.isActive ? 'page' : null"
+                    [matTooltip]="isCollapsed && !isMobile ? 'Preferencias' : ''"
+                    matTooltipPosition="right"
+                    (click)="cerrarMenuEnMobile()">
                     <i class="ph ph-sliders-horizontal" aria-hidden="true"></i>
                     <span class="admin-layout__footer-label">Preferencias</span>
-                </button>
+                </a>
                 <button type="button" class="admin-layout__footer-item" appUnavailable="Ayuda y documentación: todavía no está disponible">
                     <i class="ph ph-question" aria-hidden="true"></i>
                     <span class="admin-layout__footer-label">Ayuda y documentación</span>
@@ -55,8 +63,6 @@
                     [role]="userRoleSpanish"
                     [organismo]="userOrganismo"
                     [compact]="isCollapsed && !isMobile"
-                    [atajosHabilitados]="(atajos.habilitados$ | async) ?? true"
-                    (atajosChange)="atajos.setHabilitados($event)"
                     (logout)="logout()" />
             </div>
         </mat-sidenav>

@@ -352,7 +352,17 @@
   // ---------------------------------------------------------------------------
   // Table (nuevo)
   // ---------------------------------------------------------------------------
-  --theme-table-row-height: 56px;
+  // Alto de fila por densidad (Preferencias). `--theme-table-row-height` es el vigente; la vista previa de
+  // Preferencias usa los dos fijos para mostrar la densidad elegida.
+  --theme-table-row-height-comoda: 56px;
+  --theme-table-row-height-compacta: 44px;
+  --theme-table-row-height: var(--theme-table-row-height-comoda);
+  // Padding vertical de las celdas: también sigue la densidad. Sin esto una fila con avatar o botón de 30px
+  // (30 + 10 + 10 + borde) pasaba el alto compacto y quedaba en ~50px.
+  --theme-table-cell-padding-y: var(--theme-space-10);
+  // Árbol de Categorías (filas propias, no `app-shared-table`): mínimo 52px y padding 9px en cómoda.
+  --theme-tree-row-height: 52px;
+  --theme-tree-cell-padding-y: var(--theme-space-9);
   --theme-table-header-bg: var(--theme-surface-sunken);
   --theme-table-hover-bg: var(--theme-bg-table-hover);
 
@@ -388,4 +398,15 @@
   --theme-z-sticky: 200;
   --theme-z-header: 1000;
   --theme-z-modal: 1300;
+}
+
+// Densidad compacta (Preferencias): `PreferenciasService` pone la clase en `<html>`. Achica las filas de las
+// tablas y del árbol de Categorías (alto y padding vertical de las celdas: 30 + 6 + 6 + borde entra en 44px); los
+// botones de fila (`--theme-control-height-sm`, 30px) no cambian. `_responsive` no pisa estos tokens: en mobile la
+// fila de tabla sigue en 48px con padding 0 (táctil), con cualquier densidad.
+:root.densidad-compacta {
+  --theme-table-row-height: var(--theme-table-row-height-compacta);
+  --theme-table-cell-padding-y: var(--theme-space-6);
+  --theme-tree-row-height: var(--theme-table-row-height-compacta);
+  --theme-tree-cell-padding-y: var(--theme-space-6);
 }

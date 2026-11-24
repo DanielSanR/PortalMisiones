@@ -104,6 +104,12 @@ describe('AdopcionesListComponent · filtros y adopción', () => {
   let po: ListaPO<AdopcionesListComponent>;
   let fuente: FuenteDePrueba<AdopcionVM>;
 
+  beforeAll(async () => {
+    // `abrirFormDialog` baja el diálogo en diferido: dentro de `fakeAsync` ese `import()` solo se resuelve si el
+    // módulo ya está cargado. Sin esto la prueba dependía de que otro spec lo hubiera bajado antes (orden aleatorio).
+    await import('@shared/components/form-dialog/form-dialog.component');
+  });
+
   function montar(): void {
     fuente = new FuenteDePrueba(ADOPCIONES);
     po = montarLista({ componente: AdopcionesListComponent, providers: facadeDePrueba(fuente), permisos: PERMISOS_ADOPCIONES });

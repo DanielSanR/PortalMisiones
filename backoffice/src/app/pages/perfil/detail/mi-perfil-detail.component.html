@@ -1,0 +1,103 @@
+<!-- Mi perfil: membrete con la cuenta + dos paneles de solo lectura (datos | permisos). Sin estados de carga:
+     los datos ya están en la sesión. -->
+@if (vista$ | async; as vista) {
+  <app-membrete class="ficha-membrete" [ficha]="false" [titulo]="vista.nombre" [datos]="vista.membrete">
+    <span membreteTile class="mi-perfil__avatar" aria-hidden="true">{{ vista.iniciales }}</span>
+    <span membretePill class="pill pill--success pill--bordered">
+      <span class="pill__dot" aria-hidden="true"></span>
+      <span class="pill__label">Cuenta activa</span>
+    </span>
+
+    <button type="button" mat-stroked-button appUnavailable="Cambiar contraseña: todavía no está disponible">
+      <i class="ph ph-lock-simple" aria-hidden="true"></i>
+      Cambiar contraseña
+    </button>
+  </app-membrete>
+
+  <div class="ficha-paneles ficha-paneles--lectura">
+    <div class="ficha-paneles__grid ficha-paneles__grid--iguales">
+      <section class="ficha-paneles__panel" data-testid="mi-perfil-datos" aria-labelledby="mi-perfil-datos">
+        <header class="ficha-paneles__cabecera">
+          <div class="ficha-paneles__encabezado">
+            <h3 class="ficha-paneles__titulo" id="mi-perfil-datos">Datos de la cuenta</h3>
+            <p class="ficha-paneles__subtitulo">Los administra Gobierno Inteligente; acá solo se consultan</p>
+          </div>
+        </header>
+        <div class="ficha-paneles__cuerpo">
+          <dl class="detail-fields">
+            <div class="detail-field">
+              <dt class="detail-field__label">Correo</dt>
+              <dd class="detail-field__value mi-perfil__valor">
+                <span>{{ vista.email }}</span>
+                <span class="mi-perfil__ayuda">Es tu usuario para entrar al backoffice.</span>
+              </dd>
+            </div>
+            <div class="detail-field">
+              <dt class="detail-field__label">Rol</dt>
+              <dd class="detail-field__value">{{ vista.rol }}</dd>
+            </div>
+            <div class="detail-field">
+              <dt class="detail-field__label">Alcance</dt>
+              <dd class="detail-field__value mi-perfil__valor">
+                <span>{{ vista.alcance }}</span>
+                <span class="mi-perfil__ayuda">{{ vista.alcanceAyuda }}</span>
+              </dd>
+            </div>
+            @if (vista.alcance === 'Por organismo') {
+              <div class="detail-field">
+                <dt class="detail-field__label">Organismo</dt>
+                <dd class="detail-field__value" [class.detail-field__value--muted]="!vista.organismo">
+                  {{ vista.organismo ?? 'No informado' }}
+                </dd>
+              </div>
+            }
+          </dl>
+        </div>
+        <p class="ficha-paneles__nota mi-perfil__nota">
+          <i class="ph ph-info" aria-hidden="true"></i>
+          <span>¿Algún dato está mal o necesitás otro rol? Pedíselo a un administrador del backoffice: desde acá no se puede cambiar.</span>
+        </p>
+      </section>
+
+      <!-- `--acotado`: el panel no aporta alto propio, mide lo que "Datos de la cuenta" (como el detalle de Roles,
+           que mide lo que la tabla). Con muchos permisos (SUPERADMIN) la lista scrollea en `__desplazable`. -->
+      <section class="ficha-paneles__panel ficha-paneles__panel--lateral ficha-paneles__panel--acotado" data-testid="mi-perfil-permisos" aria-labelledby="mi-perfil-permisos">
+        <div class="ficha-paneles__ajuste">
+          <header class="ficha-paneles__cabecera">
+            <div class="ficha-paneles__encabezado">
+              <h3 class="ficha-paneles__titulo" id="mi-perfil-permisos">Qué podés hacer</h3>
+              <p class="ficha-paneles__subtitulo">Viene de tu rol: {{ vista.rol }}</p>
+            </div>
+            <span class="ficha-paneles__total">{{ vista.totalPermisos }}</span>
+          </header>
+          <!-- Región con scroll enfocable por teclado (WCAG 2.1.1). -->
+          <div class="ficha-paneles__desplazable ficha-paneles__cuerpo mi-perfil__grupos" role="group" tabindex="0" data-testid="mi-perfil-grupos"
+               [attr.aria-label]="'Permisos de tu rol: ' + vista.rol">
+            @for (grupo of vista.grupos; track grupo.key) {
+              <div class="perm-group">
+                <div class="perm-group__header">
+                  <span class="perm-group__label" [id]="'mi-perfil-grupo-' + grupo.key">{{ grupo.label }}</span>
+                  <span class="perm-group__count">{{ grupo.total }}</span>
+                </div>
+                <ul class="perm-group__chips mi-perfil__chips" [attr.aria-labelledby]="'mi-perfil-grupo-' + grupo.key">
+                  @for (item of grupo.items; track item.id) {
+                    <li class="perm-chip perm-chip--granted">
+                      <i class="ph ph-check" aria-hidden="true"></i>
+                      {{ item.label }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            } @empty {
+              <p class="mi-perfil__vacio">Tu rol no tiene permisos asignados</p>
+            }
+          </div>
+          <p class="ficha-paneles__nota mi-perfil__nota">
+            <i class="ph ph-info" aria-hidden="true"></i>
+            <span>Si te cambian el rol, lo nuevo se ve al volver a iniciar sesión.</span>
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+}

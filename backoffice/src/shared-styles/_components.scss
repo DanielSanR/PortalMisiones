@@ -1712,6 +1712,24 @@ mat-select,
   }
 }
 
+// Tecla de un atajo (`<kbd class="tecla">N</kbd>`): diálogo de atajos (`?`) y Preferencias.
+.tecla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--theme-space-xs);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: var(--theme-radius-sm);
+  background-color: var(--theme-surface-sunken);
+  color: var(--theme-text-primary);
+  font-family: inherit;
+  font-size: var(--theme-font-size-xs);
+  font-weight: var(--theme-font-weight-semibold);
+  line-height: var(--theme-line-height-none);
+}
+
 // Booleano (slide-toggle) con su explicación debajo. `__ayuda` es el destino del `aria-describedby` del
 // toggle: va siempre montado, y vacío no ocupa lugar.
 //   <div class="form-toggle [form-toggle--separado]">

@@ -1,6 +1,6 @@
 /*
  * GENERADO por scripts/phosphor-subset.mjs — NO editar a mano. Re-generar con `npm run icons`.
- * Fuente: @phosphor-icons/web (regular), 106 íconos de 1530. Fuente woff2: subset con fonttools (python3).
+ * Fuente: @phosphor-icons/web (regular), 104 íconos de 1530. Fuente woff2: subset con fonttools (python3).
  */
 @font-face {
   font-family: "Phosphor";
@@ -209,14 +209,8 @@
 .ph.ph-link:before {
   content: "\e2e2";
 }
-.ph.ph-link-break:before {
-  content: "\e2e4";
-}
 .ph.ph-list:before {
   content: "\e2f0";
-}
-.ph.ph-list-bullets:before {
-  content: "\e2f2";
 }
 .ph.ph-list-checks:before {
   content: "\eadc";

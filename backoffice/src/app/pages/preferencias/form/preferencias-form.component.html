@@ -1,0 +1,211 @@
+<!-- Preferencias: dos columnas de tarjetas (`.ficha-paneles--separados`). Cada control aplica al momento; no hay
+     "Guardar". El `<h1>` lo pone el shell: los títulos de tarjeta son `h2` (no hay membrete arriba). -->
+@if (vista$ | async; as vista) {
+  <div class="ficha-paneles ficha-paneles--separados">
+    <div class="ficha-paneles__grid">
+      <div class="ficha-paneles__columna">
+        <!-- Teclado -->
+        <section class="ficha-paneles__panel" data-testid="preferencias-atajos" aria-labelledby="preferencias-teclado">
+          <header class="ficha-paneles__encabezado">
+            <h2 class="ficha-paneles__titulo" id="preferencias-teclado">Teclado</h2>
+            <p class="ficha-paneles__subtitulo">Atajos de una sola tecla para moverte más rápido</p>
+          </header>
+
+          <div class="form-toggle">
+            <mat-slide-toggle color="primary" [checked]="vista.atajos" (change)="alCambiarAtajos($event.checked)"
+              aria-describedby="preferencias-atajos-ayuda">
+              Atajos de teclado
+            </mat-slide-toggle>
+            <div class="form-toggle__ayuda" id="preferencias-atajos-ayuda" aria-live="polite">
+              <p>
+                @if (vista.atajos) {
+                  Activados. Podés apagarlos si usás un lector de pantalla o te disparan acciones sin querer.
+                } @else {
+                  Desactivados: las teclas de la lista no hacen nada.
+                }
+              </p>
+            </div>
+          </div>
+
+          <table class="preferencias__atajos" [class.preferencias__atajos--apagados]="!vista.atajos">
+            <caption class="cdk-visually-hidden">Atajos de teclado del backoffice</caption>
+            <thead>
+              <tr>
+                <th scope="col" class="preferencias__celda preferencias__celda--cabecera">Tecla</th>
+                <th scope="col" class="preferencias__celda preferencias__celda--cabecera">Qué hace</th>
+                <th scope="col" class="preferencias__celda preferencias__celda--cabecera">Dónde</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (atajo of atajos; track atajo.tecla) {
+                <tr>
+                  <td class="preferencias__celda"><kbd class="tecla">{{ atajo.tecla }}</kbd></td>
+                  <td class="preferencias__celda">{{ atajo.accion }}</td>
+                  <td class="preferencias__celda preferencias__celda--donde">{{ atajo.donde }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <p class="preferencias__nota">
+            <i class="ph ph-info" aria-hidden="true"></i>
+            <span>No se disparan mientras escribís en un campo ni con un diálogo abierto. Esc, Tab y Enter funcionan siempre, aunque los apagues.</span>
+          </p>
+        </section>
+
+        <!-- Listas y tablas -->
+        <section class="ficha-paneles__panel" aria-labelledby="preferencias-listas">
+          <header class="ficha-paneles__encabezado">
+            <h2 class="ficha-paneles__titulo" id="preferencias-listas">Listas y tablas</h2>
+            <p class="ficha-paneles__subtitulo">Valen para las listas del backoffice. Roles y Categorías muestran todo junto, sin páginas.</p>
+          </header>
+
+          <div class="preferencias__control">
+            <span class="preferencias__rotulo">Filas por página</span>
+            <mat-button-toggle-group aria-label="Filas por página" aria-describedby="preferencias-filas-ayuda"
+              [value]="vista.preferencias.filasPorPagina" (change)="alCambiarFilas($event)">
+              @for (filas of opcionesFilas; track filas) {
+                <mat-button-toggle [value]="filas">{{ filas }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+            <p class="preferencias__ayuda" id="preferencias-filas-ayuda">Con más filas hacés menos clics, pero la página es más larga.</p>
+          </div>
+
+          <fieldset class="preferencias__grupo">
+            <legend class="preferencias__rotulo">Densidad</legend>
+            <mat-radio-group class="preferencias__opciones" color="primary" [value]="vista.preferencias.densidad"
+              (change)="alCambiarDensidad($event)">
+              @for (opcion of opcionesDensidad; track opcion.valor) {
+                <mat-radio-button class="preferencias__opcion" [value]="opcion.valor">
+                  <span class="preferencias__opcion-titulo">{{ opcion.titulo }}</span>
+                  <span class="preferencias__opcion-ayuda">{{ opcion.ayuda }}</span>
+                </mat-radio-button>
+              }
+            </mat-radio-group>
+          </fieldset>
+
+          <!-- Vista previa: decorativa (lo que dice ya lo dicen los controles). -->
+          <div class="preferencias__previa" aria-hidden="true">
+            <span class="preferencias__rotulo">Vista previa</span>
+            <div class="preferencias__previa-tabla" [class.preferencias__previa-tabla--compacta]="vista.preferencias.densidad === 'compacta'">
+              @for (fila of filasDeMuestra; track fila) {
+                <div class="preferencias__previa-fila">
+                  <span class="preferencias__previa-barra"></span>
+                  <span class="preferencias__previa-barra preferencias__previa-barra--corta"></span>
+                </div>
+              }
+            </div>
+            <span class="preferencias__previa-rango" data-testid="preferencias-rango">1–{{ vista.preferencias.filasPorPagina }} de {{ totalDeEjemplo }}</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="ficha-paneles__columna">
+        <!-- Avisos -->
+        <section class="ficha-paneles__panel" aria-labelledby="preferencias-avisos">
+          <header class="ficha-paneles__encabezado">
+            <h2 class="ficha-paneles__titulo" id="preferencias-avisos">Avisos</h2>
+            <p class="ficha-paneles__subtitulo">Los mensajes que aparecen abajo después de guardar o si algo falla</p>
+          </header>
+
+          <fieldset class="preferencias__grupo">
+            <legend class="preferencias__rotulo">Cuánto tiempo se ven</legend>
+            <mat-radio-group class="preferencias__opciones" color="primary" [value]="vista.preferencias.avisos"
+              (change)="alCambiarAvisos($event)">
+              @for (opcion of opcionesAvisos; track opcion.valor) {
+                <mat-radio-button class="preferencias__opcion" [value]="opcion.valor">
+                  <span class="preferencias__opcion-titulo">{{ opcion.titulo }}</span>
+                  <span class="preferencias__opcion-ayuda">{{ opcion.ayuda }}</span>
+                </mat-radio-button>
+              }
+            </mat-radio-group>
+          </fieldset>
+        </section>
+
+        <!-- Idioma y formato -->
+        <section class="ficha-paneles__panel" data-testid="preferencias-formato" aria-labelledby="preferencias-formato">
+          <header class="ficha-paneles__encabezado">
+            <h2 class="ficha-paneles__titulo" id="preferencias-formato">Idioma y formato</h2>
+            <p class="ficha-paneles__subtitulo">Son los mismos para todo el backoffice</p>
+          </header>
+          <dl class="detail-fields">
+            <div class="detail-field">
+              <dt class="detail-field__label">Idioma</dt>
+              <dd class="detail-field__value">Español (Argentina)</dd>
+            </div>
+            <div class="detail-field">
+              <dt class="detail-field__label">Fechas</dt>
+              <dd class="detail-field__value">{{ hoy | date: 'dd/MM/yyyy' }}</dd>
+            </div>
+            <div class="detail-field">
+              <dt class="detail-field__label">Números</dt>
+              <dd class="detail-field__value">{{ numeroDeEjemplo | number: '1.2-2' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Navegación -->
+        <section class="ficha-paneles__panel" data-testid="preferencias-menu" aria-labelledby="preferencias-navegacion">
+          <header class="ficha-paneles__encabezado">
+            <h2 class="ficha-paneles__titulo" id="preferencias-navegacion">Navegación</h2>
+            <p class="ficha-paneles__subtitulo">Cómo se ve el menú lateral</p>
+          </header>
+          <div class="form-toggle">
+            <mat-slide-toggle color="primary" [checked]="vista.preferencias.recordarMenuContraido"
+              (change)="alCambiarRecordarMenu($event.checked)" aria-describedby="preferencias-menu-ayuda">
+              Recordar si el menú está contraído
+            </mat-slide-toggle>
+            <div class="form-toggle__ayuda" id="preferencias-menu-ayuda" aria-live="polite">
+              <p>
+                @if (vista.preferencias.recordarMenuContraido) {
+                  Si lo contraés, sigue contraído al recargar o volver a entrar.
+                } @else {
+                  Apagado: el menú se abre siempre al entrar.
+                }
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Este navegador -->
+        <section class="ficha-paneles__panel" aria-labelledby="preferencias-navegador">
+          <header class="ficha-paneles__encabezado">
+            <h2 class="ficha-paneles__titulo" id="preferencias-navegador">Este navegador</h2>
+            <p class="ficha-paneles__subtitulo">Lo que queda guardado en esta computadora</p>
+          </header>
+
+          <div class="preferencias__item" #bloqueCorreo tabindex="-1" data-testid="preferencias-correo">
+            <i class="ph ph-envelope-simple preferencias__item-icono" aria-hidden="true"></i>
+            <div class="preferencias__item-texto">
+              @if (vista.correo) {
+                <span class="preferencias__opcion-titulo">Correo recordado para entrar</span>
+                <span class="preferencias__opcion-ayuda">{{ vista.correo }} · lo guardó "Recordarme" en el login</span>
+              } @else {
+                <span class="preferencias__opcion-titulo">No hay ningún correo guardado</span>
+                <span class="preferencias__opcion-ayuda">El login va a aparecer vacío. Nunca se guarda la contraseña.</span>
+              }
+            </div>
+            @if (vista.correo) {
+              <button type="button" mat-stroked-button (click)="olvidarCorreo()">Olvidar</button>
+            }
+          </div>
+
+          <div class="preferencias__item preferencias__item--restablecer">
+            <i class="ph ph-arrow-counter-clockwise preferencias__item-icono" aria-hidden="true"></i>
+            <div class="preferencias__item-texto">
+              <span class="preferencias__opcion-titulo">Restablecer preferencias</span>
+              <span class="preferencias__opcion-ayuda" id="preferencias-restablecer-nota" aria-live="polite">{{
+                vista.deFabrica ? 'Estás usando los valores de fábrica.' : 'Vuelve todo a como venía. El correo recordado no se toca.'
+              }}</span>
+            </div>
+            <button type="button" mat-stroked-button aria-describedby="preferencias-restablecer-nota"
+              [appUnavailable]="vista.deFabrica ? 'Estás usando los valores de fábrica.' : false" appUnavailableMotivoVisible
+              (click)="restablecer()">
+              Restablecer preferencias
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+}

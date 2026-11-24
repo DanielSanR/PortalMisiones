@@ -183,16 +183,6 @@
             }
         }
     }
-
-    // Valor a la derecha de la etiqueta ("Idioma … es-AR"). El padding asegura la separación aunque la
-    // fila del ítem (template de Material) no reparta el espacio sobrante.
-    &__item-value {
-        margin-left: auto;
-        padding-left: var(--theme-space-lg);
-        white-space: nowrap;
-        font-size: var(--theme-font-caption-size);
-        color: var(--theme-text-tertiary);
-    }
 }
 
 mat-divider {

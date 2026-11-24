@@ -1,0 +1,59 @@
+@use 'shared-styles/mixins' as *;
+
+// Mi perfil: membrete (`<app-membrete>`) + `.ficha-paneles--lectura` con `.detail-fields`, `.perm-group` y `.perm-chip`
+// globales. Acá solo lo propio: el avatar redondo, la ayuda bajo un valor, la lista de chips y las notas al pie.
+.mi-perfil {
+  // Avatar con iniciales en el tile del membrete: redondo (es una persona), mismo tamaño que el de Organismo.
+  &__avatar {
+    @include flex-center;
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--theme-radius-full);
+    background: var(--theme-primary-50);
+    color: var(--theme-primary-800);
+    font-size: var(--theme-font-size-md);
+    font-weight: var(--theme-font-weight-bold);
+    letter-spacing: var(--theme-tracking-tight-px);
+  }
+
+  // Valor con una línea de ayuda debajo (Correo, Alcance).
+  &__valor {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--theme-space-2xs);
+  }
+
+  &__ayuda {
+    font-size: var(--theme-font-small-size);
+    color: var(--theme-text-tertiary);
+  }
+
+  // Grupos de permisos: el alto y el scroll los dan `.ficha-paneles__panel--acotado` + `__desplazable` (globales).
+  // Acá solo el foco por teclado de la región con scroll, con anillo inset (el panel recorta con overflow hidden).
+  &__grupos {
+    &:focus-visible {
+      @include focus-ring-inset;
+    }
+  }
+
+  // Los chips van en un `<ul>` (es una lista); sin viñetas ni sangría.
+  &__chips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__vacio {
+    margin: 0;
+    font-size: var(--theme-font-size-sm);
+    color: var(--theme-text-tertiary);
+  }
+
+  // Nota al pie del panel (no bajo el encabezado): filete arriba y pegada al fondo aunque el panel vecino sea más alto.
+  &__nota {
+    margin-top: auto;
+    border-top: 1px solid var(--theme-border-subtle);
+    border-bottom: 0;
+  }
+}

@@ -17,12 +17,13 @@ import { AuthTokenService } from '@core/services/auth-token.service';
 import { AuthService } from '@core/services/auth.service';
 import { LayoutChromeService } from '@core/services/layout-chrome.service';
 import { AtajosService } from '@core/services/atajos.service';
+import { PreferenciasService } from '@core/services/preferencias.service';
 import { abrirAyudaAtajos } from '@shared/utils/abrir-ayuda-atajos';
 import { AuthUser } from '@core/models/auth.model';
 import { NAV_GROUPS, NavGroup, NavItem } from '@core/constants/role-mapping.constants';
 import { UserRole } from '@core/enums/user-role.enum';
 import { AuthzContext, authzContextDe, evaluateAccess } from '@core/utils/authorization.utils';
-import { etiquetaDeOrganismo, organismoDeSesion } from '@core/utils/session.utils';
+import { etiquetaDeOrganismo, inicialesDe, nombreVisible, organismoDeSesion } from '@core/utils/session.utils';
 
 @Component({
   selector: 'app-admin-layout',
@@ -70,6 +71,11 @@ export class AdminLayoutComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   /** Atajos de una tecla (`appAtajo`) y su preferencia on/off. */
   readonly atajos = inject(AtajosService);
+  /**
+   * Se crea con el shell, así la clase de densidad compacta guardada rige apenas abre cualquier pantalla
+   * logueada; además da el menú contraído recordado al arrancar y lo guarda al colapsar/expandir.
+   */
+  private readonly preferencias = inject(PreferenciasService);
 
   constructor(
     private breakpointObserver: BreakpointObserver,
@@ -79,11 +85,18 @@ export class AdminLayoutComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    let primerBreakpoint = true;
     this.breakpointObserver
       .observe([Breakpoints.Handset])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         this.isMobile = result.matches;
+        // Menú contraído recordado: solo al arrancar y en desktop (en mobile el sidenav es un overlay).
+        if (primerBreakpoint) {
+          primerBreakpoint = false;
+          const p = this.preferencias.actual;
+          this.isCollapsed = !this.isMobile && p.recordarMenuContraido && p.menuContraido;
+        }
         this.cdr.markForCheck();
       });
 
@@ -119,8 +132,12 @@ export class AdminLayoutComponent implements OnInit {
       descripcion: 'Buscar en el menú lateral',
       accion: () => {
         if (this.isMobile) this.sidenav.open();
-        // Colapsado el buscador está oculto: se expande para poder escribir.
-        if (!this.isMobile && this.isCollapsed) this.isCollapsed = false;
+        // Colapsado el buscador está oculto: se expande para poder escribir. Se guarda como al expandir con el botón:
+        // si no, con "Recordar si el menú está contraído" el menú volvería contraído al recargar.
+        if (!this.isMobile && this.isCollapsed) {
+          this.isCollapsed = false;
+          this.preferencias.actualizar({ menuContraido: false });
+        }
         this.cdr.markForCheck();
         this.navRef?.enfocarBuscador();
       },
@@ -134,17 +151,6 @@ export class AdminLayoutComponent implements OnInit {
       quitarBuscar();
       quitarAyuda();
     });
-  }
-
-  /** "juan.perez@misiones.gob.ar" → "Juan Perez". Respaldo cuando el JWT no trae el nombre. */
-  private nombreDesdeEmail(email: string): string {
-    const usuario = (email ?? '').split('@')[0];
-    if (!usuario) return 'Usuario';
-    return usuario
-      .split(/[._-]+/)
-      .filter(Boolean)
-      .map((parte) => parte.charAt(0).toLocaleUpperCase('es-AR') + parte.slice(1))
-      .join(' ');
   }
 
   private applyUser(user: AuthUser | null): void {
@@ -161,12 +167,9 @@ export class AdminLayoutComponent implements OnInit {
     // El JWT NO trae nombre/apellido (ver AuthUser): con el backend real quedaban vacíos
     // y el bloque de perfil mostraba solo el rol. Se cae al usuario del correo, que
     // siempre está, para que nombre y rol se vean juntos como en el diseño.
-    const nombreCompleto = `${user.nombre ?? ''} ${user.apellido ?? ''}`.trim();
-    this.userName = nombreCompleto || this.nombreDesdeEmail(user.email);
+    this.userName = nombreVisible(user);
     this.userEmail = user.email;
-    this.userInitials = nombreCompleto
-      ? `${user.nombre?.charAt(0) ?? ''}${user.apellido?.charAt(0) ?? ''}`.toUpperCase()
-      : this.userName.slice(0, 2).toLocaleUpperCase('es-AR');
+    this.userInitials = inicialesDe(user);
     this.userRoleSpanish = this.authTokenService.getUserRoleLabel();
     // Organismo de la sesión (`/api/auth/me`, G-2): vacío en sesiones globales o con un backend anterior.
     const organismo = organismoDeSesion(user);
@@ -232,6 +235,9 @@ export class AdminLayoutComponent implements OnInit {
 
   toggleCollapse(): void {
     this.isCollapsed = !this.isCollapsed;
+    // Se guarda siempre: así, al encender "Recordar si el menú está contraído", ya está el estado actual. Al arrancar
+    // solo se aplica con esa preferencia encendida.
+    this.preferencias.actualizar({ menuContraido: this.isCollapsed });
     // Colapsado el input queda oculto: si quedara una búsqueda activa, el nav seguiría
     // mostrando resultados sin caja donde escribir ni forma de limpiarlos.
     if (this.isCollapsed) this.navRef?.limpiarBusqueda();

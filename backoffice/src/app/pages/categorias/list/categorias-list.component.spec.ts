@@ -12,6 +12,7 @@ import { HasPermissionDirective } from '@shared/directives/has-permission.direct
 import {
   confirmacionAbierta, dibujarDialogos, errorDeConfirmacion, pulsarEnConfirmacion, tituloDeConfirmacion,
 } from '@shared/components/confirm-dialog/testing/confirmacion.testing';
+import { VentanaEscritorio, abrirVentanaEscritorio } from '@shared/utils/testing/ventana-escritorio.testing';
 import { CategoriasListComponent } from './categorias-list.component';
 
 /** Gating por permiso: dibuja solo si el permiso está en `PERMISOS`. */
@@ -119,6 +120,35 @@ describe('CategoriasListComponent', () => {
       expect(facade.loadCategorias).toHaveBeenCalledTimes(2);
       expect(panel()).toBeNull();
       expect(filas()).toEqual(['Salud']);
+    });
+  });
+
+  describe('densidad (Preferencias)', () => {
+    let ventana: VentanaEscritorio;
+    const fila = (): HTMLElement => el().querySelector<HTMLElement>('.cat-table__row')!;
+
+    beforeEach(async () => {
+      crear([SALUD]);
+      ventana = await abrirVentanaEscritorio(fixture.nativeElement);
+    });
+
+    afterEach(() => ventana.cerrar());
+
+    // La fila lleva nombre + slug en dos líneas: con la letra de Karma el contenido ya supera el mínimo, así que la
+    // densidad se ve en el mínimo y en el padding vertical de las celdas (9px → 6px arriba y abajo).
+    it('en cómoda la fila del árbol mantiene el mínimo de 52px y el padding de 9px', () => {
+      expect(getComputedStyle(fila()).minHeight).toBe('52px');
+      expect(getComputedStyle(fila().querySelector('.cat-table__cell')!).paddingTop).toBe('9px');
+      expect(fila().getBoundingClientRect().height).toBeGreaterThanOrEqual(52);
+    });
+
+    it('en compacta la fila del árbol baja el mínimo a 44px y pierde 6px de padding vertical', () => {
+      const comoda = fila().getBoundingClientRect().height;
+
+      ventana.densidadCompacta(true);
+
+      expect(getComputedStyle(fila()).minHeight).toBe('44px');
+      expect(fila().getBoundingClientRect().height).toBe(Math.max(44, comoda - 6));
     });
   });
 

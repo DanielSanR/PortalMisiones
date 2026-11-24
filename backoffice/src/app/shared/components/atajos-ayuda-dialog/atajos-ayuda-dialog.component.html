@@ -14,7 +14,7 @@
             <div class="atajos-ayuda__fila">
                 <dt class="atajos-ayuda__teclas">
                     @for (tecla of atajo.teclas; track tecla; let ultima = $last) {
-                        <kbd class="atajos-ayuda__tecla">{{ tecla.length === 1 ? tecla.toLocaleUpperCase('es-AR') : tecla }}</kbd>
+                        <kbd class="tecla">{{ tecla.length === 1 ? tecla.toLocaleUpperCase('es-AR') : tecla }}</kbd>
                         @if (!ultima) {
                             <span class="atajos-ayuda__o">o</span>
                         }

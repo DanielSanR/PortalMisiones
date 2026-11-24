@@ -13,6 +13,7 @@ import { ListSearchComponent } from '@shared/components/list-search';
 import { AccionLabelPipe } from '../components/accion-label/accion-label.pipe';
 import { PageActionsDirective } from '@shared/directives/page-actions.directive';
 import { AuditoriaAccion, AuditoriaFacade, AuditoriaPaginaVM, AuditoriaRegistroVM } from '@features/auditoria';
+import { CuentaFacade } from '@features/cuenta';
 import { AuditoriaDetailDialogComponent } from '../dialog/auditoria-detail-dialog.component';
 
 @Component({
@@ -39,6 +40,8 @@ import { AuditoriaDetailDialogComponent } from '../dialog/auditoria-detail-dialo
 })
 export class AuditoriaListComponent implements OnInit {
   private readonly facade = inject(AuditoriaFacade);
+  /** Da el tamaño de página inicial: la preferencia "Filas por página". */
+  private readonly cuenta = inject(CuentaFacade);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly dialog = inject(MatDialog);
@@ -51,7 +54,8 @@ export class AuditoriaListComponent implements OnInit {
   /** La carga falló: la tabla muestra su estado de error con "Reintentar" en vez del vacío. */
   error = false;
   currentPage = 0;
-  pageSize = 10;
+  /** Arranca en "Filas por página" (Preferencias); después lo cambia el paginador. */
+  pageSize: number = this.cuenta.filasPorPagina;
 
   /** Carga en vuelo: se cancela si llega otra (filtro/página) para no pisar con una respuesta vieja. */
   private carga?: Subscription;

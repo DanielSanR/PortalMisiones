@@ -1,4 +1,6 @@
 import { MatSnackBar, MatSnackBarConfig, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
+import { DuracionDeAvisos } from '@core/models/preferencias.model';
+import { leerPreferencias } from '@core/services/preferencias.service';
 
 /** Lo único que varía entre avisos del mismo tipo. */
 export interface OpcionesDeAviso {
@@ -16,6 +18,10 @@ export interface OpcionesDeAviso {
  *   avisarExito(this.snackBar, 'Etiqueta eliminada');
  *   avisarExito(this.snackBar, 'Trámite adoptado', { accion: 'Ver', duracion: 5000 }).onAction()…
  *   avisarAdvertencia(this.snackBar, 'El rol ya se creó, pero no pudimos abrir la lista. Buscalo ahí.');
+ *
+ * La duración final sigue la preferencia "Duración de los avisos" (Preferencias, por navegador): `normal` deja la de
+ * cada helper (o la `duracion` pedida), `largo` la duplica y `fijo` deja el aviso hasta que la persona lo cierra.
+ * Se lee de `localStorage` en forma síncrona en cada aviso, a propósito: son funciones sin inyección.
  */
 
 /** Algo salió bien: "Etiqueta creada", "Cuenta desactivada". 3 s. */
@@ -41,7 +47,24 @@ export function avisar(snackBar: MatSnackBar, mensaje: string, opciones: Opcione
 function abrir(
   snackBar: MatSnackBar, mensaje: string, opciones: OpcionesDeAviso, duracionPorDefecto: number, panelClass?: string,
 ): MatSnackBarRef<TextOnlySnackBar> {
-  const config: MatSnackBarConfig = { duration: opciones.duracion ?? duracionPorDefecto };
+  const config: MatSnackBarConfig = {
+    duration: duracionSegunPreferencia(opciones.duracion ?? duracionPorDefecto, leerPreferencias(storageLocal()).avisos),
+  };
   if (panelClass) config.panelClass = panelClass;
   return snackBar.open(mensaje, opciones.accion ?? 'OK', config);
+}
+
+/** Duración final según la preferencia: igual (`normal`), el doble (`largo`) o sin duración, hasta cerrarlo (`fijo`). */
+export function duracionSegunPreferencia(ms: number, modo: DuracionDeAvisos): number | undefined {
+  if (modo === 'fijo') return undefined;
+  return modo === 'largo' ? ms * 2 : ms;
+}
+
+/** `localStorage`, o `null` si no existe o si acceder tira (algunos navegadores en modo privado). */
+function storageLocal(): Storage | null {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
 }

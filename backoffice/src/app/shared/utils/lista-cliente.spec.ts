@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { BehaviorSubject, Observable, Subject, combineLatest, map, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, combineLatest, firstValueFrom, map, of, throwError } from 'rxjs';
+import { PREFERENCIAS_DE_FABRICA, Preferencias } from '@core/models/preferencias.model';
+import { PreferenciasService } from '@core/services/preferencias.service';
 import { ListaCliente, ListaClienteConfig, TextosDeVacio, VistaDeLista, compararPorTexto, compararTexto, textosDeVacio } from './lista-cliente';
 
 interface Fila {
@@ -55,7 +57,15 @@ function crear(config: Partial<ListaClienteConfig<Fila, Filtro, TextosDeVacio>> 
   return { anfitrion: fixture.componentInstance, vista: () => ultima, destruir: () => { sub.unsubscribe(); fixture.destroy(); } };
 }
 
+/** Fake de `PreferenciasService`: la lista solo lee `actual` al crearse. */
+function preferencias(cambios: Partial<Preferencias> = {}): { provide: typeof PreferenciasService; useValue: Pick<PreferenciasService, 'actual'> } {
+  return { provide: PreferenciasService, useValue: { actual: { ...PREFERENCIAS_DE_FABRICA, ...cambios } } };
+}
+
 describe('ListaCliente', () => {
+  // Preferencias de fábrica (10 filas) para no depender de lo que haya en el `localStorage` del navegador de test.
+  beforeEach(() => TestBed.configureTestingModule({ providers: [preferencias()] }));
+
   describe('carga', () => {
     it('arranca cargando; al responder deja de cargar y avisa que la lista está lista', () => {
       const { anfitrion, vista, destruir } = crear();
@@ -293,6 +303,31 @@ describe('ListaCliente', () => {
       expect(vista().rows.length).toBe(25);
       expect(vista().pageIndex).toBe(0);
       destruir();
+    });
+
+    describe('con la preferencia de 20 filas por página', () => {
+      beforeEach(() => TestBed.configureTestingModule({ providers: [preferencias({ filasPorPagina: 20 })] }));
+
+      it('sin tamanoDePagina usa las filas por página de la preferencia', async () => {
+        const { anfitrion, vista, destruir } = crear();
+        expect((await firstValueFrom(anfitrion.lista.vista$)).pageSize).toBe(20);
+        expect(vista().rows.length).toBe(20);
+        destruir();
+      });
+
+      it('`tamanoDePagina` explícito manda sobre la preferencia', () => {
+        const { vista, destruir } = crear({ tamanoDePagina: 5 });
+        expect(vista().pageSize).toBe(5);
+        expect(vista().rows.length).toBe(5);
+        destruir();
+      });
+
+      it('`tamanoDePagina: null` sigue sin paginar aunque haya preferencia', () => {
+        const { vista, destruir } = crear({ tamanoDePagina: null });
+        expect(vista().rows.length).toBe(25);
+        expect(vista().pageSize).toBe(25);
+        destruir();
+      });
     });
   });
 
