@@ -35,7 +35,8 @@ app/core/             config · constants · enums · errors · guards · interc
 app/pages/<sección>/  list | form | detail | dialog | components/<pieza>  (+ helpers -dialogo / -save-error / -accion-error /
                       -textos / .rutas; `dashboard/home/` es la única pantalla sin lista)
                       secciones: dashboard, tramites/{plantillas,adopciones,fichas}, organismos, tipos-organismo, usuarios, roles,
-                      permisos, categorias, etiquetas, modalidades, destinatarios, eventos-de-vida, auditoria, feedback
+                      permisos, categorias, etiquetas, modalidades, destinatarios, eventos-de-vida, auditoria, feedback,
+                      perfil (Mi perfil, de la sesión), preferencias (locales: `core/services/preferencias.service.ts`)
 app/pages/pages.module.ts   único NgModule: rutas lazy (`loadComponent`) bajo AdminLayout
 app/shared/           adapters · components · directives · guards · layouts · pipes · utils   (todo standalone)
 shared-styles/        _themes (tokens) · _mixins · _components (clases globales) · _material (overrides) · _material-theme
