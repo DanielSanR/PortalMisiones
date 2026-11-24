@@ -67,7 +67,10 @@
           </div>
           <span class="ficha-paneles__total">{{ vista.totalPermisos }}</span>
         </header>
-        <div class="ficha-paneles__cuerpo">
+        <!-- Con muchos permisos (SUPERADMIN) el panel no se estira: scrollea acá, como el detalle de Roles.
+             Región con scroll enfocable por teclado (WCAG 2.1.1). -->
+        <div class="ficha-paneles__cuerpo mi-perfil__grupos" role="group" tabindex="0" data-testid="mi-perfil-grupos"
+             [attr.aria-label]="'Permisos de tu rol: ' + vista.rol">
           @for (grupo of vista.grupos; track grupo.key) {
             <div class="perm-group">
               <div class="perm-group__header">

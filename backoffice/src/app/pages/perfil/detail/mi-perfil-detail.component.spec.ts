@@ -104,6 +104,19 @@ describe('MiPerfilDetailComponent', () => {
     expect(el().querySelector('[data-testid="mi-perfil-permisos"] button')).toBeNull();
   });
 
+  it('con muchos permisos los grupos scrollean dentro del panel: región con techo, enfocable y con nombre', async () => {
+    await montar(AGENTE_IPS, 'Agente');
+
+    const region = el().querySelector<HTMLElement>('[data-testid="mi-perfil-grupos"]');
+    expect(region).not.toBeNull();
+    expect(region?.getAttribute('tabindex')).toBe('0');
+    expect(region?.getAttribute('role')).toBe('group');
+    expect(region?.getAttribute('aria-label')).toBe('Permisos de tu rol: Agente');
+    const estilo = getComputedStyle(region as HTMLElement);
+    expect(estilo.overflowY).toBe('auto');
+    expect(estilo.maxHeight).not.toBe('none');
+  });
+
   it('sin permisos muestra "Tu rol no tiene permisos asignados"', async () => {
     await montar({ ...ADMIN_GLOBAL, permissions: [] }, 'Administrador de Backoffice');
 

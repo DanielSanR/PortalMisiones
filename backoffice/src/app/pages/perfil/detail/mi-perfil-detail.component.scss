@@ -29,6 +29,18 @@
     color: var(--theme-text-tertiary);
   }
 
+  // Grupos de permisos: con muchos (SUPERADMIN) scrollean dentro del panel en vez de estirarlo. Mismo patrón
+  // que `.rol-detail__groups` (Roles): techo de viewport, scrollbar propia y foco por teclado con anillo inset.
+  &__grupos {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    @include custom-scrollbar;
+
+    &:focus-visible {
+      @include focus-ring-inset;
+    }
+  }
+
   // Los chips van en un `<ul>` (es una lista); sin viñetas ni sangría.
   &__chips {
     margin: 0;
