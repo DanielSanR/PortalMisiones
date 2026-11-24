@@ -465,7 +465,7 @@
     .mat-mdc-cell {
       font-size: var(--theme-font-body-size);
       color: var(--theme-text-primary);
-      padding: var(--theme-space-10) var(--theme-space-card);
+      padding: var(--theme-table-cell-padding-y) var(--theme-space-card);
       border-bottom-color: var(--theme-border-subtle);
     }
   }

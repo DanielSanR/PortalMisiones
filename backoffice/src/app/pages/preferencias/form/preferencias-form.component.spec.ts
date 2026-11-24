@@ -79,6 +79,14 @@ describe('PreferenciasFormComponent', () => {
     fixture.detectChanges();
   };
 
+  it('"Listas y tablas" avisa que Roles y Categorías no se paginan', async () => {
+    await montar();
+
+    const subtitulo = el().querySelector('#preferencias-listas')!.parentElement!.querySelector('.ficha-paneles__subtitulo');
+    expect(subtitulo!.textContent!.trim())
+      .toBe('Valen para las listas del backoffice. Roles y Categorías muestran todo junto, sin páginas.');
+  });
+
   it('elegir 20 filas llama actualizar({ filasPorPagina: 20 })', async () => {
     await montar();
     const grupo = $('mat-button-toggle-group');
