@@ -17,6 +17,7 @@ import { AuthTokenService } from '@core/services/auth-token.service';
 import { AuthService } from '@core/services/auth.service';
 import { LayoutChromeService } from '@core/services/layout-chrome.service';
 import { AtajosService } from '@core/services/atajos.service';
+import { PreferenciasService } from '@core/services/preferencias.service';
 import { abrirAyudaAtajos } from '@shared/utils/abrir-ayuda-atajos';
 import { AuthUser } from '@core/models/auth.model';
 import { NAV_GROUPS, NavGroup, NavItem } from '@core/constants/role-mapping.constants';
@@ -70,6 +71,8 @@ export class AdminLayoutComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   /** Atajos de una tecla (`appAtajo`) y su preferencia on/off. */
   readonly atajos = inject(AtajosService);
+  /** Se crea con el shell: la clase de densidad compacta guardada rige apenas abre cualquier pantalla logueada. */
+  private readonly preferencias = inject(PreferenciasService);
 
   constructor(
     private breakpointObserver: BreakpointObserver,
